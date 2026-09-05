@@ -1,0 +1,66 @@
+[boot] bh_server on 0.0.0.0:7781 | map 'assets/maps/thornwall.bhmap' | db 'var/s5gate.db' | tick 20Hz | aoi 26
+[net] ghoulhunter_00   entered the world (entity 20, online 1)
+[net] ghoulhunter_01   entered the world (entity 21, online 2)
+[net] ghoulhunter_02   entered the world (entity 22, online 3)
+[net] ghoulhunter_03   entered the world (entity 23, online 4)
+[net] ghoulhunter_04   entered the world (entity 24, online 5)
+[net] ghoulhunter_05   entered the world (entity 25, online 6)
+[net] ghoulhunter_06   entered the world (entity 26, online 7)
+[net] ghoulhunter_07   entered the world (entity 27, online 8)
+[net] ghoulhunter_08   entered the world (entity 28, online 9)
+[net] ghoulhunter_09   entered the world (entity 29, online 10)
+[net] ghoulhunter_10   entered the world (entity 30, online 11)
+[net] ghoulhunter_11   entered the world (entity 31, online 12)
+[net] ghoulhunter_12   entered the world (entity 32, online 13)
+[net] ghoulhunter_13   entered the world (entity 33, online 14)
+[net] walker_00        entered the world (entity 34, online 15)
+[net] walker_01        entered the world (entity 35, online 16)
+[net] walker_02        entered the world (entity 36, online 17)
+[net] walker_03        entered the world (entity 37, online 18)
+[net] walker_04        entered the world (entity 38, online 19)
+[net] walker_05        entered the world (entity 39, online 20)
+[soak] tick=600 online=20 entities=28 tickUs p50=142 p99=373 worldHash=300503174ddf1460 pkts=377/170264
+[soak] tick=1200 online=20 entities=28 tickUs p50=137 p99=239 worldHash=20f40fa534a901d6 pkts=548/385760
+[net] dirak            entered the world (entity 40, online 21)
+[net] dirak            saved at (32,16)
+[soak] tick=1800 online=20 entities=27 tickUs p50=151 p99=275 worldHash=b4eb7482cb8fd299 pkts=742/626321
+[soak] tick=2400 online=20 entities=22 tickUs p50=109 p99=208 worldHash=e533b441b0aca81c pkts=1001/824431
+[soak] tick=3000 online=20 entities=21 tickUs p50=88 p99=192 worldHash=e93f36f7314e1bbc pkts=1167/971548
+[soak] tick=3600 online=20 entities=20 tickUs p50=77 p99=185 worldHash=30639538d9cd4633 pkts=1290/1106274
+[soak] tick=4200 online=20 entities=20 tickUs p50=110 p99=187 worldHash=00e4657e132e247e pkts=1462/1251877
+[warn] tick budget blown; resynchronizing
+[net] ghoulhunter_03   saved at (31,12)
+[soak] tick=4800 online=19 entities=19 tickUs p50=99 p99=331 worldHash=04260705f0a8e8e4 pkts=1664/1397008
+[soak] tick=5400 online=19 entities=19 tickUs p50=89 p99=174 worldHash=3076edd9bf5fabd2 pkts=1831/1550206
+[soak] tick=6000 online=19 entities=19 tickUs p50=106 p99=221 worldHash=efe8c01643a0da79 pkts=1984/1713555
+[soak] tick=6600 online=19 entities=20 tickUs p50=98 p99=196 worldHash=3f1d378a1f691a28 pkts=2129/1859557
+[soak] tick=7200 online=19 entities=19 tickUs p50=77 p99=159 worldHash=69c9c636042b0f6b pkts=2290/1984258
+[soak] tick=7800 online=19 entities=19 tickUs p50=81 p99=194 worldHash=bf9d1e341a9e185b pkts=2415/2107180
+[soak] tick=8400 online=19 entities=19 tickUs p50=78 p99=148 worldHash=09f93d14ff5b63be pkts=2559/2222001
+[soak] tick=9000 online=19 entities=20 tickUs p50=76 p99=184 worldHash=73313ac2f7338288 pkts=2735/2346425
+[soak] tick=9600 online=19 entities=19 tickUs p50=80 p99=177 worldHash=2066d1068b87c491 pkts=2922/2484189
+[soak] tick=10200 online=19 entities=19 tickUs p50=84 p99=261 worldHash=6ac179e9a6b6d7fb pkts=3066/2607548
+[soak] tick=10800 online=19 entities=19 tickUs p50=72 p99=181 worldHash=94e7eca5efc56d8e pkts=3230/2738366
+[soak] tick=11400 online=19 entities=19 tickUs p50=79 p99=177 worldHash=a7ab437e12442bb0 pkts=3390/2877486
+[soak] tick=12000 online=19 entities=20 tickUs p50=75 p99=183 worldHash=5a72924cf22848ac pkts=3550/3014068
+[net] ghoulhunter_00   saved at (17,3)
+[net] ghoulhunter_01   saved at (17,28)
+[net] ghoulhunter_02   saved at (27,11)
+[net] ghoulhunter_04   saved at (61,22)
+[net] ghoulhunter_05   saved at (25,5)
+[net] ghoulhunter_06   saved at (19,22)
+[net] ghoulhunter_07   saved at (14,33)
+[net] ghoulhunter_08   saved at (6,39)
+[net] ghoulhunter_09   saved at (30,17)
+[net] ghoulhunter_10   saved at (7,7)
+[net] ghoulhunter_11   saved at (46,17)
+[net] ghoulhunter_12   saved at (52,10)
+[net] ghoulhunter_13   saved at (16,45)
+[net] walker_00        saved at (1,23)
+[net] walker_01        saved at (5,19)
+[net] walker_02        saved at (2,27)
+[net] walker_03        saved at (3,33)
+[net] walker_04        saved at (17,19)
+[net] walker_05        saved at (24,28)
+[soak] FINISH ticks=12391 online=0 entities=0 tickUs p50=77 p99=170
+[soak] OK p99=0.17ms budget=10.00ms

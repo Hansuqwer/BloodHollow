@@ -1,0 +1,103 @@
+# Task board
+
+Card format: Context / Scope / Acceptance criteria / Tests required / Out of scope.
+One card = one agent session = one PR. Move to `done/` with evidence pasted.
+
+## Done — Sprint 1 (2026-09-04)
+
+| Card | Title |
+|---|---|
+| [T-001](done/T-001.md) | Repo + CMake + presets + CI + warnings discipline |
+| [T-002](done/T-002.md) | Window/input + fixed 20 Hz tick stepper |
+| [T-003](done/T-003.md) | Isometric renderer (2:1 diamonds, prisms, painter sort) |
+| [T-004](done/T-004.md) | Atlas/anim loader + procedural placeholder hero |
+| [T-005](done/T-005.md) | Tiled JSON -> .bhmap converter + validator |
+| [T-006](done/T-006.md) | Sim grid + deterministic RNG + A* |
+
+## Done — Sprint 2 (2026-09-04, accelerated)
+
+| Card | Title |
+|---|---|
+| [T-007](done/T-007.md) | Camera rig: follow/free-pan/zoom-at-cursor, bounds clamp |
+| [T-008](done/T-008.md) | Day/night: real game clock (4h day) driving tint |
+| [T-009](done/T-009.md) | Replay journal v0 + hash oracle (record/replay/verify) |
+| [T-010](done/T-010.md) | Thornwall pass 2 (generator): graveyard, stalls, mud, grass variation |
+| [T-011](done/T-011.md) | ADR-001..008 formal write-ups in docs/adr/ |
+| [T-012](done/T-012.md) | Demo automation: tick-latched script, deterministic captures |
+
+## Done — Sprints 3-4 (2026-09-04, accelerated): Phase 1 Netcore, M1 gate
+
+| Card | Title |
+|---|---|
+| [T-013](done/T-013.md) | ENet transport + protocol v0 (messages.md -> generated serializers) |
+| [T-014](done/T-014.md) | Login stub + account/char persistence (SQLite v1, ADR-0009 stub auth) |
+| [T-015](done/T-015.md) | Zone server: tick loop + entity store + spatial hash |
+| [T-016](done/T-016.md) | Authoritative movement sync + AoI deltas + client interpolation |
+| [T-017](done/T-017.md) | Chat (say/global/system) + spawn-diff reconnect view |
+| [T-018](done/T-018.md) | tools/bots v1: 20 headless wanderers + 10x60s soak gate (M1) |
+
+## Done — Sprint 6 (2026-09-04, accelerated): economy & death (Phase 2)
+
+| Card | Title |
+|---|---|
+| [T-021](done/T-021.md) | Inventory/equip/loot: item table, gear in combat math, mob drops |
+| [T-025](done/T-025.md) | Death: XP debt 10->25% of bar, de-level at 0 XP |
+| [T-026](done/T-026.md) | Skills v1: Power Swing + Soma weapon-skill spine |
+| [T-027](done/T-027.md) | Vendor v0: Marta, 5-stock shop, junk pawn, proximity trades |
+| [T-028](done/T-028.md) | Bots v1.5: vial economy + power swings |
+
+## Done — Sprint 7 (2026-09-04): trade, density, balancer, replay (Phase 2 finish)
+
+| Card | Title |
+|---|---|
+| [T-029](done/T-029.md) | Trade window: commit-time validation, autosafe rollback (ADR-0011) |
+| [T-030](done/T-030.md) | Fields content to L11 (7 mob kinds, 10 spawners), density rule |
+| [T-031](done/T-031.md) | Bots v2 grinder economy + server TTK balancer feed |
+| [T-032](done/T-032.md) | World journal record/replay; wipe reproduces bit-exact |
+
+## Open — M2 gate pass checklist (de-QA)
+
+| Card | Title | Notes |
+|---|---|---|
+| T-033 | M2 gate run: 620s soak w/ grinder mix, balance bands checked, wipe replay attached, human trade pass | gate=of record + devlog |
+
+## Done — Sprint 8 (2026-09-04): zones-in-process (Phase 3 launch)
+
+| Card | Title |
+|---|---|
+| [T-035](done/T-035.md) | Thornwall Crypt map: gen+conv, L12 Revenant Sexton, sibling portal |
+| [T-036](done/T-036.md) | Zones-in-process: N zones in World, portals, per-zone AoI/sim |
+| [T-037](done/T-037.md) | Client zone handoff via Welcome reuse; map hot-swap |
+| [T-039](done/T-039.md) | persist schema v4: characters.map_id zone persistence |
+
+## Done — Sprint 9 (2026-09-05): anvil/aura spine (RFC 0001)
+
+| Card | Title |
+|---|---|
+| [T-041](done/T-041.md) | Widow Anvil furniture + tryAnvil gate chain |
+| [T-042](done/T-042.md) | Aura tiers I–II live effects (+atk, regen) |
+| [T-043](done/T-043.md) | Protocol v31→131, inv blob v5, karma v6, bless journalling |
+| [T-045](done/T-045.md) | Pilgrim bot profile (rite economy + anvilTries telemetry) |
+| [T-046](done/T-046.md) | Karma columns + moral split (+15% XP / +15% gold) |
+| [T-038](done/T-038.md) | RFC 0001: anvil/aura spine (implemented by T-041..T-046) |
+| [T-040](done/T-040.md) | bot deaths probe: CombatEvent-driven (carried into S8.5 gate) |
+
+## Done — Sprint 10 (2026-09-05): proc riddle + panel (aura spine complete)
+
+| Card | Title |
+|---|---|
+| [T-047](done/T-047.md) | wireKind furniture floor assert + aura procs III–V (cleave/sunder/graft) |
+| [T-048](done/T-048.md) | client anvil panel, karma readout, aura rows, kind-6/7 floaters |
+
+## Done — Sprint 11 (2026-09-05): replay determinism (M2b unblocked)
+
+| Card | Title |
+|---|---|
+| [T-049](done/T-049.md) | record-path determinism: shared applyWorldCommand; replay 3×300s clean |
+
+## Open — Phase 3 remaining
+
+| Card | Title | Notes |
+|---|---|---|
+| T-034 | balancer v2: gear-aware duel harness | feeds the era curve |
+| M2b | L1->8 campaign run across both zones (player-paced) | gate carry-over |

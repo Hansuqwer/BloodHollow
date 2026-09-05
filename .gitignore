@@ -1,0 +1,7 @@
+build/
+out/
+.cache/
+.vscode/
+*~
+.DS_Store
+assets/maps/*.bhmap

@@ -1,0 +1,63 @@
+[boot] bh_server on 0.0.0.0:7779 | map 'assets/maps/thornwall.bhmap' | db 'var/m1_gate.db' | tick 20Hz | aoi 26
+[net] gate_00          entered the world (entity 1, online 1)
+[net] gate_01          entered the world (entity 2, online 2)
+[net] gate_02          entered the world (entity 3, online 3)
+[net] gate_03          entered the world (entity 4, online 4)
+[net] gate_04          entered the world (entity 5, online 5)
+[net] gate_05          entered the world (entity 6, online 6)
+[net] gate_06          entered the world (entity 7, online 7)
+[net] gate_07          entered the world (entity 8, online 8)
+[net] gate_08          entered the world (entity 9, online 9)
+[net] gate_09          entered the world (entity 10, online 10)
+[net] gate_10          entered the world (entity 11, online 11)
+[net] gate_11          entered the world (entity 12, online 12)
+[net] gate_12          entered the world (entity 13, online 13)
+[net] gate_13          entered the world (entity 14, online 14)
+[net] gate_14          entered the world (entity 15, online 15)
+[net] gate_15          entered the world (entity 16, online 16)
+[net] gate_16          entered the world (entity 17, online 17)
+[net] gate_17          entered the world (entity 18, online 18)
+[net] gate_18          entered the world (entity 19, online 19)
+[net] gate_19          entered the world (entity 20, online 20)
+[soak] tick=600 online=20 entities=20 tickUs p50=112 p99=267 worldHash=32d9431cad833a0f pkts=145/185027
+[soak] tick=1200 online=20 entities=20 tickUs p50=96 p99=183 worldHash=93e63fc350488991 pkts=289/333042
+[soak] tick=1800 online=20 entities=20 tickUs p50=114 p99=277 worldHash=3677187b7d87608d pkts=426/476031
+[soak] tick=2400 online=20 entities=20 tickUs p50=109 p99=298 worldHash=ee306ec76f340fc3 pkts=557/621743
+[soak] tick=3000 online=20 entities=20 tickUs p50=95 p99=219 worldHash=a540918c352f9c27 pkts=712/782525
+[soak] tick=3600 online=20 entities=20 tickUs p50=104 p99=286 worldHash=2011dacafbd44a30 pkts=865/980739
+[soak] tick=4200 online=20 entities=20 tickUs p50=98 p99=247 worldHash=df5c3639a0ed28ab pkts=993/1172518
+[soak] tick=4800 online=20 entities=20 tickUs p50=109 p99=229 worldHash=cc46e7a76b193bcf pkts=1147/1373379
+[soak] tick=5400 online=20 entities=20 tickUs p50=103 p99=224 worldHash=9f449c7471a5389c pkts=1287/1555377
+[soak] tick=6000 online=20 entities=20 tickUs p50=95 p99=208 worldHash=5b10fbc0850ce78a pkts=1413/1716242
+[soak] tick=6600 online=20 entities=20 tickUs p50=101 p99=216 worldHash=b794058fd8cd8600 pkts=1546/1873306
+[soak] tick=7200 online=20 entities=20 tickUs p50=88 p99=174 worldHash=312afd1ba6eb0304 pkts=1679/2023156
+[soak] tick=7800 online=20 entities=20 tickUs p50=96 p99=246 worldHash=de57fe67dc37dbb1 pkts=1832/2196061
+[soak] tick=8400 online=20 entities=20 tickUs p50=87 p99=227 worldHash=7376f86b679ce512 pkts=1977/2354015
+[soak] tick=9000 online=20 entities=20 tickUs p50=93 p99=284 worldHash=62fd3e51ae19dd69 pkts=2111/2512692
+[soak] tick=9600 online=20 entities=20 tickUs p50=93 p99=215 worldHash=4e065a666401bc10 pkts=2233/2656999
+[soak] tick=10200 online=20 entities=20 tickUs p50=97 p99=302 worldHash=ecf1d08208b18f9e pkts=2375/2795242
+[soak] tick=10800 online=20 entities=20 tickUs p50=88 p99=222 worldHash=c857d7749d1f2460 pkts=2522/2940903
+[soak] tick=11400 online=20 entities=20 tickUs p50=98 p99=295 worldHash=00c6172861b1750b pkts=2653/3095488
+[net] gate_00          saved at (2,6)
+[net] gate_01          saved at (15,40)
+[net] gate_02          saved at (29,26)
+[net] gate_03          saved at (12,32)
+[net] gate_04          saved at (12,41)
+[net] gate_05          saved at (23,28)
+[net] gate_06          saved at (36,12)
+[net] gate_07          saved at (24,17)
+[net] gate_08          saved at (28,20)
+[net] gate_09          saved at (35,17)
+[net] gate_10          saved at (4,8)
+[net] gate_11          saved at (22,4)
+[net] gate_12          saved at (10,38)
+[net] gate_13          saved at (7,28)
+[net] gate_14          saved at (30,13)
+[net] gate_15          saved at (17,29)
+[net] gate_16          saved at (3,17)
+[net] gate_17          saved at (29,25)
+[net] gate_18          saved at (27,39)
+[net] gate_19          saved at (4,40)
+[soak] tick=12000 online=0 entities=0 tickUs p50=99 p99=298 worldHash=14650fb0739d0383 pkts=2777/3231785
+[soak] FINISH ticks=12001 online=0 entities=0 tickUs p50=99 p99=298
+[soak] OK p99=0.30ms budget=10.00ms

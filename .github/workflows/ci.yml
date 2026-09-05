@@ -1,0 +1,37 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Linux client dependencies (X11/GL for raylib)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev \
+            libxcursor-dev libxi-dev libgl1-mesa-dev libasound2-dev pkg-config
+
+      - name: Map generator is deterministic (regenerate + diff)
+        run: |
+          python3 tools/mapgen/make_thornwall.py --out /tmp/thornwall_check.tmj
+          diff -q /tmp/thornwall_check.tmj data/maps-src/thornwall.tmj
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Validate converted map (T-005 gate)
+        run: ./build/tools/mapconv/bh_mapconv data/maps-src/thornwall.tmj /tmp/bhcheck/thornwall.bhmap --map-id 1 --validate

@@ -1,0 +1,17 @@
+add_executable(bh_tests
+  tests_main.cpp
+  test_grid.cpp
+  test_rng.cpp
+  test_astar.cpp
+  test_bhmap.cpp
+  test_walker.cpp
+  test_clock.cpp
+  test_journal.cpp
+  test_bytestream.cpp
+  test_protogen.cpp
+  test_spatial.cpp
+  test_combat.cpp
+  test_cmdparity.cpp
+)
+target_link_libraries(bh_tests PRIVATE bh_shared bh_protocol bh_server_world bh_doctest bh_warnings)
+add_test(NAME bh_tests COMMAND bh_tests)

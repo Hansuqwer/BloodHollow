@@ -1,0 +1,1482 @@
+#include "world.h"
+
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+
+#include "content/auras.h"
+#include "content/wirekind.h"
+#include "sim/combat.h"
+
+namespace bh::server {
+
+namespace {
+constexpr sim::Tick kPlayerAtkCdTicks = 16;   // 800 ms deliberate era swing
+constexpr sim::Tick kPlayerRespawnTicks = 60; // 3 s walk of shame (debt lands in T-021)
+constexpr sim::Tick kAggroThinkPeriod = 5;    // staggered think (id % period)
+constexpr sim::Tick kOocRegenDelay = 400;     // 20 s out of combat before regen
+constexpr sim::Tick kOocRegenPeriod = 40;     // +1 hp per 2 s
+constexpr std::uint32_t kFistsBaseDmg = 8;    // proto-Ravager bare hands
+constexpr sim::Tick kSipCdTicks = 10;         // GDD: 500 ms global sip
+constexpr sim::Tick kPowerSwingCdTicks = 40;  // GDD: 40t CD
+constexpr std::uint32_t kPowerSwingMultPct = 140;
+constexpr std::uint32_t kSkillLandsPerPoint = 25;  // Soma: skill up by use
+
+int chebyshev(const sim::TilePos a, const sim::TilePos b) {
+  return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y));
+}
+}  // namespace
+
+bool World::load(const std::string& mapPath, std::string* err) {
+  auto m = sim::loadBhmap(mapPath, err);
+  if (!m) return false;
+  return loadFrom(std::move(*m));
+}
+
+bool World::loadZone(std::uint16_t mapId, const std::string& mapPath,
+                     std::string* err) {
+  auto m = sim::loadBhmap(mapPath, err);
+  if (!m) return false;
+  return loadZoneFrom(mapId, std::move(*m));
+}
+
+const sim::Map* World::zoneMap(std::uint16_t mapId) const {
+  auto it = zones_.find(mapId);
+  return it == zones_.end() ? nullptr : &it->second.map;
+}
+
+bool World::loadFrom(sim::Map map) {  // zone 1 (tests + primary)
+  return loadZoneFrom(1, std::move(map));
+}
+
+bool World::loadZoneFrom(std::uint16_t mapId, sim::Map map) {
+  Zone z;
+  z.map = std::move(map);
+  z.grid = z.map.costGrid();
+
+  const int cx = z.map.w / 2;
+  const int cy = z.map.h / 3;
+  for (int r = 0; r < 64; ++r) {
+    for (int dy = -r; dy <= r; ++dy) {
+      for (int dx = -r; dx <= r; ++dx) {
+        if (std::max(std::abs(dx), std::abs(dy)) != r) continue;
+        const int x = cx + dx;
+        const int y = cy + dy;
+        if (z.map.inBounds(x, y) && !z.map.isBlocked(x, y)) {
+          z.spawnPoint = sim::TilePos{x, y};
+          goto done;
+        }
+      }
+    }
+  }
+done:
+  for (const sim::SpawnDef& d : z.map.spawners) {
+    SpawnerLive sl;
+    sl.def = d;
+    sl.respawnReadyAt = 0;
+    z.spawners.push_back(sl);
+  }
+  zones_.emplace(mapId, std::move(z));
+  Zone& zone = zones_.at(mapId);
+  if (mapId == 1) spawnVendor(zone);
+  initialMobSpawns(zone, mapId);
+  if (mapId == 1 || mapId == 3) spawnAnvils();   // plaza + bone barrow
+  return true;
+}
+
+Entity& World::insertEntity(Entity e) {
+  const std::uint16_t zone = e.zoneId;
+  entities_.push_back(std::move(e));
+  Entity& ref = entities_.back();
+  const sim::TilePos p = ref.walker.tile();
+  zones_.at(zone).spatial.insert(ref.id, p.x, p.y);
+  return ref;
+}
+
+Entity& World::spawn(const std::string& name, std::int64_t charRowId,
+                     std::optional<sim::TilePos> at, std::uint16_t zoneId) {
+  if (zones_.count(zoneId) == 0) zoneId = 1;  // zoneless test maps fall back
+  Zone& z = zones_.at(zoneId);
+  Entity e;
+  e.id = nextId_++;
+  e.kind = EntityKind::kPlayer;
+  e.name = name;
+  e.charRowId = charRowId;
+  e.zoneId = zoneId;
+  sim::TilePos pos = z.spawnPoint;
+  if (at && z.map.inBounds(at->x, at->y) && !z.map.isBlocked(at->x, at->y)) pos = *at;
+  e.walker.place(pos);
+  e.hpMax = recomputeHpMax(e);
+  e.hp = e.hpMax;
+  return insertEntity(std::move(e));
+}
+
+Entity& World::spawnMob(const content::MobDef& def, sim::TilePos at, size_t spawnerIdx,
+                        std::uint16_t zoneId) {
+  Entity e;
+  e.id = nextId_++;
+  e.kind = EntityKind::kMob;
+  e.zoneId = zoneId;
+  {
+    int idx = 1;
+    for (const content::MobDef& d : content::kMobs) {
+      if (d.mobId == def.mobId) {
+        e.wireKind = static_cast<std::uint8_t>(idx);
+        break;
+      }
+      ++idx;
+    }
+  }
+  e.name = def.name;
+  e.mobId = def.mobId;
+  e.mobLevel = def.level;
+  e.hp = def.hp;
+  e.hpMax = def.hp;
+  e.anchor = at;
+  e.aggroRadius = def.aggroRadius;
+  e.wanderRadius = def.wanderRadius;
+  e.leashRadius = def.leashRadius;
+  e.atkCdTicks = def.atkCdTicks;
+  e.xpValue = def.xp;
+  e.dex = def.dex;
+  // mobs store their flat damage as str=0/base via xpValue; raw dmg is def.dmg
+  e.walker.place(at);
+  Entity& ref = insertEntity(std::move(e));
+  ref.spawnerIdx = spawnerIdx;
+  return ref;
+}
+
+void World::initialMobSpawns(Zone& zone, std::uint16_t zoneId) {
+  for (size_t i = 0; i < zone.spawners.size(); ++i) {
+    SpawnerLive& sl = zone.spawners[i];
+    const content::MobDef* def = content::findMob(sl.def.mobId);
+    if (def == nullptr) {
+      std::fprintf(stderr, "[world] spawner mobId %u has no def, skipped\n", sl.def.mobId);
+      continue;
+    }
+    for (std::uint32_t n = 0; n < sl.def.maxAlive; ++n) {
+      // scatter inside the spawner rect
+      const int x = sl.def.x + static_cast<int>(rng_.range(0, sl.def.w - 1));
+      const int y = sl.def.y + static_cast<int>(rng_.range(0, sl.def.h - 1));
+      if (zone.map.inBounds(x, y) && !zone.map.isBlocked(x, y)) {
+        spawnMob(*def, sim::TilePos{x, y}, i, zoneId);
+      } else {
+        --n;  // blocked tile: re-roll (bounded implicitly by walkable map design)
+        if (n > 40) break;
+      }
+    }
+  }
+}
+
+void World::despawn(std::uint32_t id) {
+  for (size_t i = 0; i < entities_.size(); ++i) {
+    if (entities_[i].id == id) {
+      zones_.at(entities_[i].zoneId).spatial.remove(id);
+      entities_.erase(entities_.begin() + static_cast<long>(i));
+      return;
+    }
+  }
+}
+
+Entity* World::find(std::uint32_t id) {
+  for (auto& e : entities_) {
+    if (e.id == id) return &e;
+  }
+  return nullptr;
+}
+
+const Entity* World::find(std::uint32_t id) const {
+  for (const auto& e : entities_) {
+    if (e.id == id) return &e;
+  }
+  return nullptr;
+}
+
+void World::queuePath(Entity& e, sim::TilePos goal) {
+  if (e.dead) return;
+  e.attackTarget = 0;  // moving cancels attacking (era rule)
+  const Zone& z = zoneOf(e);
+  if (!z.map.inBounds(goal.x, goal.y) || z.map.isBlocked(goal.x, goal.y)) return;
+  const sim::TilePos start = e.walker.moving ? e.walker.target : e.walker.tile();
+  if (start == goal) {
+    e.path.clear();
+    return;
+  }
+  const sim::PathResult res = sim::findPath(z.grid, start, goal);
+  if (!res.found) return;
+  e.path.assign(res.tiles.begin(), res.tiles.end());
+}
+
+void World::setAttack(Entity& self, std::uint32_t targetId) {
+  if (self.dead || self.id == targetId) return;
+  Entity* target = find(targetId);
+  if (target == nullptr || target->dead || content::wireIsFurniture(target->wireKind)) return;
+  if (target->zoneId != self.zoneId) return;  // cross-zone targeting impossible
+  self.attackTarget = targetId;
+  self.path.clear();
+}
+
+bool World::assignStat(Entity& e, std::uint8_t stat) {
+  if (e.kind != EntityKind::kPlayer || e.statPoints == 0 || stat > 2) return false;
+  switch (stat) {
+    case 0: ++e.str; break;
+    case 1: ++e.vit; break;
+    default: ++e.dex; break;
+  }
+  --e.statPoints;
+  const std::uint32_t newMax = recomputeHpMax(e);
+  e.hp += newMax - e.hpMax;  // VIT bumps heal by the delta (era QoL)
+  e.hpMax = newMax;
+  WorldEvent ev;
+  ev.aboutId = e.id;
+  ev.statsChanged = true;
+  events_.push_back(std::move(ev));
+  return true;
+}
+
+std::uint32_t World::recomputeHpMax(Entity& e) const {
+  return sim::playerHpMax(e.level, e.vit);
+}
+
+std::vector<Entity*> World::playersNear(Zone& zone, int x, int y, int radius) {
+  std::vector<Entity*> out;
+  const auto ids = zone.spatial.query(x - radius, y - radius, x + radius, y + radius);
+  for (const std::uint32_t id : ids) {
+    Entity* e = find(id);
+    if (e != nullptr && e->kind == EntityKind::kPlayer && !e->dead &&
+        chebyshev(e->walker.tile(), sim::TilePos{x, y}) <= radius) {
+      out.push_back(e);
+    }
+  }
+  return out;
+}
+
+void World::spawnVendor() { spawnVendor(zones_.at(1)); }
+
+void World::spawnVendor(Zone& zone) {
+  if (zone.vendorSeeded) return;
+  zone.vendorSeeded = true;
+  // Marta stands near the town spawn, first walkable tile in a tiny spiral
+  for (int r = 1; r < 8; ++r) {
+    for (int dy = -r; dy <= r; ++dy) {
+      for (int dx = -r; dx <= r; ++dx) {
+        if (std::max(std::abs(dx), std::abs(dy)) != r) continue;
+        const int x = zone.spawnPoint.x + dx;
+        const int y = zone.spawnPoint.y + dy;
+        if (!zone.map.inBounds(x, y) || zone.map.isBlocked(x, y)) continue;
+        Entity e;
+        e.id = nextId_++;
+        e.zoneId = 1;
+        e.kind = EntityKind::kMob;  // immobile, non-combat; wire kind marks vendor
+        e.wireKind = 64;
+        e.name = "Marta";
+        e.hp = 1;
+        e.hpMax = 1;
+        e.dead = false;
+        e.walker.place(sim::TilePos{x, y});
+        insertEntity(std::move(e));
+        return;
+      }
+    }
+  }
+}
+
+bool World::addItem(Entity& e, std::uint32_t itemId, std::uint16_t qty) {
+  const content::ItemDef* d = content::findItem(itemId);
+  if (d == nullptr || qty == 0 || e.inv.size() >= 32) return false;
+  // stack into an existing un-equipped stack
+  if (d->stackMax > 1) {
+    for (InvSlot& sl : e.inv) {
+      if (sl.itemId == itemId && !sl.equipped && sl.qty + qty <= d->stackMax) {
+        sl.qty = static_cast<std::uint16_t>(sl.qty + qty);
+        return true;
+      }
+    }
+  }
+  InvSlot sl;
+  sl.itemId = itemId;
+  sl.qty = qty;
+  sl.equipped = false;
+  e.inv.push_back(sl);
+  return true;
+}
+
+std::uint32_t World::equippedWeaponDmg(const Entity& e) const {
+  for (const InvSlot& sl : e.inv) {
+    if (sl.equipped) {
+      const content::ItemDef* d = content::findItem(sl.itemId);
+      if (d != nullptr && d->slot == 0) {
+        std::uint32_t dmg = d->dmg;
+        if (sl.aura >= 1) {  // Edge Rite (tier I): flat attack bleed
+          if (const content::AuraTier* t = content::findAuraTier(sl.aura))
+            dmg += t->atkBonusFlat;
+        }
+        return dmg;
+      }
+    }
+  }
+  return kFistsBaseDmg;
+}
+
+std::uint32_t World::equippedArmorDef(const Entity& e) const {
+  for (const InvSlot& sl : e.inv) {
+    if (sl.equipped) {
+      const content::ItemDef* d = content::findItem(sl.itemId);
+      if (d != nullptr && d->slot == 1) return d->def;
+    }
+  }
+  return 0;
+}
+
+bool World::useItem(Entity& e, std::uint8_t slot) {
+  if (e.kind != EntityKind::kPlayer || e.dead || slot >= e.inv.size()) return false;
+  if (tick_ - e.lastSipTick < kSipCdTicks) return false;
+  InvSlot& sl = e.inv[slot];
+  const content::ItemDef* d = content::findItem(sl.itemId);
+  if (d == nullptr || d->slot != 2 || sl.qty == 0) return false;
+  if (e.hp >= e.hpMax) return false;
+  e.lastSipTick = tick_;
+  --sl.qty;
+  const std::uint32_t healed = std::min<std::uint32_t>(d->heal, e.hpMax - e.hp);
+  e.hp += healed;
+  if (sl.qty == 0) e.inv.erase(e.inv.begin() + slot);
+  WorldEvent ev;
+  ev.attacker = e.id;
+  ev.target = e.id;
+  ev.kind = 4;
+  ev.amount = static_cast<std::uint16_t>(healed);
+  ev.aboutId = e.id;
+  ev.invChanged = true;
+  events_.push_back(std::move(ev));
+  return true;
+}
+
+bool World::toggleEquip(Entity& e, std::uint8_t slot) {
+  if (e.kind != EntityKind::kPlayer || slot >= e.inv.size()) return false;
+  InvSlot& sl = e.inv[slot];
+  const content::ItemDef* d = content::findItem(sl.itemId);
+  if (d == nullptr || d->slot > 1) return false;
+  if (!sl.equipped) {
+    // one equipped item per gear slot
+    for (InvSlot& other : e.inv) {
+      const content::ItemDef* od = content::findItem(other.itemId);
+      if (od != nullptr && od->slot == d->slot) other.equipped = false;
+    }
+    sl.equipped = true;
+  } else {
+    sl.equipped = false;
+  }
+  syncIndxPush(e);
+  return true;
+}
+
+void World::trySkill(Entity& e, std::uint8_t skill, std::uint32_t targetId) {
+  if (e.kind != EntityKind::kPlayer || e.dead || skill != 1) return;
+  if (tick_ - e.lastPowerTick < kPowerSwingCdTicks) return;
+  Entity* target = find(targetId);
+  if (target == nullptr || target->dead || content::wireIsFurniture(target->wireKind)) return;
+  if (chebyshev(e.walker.tile(), target->walker.tile()) > 1) return;
+  e.lastPowerTick = tick_;
+
+  const int acc = 2 * e.dex;
+  const int evd = target->kind == EntityKind::kPlayer ? target->dex : target->dex;
+  const sim::HitCheck hc = sim::rollHit(acc, evd, e.dex, rng_);
+  if (!hc.hit) {
+    WorldEvent ev;
+    ev.attacker = e.id;
+    ev.target = target->id;
+    ev.kind = 0;
+    events_.push_back(std::move(ev));
+    return;
+  }
+  const std::uint32_t base = equippedWeaponDmg(e) + e.swordSkill / 20;
+  std::uint32_t def = equippedArmorDef(*target);
+  if (target->kind == EntityKind::kMob) {
+    const content::MobDef* md = content::findMob(target->mobId);
+    if (md != nullptr) def = md->def;
+  }
+  std::uint32_t dmg = sim::rollDamage(base, e.str, def, hc.crit);
+  dmg = dmg * kPowerSwingMultPct / 100u;
+  if (target->kind == EntityKind::kPlayer) dmg = dmg * 65u / 100u;
+  dmg = dmg < 1 ? 1 : dmg;
+  target->hp = dmg >= target->hp ? 0 : target->hp - dmg;
+  target->lastHurtTick = tick_;
+  if (target->kind == EntityKind::kMob && target->attackTarget == 0) {
+    target->attackTarget = e.id;
+  }
+  WorldEvent ev;
+  ev.attacker = e.id;
+  ev.target = target->id;
+  ev.kind = 5;  // skill hit (HB red-caps callout client-side)
+  ev.amount = static_cast<std::uint16_t>(dmg > 65535 ? 65535 : dmg);
+  events_.push_back(ev);
+  if (target->hp == 0) {
+    const std::string victimName = target->name;
+    const std::uint32_t victimId = target->id;
+    WorldEvent kill;
+    kill.attacker = e.id;
+    kill.target = victimId;
+    kill.kind = 3;
+    kill.amount = ev.amount;
+    if (target->kind == EntityKind::kMob) {
+      killMob(*target, &e);
+      kill.chatCh = 3;
+      kill.chatText = e.name + " has slain a " + victimName + ".";
+    } else {
+      kill.chatCh = 3;
+      kill.chatText = victimName + " was slain by " + e.name + ".";
+      killPlayer(*target, &e);
+    }
+    events_.push_back(std::move(kill));
+  }
+}
+
+bool World::vendorBuy(Entity& e, std::uint32_t itemId, std::uint16_t qty) {
+  if (e.kind != EntityKind::kPlayer || e.dead || qty == 0 || qty > 16) return false;
+  bool stocked = false;
+  for (const std::uint32_t id : content::kVendorStock) {
+    if (id == itemId) stocked = true;
+  }
+  const content::ItemDef* d = content::findItem(itemId);
+  if (!stocked || d == nullptr) return false;
+  // must stand near the vendor
+  bool nearVendor = false;
+  for (const auto& v : entities_) {
+    if (v.wireKind == content::kWireKindVendor &&
+        chebyshev(v.walker.tile(), e.walker.tile()) <= 3) {
+      nearVendor = true;
+      break;
+    }
+  }
+  if (!nearVendor) return false;
+  const std::uint32_t cost = d->value * qty;
+  if (e.gold < cost || (d->stackMax == 1 && qty > 1)) return false;
+  // stack check for stackables
+  if (d->stackMax == 1) {
+    qty = 1;
+  }
+  const std::uint32_t realCost = d->value * qty;
+  if (e.gold < realCost) return false;
+  if (!addItem(e, itemId, qty)) return false;
+  e.gold -= realCost;
+  WorldEvent ev;
+  ev.aboutId = e.id;
+  ev.invChanged = true;
+  ev.statsChanged = true;
+  ev.chatCh = 255;
+  ev.chatText = "bought " + std::to_string(qty) + "x " + d->name + " for " +
+                std::to_string(realCost) + "g.";
+  events_.push_back(std::move(ev));
+  return true;
+}
+
+std::uint32_t World::vendorSellJunk(Entity& e) {
+  if (e.kind != EntityKind::kPlayer || e.dead) return 0;
+  bool nearVendor = false;
+  for (const auto& v : entities_) {
+    if (v.wireKind == content::kWireKindVendor && chebyshev(v.walker.tile(), e.walker.tile()) <= 3) {
+      nearVendor = true;
+      break;
+    }
+  }
+  if (!nearVendor) return 0;
+  std::uint32_t gained = 0;
+  for (size_t i = 0; i < e.inv.size();) {
+    const content::ItemDef* d = content::findItem(e.inv[i].itemId);
+    if (d != nullptr && d->slot == 3) {
+      gained += d->value * content::kSellRatioPct / 100 * e.inv[i].qty;
+      e.inv.erase(e.inv.begin() + static_cast<long>(i));
+    } else {
+      ++i;
+    }
+  }
+  if (gained > 0) {
+    e.gold += gained;
+    WorldEvent ev;
+    ev.aboutId = e.id;
+    ev.invChanged = true;
+    ev.statsChanged = true;
+    ev.chatCh = 255;
+    ev.chatText = "sold junk for " + std::to_string(gained) + "g.";
+    events_.push_back(std::move(ev));
+  }
+  return gained;
+}
+
+// ---- anvil & aura spine (T-041/T-042, RFC 0001) ----------------------------
+
+void World::spawnAnvils() {
+  // zone 1 plaza: near Marta (spiral from spawn); zone 3: bone barrow seat.
+  for (const auto& [zoneId, at] :
+       {std::pair<std::uint16_t, sim::TilePos>{1, zones_.at(1).spawnPoint},
+        {3, sim::TilePos{44, 6}}}) {
+    auto it = zones_.find(zoneId);
+    if (it == zones_.end()) continue;
+    for (int r = 0; r < 8; ++r) {
+      for (int dy = -r; dy <= r; ++dy) {
+        for (int dx = -r; dx <= r; ++dx) {
+          const int x = at.x + dx, y = at.y + dy;
+          if (!it->second.map.inBounds(x, y) || it->second.map.isBlocked(x, y)) continue;
+          Entity a;
+          a.id = nextId_++;
+          a.zoneId = zoneId;
+          a.kind = EntityKind::kMob;  // furniture: non-combat
+          a.wireKind = 65;            // anvil marker on the wire
+          a.name = "Widow Anvil";
+          a.hp = 1;
+          a.hpMax = 1;
+          a.walker.place(sim::TilePos{x, y});
+          insertEntity(std::move(a));
+          break;
+        }
+      }
+    }
+  }
+}
+
+bool World::nearAnvil(const Entity& e) const {
+  for (const Entity& other : entities_) {
+    if (other.wireKind == content::kWireKindAnvil && other.zoneId == e.zoneId &&
+        chebyshev(e.walker.tile(), other.walker.tile()) <= 2) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool World::tryAnvil(Entity& e, std::uint8_t tier) {
+  if (e.kind != EntityKind::kPlayer || e.dead) {
+    std::printf("[anvil-refuse] %s tier=%u why=%s\n", e.name.c_str(),
+                static_cast<unsigned>(tier),
+                e.kind != EntityKind::kPlayer ? "notplayer" : "dead");
+    return false;
+  }
+  const content::AuraTier* t = content::findAuraTier(tier);
+  if (t == nullptr || !nearAnvil(e)) {
+    std::printf("[anvil-refuse] %s tier=%u why=nearAnvil\n", e.name.c_str(),
+                static_cast<unsigned>(tier));
+    return false;
+  }
+  InvSlot* wslot = nullptr;
+  for (InvSlot& sl : e.inv) {
+    if (sl.equipped) {
+      const content::ItemDef* d = content::findItem(sl.itemId);
+      if (d != nullptr && d->slot == 0) wslot = &sl;
+    }
+  }
+  if (wslot == nullptr) {
+    WorldEvent ev;
+    ev.aboutId = e.id;
+    ev.chatCh = 255;
+    std::printf("[anvil-refuse] %s tier=%u why=unarmed\n", e.name.c_str(),
+                static_cast<unsigned>(tier));
+    ev.chatText = "the Anvil decides only armed petitions.";
+    events_.push_back(ev);
+    return false;
+  }
+  if (wslot->aura >= tier) {
+    WorldEvent ev;
+    ev.aboutId = e.id;
+    ev.chatCh = 255;
+    ev.chatText = "that blessing already sleeps in the steel.";
+    std::printf("[anvil-refuse] %s tier=%u why=already aura=%u\n", e.name.c_str(),
+                static_cast<unsigned>(tier), static_cast<unsigned>(wslot->aura));
+    events_.push_back(ev);
+    return false;
+  }
+  if (wslot->aura + 1 != tier) {
+    WorldEvent ev;
+    ev.aboutId = e.id;
+    ev.chatCh = 255;
+    ev.chatText = "the Anvil honors order: earn tier " + std::to_string(wslot->aura + 1) + " first.";
+    std::printf("[anvil-refuse] %s tier=%u why=order aura=%u\n", e.name.c_str(),
+                    static_cast<unsigned>(tier), static_cast<unsigned>(wslot->aura));
+    events_.push_back(ev);
+    return false;
+  }
+  if (e.swordSkill < t->reqSkill) {
+    WorldEvent ev;
+    ev.aboutId = e.id;
+    ev.chatCh = 255;
+    ev.chatText = "your hand is not yet steady: weapon skill " + std::to_string(t->reqSkill) + " required.";
+    std::printf("[anvil-refuse] %s tier=%u why=skill skill=%u req=%u\n", e.name.c_str(),
+                    static_cast<unsigned>(tier), static_cast<unsigned>(e.swordSkill),
+                    static_cast<unsigned>(t->reqSkill));
+    events_.push_back(ev);
+    return false;
+  }
+  if (e.gold < t->gold) {
+    WorldEvent ev;
+    ev.aboutId = e.id;
+    ev.chatCh = 255;
+    ev.chatText = "the toll is " + std::to_string(t->gold) + "g - the Anvil does not haggle.";
+    std::printf("[anvil-refuse] %s tier=%u why=gold gold=%u\n", e.name.c_str(),
+                    static_cast<unsigned>(tier), static_cast<unsigned>(e.gold));
+    events_.push_back(ev);
+    return false;
+  }
+  std::uint32_t parts = 0;
+  for (const InvSlot& sl : e.inv) {
+    if (sl.itemId == t->partItemId) parts += sl.qty;
+  }
+  if (parts < t->partQty) {
+    WorldEvent ev;
+    ev.aboutId = e.id;
+    ev.chatCh = 255;
+    ev.chatText = "parts short: " + std::to_string(t->partQty) + "x " +
+                  std::string(content::findItem(t->partItemId) != nullptr
+                                  ? content::findItem(t->partItemId)->name
+                                  : "offering") +
+                  " required.";
+    std::printf("[anvil-refuse] %s tier=%u why=parts\n", e.name.c_str(),
+                    static_cast<unsigned>(tier));
+    events_.push_back(ev);
+    return false;
+  }
+
+  // mercy rule: first attempt at any tier is guaranteed (bit per tier)
+  const std::uint32_t mercyBit = 1u << tier;
+  const bool mercy = (e.anvilMercyMask & mercyBit) == 0;
+  e.anvilMercyMask |= mercyBit;
+
+  // consume parts + gold, atomically (all or nothing)
+  std::uint16_t remaining = t->partQty;
+  for (size_t i = 0; i < e.inv.size() && remaining > 0;) {
+    InvSlot& sl = e.inv[i];
+    if (sl.itemId != t->partItemId || sl.equipped) { ++i; continue; }
+    const std::uint16_t take = sl.qty < remaining ? sl.qty : remaining;
+    sl.qty = static_cast<std::uint16_t>(sl.qty - take);
+    remaining = static_cast<std::uint16_t>(remaining - take);
+    if (sl.qty == 0) e.inv.erase(e.inv.begin() + static_cast<long>(i));
+    else ++i;
+  }
+  e.gold -= t->gold;
+
+  const bool success = mercy || rng_.chance(static_cast<double>(100 - t->failPct) / 100.0);
+  WorldEvent ev;
+  ev.aboutId = e.id;
+  ev.attacker = e.id;  // on the wire (CombatEvent kind=6) so the plaza sees it
+  ev.target = e.id;
+  ev.kind = 6;         // aura ceremony pulse (client: red-caps over the anvil)
+  ev.amount = tier;
+  ev.statsChanged = true;
+  if (success) {
+    wslot->aura = tier;
+    e.karma += kKarmaAnvilOk;  // the guild remembers its tithes (T-046)
+    ev.chatCh = 255;
+    ev.chatText = "the Anvil speaks. tier " + std::to_string(tier) + " rests in the steel.";
+    std::printf("[aura] %s tier=%u res=ok%s\n", e.name.c_str(), static_cast<unsigned>(tier),
+                mercy ? " mercy" : "");
+  } else {
+    if (t->failLaw == 1) {
+      // destroy: clear the weapon slot + the aura with it (RFC 0001)
+      wslot->itemId = 0;
+      wslot->qty = 0;
+      wslot->equipped = false;
+      wslot->aura = 0;
+      e.karma += kKarmaAnvilDestroy;  // drowned steel stains the soul
+      ev.chatCh = 0;  // broadcast-worthy ceremony failure
+      ev.chatText = e.name + "'s steel drowned at the Anvil.";
+      std::printf("[aura] %s tier=%u res=destroyed\n", e.name.c_str(), static_cast<unsigned>(tier));
+    } else {
+      ev.chatCh = 255;
+      ev.chatText = "the Anvil drinks the offering and gives nothing back.";
+      std::printf("[aura] %s tier=%u res=softfail\n", e.name.c_str(), static_cast<unsigned>(tier));
+    }
+  }
+  std::fflush(stdout);
+  events_.push_back(std::move(ev));
+  // statsChanged triggers OwnStats push; inventory line too
+  WorldEvent invEv;
+  invEv.aboutId = e.id;
+  invEv.invChanged = true;
+  events_.push_back(std::move(invEv));
+  return true;
+}
+
+// ---- trade (T-029): commit-time validation, single-tick swap ---------------
+
+void World::tradeCancel(Entity& e, const char* why) {
+  Entity* other = find(e.tradeWith);
+  const std::uint32_t otherId = e.tradeWith;
+  e.tradeWith = 0;
+  e.tradeOfferItems.clear();
+  e.tradeOfferGold = 0;
+  e.tradeCommitted = false;
+  WorldEvent ev;
+  ev.aboutId = e.id;
+  ev.chatCh = 255;
+  ev.chatText = std::string("trade cancelled (") + why + ").";
+  events_.push_back(ev);
+  if (other != nullptr) {
+    other->tradeWith = 0;
+    other->tradeOfferItems.clear();
+    other->tradeOfferGold = 0;
+    other->tradeCommitted = false;
+    WorldEvent ev2;
+    ev2.aboutId = otherId;
+    ev2.chatCh = 255;
+    ev2.chatText = std::string("trade with ") + e.name + " cancelled (" + why + ").";
+    events_.push_back(ev2);
+  }
+}
+
+bool World::tradeOpen(Entity& a, std::uint32_t partnerId) {
+  Entity* b = find(partnerId);
+  if (b == nullptr || b->kind != EntityKind::kPlayer || b == &a || a.dead || b->dead) {
+    return false;
+  }
+  if (a.tradeWith != 0 || b->tradeWith != 0) return false;  // both must be free
+  if (chebyshev(a.walker.tile(), b->walker.tile()) > 3) return false;
+  a.tradeWith = b->id;
+  b->tradeWith = a.id;
+  for (Entity* x : {&a, b}) {
+    WorldEvent ev;
+    ev.aboutId = x->id;
+    ev.chatCh = 255;
+    ev.chatText = "trading with " + (x == &a ? b->name : a.name) +
+                  " - offer items, then commit. Walk away to cancel.";
+    events_.push_back(std::move(ev));
+  }
+  return true;
+}
+
+void World::tradeOffer(Entity& e, std::uint32_t itemId, std::uint16_t qty) {
+  if (e.tradeWith == 0 || e.dead) return;
+  e.tradeCommitted = false;  // changing the offer resets commitment (both sides re-check)
+  Entity* other = find(e.tradeWith);
+  if (other != nullptr) other->tradeCommitted = false;
+  for (auto& [id, q] : e.tradeOfferItems) {
+    if (id == itemId) {
+      q = qty;
+      return;
+    }
+  }
+  e.tradeOfferItems.push_back({itemId, qty});
+  // directed notice to the partner (visible offer mirror until S8 window UI)
+  if (other != nullptr) {
+    const content::ItemDef* d = content::findItem(itemId);
+    WorldEvent ev;
+    ev.aboutId = other->id;
+    ev.chatCh = 255;
+    ev.chatText = e.name + " offers " + std::to_string(qty) + "x " +
+                  std::string(d != nullptr ? d->name : "item") +
+                  ". [P commit / X cancel]";
+    events_.push_back(std::move(ev));
+  }
+}
+
+void World::tradeOfferGold(Entity& e, std::uint32_t gold) {
+  if (e.tradeWith == 0 || e.dead) return;
+  e.tradeCommitted = false;
+  Entity* other = find(e.tradeWith);
+  if (other != nullptr) {
+    other->tradeCommitted = false;
+    WorldEvent ev;
+    ev.aboutId = other->id;
+    ev.chatCh = 255;
+    ev.chatText = e.name + " offers " + std::to_string(gold) + "g. [P commit / X cancel]";
+    events_.push_back(std::move(ev));
+  }
+  e.tradeOfferGold = gold;
+}
+
+void World::tradeCommit(Entity& e) {
+  Entity* b = find(e.tradeWith);
+  if (b == nullptr || e.dead) {
+    if (e.tradeWith != 0) tradeCancel(e, "partner gone");
+    return;
+  }
+  e.tradeCommitted = true;
+  if (!b->tradeCommitted) return;  // wait for the handshake
+  // Validate both offers atomically: ownership, quantities, gold, distance.
+  auto satisfiable = [](const Entity& x) {
+    if (x.gold < x.tradeOfferGold) return false;
+    for (const auto& [itemId, qty] : x.tradeOfferItems) {
+      std::uint32_t owned = 0;
+      for (const InvSlot& sl : x.inv) {
+        if (sl.itemId == itemId) owned += sl.qty;
+      }
+      if (owned < qty) return false;
+    }
+    return true;
+  };
+  if (!satisfiable(e) || !satisfiable(*b)) {
+    tradeCancel(e, "offer exceeded holdings");
+    return;
+  }
+  if (chebyshev(e.walker.tile(), b->walker.tile()) > 3) {
+    tradeCancel(e, "too far");
+    return;
+  }
+  // concrete swap via addItem (stack-aware) after deduct
+  auto deduce = [this](Entity& x, Entity& y) {
+    for (const auto& [itemId, qty] : x.tradeOfferItems) {
+      std::uint16_t remaining = qty;
+      for (size_t i = 0; i < x.inv.size() && remaining > 0;) {
+        InvSlot& sl = x.inv[i];
+        if (sl.itemId != itemId || sl.equipped) {
+          ++i;
+          continue;
+        }
+        const std::uint16_t take = sl.qty < remaining ? sl.qty : remaining;
+        sl.qty = static_cast<std::uint16_t>(sl.qty - take);
+        remaining = static_cast<std::uint16_t>(remaining - take);
+        addItem(y, itemId, take);
+        if (sl.qty == 0) {
+          x.inv.erase(x.inv.begin() + static_cast<long>(i));
+        } else {
+          ++i;
+        }
+      }
+    }
+    x.gold -= x.tradeOfferGold;
+    y.gold += x.tradeOfferGold;
+  };
+  deduce(e, *b);
+  deduce(*b, e);
+  for (Entity* x : {&e, b}) {
+    x->tradeWith = 0;
+    x->tradeOfferItems.clear();
+    x->tradeOfferGold = 0;
+    x->tradeCommitted = false;
+    WorldEvent ev;
+    ev.aboutId = x->id;
+    ev.statsChanged = true;
+    ev.invChanged = true;
+    ev.chatCh = 255;
+    ev.chatText = "trade completed.";
+    events_.push_back(std::move(ev));
+  }
+}
+
+// ---- combat -------------------------------------------------------------
+
+void World::trySwing(Entity& att, Entity& def) {
+  const sim::TilePos a = att.walker.tile();
+  const sim::TilePos b = def.walker.tile();
+  if (chebyshev(a, b) > 1) return;  // not adjacent
+  const sim::Tick cd = att.kind == EntityKind::kPlayer ? kPlayerAtkCdTicks
+                                                       : static_cast<sim::Tick>(att.atkCdTicks);
+  if (tick_ - att.lastSwingTick < cd) return;
+  att.lastSwingTick = tick_;
+
+  // ACC/EVD: GDD ACC=2*DEX(+gear), EVD=DEX(+gear). Gear lands in T-021.
+  int acc, evd, adex;
+  std::uint32_t base, ddef;
+  if (att.kind == EntityKind::kPlayer) {
+    acc = 2 * att.dex;
+    adex = att.dex;
+    base = equippedWeaponDmg(att) + att.swordSkill / 20;  // Soma: +1 per 20 skill
+  } else {
+    const content::MobDef* md = content::findMob(att.mobId);
+    acc = 2 * att.dex;
+    adex = att.dex;
+    base = md != nullptr ? md->dmg : 4;
+  }
+  if (def.kind == EntityKind::kPlayer) {
+    evd = def.dex;
+    ddef = equippedArmorDef(def);
+  } else {
+    const content::MobDef* md = content::findMob(def.mobId);
+    evd = def.dex;
+    ddef = md != nullptr ? md->def : 0;
+  }
+
+  const sim::HitCheck hc = sim::rollHit(acc, evd, adex, rng_);
+  WorldEvent ev;
+  ev.attacker = att.id;
+  ev.target = def.id;
+  if (!hc.hit) {
+    ev.kind = 0;
+    events_.push_back(std::move(ev));
+    return;
+  }
+  std::uint32_t dmg = sim::rollDamage(base, att.kind == EntityKind::kPlayer ? att.str : 0,
+                                      ddef, hc.crit);
+  if (att.kind == EntityKind::kPlayer && def.kind == EntityKind::kPlayer) {
+    dmg = dmg * 65u / 100u;  // GDD PvP scalar 0.65
+    dmg = dmg < 1 ? 1 : dmg;
+  }
+  if (def.kind == EntityKind::kMob && def.firstHurtTick < 0) {
+    def.firstHurtTick = tick_;
+  }
+  def.hp = dmg >= def.hp ? 0 : def.hp - dmg;
+  def.lastHurtTick = tick_;
+  if (att.kind == EntityKind::kPlayer) {
+    ++att.swingLands;
+    const std::uint8_t newSkill =
+        static_cast<std::uint8_t>(std::min<std::uint32_t>(100, att.swingLands / kSkillLandsPerPoint));
+    if (newSkill != att.swordSkill) {
+      const bool pointsOfNote = newSkill % 20 == 0 || newSkill == 100;
+      att.swordSkill = newSkill;
+      if (pointsOfNote) {
+        WorldEvent wsk;
+        wsk.aboutId = att.id;
+        wsk.statsChanged = true;
+        wsk.chatCh = 255;
+        wsk.chatText = "weapon skill rises to " + std::to_string(newSkill) + ".";
+        events_.push_back(std::move(wsk));
+      }
+    }
+  }
+  // aura procs (T-047): tier III cleave / tier IV sunder / tier V lifesteal.
+  // sword-family encoding v1; the ceremony table kAuraTiers maps tiers to
+  // procId 1/2/3. All rolls draw from rng_ so replays bit-match.
+  if (att.kind == EntityKind::kPlayer) {
+    std::uint8_t aura = 0;
+    for (const auto& sl : att.inv) {
+      if (sl.equipped) {
+        const content::ItemDef* wd = content::findItem(sl.itemId);
+        if (wd != nullptr && wd->slot == 0) aura = sl.aura;
+        break;
+      }
+    }
+    if (aura >= 4 && rng_.chance(0.15)) {
+      // tier IV SUNDER: +35 flat, ignores nothing else (already hit)
+      const std::uint32_t extra = 35;
+      def.hp = extra >= def.hp ? 0 : def.hp - extra;
+      WorldEvent pe;
+      pe.attacker = att.id;
+      pe.target = def.id;
+      pe.kind = 7;
+      pe.amount = static_cast<std::uint16_t>(2000 + extra);  // flavor-coded
+      events_.push_back(std::move(pe));
+    }
+    if (aura >= 3 && aura != 5) {
+      // tier III WIDOW'S EDGE: cleave up to 2 extra mobs in reach of the
+      // target for the same rolled damage (era rule: 100% hit)
+      int extra = 0;
+      const sim::TilePos bt = def.walker.tile();
+      const std::uint32_t defId = def.id;
+      const std::uint16_t zid = def.zoneId;
+      std::vector<std::uint32_t> cleaveIds;  // ids only; kills deferred
+      for (const auto& other : entities_) {
+        if (extra >= 2) break;
+        if (other.id == defId || other.id == att.id) continue;
+        if (other.kind != EntityKind::kMob || other.dead) continue;
+        if (content::wireIsFurniture(other.wireKind)) continue;
+        if (other.zoneId != zid) continue;
+        if (chebyshev(other.walker.tile(), bt) > 2) continue;
+        cleaveIds.push_back(other.id);
+        ++extra;
+      }
+      for (const std::uint32_t cid : cleaveIds) {
+        Entity* cv = find(cid);
+        if (cv == nullptr || cv->dead) continue;
+        cv->hp = dmg >= cv->hp ? 0 : cv->hp - dmg;
+        cv->lastHurtTick = tick_;
+        WorldEvent ce;
+        ce.attacker = att.id;
+        ce.target = cid;
+        ce.kind = 7;
+        ce.amount = static_cast<std::uint16_t>(1000 + (dmg > 900 ? 900 : dmg));
+        events_.push_back(std::move(ce));
+        if (cv->hp == 0) {
+          if (cv->firstHurtTick < 0) cv->firstHurtTick = tick_;
+          MobKillStat& ks = killStats[cv->mobId];
+          const double ttk = static_cast<double>(tick_ - cv->firstHurtTick);
+          ks.emaTtkTicks = ks.kills == 0 ? ttk : 0.85 * ks.emaTtkTicks + 0.15 * ttk;
+          ++ks.kills;
+          pendingCleaveKills_.push_back(cid);  // killMob at end (deque safety)
+          pendingCleaveAttacker_ = att.id;
+          pendingCleaveDmg_ = ev.amount;
+        } else if (cv->attackTarget == 0) {
+          cv->attackTarget = att.id;  // cleaving wakes the pack
+        }
+      }
+    }
+    if (aura >= 5 && rng_.chance(0.25)) {
+      // tier V GRAFT: steal 20% of dealt damage as health
+      const std::uint32_t heal = dmg / 5 + 1;
+      const std::uint32_t before = att.hp;
+      att.hp = att.hp + heal > att.hpMax ? att.hpMax : att.hp + heal;
+      if (att.hp != before) {
+        WorldEvent le;
+        le.attacker = att.id;
+        le.target = att.id;
+        le.kind = 7;
+        le.amount = static_cast<std::uint16_t>(3000 + (att.hp - before));
+        events_.push_back(std::move(le));
+      }
+    }
+  }
+  // retaliation: passive mobs fight back when struck
+  if (def.kind == EntityKind::kMob && def.attackTarget == 0 && !def.dead) {
+    def.attackTarget = att.id;
+  }
+  ev.kind = hc.crit ? 2 : 1;
+  ev.amount = static_cast<std::uint16_t>(dmg > 65535 ? 65535 : dmg);
+  events_.push_back(ev);
+
+  if (def.hp == 0) {
+    // balancer (T-031): kills + TTK EMA per mob kind
+    if (def.firstHurtTick >= 0) {
+      MobKillStat& ks = killStats[def.mobId];
+      const double ttk = static_cast<double>(tick_ - def.firstHurtTick);
+      ks.emaTtkTicks = ks.kills == 0 ? ttk : 0.85 * ks.emaTtkTicks + 0.15 * ttk;
+      ++ks.kills;
+    }
+    const std::string victimName = def.name;  // killMob() despawns (frees) it
+    const std::uint32_t victimId = def.id;
+    const std::string killerName =
+        att.kind == EntityKind::kPlayer ? att.name : ("a " + att.name);
+    WorldEvent kill;
+    kill.attacker = att.id;
+    kill.target = victimId;
+    kill.kind = 3;
+    kill.amount = ev.amount;
+    if (def.kind == EntityKind::kMob) {
+      killMob(def, att.kind == EntityKind::kPlayer ? &att : nullptr);
+      if (att.kind == EntityKind::kPlayer) {
+        kill.chatCh = 3;
+        kill.chatText = killerName + " has slain a " + victimName + ".";
+      }
+    } else {
+      kill.chatCh = 3;
+      kill.chatText = victimName + " was slain by " + killerName + ".";
+      killPlayer(def, &att);
+    }
+    events_.push_back(std::move(kill));
+  }
+
+  // deferred cleave kills (T-047): entities_ is a deque; references taken here
+  // are fresh post-primary-kill lookups.
+  for (const std::uint32_t ck : pendingCleaveKills_) {
+    Entity* cv = find(ck);
+    Entity* killer = find(pendingCleaveAttacker_);
+    if (cv == nullptr || cv->hp > 0) continue;
+    WorldEvent kil;
+    kil.attacker = pendingCleaveAttacker_;
+    kil.target = ck;
+    kil.kind = 3;
+    kil.amount = pendingCleaveDmg_;
+    if (cv->kind == EntityKind::kMob) {
+      const std::string vn = cv->name;
+      killMob(*cv, killer != nullptr && killer->kind == EntityKind::kPlayer ? killer : nullptr);
+      if (killer != nullptr && killer->kind == EntityKind::kPlayer) {
+        kil.chatCh = 3;
+        kil.chatText = killer->name + " has slain a " + vn + ".";
+      }
+      events_.push_back(std::move(kil));
+    }
+  }
+  pendingCleaveKills_.clear();
+  pendingCleaveAttacker_ = 0;
+  pendingCleaveDmg_ = 0;
+}
+
+void World::killMob(Entity& mob, Entity* killer) {
+  if (killer != nullptr && killer->kind == EntityKind::kPlayer) {
+    awardXp(*killer, mob.xpValue);
+    const content::MobDef* md = content::findMob(mob.mobId);
+    if (md != nullptr) {
+      // loot roll (junk tier for now; gear tables land with affixes in P3)
+      if (md->lootItemId != 0 &&
+          rng_.range(1, 100) <= static_cast<std::int64_t>(md->lootChancePct)) {
+        const content::ItemDef* item = content::findItem(md->lootItemId);
+        if (item != nullptr && addItem(*killer, md->lootItemId, 1)) {
+          WorldEvent ev;
+          ev.aboutId = killer->id;
+          ev.invChanged = true;
+          ev.chatCh = 255;
+          ev.chatText = std::string("looted 1x ") + item->name + ".";
+          events_.push_back(std::move(ev));
+        }
+      }
+      if (md->goldHi >= md->goldLo) {
+        const std::uint32_t g =
+            md->goldLo + static_cast<std::uint32_t>(rng_.range(
+                             0, static_cast<std::int64_t>(md->goldHi) -
+                                    static_cast<std::int64_t>(md->goldLo)));
+        killer->gold += (killer->karma < 0) ? g * 115u / 100u : g;  // bad moral: richer drops
+        WorldEvent ev2;
+        ev2.aboutId = killer->id;
+        ev2.statsChanged = true;
+        events_.push_back(std::move(ev2));
+      }
+    }
+  }
+  // schedule the spawner refill (respawn gap = def.respawnTicks)
+  Zone& mz = zoneOf(mob);
+  if (mob.spawnerIdx < mz.spawners.size()) {
+    SpawnerLive& sl = mz.spawners[mob.spawnerIdx];
+    sl.respawnReadyAt = tick_ + static_cast<sim::Tick>(sl.def.respawnTicks);
+  }
+  const std::uint32_t mobEntId = mob.id;
+  for (auto& e : entities_) {
+    if (e.attackTarget == mobEntId) e.attackTarget = 0;  // stop stabbing a corpse
+  }
+  despawn(mobEntId);
+}
+
+void World::killPlayer(Entity& victim, Entity* /*killer*/) {
+  victim.dead = true;
+  victim.attackTarget = 0;
+  victim.path.clear();
+  victim.hp = 0;
+  victim.respawnAt = tick_ + kPlayerRespawnTicks;
+  for (auto& e : entities_) {
+    if (e.attackTarget == victim.id) e.attackTarget = 0;
+  }
+  // GDD: XP debt 10% of bar at L1 rising to 25% at L25; de-level at 0 XP.
+  const std::uint32_t bar = sim::xpNext(victim.level);
+  if (bar > 0 || victim.level > 1) {
+    const std::uint32_t pct = 10u + (static_cast<std::uint32_t>(victim.level) - 1) * 15u / 24u;
+    const std::uint32_t refBar = bar > 0 ? bar : sim::xpNext(24);
+    std::int64_t xpv = static_cast<std::int64_t>(victim.xp) -
+                       static_cast<std::int64_t>(refBar * pct / 100u);
+    bool deleveled = false;
+    while (xpv < 0 && victim.level > 1) {
+      --victim.level;
+      xpv += sim::xpNext(victim.level);
+      deleveled = true;
+    }
+    if (xpv < 0) xpv = 0;
+    victim.xp = static_cast<std::uint32_t>(xpv);
+    victim.hpMax = recomputeHpMax(victim);
+    WorldEvent ev;
+    ev.aboutId = victim.id;
+    ev.statsChanged = true;
+    ev.chatCh = 255;
+    ev.chatText = deleveled
+                      ? "the debt breaks you: de-level to " + std::to_string(victim.level) + "."
+                      : "death debt: -" +
+                            std::to_string(refBar * pct / 100u) + " XP.";
+    events_.push_back(std::move(ev));
+  }
+  // S7: corpse marker entity for Cultist Resurrect anchor (P3).
+}
+
+void World::awardXp(Entity& player, std::uint32_t amount) {
+  if (player.level >= sim::kLevelCap) return;
+  if (player.karma > 0) amount = amount * 115u / 100u;  // moral split (T-046)
+  player.xp += amount;
+  while (player.level < sim::kLevelCap && player.xp >= sim::xpNext(player.level)) {
+    player.xp -= sim::xpNext(player.level);
+    ++player.level;
+    player.statPoints += sim::kStatPointsPerLevel;
+    const std::uint32_t newMax = recomputeHpMax(player);
+    player.hpMax = newMax;
+    player.hp = newMax;  // level-up full heal (era: ding restores)
+    WorldEvent ding;
+    ding.aboutId = player.id;
+    ding.statsChanged = true;
+    ding.chatCh = 2;
+    ding.chatText = player.name + " reaches level " + std::to_string(player.level) + ".";
+    events_.push_back(std::move(ding));
+  }
+  WorldEvent ev;
+  ev.aboutId = player.id;
+  ev.statsChanged = true;
+  events_.push_back(std::move(ev));
+}
+
+void World::mobThink(Entity& mob) {
+  if (mob.dead || content::wireIsFurniture(mob.wireKind)) return;  // vendors stand eternally
+  // leash: too far from anchor -> drop target and path home, no re-aggro
+  const sim::TilePos p = mob.walker.tile();
+  const bool leashed = chebyshev(p, mob.anchor) > mob.leashRadius;
+  if (leashed) {
+    mob.attackTarget = 0;
+    if (mob.path.empty() && !mob.walker.moving && p != mob.anchor) {
+      const sim::PathResult res = sim::findPath(zoneOf(mob).grid, p, mob.anchor);
+      if (res.found) mob.path.assign(res.tiles.begin(), res.tiles.end());
+    }
+    return;
+  }
+  if (mob.attackTarget == 0 && p == mob.anchor && mob.hp < mob.hpMax) {
+    // resting heals 2%/tick up at the den (Lineage-style soft reset)
+    mob.hp += std::max<std::uint32_t>(1, mob.hpMax / 50);
+    if (mob.hp > mob.hpMax) mob.hp = mob.hpMax;
+  }
+  if (mob.attackTarget == 0 && p == mob.anchor) {
+    mob.firstHurtTick = -1;  // metric hygiene: TTK window starts on re-aggression
+  }
+
+  // player attacked me? handled in trySwing. Acquire aggro:
+  if (mob.attackTarget == 0 && mob.aggroRadius > 0 &&
+      mob.id % kAggroThinkPeriod == static_cast<std::uint32_t>(tick_ % kAggroThinkPeriod)) {
+    std::vector<Entity*> near = playersNear(zoneOf(mob), p.x, p.y, mob.aggroRadius);
+    if (!near.empty()) mob.attackTarget = near[0]->id;  // deterministic: spatial order
+  }
+
+  if (mob.attackTarget != 0) {
+    Entity* target = find(mob.attackTarget);
+    if (target == nullptr || target->dead ||
+        chebyshev(target->walker.tile(), mob.anchor) > mob.leashRadius) {
+      mob.attackTarget = 0;
+      return;
+    }
+    const int d = chebyshev(p, target->walker.tile());
+    if (d <= 1) {
+      mob.path.clear();
+      trySwing(mob, *target);
+    } else if (mob.path.empty() &&
+               mob.id % kAggroThinkPeriod == static_cast<std::uint32_t>(tick_ % kAggroThinkPeriod)) {
+      if (target->zoneId != mob.zoneId) { mob.attackTarget = 0; return; }
+      const sim::TilePos start = mob.walker.moving ? mob.walker.target : p;
+      const sim::PathResult res = sim::findPath(zoneOf(mob).grid, start, target->walker.tile());
+      if (res.found) mob.path.assign(res.tiles.begin(), res.tiles.end());
+    }
+    return;
+  }
+
+  // idle wander (small chance per think slice)
+  if (!mob.walker.moving && mob.path.empty() &&
+      mob.id % kAggroThinkPeriod == static_cast<std::uint32_t>(tick_ % kAggroThinkPeriod) &&
+      rng_.chance(0.25)) {
+    const int dx = static_cast<int>(rng_.range(-2, 2));
+    const int dy = static_cast<int>(rng_.range(-2, 2));
+    const sim::TilePos goal{p.x + dx, p.y + dy};
+    const Zone& wz = zoneOf(mob);
+    if (wz.map.inBounds(goal.x, goal.y) && !wz.map.isBlocked(goal.x, goal.y) &&
+        chebyshev(goal, mob.anchor) <= mob.wanderRadius) {
+      const sim::PathResult res = sim::findPath(wz.grid, mob.walker.tile(), goal);
+      if (res.found) mob.path.assign(res.tiles.begin(), res.tiles.end());
+    }
+  }
+}
+
+void World::respawnTick() {
+  // mob refill (one per spawner per check), zones independent
+  for (auto& [zid, zone] : zones_) {
+    for (size_t i = 0; i < zone.spawners.size(); ++i) {
+      SpawnerLive& sl = zone.spawners[i];
+      if (tick_ < sl.respawnReadyAt) continue;
+      std::uint32_t alive = 0;
+      for (const auto& e : entities_) {
+        if (e.kind == EntityKind::kMob && e.zoneId == zid && e.spawnerIdx == i) ++alive;
+      }
+      if (alive >= sl.def.maxAlive) continue;
+      const content::MobDef* def = content::findMob(sl.def.mobId);
+      if (def == nullptr) continue;
+      sl.respawnReadyAt = tick_ + static_cast<sim::Tick>(sl.def.respawnTicks);
+      for (int tries = 0; tries < 20; ++tries) {
+        const int x = sl.def.x + static_cast<int>(rng_.range(0, sl.def.w - 1));
+        const int y = sl.def.y + static_cast<int>(rng_.range(0, sl.def.h - 1));
+        if (zone.map.inBounds(x, y) && !zone.map.isBlocked(x, y)) {
+          spawnMob(*def, sim::TilePos{x, y}, i, zid);
+          break;
+        }
+      }
+    }
+  }
+  // player respawns
+  for (auto& e : entities_) {
+    if (e.kind == EntityKind::kPlayer && e.dead && tick_ >= e.respawnAt) {
+      e.dead = false;
+      e.hp = e.hpMax;
+      // death always sends you home to the town bindstone (zone 1): the
+      // crypt bleeding you in circles inside its own dark is a bad joke era
+      // design doesn't need (Phase 3 will get real bindstone choice)
+      if (e.zoneId != 1) {
+        Zone& cz = zones_.at(e.zoneId);
+        cz.spatial.remove(e.id);
+        e.zoneId = 1;
+        Zone& home = zones_.at(1);
+        e.walker.place(home.spawnPoint);
+        home.spatial.insert(e.id, home.spawnPoint.x, home.spawnPoint.y);
+        e.lastPortalTick = tick_;
+        WorldEvent zev;
+        zev.aboutId = e.id;
+        zev.zoneChanged = true;
+        events_.push_back(std::move(zev));
+      } else {
+        Zone& rz = zones_.at(1);
+        e.walker.place(rz.spawnPoint);
+        rz.spatial.move(e.id, rz.spawnPoint.x, rz.spawnPoint.y);
+      }
+      WorldEvent ev;
+      ev.aboutId = e.id;
+      ev.statsChanged = true;
+      ev.chatCh = 2;
+      ev.chatText = e.name + " crawls back from the brink.";
+      events_.push_back(std::move(ev));
+    }
+  }
+}
+
+void World::tick() {
+  ++tick_;
+  events_.clear();
+
+  for (auto& e : entities_) {
+    const sim::TilePos before = e.walker.tile();
+    if (!e.dead) e.walker.step();
+    const sim::TilePos after = e.walker.tile();
+    if (after != before) {
+      zones_.at(e.zoneId).spatial.move(e.id, after.x, after.y);
+    }
+    // portal fire: on arrival/settled (not every tick: world-transfer is chunky)
+    if (e.kind == EntityKind::kPlayer && !e.dead && !e.walker.moving && e.path.empty()) {
+      checkPortals(e);
+    }
+  }
+
+  for (auto it = entities_.begin(); it != entities_.end(); ++it) {
+    Entity& e = *it;
+    // trade auto-cancel (T-029): partner gone/far/dead
+    if (e.tradeWith != 0) {
+      Entity* b = find(e.tradeWith);
+      if (e.dead || b == nullptr || b->dead ||
+          chebyshev(e.walker.tile(), b->walker.tile()) > 3) {
+        tradeCancel(e, "partner out of reach");
+      }
+    }
+  }
+
+  for (auto& e : entities_) {
+    if (e.walker.moving || e.path.empty() || e.dead) continue;
+    const sim::TilePos cur = e.walker.tile();
+    while (!e.path.empty()) {
+      const sim::TilePos t = e.path.front();
+      if (t == cur) {
+        e.path.pop_front();
+        continue;
+      }
+      if (e.walker.beginStep(zoneOf(e).grid, t)) {
+        e.path.pop_front();
+      } else {
+        e.path.clear();
+      }
+      break;
+    }
+  }
+
+  // mob brains + mutual swings
+  const size_t n = entities_.size();  // spawns during tick are deferred harmlessly
+  for (size_t i = 0; i < n && i < entities_.size(); ++i) {
+    Entity& e = entities_[i];
+    if (e.kind == EntityKind::kMob) mobThink(e);
+  }
+
+  // player attack intents
+  for (size_t i = 0; i < entities_.size(); ++i) {
+    Entity& e = entities_[i];
+    if (e.kind != EntityKind::kPlayer || e.attackTarget == 0 || e.dead) continue;
+    Entity* target = find(e.attackTarget);
+    if (target == nullptr || target->dead) {
+      e.attackTarget = 0;
+      continue;
+    }
+    const sim::TilePos p = e.walker.tile();
+    const int d = chebyshev(p, target->walker.tile());
+    if (d <= 1) {
+      e.path.clear();
+      trySwing(e, *target);
+    } else if (d <= 12 && tick_ - e.lastChaseTick >= 8) {
+      // era-sticky pursuit: re-path the moving mark (rate-limited)
+      e.lastChaseTick = tick_;
+      const sim::TilePos start = e.walker.moving ? e.walker.target : p;
+      const sim::PathResult res = sim::findPath(zoneOf(e).grid, start, target->walker.tile());
+      if (res.found) {
+        // drop any prefix tiles we'd immediately step out of
+        e.path.assign(res.tiles.begin(), res.tiles.end());
+      }
+    } else if (d > 12) {
+      e.attackTarget = 0;  // gave up the chase
+    }
+  }
+
+  // out-of-combat player regen (Blood Wed aura II accelerates: +N% hpMax / period)
+  for (auto& e : entities_) {
+    if (e.kind != EntityKind::kPlayer || e.dead || e.hp >= e.hpMax) continue;
+    if (tick_ - e.lastHurtTick > kOocRegenDelay && tick_ % kOocRegenPeriod == 0) {
+      ++e.hp;
+      std::uint8_t aura = 0;
+      for (const InvSlot& sl : e.inv) {
+        if (sl.equipped && sl.aura >= 2) aura = sl.aura;
+      }
+      if (aura >= 2) {
+        if (const content::AuraTier* t = content::findAuraTier(aura);
+            t != nullptr && t->regenPct60t > 0) {
+          e.hp += e.hpMax * t->regenPct60t / 100u + 1;
+          if (e.hp > e.hpMax) e.hp = e.hpMax;
+        }
+      }
+    }
+  }
+
+  respawnTick();
+}
+
+// ---- portals & zone transfer (T-036) --------------------------------------
+
+bool World::transferToZone(Entity& e, std::uint16_t mapId, sim::TilePos at) {
+  auto it = zones_.find(mapId);
+  if (it == zones_.end() || e.kind != EntityKind::kPlayer || e.dead) return false;
+  Zone& to = it->second;
+  sim::TilePos pos = at;
+  if (!to.map.inBounds(pos.x, pos.y) || to.map.isBlocked(pos.x, pos.y)) {
+    pos = to.spawnPoint;
+  }
+  zoneOf(e).spatial.remove(e.id);
+  e.zoneId = mapId;
+  e.walker.place(pos);
+  e.path.clear();
+  e.attackTarget = 0;
+  to.spatial.insert(e.id, pos.x, pos.y);
+  e.lastPortalTick = tick_;
+  WorldEvent ev;
+  ev.aboutId = e.id;
+  ev.zoneChanged = true;
+  ev.chatCh = 255;
+  ev.chatText = "the air changes - another hall answers your steps.";
+  events_.push_back(std::move(ev));
+  return true;
+}
+
+bool World::checkPortals(Entity& e) {
+  if (e.kind != EntityKind::kPlayer || e.dead || e.walker.moving) return false;
+  if (tick_ - e.lastPortalTick < 40) return false;  // just arrived elsewhere
+  const sim::TilePos p = e.walker.tile();
+  const sim::Map& m = mapOf(e);
+  for (const sim::PortalDef& pd : m.portals) {
+    if (p.x >= pd.x && p.x <  pd.x + std::max(1, pd.w) &&
+        p.y >= pd.y && p.y <  pd.y + std::max(1, pd.h)) {
+      return transferToZone(e, static_cast<std::uint16_t>(pd.targetMapId),
+                            sim::TilePos{pd.targetX, pd.targetY});
+    }
+  }
+  return false;
+}
+
+std::vector<std::uint32_t> World::queryAoi(std::uint16_t zoneId, int x, int y,
+                                           int radiusTiles) const {
+  const auto it = zones_.find(zoneId);
+  if (it == zones_.end()) return {};
+  const auto raw = it->second.spatial.query(x - radiusTiles, y - radiusTiles,
+                                            x + radiusTiles, y + radiusTiles);
+  std::vector<std::uint32_t> out;
+  out.reserve(raw.size());
+  for (const std::uint32_t id : raw) {
+    const Entity* e = find(id);
+    if (e == nullptr) continue;
+    const sim::TilePos p = e->walker.tile();
+    const int dx = std::abs(p.x - x);
+    const int dy = std::abs(p.y - y);
+    if (dx <= radiusTiles && dy <= radiusTiles) out.push_back(id);
+  }
+  return out;
+}
+
+std::uint64_t World::worldHash() const {
+  std::uint64_t h = 1469598103934665603ULL;
+  auto mix = [&h](std::uint64_t v) {
+    for (int i = 0; i < 8; ++i) {
+      h ^= static_cast<std::uint8_t>(v >> (8 * i));
+      h *= 1099511628211ULL;
+    }
+  };
+  for (const auto& e : entities_) {
+    mix(e.id);
+    mix(e.zoneId);
+    mix(static_cast<std::uint32_t>(e.walker.x));
+    mix(static_cast<std::uint32_t>(e.walker.y));
+    mix(e.hp);
+  }
+  return h;
+}
+
+}  // namespace bh::server
