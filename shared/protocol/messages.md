@@ -176,6 +176,7 @@ u32 hp
 u32 hpMax
 u8 level
 string name
+u8 karmaBand
 ```
 
 ```proto

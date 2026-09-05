@@ -257,6 +257,7 @@ void EntitySpawn::serialize(Writer& w) const {
   w.u32(hpMax);
   w.u8(level);
   w.str(name);
+  w.u8(karmaBand);
 }
 
 bool EntitySpawn::deserialize(Reader r) {
@@ -269,6 +270,7 @@ bool EntitySpawn::deserialize(Reader r) {
   if (!r.u32(hpMax)) return false;
   if (!r.u8(level)) return false;
   if (!r.str(name)) return false;
+  if (!r.u8(karmaBand)) return false;
   return true;
 }
 

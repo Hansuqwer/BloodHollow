@@ -226,6 +226,13 @@ void World::initialMobSpawns(Zone& zone, std::uint16_t zoneId) {
 }
 
 void World::despawn(std::uint32_t id) {
+  if (Entity* e = find(id)) {
+    if (e->duelWith != 0) {  // T-056: logout/forfeit-by-absence frees the mark
+      if (Entity* t = find(e->duelWith)) { t->duelWith = 0; t->duelUntil = -1; }
+      e->duelWith = 0;
+      e->duelUntil = -1;
+    }
+  }
   for (size_t i = 0; i < entities_.size(); ++i) {
     if (entities_[i].id == id) {
       Entity& e = entities_[i];
@@ -668,6 +675,12 @@ void World::tryFirebolt(Entity& e, std::uint32_t targetId) {
 
 bool World::vendorBuy(Entity& e, std::uint32_t itemId, std::uint16_t qty) {
   if (e.kind != EntityKind::kPlayer || e.dead || qty == 0 || qty > 16) return false;
+  if (karmaBandOf(e.karma) == 2) {  // T-056: red names buy nothing from Marta
+    WorldEvent sneer; sneer.aboutId = e.id; sneer.chatCh = 2;
+    sneer.chatText = "Marta wants no red-stained coin.";
+    events_.push_back(std::move(sneer));
+    return false;
+  }
   bool stocked = false;
   for (const std::uint32_t id : content::kVendorStock) {
     if (id == itemId) stocked = true;
@@ -707,6 +720,12 @@ bool World::vendorBuy(Entity& e, std::uint32_t itemId, std::uint16_t qty) {
 
 std::uint32_t World::vendorSellJunk(Entity& e) {
   if (e.kind != EntityKind::kPlayer || e.dead) return 0;
+  if (karmaBandOf(e.karma) == 2) {  // T-056 refusal (pawn lane)
+    WorldEvent sneer; sneer.aboutId = e.id; sneer.chatCh = 2;
+    sneer.chatText = "Marta waves you off. Red hands, red prices: none.";
+    events_.push_back(std::move(sneer));
+    return 0;
+  }
   bool nearVendor = false;
   for (const auto& v : entities_) {
     if (v.wireKind == content::kWireKindVendor && chebyshev(v.walker.tile(), e.walker.tile()) <= 3) {
@@ -897,7 +916,7 @@ bool World::tryAnvil(Entity& e, std::uint8_t tier) {
   ev.statsChanged = true;
   if (success) {
     wslot->aura = tier;
-    e.karma += kKarmaAnvilOk;  // the guild remembers its tithes (T-046)
+    bumpKarma(e, kKarmaAnvilOk);  // the guild remembers its tithes (T-046)
     ev.chatCh = 255;
     ev.chatText = "the Anvil speaks. tier " + std::to_string(tier) + " rests in the steel.";
     std::printf("[aura] %s tier=%u res=ok%s\n", e.name.c_str(), static_cast<unsigned>(tier),
@@ -909,7 +928,7 @@ bool World::tryAnvil(Entity& e, std::uint8_t tier) {
       wslot->qty = 0;
       wslot->equipped = false;
       wslot->aura = 0;
-      e.karma += kKarmaAnvilDestroy;  // drowned steel stains the soul
+      bumpKarma(e, kKarmaAnvilDestroy);  // drowned steel stains the soul
       ev.chatCh = 0;  // broadcast-worthy ceremony failure
       ev.chatText = e.name + "'s steel drowned at the Anvil.";
       std::printf("[aura] %s tier=%u res=destroyed\n", e.name.c_str(), static_cast<unsigned>(tier));
@@ -1374,6 +1393,11 @@ bool World::partyAccept(Entity& e) {
   Party* p = nullptr;
   for (Party& q : parties_) if (q.id == inviter->partyId) { p = &q; break; }
   if (p == nullptr || static_cast<int>(p->members.size()) >= kPartyMaxMembers) return false;
+  if (e.duelWith != 0) {  // T-056: swearing into the circle ends hostilities
+    if (Entity* t = find(e.duelWith)) { t->duelWith = 0; t->duelUntil = -1; }
+    e.duelWith = 0;
+    e.duelUntil = -1;
+  }
   p->members.push_back(e.id);
   e.partyId = p->id;
   emitPartyMsg(p->id, e.id, e.name + " joins the party.");
@@ -1474,6 +1498,10 @@ void World::killMob(Entity& mob, Entity* killer) {
         events_.push_back(std::move(ev2));
       }
     }
+    if (md != nullptr && killer != nullptr &&
+        killer->kind == EntityKind::kPlayer && md->level <= killer->level) {
+      bumpKarma(*killer, 1);  // whitening (T-056): farm at-level, whiten
+    }
   }
   // schedule the spawner refill (respawn gap = def.respawnTicks)
   Zone& mz = zoneOf(mob);
@@ -1488,7 +1516,94 @@ void World::killMob(Entity& mob, Entity* killer) {
   despawn(mobEntId);
 }
 
-void World::killPlayer(Entity& victim, Entity* /*killer*/) {
+// ---- alignment: karma core (T-056) -----------------------------------------
+std::uint8_t World::karmaBandOf(std::int32_t karma) {
+  if (karma < 0) return 2;        // chaotic — red name
+  return karma > 500 ? 0 : 1;     // lawful / neutral
+}
+
+void World::bumpKarma(Entity& e, std::int32_t delta) {
+  if (e.kind != EntityKind::kPlayer || delta == 0) return;
+  const std::uint8_t before = karmaBandOf(e.karma);
+  std::int32_t next = static_cast<std::int32_t>(e.karma) + delta;
+  next = next > 1000 ? 1000 : next < -1000 ? -1000 : next;
+  e.karma = next;
+  const std::uint8_t after = karmaBandOf(e.karma);
+  // band crossing is a public event: panel flag + crowd line (T-057 wire)
+  if (after != before) {
+    WorldEvent ev;
+    ev.aboutId = e.id;
+    ev.statsChanged = true;
+    ev.bandChanged = true;   // server re-spawns the entity for AoI (red name)
+    ev.chatCh = 255;
+    ev.chatText = e.name + (after > before ? "'s soul whitens."
+                                           : "'s soul blackens.");
+    events_.push_back(std::move(ev));
+  }
+}
+
+bool World::duelChallenge(Entity& e, std::uint32_t targetId) {
+  Entity* t = find(targetId);
+  if (t == nullptr || t->kind != EntityKind::kPlayer || t->dead || e.dead ||
+      t->id == e.id || t->zoneId != e.zoneId ||
+      chebyshev(e.walker.tile(), t->walker.tile()) > 12) return false;
+  // accept: target already offered me a duel within the window
+  if (t->duelOfferTo == e.id && tick_ - t->duelOfferAt <= 400) {
+    t->duelOfferTo = 0;
+    e.duelWith = t->id;
+    t->duelWith = e.id;
+    e.duelUntil = tick_ + 12000;  // 10 min cap; usually ends at the kill
+    t->duelUntil = e.duelUntil;
+    WorldEvent txt;
+    txt.chatCh = 3;
+    txt.chatText = e.name + " duels " + t->name + ". No law watches.";
+    events_.push_back(std::move(txt));
+    return true;
+  }
+  // otherwise: this is the offer
+  e.duelOfferTo = targetId;
+  e.duelOfferAt = tick_;
+  WorldEvent txt;
+  txt.aboutId = e.id;
+  txt.chatCh = 3;
+  txt.chatText = e.name + " calls out " + t->name + " (/duel back to accept).";
+  events_.push_back(std::move(txt));
+  return true;
+}
+
+bool World::duelForfeit(Entity& e) {
+  Entity* t = e.duelWith != 0 ? find(e.duelWith) : nullptr;
+  if (t == nullptr) {  // no duel: a stale offer can still be withdrawn
+    if (e.duelOfferTo == 0) return false;
+    e.duelOfferTo = 0;
+    return true;
+  }
+  t->duelWith = 0;
+  t->duelUntil = -1;
+  e.duelWith = 0;
+  e.duelUntil = -1;
+  WorldEvent txt;
+  txt.chatCh = 3;
+  txt.chatText = e.name + " forfeits the duel.";
+  events_.push_back(std::move(txt));
+  return true;
+}
+
+// chaotic bindstone: town-edge tile; deterministic walkable search, bindstone
+// fallback when the map gives us nothing (era: the pit is a fiction address,
+// not a map feature yet — T-063 authors the real gallows).
+sim::TilePos World::gallowsTile(std::uint16_t zoneId) const {
+  const Zone& z = zones_.at(zoneId);
+  static constexpr int ring[][2] = {{2,0},{0,2},{-2,0},{0,-2},{2,2},{-2,-2},
+                                    {2,-2},{-2,2},{3,0},{0,3},{-3,0},{0,-3}};
+  for (const auto& o : ring) {
+    const sim::TilePos t{z.spawnPoint.x + o[0], z.spawnPoint.y + o[1]};
+    if (z.map.inBounds(t.x, t.y) && !z.map.isBlocked(t.x, t.y)) return t;
+  }
+  return z.spawnPoint;  // degenerate map: era says the square then
+}
+
+void World::killPlayer(Entity& victim, Entity* killer) {
   victim.dead = true;
   victim.attackTarget = 0;
   victim.path.clear();
@@ -1496,6 +1611,82 @@ void World::killPlayer(Entity& victim, Entity* /*killer*/) {
   victim.respawnAt = tick_ + kPlayerRespawnTicks;
   for (auto& e : entities_) {
     if (e.attackTarget == victim.id) e.attackTarget = 0;
+  }
+
+  // T-056 PK law: consensual duels carry no karma/debt/drops; unlawful kills
+  // of lawful/neutral stain the killer; chaotic victims are lawful prey.
+  const bool duel = killer != nullptr &&
+                    killer->kind == EntityKind::kPlayer &&
+                    killer->duelWith == victim.id && tick_ < killer->duelUntil &&
+                    victim.duelWith == killer->id;
+  if (duel) {
+    // end the duel with a standing victor
+    killer->duelWith = 0;
+    killer->duelUntil = -1;
+    victim.duelWith = 0;
+    victim.duelUntil = -1;
+    WorldEvent txt;
+    txt.chatCh = 3;
+    txt.chatText = "the duel is done — " + killer->name + " stands.";
+    events_.push_back(std::move(txt));
+    return;  // no XP debt below, no drops
+  }
+  if (killer != nullptr && killer->kind == EntityKind::kPlayer &&
+      victim.duelWith == 0 && karmaBandOf(victim.karma) != 2) {
+    const std::int32_t deficit =
+        killer->level > victim.level ? killer->level - victim.level : 0;
+    bumpKarma(*killer, -(300 + 20 * deficit));  // GDD §5 formula
+    WorldEvent txt;
+    txt.aboutId = killer->id;
+    txt.chatCh = 255;
+    txt.chatText = killer->name + "'s hands are red with " + victim.name +
+                   "'s blood (-" + std::to_string(300 + 20 * deficit) + " karma).";
+    events_.push_back(std::move(txt));
+  }
+  // duel partner walks away if the mob kills happen mid-duel (cleanup)
+  if (victim.duelWith != 0 && !duel) {
+    if (Entity* t = find(victim.duelWith)) { t->duelWith = 0; t->duelUntil = -1; }
+    victim.duelWith = 0;
+    victim.duelUntil = -1;
+  }
+
+  // T-056 chaotic death: the crowd picks the corpse (1-6 items + 15%/slot)
+  if (karmaBandOf(victim.karma) == 2) {
+    int dropped = 0;
+    // equipped slots: independent 15% rolls
+    for (size_t i = 0; i < victim.inv.size();) {
+      if (victim.inv[i].equipped && rng_.range(1, 100) <= 15) {
+        victim.inv.erase(victim.inv.begin() + static_cast<long>(i));
+        ++dropped;
+      } else {
+        ++i;
+      }
+    }
+    // non-equipped: 1..6 picks without replacement
+    std::vector<size_t> bag;
+    for (size_t i = 0; i < victim.inv.size(); ++i) bag.push_back(i);
+    const int want = static_cast<int>(rng_.range(1, 6));
+    for (int k = 0; k < want && !bag.empty(); ++k) {
+      const size_t pick = static_cast<size_t>(rng_.range(0, static_cast<std::int64_t>(bag.size() - 1)));
+      const size_t idx = bag[pick];
+      bag.erase(bag.begin() + static_cast<long>(pick));
+      victim.inv[idx].itemId = 0;  // tomb-empty slot; compact pass below
+      victim.inv[idx].qty = 0;
+      ++dropped;
+    }
+    // compact tomb-empties
+    for (size_t i = 0; i < victim.inv.size();) {
+      if (victim.inv[i].itemId == 0)
+        victim.inv.erase(victim.inv.begin() + static_cast<long>(i));
+      else ++i;
+    }
+    WorldEvent txt;
+    txt.aboutId = victim.id;
+    txt.chatCh = 255;
+    txt.invChanged = true;
+    txt.chatText = "the crowd picks the corpse: " + std::to_string(dropped) +
+                   " item(s) gone.";
+    events_.push_back(std::move(txt));
   }
   // GDD: XP debt 10% of bar at L1 rising to 25% at L25; de-level at 0 XP.
   const std::uint32_t bar = sim::xpNext(victim.level);
@@ -1528,7 +1719,10 @@ void World::killPlayer(Entity& victim, Entity* /*killer*/) {
 
 void World::awardXp(Entity& player, std::uint32_t amount) {
   if (player.level >= sim::kLevelCap) return;
-  if (player.karma > 0) amount = amount * 115u / 100u;  // moral split (T-046)
+  // moral split (T-046, threshold corrected to GDD §5 in T-056): only the
+  // LAWFUL band (>500) earns the +15% XP carrot; neutral gets nothing extra,
+  // chaotic eats gold not XP (gold boost site is the loot roll).
+  if (player.karma > 500) amount = amount * 115u / 100u;
   player.xp += amount;
   while (player.level < sim::kLevelCap && player.xp >= sim::xpNext(player.level)) {
     player.xp -= sim::xpNext(player.level);
@@ -1647,15 +1841,16 @@ void World::respawnTick() {
     if (e.kind == EntityKind::kPlayer && e.dead && tick_ >= e.respawnAt) {
       e.dead = false;
       e.hp = e.hpMax;
-      // death always sends you home to the town bindstone (zone 1): the
-      // crypt bleeding you in circles inside its own dark is a bad joke era
-      // design doesn't need (Phase 3 will get real bindstone choice)
+      // death binds at the town bindstone — unless the name is red: the
+      // gallows pit takes the chaotic (T-056, phase-3 bindstone rule).
+      const sim::TilePos home_ =
+          karmaBandOf(e.karma) == 2 ? gallowsTile(1) : zones_.at(1).spawnPoint;
       if (e.zoneId != 1) {
         Zone& cz = zones_.at(e.zoneId);
         cz.spatial.remove(e.id);
         e.zoneId = 1;
         Zone& home = zones_.at(1);
-        e.walker.place(home.spawnPoint);
+        e.walker.place(home_);
         home.spatial.insert(e.id, home.spawnPoint.x, home.spawnPoint.y);
         e.lastPortalTick = tick_;
         WorldEvent zev;
@@ -1664,8 +1859,8 @@ void World::respawnTick() {
         events_.push_back(std::move(zev));
       } else {
         Zone& rz = zones_.at(1);
-        e.walker.place(rz.spawnPoint);
-        rz.spatial.move(e.id, rz.spawnPoint.x, rz.spawnPoint.y);
+        e.walker.place(home_);
+        rz.spatial.move(e.id, home_.x, home_.y);
       }
       WorldEvent ev;
       ev.aboutId = e.id;
@@ -1759,6 +1954,12 @@ void World::tick() {
     }
   }
 
+  // alignment whitening (T-056): +1 karma per 3 600 ticks online
+  if (tick_ % 3600 == 0) {
+    for (auto& e : entities_)
+      if (e.kind == EntityKind::kPlayer && !e.dead) bumpKarma(e, 1);
+  }
+
   // mana regen: 1 MP / tick (100/min), always on — mana is the kit's
   // rhythm resource, not a second hp bar (GDD: MAG economy arrives w/ INT).
   for (auto& e : entities_) {
@@ -1797,6 +1998,11 @@ bool World::transferToZone(Entity& e, std::uint16_t mapId, sim::TilePos at) {
   sim::TilePos pos = at;
   if (!to.map.inBounds(pos.x, pos.y) || to.map.isBlocked(pos.x, pos.y)) {
     pos = to.spawnPoint;
+  }
+  if (e.duelWith != 0) {  // T-056: leaving the field ends the duel
+    if (Entity* t = find(e.duelWith)) { t->duelWith = 0; t->duelUntil = -1; }
+    e.duelWith = 0;
+    e.duelUntil = -1;
   }
   zoneOf(e).spatial.remove(e.id);
   e.zoneId = mapId;

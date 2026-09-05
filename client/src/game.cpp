@@ -695,9 +695,12 @@ void Game::drawRemoteEnt(const RenderEnt& e, bool isOwn) {
     }
     if (!label.empty()) {
       const int tw = MeasureText(label.c_str(), 10);
+      // T-057: chaotic = era red name (the gamble must read at a glance)
+      Color nc = isOwn ? Color{230, 210, 190, 255} : Color{190, 190, 200, 255};
+      if (e.snap.karmaBand == 2) nc = Color{235, 60, 50, 255};
+      else if (e.snap.karmaBand == 0) nc = Color{170, 200, 255, 255};
       DrawText(label.c_str(), static_cast<int>(w.x) - tw / 2,
-               static_cast<int>(w.y) - 52, 10,
-               isOwn ? Color{230, 210, 190, 255} : Color{190, 190, 200, 255});
+               static_cast<int>(w.y) - 52, 10, nc);
     }
   }
   if (e.snap.hpMax > 0 && e.snap.hp < e.snap.hpMax) {
@@ -794,7 +797,7 @@ void Game::drawStatPanel() const {
   const int px = 1024 - 190;
   // kit block grows: mp row always, buff rows only while active (era chrome)
   const bool showBuffs = st.blessTicksLeft > 0 || st.ironskinTicksLeft > 0;
-  const int ph = (st.statPoints > 0 ? 92 : 74) + 26 + (showBuffs ? 12 : 0);
+  const int ph = (st.statPoints > 0 ? 92 : 74) + 40 + (showBuffs ? 12 : 0);
   DrawRectangle(px, 8, 182, ph, Color{0, 0, 0, 170});
   DrawRectangleLinesEx(Rectangle{static_cast<float>(px), 8, 182,
                                  static_cast<float>(ph)},
@@ -824,8 +827,14 @@ void Game::drawStatPanel() const {
   DrawRectangle(px + 8, by, static_cast<int>(166.0f * mfrac), 6, Color{60, 70, 160, 255});
   std::snprintf(buf, sizeof buf, "mp %u / %u", st.mp, st.mpMax);
   DrawText(buf, px + 8, by + 10, 10, Color{170, 180, 235, 255});
+  const char* al = st.karma < 0 ? "CHAOTIC" : (st.karma > 500 ? "lawful" : "neutral");
+  std::snprintf(buf, sizeof buf, "%s %d%s", al, st.karma,
+                st.karma < 0 ? "  -red: drops, no shops-" : "");
+  DrawText(buf, px + 8, by + 24, 10,
+           st.karma < 0 ? Color{235, 60, 50, 255} : Color{170, 180, 235, 255});
+  buf[0] = 0;
   if (showBuffs) {
-    const int byy = by + 24;
+    const int byy = by + 38;
     char nb[96];
     std::snprintf(nb, sizeof nb, "%s%s%s    %us / %us",
                   st.blessTicksLeft > 0 ? "BLESS " : "",

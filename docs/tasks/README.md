@@ -119,6 +119,26 @@ One card = one agent session = one PR. Move to `done/` with evidence pasted.
 | [T-054](done/T-054.md) | Cultist kit v1 (Mend/Bless/Ironskin) + Gravecaller Firebolt starter |
 | [T-055](done/T-055.md) | race-proofed choir bot + dual-kit gate leg (mixed verdict, levers listed) |
 
+## Done — Sprint 15 (2026-09-05): alignment & PK teeth
+
+| Card | Title |
+|---|---|
+| [T-056](done/T-056.md) | PK law + chaos penalties: karma −(300+20d), whitening, drops, gallows, refusals, duels |
+| [T-057](done/T-057.md) | alignment chrome: karmaBand wire, red nameplates, sheet stakes |
+| correction | T-046 moral-split gate raised to GDD lawful >500 (xor-drift fix) |
+| tooling | journal epoch marker `v N`; replay refuses mismatched epochs (exit 4) |
+
+Execution prompt for the whole remainder queue: docs/prompts/phase3-remainder.md
+
+## Queued next (from the execution prompt)
+
+| Sprint | Cards |
+|---|---|
+| S16 anvil gear-churn | T-058 durability, T-059 affixes v1, T-060 refine |
+| S17 day/night | T-061 nightcreep (pack boosts, Blood Bolt +25%), T-062 night economy (+25% loot, +10% XP) — tint floor stands |
+| S18 content drop | T-063 Bonehowl Mine + Drowned Crypt, T-064 Gravemother + elites ×8, T-065 bounty board |
+| S19 VFX/audio | T-066 flash/callouts sweep, T-067 procedural audio stubs |
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |

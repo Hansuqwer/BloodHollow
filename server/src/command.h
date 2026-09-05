@@ -22,7 +22,8 @@ struct Command {
                              kTradeOpen, kTradeItem, kTradeGold, kTradeCommit,
                              kTradeCancel, kAnvil,
                              kPartyInvite, kPartyAccept, kPartyLeave,
-                             kPartyKick, kKitChoose } kind;  // T-053: a = kit id
+                             kPartyKick, kKitChoose, kDuel, kForfeit } kind;
+  // T-053: a = kit id; T-056: kDuel a = target id (resolved pre-journal)
   std::int32_t a = 0, b = 0;
   std::uint8_t channel = 0;
   std::string text{};
@@ -112,6 +113,12 @@ inline void applyWorldCommand(World& w, Entity& e, const Command& c) {
       break;
     case Command::kKitChoose:
       w.kitChoose(e, static_cast<std::uint8_t>(c.a));
+      break;
+    case Command::kDuel:
+      w.duelChallenge(e, static_cast<std::uint32_t>(c.a));
+      break;
+    case Command::kForfeit:
+      w.duelForfeit(e);
       break;
     case Command::kChat:
     case Command::kPing:

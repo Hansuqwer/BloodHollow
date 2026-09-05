@@ -546,9 +546,15 @@ TEST_CASE("T-046 moral split: virtuous XP bonus, anvil tithe karma drift") {
   REQUIRE(w.loadFrom(makeArena()));
   const std::uint32_t pid = w.spawn("monk", 0, std::nullopt).id;
   server::Entity* p = w.find(pid);
+  // T-056 correction (GDD §5): the carrot starts at LAWFUL (>500), not >0 —
+  // karma 5 is neutral and earns nothing extra either way.
   p->karma = 5;
   w.debugAwardXp(*p, 40);
-  CHECK(w.find(pid)->xp == 46);  // 40 * 1.15 clean-soul bonus
+  CHECK(w.find(pid)->xp == 40);
+  p->karma = 501;
+  w.debugAwardXp(*p, 40);
+  CHECK(w.find(pid)->xp == 40 + 46);  // 40 * 1.15 lawful bonus
+  p->karma = 5;  // back to neutral for the tithe check below
   w.debugGive(*p, 2001, 1);
   w.toggleEquip(*p, 0);
   p->swordSkill = 20;

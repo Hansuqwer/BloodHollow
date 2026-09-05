@@ -85,6 +85,11 @@ void sendMsg(ENetPeer* peer, const Msg& m, Server& s) {
   send(peer, proto::pack(m), s);
 }
 
+// Journal epoch: bump when the SIM semantics change under old journals
+// (whitening/moral split in S15 = epoch 3; kit sidecars = 2; pre-K = 1).
+// Replay refuses non-matching epoch journals instead of lying with them.
+constexpr int kJournalEpoch = 3;
+
 // ---- world journal record helpers (M2) ------------------------------------
 void journalTickHash(Server& s) {
   if (s.journal == nullptr) return;
@@ -407,7 +412,19 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
               break;
             }
           }
-        } else if (m.text.rfind("/kit ", 0) == 0) {  // T-053 one-time swear
+        } else if (m.text.rfind("/duel ", 0) == 0) {  // T-056 offer/accept
+          const std::string nm = m.text.substr(6);
+          okCmd = false;
+          for (const auto& e : s.world.entities()) {
+            if (e.kind == EntityKind::kPlayer && e.name == nm) {
+              c.kind = Command::kDuel;
+              c.a = static_cast<std::int32_t>(e.id);
+              okCmd = true;
+              break;
+            }
+          }
+        } else if (m.text == "/forfeit") { c.kind = Command::kForfeit; }
+        else if (m.text.rfind("/kit ", 0) == 0) {  // T-053 one-time swear
           const std::string k = m.text.substr(5);
           std::uint8_t kit = 0;
           if (k == "ravager") kit = 1;
@@ -728,6 +745,26 @@ void distributeEvents(Server& s) {
         std::fflush(stdout);
       }
     }
+    if (ev.bandChanged && ev.aboutId != 0) {  // T-057: re-spawn to all online
+      const Entity* e = s.world.find(ev.aboutId);
+      if (e != nullptr) {
+        for (auto& kv : s.sessions) {
+          if (!kv.second.inWorld) continue;
+          proto::EntitySpawn m;
+          m.id = e->id;
+          m.kind = e->wireKind;
+          m.dir = static_cast<std::uint8_t>(e->walker.dir);
+          m.x = e->walker.x;
+          m.y = e->walker.y;
+          m.hp = e->hp;
+          m.hpMax = e->hpMax;
+          m.level = e->level;
+          m.name = e->name;
+          m.karmaBand = World::karmaBandOf(e->karma);
+          sendMsg(kv.first, m, s);
+        }
+      }
+    }
     if (ev.partyChanged) {
       if (ev.target != 0) {
         const World::Party* pp = nullptr;
@@ -819,6 +856,9 @@ void tickServer(Server& s) {
         m.hpMax = e->hpMax;
         m.level = e->kind == EntityKind::kPlayer ? e->level : e->mobLevel;
         m.name = e->name;
+        m.karmaBand = e->kind == EntityKind::kPlayer
+                          ? World::karmaBandOf(e->karma)
+                          : std::uint8_t(1);  // mobs: neutral band
         sendMsg(sess.peer, m, s);
       }
       proto::EntityDelta d;
@@ -893,6 +933,25 @@ void tickServer(Server& s) {
 // Replays entity creation + world commands on a fresh world (fixed seed), then
 // verifies every hash marker. Exit 0 = perfect replay (wipe+all), 3 = mismatch.
 int runReplayWorld(const std::string& path, const std::string& mapPath) {
+  {
+    FILE* pf = std::fopen(path.c_str(), "r");
+    if (pf != nullptr) {
+      char vline[32];
+      if (std::fgets(vline, sizeof vline, pf) != nullptr && vline[0] == 'v') {
+        int ep = 1;
+        std::sscanf(vline, "v %d", &ep);
+        if (ep != kJournalEpoch) {
+          std::fprintf(stderr,
+              "[replay] journal epoch %d vs build epoch %d — sim semantics "
+              "changed since; record a fresh gate leg (old leg retained as "
+              "history)\n", ep, kJournalEpoch);
+          std::fclose(pf);
+          return 4;
+        }
+      }
+      std::fclose(pf);
+    }
+  }
   FILE* f = std::fopen(path.c_str(), "r");
   if (f == nullptr) {
     std::fprintf(stderr, "bh_server: cannot open journal %s\n", path.c_str());
@@ -1218,7 +1277,10 @@ int run(int argc, char** argv) {
                    s.recordWorldPath.c_str());
       return 1;
     }
-    std::fprintf(stderr, "[journal] recording world to %s\n", s.recordWorldPath.c_str());
+    std::fprintf(s.journal, "v %d\n", kJournalEpoch);
+    std::fflush(s.journal);
+    std::fprintf(stderr, "[journal] recording world to %s (epoch %d)\n",
+                 s.recordWorldPath.c_str(), kJournalEpoch);
   }
   if (enet_initialize() != 0) {
     std::fprintf(stderr, "bh_server: enet_initialize failed\n");

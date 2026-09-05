@@ -1,0 +1,10 @@
+[boot] zone 2 (assets/maps/fields_overflow.bhmap: 64x48) online
+[boot] zone 3 (assets/maps/thornwall_crypt.bhmap: 48x36) online
+[journal] recording world to logs/s15_smoke.bwj (epoch 3)
+[boot] bh_server on 0.0.0.0:7815 | map 'assets/maps/thornwall.bhmap' | db '/tmp/s15_smoke.db' | tick 20Hz | aoi 26
+[net] s15s__00         entered the world (entity 292, online 1)
+[net] s15s__01         entered the world (entity 293, online 2)
+[soak] tick=600 online=2 entities=292 tickUs p50=276 p99=523 worldHash=6a6d4c3b2d13e727 pkts=94/184970
+[soak] tick=1200 online=2 entities=292 tickUs p50=284 p99=543 worldHash=f4e9d0604ed3e278 pkts=188/370467
+[soak] tick=1800 online=2 entities=291 tickUs p50=280 p99=522 worldHash=17ae4a005273350c pkts=288/561183
+[soak] tick=2400 online=2 entities=292 tickUs p50=308 p99=674 worldHash=8dfd5293340f0173 pkts=382/747452

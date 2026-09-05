@@ -269,6 +269,7 @@ void NetClient::poll() {
               s0.hpMax = m.hpMax;
               s0.level = m.level;
               s0.name = m.name;
+              s0.karmaBand = m.kind == 0 ? m.karmaBand : 1;  // players only
               ents[m.id] = s0;
               spawnedIds.push_back(m.id);
               break;

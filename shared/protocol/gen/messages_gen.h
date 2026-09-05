@@ -268,6 +268,7 @@ struct EntitySpawn {
   std::uint32_t hpMax = 0;
   std::uint8_t level = 0;
   std::string name;
+  std::uint8_t karmaBand = 0;
 
   void serialize(Writer& w) const;
   bool deserialize(Reader r);

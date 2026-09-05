@@ -22,6 +22,7 @@ struct NetEntSnapshot {
   std::uint32_t hpMax = 0;
   std::uint8_t level = 1;
   std::string name{};
+  std::uint8_t karmaBand = 1;  // T-057: 0 lawful / 1 neutral / 2 chaotic (red)
 };
 
 // Server-pushed progression snapshot (OwnStats message).

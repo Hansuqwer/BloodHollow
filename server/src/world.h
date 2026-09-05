@@ -34,6 +34,7 @@ struct WorldEvent {
   bool statsChanged = false;
   bool invChanged = false;
   bool partyChanged = false;  // T-050: target=partyId (0 => aboutId left/kicked)
+  bool bandChanged = false;   // T-057: karma band crossed (re-spawn in AoI)
 };
 
 // one inventory stack; item schema lives in shared/content/items.h
@@ -94,6 +95,12 @@ struct Entity {
   sim::Tick lastIronskinTick = -1000;
   sim::Tick lastFireboltTick = -1000;
 
+  // alignment & PK (T-056): duel state + offer handshake
+  std::uint32_t duelWith = 0;      // active duel partner (0 = none)
+  sim::Tick duelUntil = -1;        // kill inside window = no karma/debt/drops
+  std::uint32_t duelOfferTo = 0;   // outgoing challenge target
+  sim::Tick duelOfferAt = -1;      // offers die 20 s after issue
+
   // trade (T-029): intents only until BOTH commit; swap validated at commit.
   std::uint32_t tradeWith = 0;
   std::vector<std::pair<std::uint32_t, std::uint16_t>> tradeOfferItems{};  // itemId, qty
@@ -121,6 +128,13 @@ struct MobKillStat {
 
 class World {
  public:
+  // alignment & PK (T-056/T-057)
+  bool duelChallenge(Entity& e, std::uint32_t targetId);  // T-056 offer/accept
+  bool duelForfeit(Entity& e);                            // T-056
+  void bumpKarma(Entity& e, std::int32_t delta);          // clamp + crossing line
+  static std::uint8_t karmaBandOf(std::int32_t karma);    // 0 lawful 1 neutral 2 chaotic
+  sim::TilePos gallowsTile(std::uint16_t zoneId) const;   // chaotic bindstone
+
   // T-036 zones-in-process (public: also used by test harnesses)
   struct SpawnerLive {
     sim::SpawnDef def{};
@@ -223,6 +237,7 @@ class World {
   // test/gm introspection
   std::uint32_t debugWeaponDmg(const Entity& e) const { return equippedWeaponDmg(e); }
   void debugKillPlayer(Entity& e) { killPlayer(e, nullptr); }
+  void debugKillPlayerBy(Entity& e, Entity* killer) { killPlayer(e, killer); }
   void debugAwardXp(Entity& e, std::uint32_t amt) { awardXp(e, amt); }
   void debugKillMob(Entity& mob, Entity* killer) { killMob(mob, killer); }
   Entity& debugSpawnMob(const content::MobDef& def, sim::TilePos at,
