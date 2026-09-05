@@ -78,6 +78,7 @@ class Game {
   void drawChat() const;
   void drawFloaters();
   void drawStatPanel() const;
+  void drawPartyFrame() const;  // T-052 top-left HB-style party list
   void drawInventoryPanel() const;
   void drawVendorPanel() const;
   void drawDeathOverlay() const;

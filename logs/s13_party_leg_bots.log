@@ -1,0 +1,15 @@
+[campaign] s13p__01 reached L1 at t=0.1s (map 1)
+[campaign] s13p__00 reached L1 at t=0.1s (map 1)
+[campaign] s13p__00 reached L2 at t=22.0s (map 1)
+[campaign] s13p__01 reached L2 at t=28.1s (map 1)
+[campaign] s13p__01 reached L3 at t=178.8s (map 1)
+[campaign] s13p__00 reached L3 at t=226.0s (map 1)
+[campaign] s13p__01 reached L4 at t=227.9s (map 1)
+[campaign] s13p__00 reached L4 at t=325.6s (map 1)
+[campaign] s13p__01 reached L5 at t=555.6s (map 1)
+[campaign] s13p__01 TARGET L5 DONE in 555.6s
+[campaign] s13p__00 reached L5 at t=582.7s (map 1)
+[campaign] s13p__00 TARGET L5 DONE in 582.7s
+[campaign] all bots reached target level
+[bots] SUMMARY welcomed=2/2 moved=2/2 minDeltas=11694 kills=136 pots=32 swings=149 deaths=36 shops=7 anvilTries=0 levelDrops=0 maxLevel=5 pkts=2650898 bytes=58320753 gates b/g/p/a/r=0/0/0/0/0 mGold=0 mPelts=0
+[bots] OK

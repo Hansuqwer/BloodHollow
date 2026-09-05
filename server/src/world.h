@@ -33,6 +33,7 @@ struct WorldEvent {
   std::uint32_t aboutId = 0;   // stat push / level-up / inventory target
   bool statsChanged = false;
   bool invChanged = false;
+  bool partyChanged = false;  // T-050: target=partyId (0 => aboutId left/kicked)
 };
 
 // one inventory stack; item schema lives in shared/content/items.h
@@ -79,6 +80,8 @@ struct Entity {
   std::int32_t karma = 0;  // moral economy (T-046): >0 = +15% XP, <0 = +15% gold loot  // bit per tier: used/not-used (S9 T-043 persist)
   std::uint16_t zoneId = 1;        // T-036: which zone this entity lives in
   sim::Tick lastPortalTick = -1000;  // arrival grace against portal ping-pong
+
+  std::uint32_t partyId = 0;  // 0 = unaffiliated (T-050 party core)
 
   // trade (T-029): intents only until BOTH commit; swap validated at commit.
   std::uint32_t tradeWith = 0;
@@ -149,6 +152,24 @@ class World {
   bool toggleEquip(Entity& e, std::uint8_t slot);
   void trySkill(Entity& e, std::uint8_t skill, std::uint32_t targetId);
   bool vendorBuy(Entity& e, std::uint32_t itemId, std::uint16_t qty);
+  // ---- party (T-050/T-051): roster + XP share -----------------------------
+  struct Party {
+    std::uint32_t id = 0;
+    std::uint32_t leaderId = 0;
+    std::vector<std::uint32_t> members;
+  };
+  static constexpr int kPartyMaxMembers = 8;      // M3-era raid-ish cap for later
+  static constexpr int kPartyXpRadius = 12;       // share window, tiles (Chebyshev)
+  static constexpr std::uint32_t kPartyXpBonusPct = 12;  // per extra in-range member
+  bool partyInvite(Entity& inviter, Entity& target);   // creates party when needed
+  bool partyAccept(Entity& e);                         // consume pending invite
+  bool partyLeave(Entity& e);                          // also called from despawn
+  bool partyKick(Entity& leader, std::uint32_t targetId);
+  const Party* partyOf(std::uint32_t entityId) const;
+  void emitPartyMsg(std::uint32_t partyId, std::uint32_t aboutId,
+                    const std::string& text);
+  const std::deque<Party>& parties() const { return parties_; }
+
   // anvil (T-041/T-042): proximity-gated aura attempts, atomic part+gold tolls
   bool tryAnvil(Entity& e, std::uint8_t tier);
   static constexpr std::int32_t kKarmaAnvilOk = 2;      // craft tithe
@@ -179,6 +200,7 @@ class World {
   std::uint32_t debugWeaponDmg(const Entity& e) const { return equippedWeaponDmg(e); }
   void debugKillPlayer(Entity& e) { killPlayer(e, nullptr); }
   void debugAwardXp(Entity& e, std::uint32_t amt) { awardXp(e, amt); }
+  void debugKillMob(Entity& mob, Entity* killer) { killMob(mob, killer); }
   Entity& debugSpawnMob(const content::MobDef& def, sim::TilePos at,
                         std::uint16_t zoneId = 1) {
     return spawnMob(def, at, /*spawnerIdx=*/SIZE_MAX, zoneId);
@@ -230,6 +252,10 @@ class World {
 
   std::unordered_map<std::uint16_t, Zone> zones_{};
   std::deque<Entity> entities_{};
+  std::deque<Party> parties_;
+  std::uint32_t nextPartyId_ = 1;
+  // pending invites: invitee entity id -> (expiryTick, inviter entity id)
+  std::vector<std::pair<std::uint32_t, std::pair<sim::Tick, std::uint32_t>>> invites_;
   std::uint32_t nextId_ = 1;
   sim::Rng rng_{0xB100D11A33ULL};
   sim::Tick tick_ = 0;

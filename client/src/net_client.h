@@ -36,6 +36,15 @@ struct OwnStatsWire {
   std::int32_t karma = 0;
 };
 
+struct PartyMemberWire {
+  std::uint32_t entityId = 0;
+  std::string name;
+  std::uint16_t level = 1;
+  std::uint32_t hp = 0;
+  std::uint32_t hpMax = 1;
+  std::uint16_t zoneId = 0;
+};
+
 struct InvSlotWire {
   std::uint32_t itemId = 0;
   std::uint16_t qty = 0;
@@ -107,6 +116,9 @@ class NetClient {
   std::vector<CombatPulse> combatIn{};
   OwnStatsWire ownStats{};
   std::unordered_map<std::uint8_t, InvSlotWire> inventory{};  // slot -> item
+  std::uint32_t partyId = 0;
+  std::uint32_t partyLeaderId = 0;
+  std::vector<PartyMemberWire> party{};  // T-052 party frame data
   std::uint32_t online = 0;
   std::uint32_t serverP99Us = 0;
   int pingMs = -1;

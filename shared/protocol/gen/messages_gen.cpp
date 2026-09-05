@@ -181,6 +181,42 @@ bool AnvilOp::deserialize(Reader r) {
   return true;
 }
 
+void PartyInvite::serialize(Writer& w) const {
+  w.str(name);
+}
+
+bool PartyInvite::deserialize(Reader r) {
+  if (!r.str(name)) return false;
+  return true;
+}
+
+void PartyAccept::serialize(Writer& w) const {
+  w.u8(unused);
+}
+
+bool PartyAccept::deserialize(Reader r) {
+  if (!r.u8(unused)) return false;
+  return true;
+}
+
+void PartyLeave::serialize(Writer& w) const {
+  w.u8(unused);
+}
+
+bool PartyLeave::deserialize(Reader r) {
+  if (!r.u8(unused)) return false;
+  return true;
+}
+
+void PartyKick::serialize(Writer& w) const {
+  w.u32(targetId);
+}
+
+bool PartyKick::deserialize(Reader r) {
+  if (!r.u32(targetId)) return false;
+  return true;
+}
+
 void LoginResult::serialize(Writer& w) const {
   w.u8(ok);
   w.u8(reason);
@@ -380,6 +416,38 @@ bool ItemSlot::deserialize(Reader r) {
   return true;
 }
 
+void PartyReset::serialize(Writer& w) const {
+  w.u32(partyId);
+  w.u32(leaderId);
+  w.u8(count);
+}
+
+bool PartyReset::deserialize(Reader r) {
+  if (!r.u32(partyId)) return false;
+  if (!r.u32(leaderId)) return false;
+  if (!r.u8(count)) return false;
+  return true;
+}
+
+void PartyMember::serialize(Writer& w) const {
+  w.u32(entityId);
+  w.str(name);
+  w.u16(level);
+  w.u32(hp);
+  w.u32(hpMax);
+  w.u16(zoneId);
+}
+
+bool PartyMember::deserialize(Reader r) {
+  if (!r.u32(entityId)) return false;
+  if (!r.str(name)) return false;
+  if (!r.u16(level)) return false;
+  if (!r.u32(hp)) return false;
+  if (!r.u32(hpMax)) return false;
+  if (!r.u16(zoneId)) return false;
+  return true;
+}
+
 const char* msgName(std::uint16_t id) {
   switch (id) {
     case kIdHello: return "Hello";
@@ -400,6 +468,10 @@ const char* msgName(std::uint16_t id) {
     case kIdTradeCommit: return "TradeCommit";
     case kIdTradeCancel: return "TradeCancel";
     case kIdAnvilOp: return "AnvilOp";
+    case kIdPartyInvite: return "PartyInvite";
+    case kIdPartyAccept: return "PartyAccept";
+    case kIdPartyLeave: return "PartyLeave";
+    case kIdPartyKick: return "PartyKick";
     case kIdLoginResult: return "LoginResult";
     case kIdWelcome: return "Welcome";
     case kIdEntitySpawn: return "EntitySpawn";
@@ -413,6 +485,8 @@ const char* msgName(std::uint16_t id) {
     case kIdOwnStats: return "OwnStats";
     case kIdInventoryReset: return "InventoryReset";
     case kIdItemSlot: return "ItemSlot";
+    case kIdPartyReset: return "PartyReset";
+    case kIdPartyMember: return "PartyMember";
     default: return "unknown";
   }
 }

@@ -319,6 +319,21 @@ void NetClient::poll() {
               ownStats.karma = m.karma;
               break;
             }
+            case kIdPartyReset: {
+              PartyReset m;
+              if (!m.deserialize(pv.body)) break;
+              partyId = m.partyId;
+              partyLeaderId = m.leaderId;
+              party.clear();
+              break;
+            }
+            case kIdPartyMember: {
+              PartyMember m;
+              if (!m.deserialize(pv.body)) break;
+              party.push_back(PartyMemberWire{m.entityId, m.name, m.level, m.hp,
+                                              m.hpMax == 0 ? 1 : m.hpMax, m.zoneId});
+              break;
+            }
             case kIdInventoryReset: {
               InventoryReset m;
               if (!m.deserialize(pv.body)) break;

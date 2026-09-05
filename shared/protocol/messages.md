@@ -123,6 +123,30 @@ message AnvilOp = 19
 u8 tier
 ```
 
+
+Party commands. Slash forms in chat (/invite <name>, /accept, /leave, /kick
+<name>) are parsed server-side into these same intents.
+
+```proto
+message PartyInvite = 21
+string name
+```
+
+```proto
+message PartyAccept = 22
+u8 unused
+```
+
+```proto
+message PartyLeave = 23
+u8 unused
+```
+
+```proto
+message PartyKick = 24
+u32 targetId
+```
+
 ## Server -> Client
 
 ```proto
@@ -244,3 +268,24 @@ Chat channels: 0=say (AoI radius), 1=global, 2=system (server-originated),
 3=death notices (server-originated).
 
 Entity kinds: 0=player; 1..63 = mob (index+1 into content/kMobs); 64 = vendor NPC.
+
+Party roster sync: PartyReset wipes the client table (partyId=0 == left party),
+then one PartyMember per roster entry follows on the same reliable channel.
+zoneId lets the frame grey out off-map members.
+
+```proto
+message PartyReset = 115
+u32 partyId
+u32 leaderId
+u8 count
+```
+
+```proto
+message PartyMember = 116
+u32 entityId
+string name
+u16 level
+u32 hp
+u32 hpMax
+u16 zoneId
+```

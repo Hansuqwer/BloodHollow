@@ -11,7 +11,7 @@
 
 namespace bh::proto {
 
-inline constexpr std::uint16_t kProtocolVersion = 231;
+inline constexpr std::uint16_t kProtocolVersion = 237;
 
 inline constexpr std::uint16_t kIdHello = 1;
 inline constexpr std::uint16_t kIdInputPath = 3;
@@ -31,6 +31,10 @@ inline constexpr std::uint16_t kIdTradeOfferGold = 16;
 inline constexpr std::uint16_t kIdTradeCommit = 17;
 inline constexpr std::uint16_t kIdTradeCancel = 18;
 inline constexpr std::uint16_t kIdAnvilOp = 19;
+inline constexpr std::uint16_t kIdPartyInvite = 21;
+inline constexpr std::uint16_t kIdPartyAccept = 22;
+inline constexpr std::uint16_t kIdPartyLeave = 23;
+inline constexpr std::uint16_t kIdPartyKick = 24;
 inline constexpr std::uint16_t kIdLoginResult = 100;
 inline constexpr std::uint16_t kIdWelcome = 101;
 inline constexpr std::uint16_t kIdEntitySpawn = 102;
@@ -44,6 +48,8 @@ inline constexpr std::uint16_t kIdCombatEvent = 109;
 inline constexpr std::uint16_t kIdOwnStats = 110;
 inline constexpr std::uint16_t kIdInventoryReset = 111;
 inline constexpr std::uint16_t kIdItemSlot = 112;
+inline constexpr std::uint16_t kIdPartyReset = 115;
+inline constexpr std::uint16_t kIdPartyMember = 116;
 
 struct Hello {
   static constexpr std::uint16_t kId = kIdHello;
@@ -197,6 +203,38 @@ struct AnvilOp {
   bool deserialize(Reader r);
 };
 
+struct PartyInvite {
+  static constexpr std::uint16_t kId = kIdPartyInvite;
+  std::string name;
+
+  void serialize(Writer& w) const;
+  bool deserialize(Reader r);
+};
+
+struct PartyAccept {
+  static constexpr std::uint16_t kId = kIdPartyAccept;
+  std::uint8_t unused = 0;
+
+  void serialize(Writer& w) const;
+  bool deserialize(Reader r);
+};
+
+struct PartyLeave {
+  static constexpr std::uint16_t kId = kIdPartyLeave;
+  std::uint8_t unused = 0;
+
+  void serialize(Writer& w) const;
+  bool deserialize(Reader r);
+};
+
+struct PartyKick {
+  static constexpr std::uint16_t kId = kIdPartyKick;
+  std::uint32_t targetId = 0;
+
+  void serialize(Writer& w) const;
+  bool deserialize(Reader r);
+};
+
 struct LoginResult {
   static constexpr std::uint16_t kId = kIdLoginResult;
   std::uint8_t ok = 0;
@@ -337,6 +375,29 @@ struct ItemSlot {
   std::uint16_t qty = 0;
   std::uint8_t equipped = 0;
   std::uint8_t aura = 0;
+
+  void serialize(Writer& w) const;
+  bool deserialize(Reader r);
+};
+
+struct PartyReset {
+  static constexpr std::uint16_t kId = kIdPartyReset;
+  std::uint32_t partyId = 0;
+  std::uint32_t leaderId = 0;
+  std::uint8_t count = 0;
+
+  void serialize(Writer& w) const;
+  bool deserialize(Reader r);
+};
+
+struct PartyMember {
+  static constexpr std::uint16_t kId = kIdPartyMember;
+  std::uint32_t entityId = 0;
+  std::string name;
+  std::uint16_t level = 0;
+  std::uint32_t hp = 0;
+  std::uint32_t hpMax = 0;
+  std::uint16_t zoneId = 0;
 
   void serialize(Writer& w) const;
   bool deserialize(Reader r);

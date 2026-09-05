@@ -171,6 +171,22 @@ void World::initialMobSpawns(Zone& zone, std::uint16_t zoneId) {
 void World::despawn(std::uint32_t id) {
   for (size_t i = 0; i < entities_.size(); ++i) {
     if (entities_[i].id == id) {
+      Entity& e = entities_[i];
+      if (e.partyId != 0) {
+        // leaving silently: same roster semantics live and under replay
+        const std::uint32_t pid = e.partyId;
+        e.partyId = 0;
+        for (size_t pi = 0; pi < parties_.size(); ++pi) {
+          Party& p = parties_[pi];
+          if (p.id != pid) continue;
+          p.members.erase(std::remove(p.members.begin(), p.members.end(), id),
+                          p.members.end());
+          if (p.members.empty()) parties_.erase(parties_.begin() + static_cast<long>(pi));
+          else if (p.leaderId == id) p.leaderId = p.members.front();
+          break;
+        }
+        emitPartyMsg(pid, id, e.name + " is gone.");  // roster refresh trigger
+      }
       zones_.at(entities_[i].zoneId).spatial.remove(id);
       entities_.erase(entities_.begin() + static_cast<long>(i));
       return;
@@ -1066,9 +1082,152 @@ void World::trySwing(Entity& att, Entity& def) {
   pendingCleaveDmg_ = 0;
 }
 
+
+// ---- party (T-050/T-051) ---------------------------------------------------
+const World::Party* World::partyOf(std::uint32_t entityId) const {
+  for (const Party& p : parties_) {
+    if (std::find(p.members.begin(), p.members.end(), entityId) != p.members.end())
+      return &p;
+  }
+  return nullptr;
+}
+
+void World::emitPartyMsg(std::uint32_t partyId, std::uint32_t aboutId,
+                         const std::string& text) {
+  WorldEvent ev;
+  ev.partyChanged = true;
+  ev.target = partyId;   // 0 => aboutId left/was kicked (clear their frame)
+  ev.aboutId = aboutId;
+  ev.chatCh = 2;
+  ev.chatText = text;
+  events_.push_back(std::move(ev));
+}
+
+bool World::partyInvite(Entity& inviter, Entity& target) {
+  if (inviter.kind != EntityKind::kPlayer || target.kind != EntityKind::kPlayer ||
+      inviter.dead || target.dead || inviter.id == target.id) return false;
+  if (target.zoneId != inviter.zoneId ||
+      chebyshev(inviter.walker.tile(), target.walker.tile()) > 12) return false;
+  if (target.partyId != 0) return false;
+  // inviter must be unaffiliated (bootstrap) or the party leader
+  Party* p = nullptr;
+  if (inviter.partyId == 0) {
+    Party np;
+    np.id = nextPartyId_++;
+    np.leaderId = inviter.id;
+    np.members.push_back(inviter.id);
+    parties_.push_back(np);
+    inviter.partyId = np.id;
+    p = &parties_.back();
+    emitPartyMsg(p->id, inviter.id, inviter.name + " raises a hunting party.");
+  } else {
+    for (Party& q : parties_) if (q.id == inviter.partyId) { p = &q; break; }
+    if (p == nullptr) { inviter.partyId = 0; return false; }   // stale id repair
+    if (p->leaderId != inviter.id) return false;               // only the leader invites
+  }
+  if (static_cast<int>(p->members.size()) >= kPartyMaxMembers) return false;
+  // one pending invite per invitee: renew/overwrite
+  bool found = false;
+  for (auto& inv : invites_) if (inv.first == target.id) {
+    inv.second = {tick_ + 200, inviter.id};  // 10 s to answer
+    found = true;
+  }
+  if (!found) invites_.push_back({target.id, {tick_ + 200, inviter.id}});
+  emitPartyMsg(p->id, inviter.id, inviter.name + " invites " + target.name + ".");
+  emitPartyMsg(p->id, target.id, target.name + ": a hand beckons — /accept.");
+  return true;
+}
+
+bool World::partyAccept(Entity& e) {
+  if (e.kind != EntityKind::kPlayer || e.dead || e.partyId != 0) return false;
+  uint32_t inviterId = 0;
+  for (size_t i = 0; i < invites_.size(); ++i) {
+    if (invites_[i].first == e.id) {
+      auto [expiry, who] = invites_[i].second;
+      invites_.erase(invites_.begin() + static_cast<long>(i));
+      if (tick_ <= expiry) inviterId = who;
+      break;
+    }
+  }
+  if (inviterId == 0) return false;
+  Entity* inviter = find(inviterId);
+  if (inviter == nullptr || inviter->partyId == 0) return false;
+  Party* p = nullptr;
+  for (Party& q : parties_) if (q.id == inviter->partyId) { p = &q; break; }
+  if (p == nullptr || static_cast<int>(p->members.size()) >= kPartyMaxMembers) return false;
+  p->members.push_back(e.id);
+  e.partyId = p->id;
+  emitPartyMsg(p->id, e.id, e.name + " joins the party.");
+  return true;
+}
+
+bool World::partyLeave(Entity& e) {
+  if (e.partyId == 0) return false;
+  const std::uint32_t pid = e.partyId;
+  e.partyId = 0;
+  for (size_t i = 0; i < parties_.size(); ++i) {
+    Party& p = parties_[i];
+    if (p.id != pid) continue;
+    p.members.erase(std::remove(p.members.begin(), p.members.end(), e.id), p.members.end());
+    emitPartyMsg(pid, e.id, e.name + " leaves the party.");
+    if (p.members.empty()) {
+      parties_.erase(parties_.begin() + static_cast<long>(i));
+    } else if (p.leaderId == e.id) {
+      p.leaderId = p.members.front();  // eldest in join order inherits the horn
+      Entity* nl = find(p.leaderId);
+      if (nl != nullptr)
+        emitPartyMsg(pid, nl->id, nl->name + " takes the lead.");
+    }
+    return true;
+  }
+  return false;
+}
+
+bool World::partyKick(Entity& leader, std::uint32_t targetId) {
+  if (leader.partyId == 0 || targetId == leader.id) return false;
+  const Party* p = partyOf(leader.id);
+  if (p == nullptr || p->leaderId != leader.id) return false;
+  Entity* victim = find(targetId);
+  if (victim == nullptr || victim->partyId != p->id) return false;
+  return partyLeave(*victim);  // same path; the msg reads as a leave
+}
+
 void World::killMob(Entity& mob, Entity* killer) {
+  const sim::TilePos mobPos = mob.walker.tile();  // before despawn below
   if (killer != nullptr && killer->kind == EntityKind::kPlayer) {
-    awardXp(*killer, mob.xpValue);
+    // T-051: party XP share — alive members in the same zone within
+    // kPartyXpRadius of the kill split evenly, +kPartyXpBonusPct per extra
+    // sharer (the reason to group); loot/gold stay with the killer (era).
+    std::vector<std::uint32_t> sharers;
+    if (killer->partyId != 0) {
+      if (const Party* p = partyOf(killer->id)) {
+        for (const std::uint32_t mid : p->members) {
+          Entity* m = find(mid);
+          if (m != nullptr && !m->dead && m->zoneId == killer->zoneId &&
+              chebyshev(m->walker.tile(), mobPos) <= kPartyXpRadius)
+            sharers.push_back(mid);
+        }
+      }
+    }
+    if (sharers.size() <= 1) {
+      awardXp(*killer, mob.xpValue);
+    } else {
+      const std::uint32_t bonus = 100u +
+          kPartyXpBonusPct * static_cast<std::uint32_t>(sharers.size() - 1);
+      const std::uint32_t each = mob.xpValue * bonus / 100u /
+                                 static_cast<std::uint32_t>(sharers.size());
+      for (const std::uint32_t mid : sharers) {
+        Entity* m = find(mid);
+        if (m != nullptr) {
+          awardXp(*m, each);
+          WorldEvent sev;
+          sev.aboutId = mid;
+          sev.chatCh = 2;
+          sev.chatText = "party share: " + std::to_string(each) + " xp.";
+          events_.push_back(std::move(sev));
+        }
+      }
+    }
     const content::MobDef* md = content::findMob(mob.mobId);
     if (md != nullptr) {
       // loot roll (junk tier for now; gear tables land with affixes in P3)

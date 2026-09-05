@@ -102,9 +102,18 @@ One card = one agent session = one PR. Move to `done/` with evidence pasted.
 | [T-034](done/T-034.md) | bh_duel: gear-aware offline duel harness + era table |
 | M2b (partial) | wipe-replay ACROSS chains bit-exact (12 legs, 1139 hashes); L1->8 campaign measured, plateau=L6, stays Phase-3 xparty |
 
+## Done — Sprint 13 (2026-09-05): party system (Phase 3 spine)
+
+| Card | Title |
+|---|---|
+| [T-050](done/T-050.md) | party core: wire v237, rules, slash verbs, despawn sweep, replay-invariant |
+| [T-051](done/T-051.md) | party XP share: 12-tile radius, +12%/sharer, loot stays with killer |
+| [T-052](done/T-052.md) | client party frame (roster panel, leader star, live hp bars) |
+| latent fix | command-path WorldEvents drained pre-tick (anvil-floater-class bug) |
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |
 |---|---|---|
-| M2b-final | L8-in-one-sitting pacing (party XP solves) | evidence: logs/m2b_gate.log, devlog 0013 |
+| M2b-final | L8-in-one-sitting pacing rerun (S13 party XP exists; measure uplift) | evidence: logs/s13_party_leg.*, devlog 0014 |
 | T-034b | balance retune from duel table: camp leuk-for-leash levers | logs/duel-table-s12.csv |

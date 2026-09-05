@@ -72,6 +72,7 @@ struct Bot {
   int campX = -1, campY = -1;                  // current hunting-camp waypoint
   bool campIsPortal = false;  // camp sits on a portal rect: land EXACTLY, no mill
   bool retreating = false;    // campaign: broke off at low hp, sip + return
+  bool partyTried = false;    // S13: auto-party pair-up fired once at t0
 };
 
 double nowSec() {
@@ -282,7 +283,9 @@ int run(int argc, char** argv) {
 
     // behavior
     const double t = nowSec();
+    size_t bi = 0;
     for (Bot& b : bots) {
+      const size_t botIdx = bi++;
       if (!b.welcomed || b.peer == nullptr || t < b.nextMoveAt) continue;
       if (!visitGoal.empty() && b.visited == 0) {
         int vx = b.homeX, vy = b.homeY;
@@ -307,6 +310,25 @@ int run(int argc, char** argv) {
       if (campaign) {
         if (b.campaignT0 < 0.0) {
           b.campaignT0 = t;
+          // S13 auto-party: sibling pair-up so party-shared legs gate M2b-final.
+          // Even-indexed bot invites its successor, odd accepts (server
+          // resolves the name -> entityId before journaling; replay-exact).
+          const size_t sib = botIdx % 2 == 0 ? botIdx + 1 : botIdx - 1;
+          if (!b.partyTried && bots.size() >= 2 && sib < bots.size() &&
+              !bots[sib].name.empty()) {
+            b.partyTried = true;
+            if (botIdx % 2 == 0) {
+              bh::proto::ChatSend cs;
+              cs.channel = 0;
+              cs.text = "/invite " + bots[sib].name;
+              sendProto(b.peer, bh::proto::pack(cs));
+            } else if (bots.size() >= 2 && botIdx % 2 == 1) {
+              bh::proto::ChatSend cs;
+              cs.channel = 0;
+              cs.text = "/accept";
+              sendProto(b.peer, bh::proto::pack(cs));
+            }
+          }
           b.nextRestAt = t + 60.0 + rng.range(0, 30);  // first break a minute in
         }
         // player-paced rhythm: ~60-90s engaged, then a 6-11s door-stop

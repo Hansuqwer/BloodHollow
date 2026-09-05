@@ -20,7 +20,9 @@ struct Command {
   enum Kind : std::uint8_t { kPath, kStep, kChat, kPing, kAttack, kStat,
                              kUseItem, kEquip, kSkill, kBuy, kSellJunk,
                              kTradeOpen, kTradeItem, kTradeGold, kTradeCommit,
-                             kTradeCancel, kAnvil } kind;
+                             kTradeCancel, kAnvil,
+                             kPartyInvite, kPartyAccept, kPartyLeave,
+                             kPartyKick } kind;
   std::int32_t a = 0, b = 0;
   std::uint8_t channel = 0;
   std::string text{};
@@ -93,6 +95,20 @@ inline void applyWorldCommand(World& w, Entity& e, const Command& c) {
       break;
     case Command::kAnvil:
       w.tryAnvil(e, c.channel);
+      break;
+    case Command::kPartyInvite: {
+      Entity* t = w.find(static_cast<std::uint32_t>(c.a));  // resolved pre-journal
+      if (t != nullptr) w.partyInvite(e, *t);
+      break;
+    }
+    case Command::kPartyAccept:
+      w.partyAccept(e);
+      break;
+    case Command::kPartyLeave:
+      w.partyLeave(e);
+      break;
+    case Command::kPartyKick:
+      w.partyKick(e, static_cast<std::uint32_t>(c.a));
       break;
     case Command::kChat:
     case Command::kPing:

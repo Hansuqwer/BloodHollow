@@ -375,6 +375,37 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
     case kIdChatSend: {
       ChatSend m;
       if (!m.deserialize(pv.body) || !sess.inWorld) return;
+      if (!m.text.empty() && m.text[0] == '/') {  // party verbs (era commands)
+        Command c;
+        bool okCmd = true;
+        if (m.text.rfind("/invite ", 0) == 0) {
+          const std::string nm = m.text.substr(8);
+          okCmd = false;
+          for (const auto& e : s.world.entities()) {
+            if (e.kind == EntityKind::kPlayer && e.name == nm) {
+              c.kind = Command::kPartyInvite;
+              c.a = static_cast<std::int32_t>(e.id);
+              okCmd = true;
+              break;
+            }
+          }
+        } else if (m.text == "/accept") { c.kind = Command::kPartyAccept; }
+        else if (m.text == "/leave") { c.kind = Command::kPartyLeave; }
+        else if (m.text.rfind("/kick ", 0) == 0) {
+          const std::string nm = m.text.substr(6);
+          okCmd = false;
+          for (const auto& e : s.world.entities()) {
+            if (e.kind == EntityKind::kPlayer && e.name == nm) {
+              c.kind = Command::kPartyKick;
+              c.a = static_cast<std::int32_t>(e.id);
+              okCmd = true;
+              break;
+            }
+          }
+        } else { okCmd = false; }
+        if (okCmd && sess.cmdq.size() < 32) { sess.cmdq.push_back(std::move(c)); break; }
+        // fall through: unknown/failed slash visible as an ordinary say
+      }
       Command c;
       c.kind = Command::kChat;
       c.channel = m.channel;
@@ -499,6 +530,45 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
       if (sess.cmdq.size() < 32) sess.cmdq.push_back(std::move(c));
       break;
     }
+    case kIdPartyInvite: {
+      PartyInvite m;
+      if (!m.deserialize(pv.body) || !sess.inWorld) return;
+      for (const auto& e : s.world.entities()) {  // exact-name resolve (era whispers)
+        if (e.kind == EntityKind::kPlayer && e.name == m.name) {
+          Command c;
+          c.kind = Command::kPartyInvite;      // id pinned here; journal replays ids
+          c.a = static_cast<std::int32_t>(e.id);
+          if (sess.cmdq.size() < 32) sess.cmdq.push_back(std::move(c));
+          break;
+        }
+      }
+      break;
+    }
+    case kIdPartyAccept: {
+      PartyAccept m;
+      if (!m.deserialize(pv.body) || !sess.inWorld) return;
+      Command c;
+      c.kind = Command::kPartyAccept;
+      if (sess.cmdq.size() < 32) sess.cmdq.push_back(std::move(c));
+      break;
+    }
+    case kIdPartyLeave: {
+      PartyLeave m;
+      if (!m.deserialize(pv.body) || !sess.inWorld) return;
+      Command c;
+      c.kind = Command::kPartyLeave;
+      if (sess.cmdq.size() < 32) sess.cmdq.push_back(std::move(c));
+      break;
+    }
+    case kIdPartyKick: {
+      PartyKick m;
+      if (!m.deserialize(pv.body) || !sess.inWorld) return;
+      Command c;
+      c.kind = Command::kPartyKick;
+      c.a = static_cast<std::int32_t>(m.targetId);
+      if (sess.cmdq.size() < 32) sess.cmdq.push_back(std::move(c));
+      break;
+    }
     case kIdPing: {
       Ping m;
       if (!m.deserialize(pv.body)) return;
@@ -566,6 +636,30 @@ void pushOwnStats(Server& s, Session& sess) {
 }
 
 // Distribute world events after each sim tick.
+// Party roster push (T-050): PartyReset + PartyMember rows, inventory-style.
+void pushPartyRoster(Server& s, Session& sess) {
+  Entity* me = s.world.find(sess.entityId);
+  const World::Party* p = me != nullptr ? s.world.partyOf(me->id) : nullptr;
+  proto::PartyReset r;
+  r.partyId = p != nullptr ? p->id : 0;
+  r.leaderId = p != nullptr ? p->leaderId : 0;
+  r.count = p != nullptr ? static_cast<std::uint8_t>(p->members.size()) : 0;
+  sendMsg(sess.peer, r, s);
+  if (p == nullptr) return;
+  for (const std::uint32_t mid : p->members) {
+    const Entity* m = s.world.find(mid);
+    if (m == nullptr) continue;
+    proto::PartyMember pm;
+    pm.entityId = m->id;
+    pm.name = m->name;
+    pm.level = m->level;
+    pm.hp = m->hp;
+    pm.hpMax = m->hpMax;
+    pm.zoneId = m->zoneId;
+    sendMsg(sess.peer, pm, s);
+  }
+}
+
 void distributeEvents(Server& s) {
   for (const WorldEvent& ev : s.world.events()) {
     if (ev.chatCh == 255 && !ev.chatText.empty()) {
@@ -605,6 +699,20 @@ void distributeEvents(Server& s) {
                     e->walker.tile().y);
         std::fflush(stdout);
       }
+    }
+    if (ev.partyChanged) {
+      if (ev.target != 0) {
+        const World::Party* pp = nullptr;
+        for (const auto& q : s.world.parties())
+          if (q.id == ev.target) { pp = &q; break; }
+        if (pp != nullptr) {
+          for (const std::uint32_t mid : pp->members)
+            for (auto& kv : s.sessions)
+              if (kv.second.inWorld && kv.second.entityId == mid) pushPartyRoster(s, kv.second);
+        }
+      }
+      for (auto& kv : s.sessions)  // aboutId refresh (covers leave/kick wipe too)
+        if (kv.second.inWorld && kv.second.entityId == ev.aboutId) pushPartyRoster(s, kv.second);
     }
     if (ev.invChanged && ev.aboutId != 0) {
       for (auto& kv : s.sessions) {
@@ -651,6 +759,9 @@ void tickServer(Server& s) {
       kv.second.cmdq.pop_front();
     }
   }
+
+  // 1.5) events produced by commands land before tick() wipes the queue
+  distributeEvents(s);
 
   // 2) simulate (movement + combat + respawns)
   s.world.tick();
@@ -708,6 +819,10 @@ void tickServer(Server& s) {
   if (s.tickMicros.size() > 600) s.tickMicros.erase(s.tickMicros.begin());
 
   if (s.tick % 20 == 0) {
+    if (!s.world.parties().empty()) {  // party-frame hp/level refresh, 1 Hz
+      for (auto& kv : s.sessions)
+        if (kv.second.inWorld) pushPartyRoster(s, kv.second);
+    }
     std::vector<std::int64_t> sorted = s.tickMicros;
     std::sort(sorted.begin(), sorted.end());
     const std::int64_t p99 = sorted.empty() ? 0 : sorted[sorted.size() * 99 / 100];

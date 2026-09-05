@@ -785,6 +785,33 @@ void Game::drawStatPanel() const {
   }
 }
 
+void Game::drawPartyFrame() const {
+  if (net_ == nullptr || !net_->welcomed || net_->partyId == 0 || net_->party.empty()) return;
+  const int px = 8;
+  const int py = 110;          // below chat/help chrome, left margin
+  const int rowH = 24;
+  const int pw = 150;
+  const int ph = 18 + static_cast<int>(net_->party.size()) * rowH;
+  DrawRectangle(px, py, pw, ph, Color{0, 0, 0, 160});
+  DrawRectangleLinesEx(Rectangle{static_cast<float>(px), static_cast<float>(py),
+                                 static_cast<float>(pw), static_cast<float>(ph)},
+                       1.0f, Color{150, 30, 30, 200});
+  DrawText("PARTY", px + 8, py + 4, 10, Color{230, 210, 190, 255});
+  char buf[96];
+  int row = 0;
+  for (const auto& m : net_->party) {
+    const int ry = py + 18 + row * rowH;
+    const bool leader = (m.entityId == net_->partyLeaderId);
+    std::snprintf(buf, sizeof buf, "%s%s L%u", leader ? "*" : "", m.name.c_str(), m.level);
+    DrawText(buf, px + 8, ry, 10,
+             m.entityId == net_->ownId ? Color{255, 230, 120, 255} : Color{220, 220, 220, 255});
+    const float frac = m.hpMax > 0 ? static_cast<float>(m.hp) / static_cast<float>(m.hpMax) : 0.0f;
+    DrawRectangle(px + 8, ry + 12, 134, 5, Color{30, 20, 20, 255});
+    DrawRectangle(px + 8, ry + 12, static_cast<int>(134.0f * frac), 5, Color{150, 30, 30, 255});
+    ++row;
+  }
+}
+
 void Game::drawTradeBanner() const {
   if (net_ == nullptr || net_->tradeWithId == 0) return;
   const int pw = 360, px = (1024 - pw) / 2, py = 640 - 44;
@@ -1071,6 +1098,7 @@ void Game::render(double /*interpAlpha*/) {
   drawChat();
   drawHud();
   drawStatPanel();
+  drawPartyFrame();
   drawInventoryPanel();
   drawVendorPanel();
   drawAnvilPanel();
