@@ -1,0 +1,13 @@
+[campaign] s18s__01 reached L1 at t=0.1s (map 1)
+[campaign] s18s__00 reached L1 at t=0.1s (map 1)
+[campaign] s18s__01 reached L2 at t=11.4s (map 1)
+[campaign] s18s__00 reached L2 at t=19.9s (map 1)
+[campaign] s18s__01 reached L3 at t=88.2s (map 1)
+[campaign] s18s__01 TARGET L3 DONE in 88.2s
+[campaign] s18s__00 reached L3 at t=97.3s (map 1)
+[campaign] s18s__00 TARGET L3 DONE in 97.3s
+[campaign] all bots reached target level
+[bots] SUMMARY welcomed=2/2 moved=2/2 minDeltas=1985 kills=32 pots=1 swings=56 deaths=4 shops=0 anvilTries=0 levelDrops=1 maxLevel=3 pkts=1400978 bytes=30831703 gates b/g/p/a/r=0/0/0/0/0 mGold=0 mPelts=0 bless=1 mend=12 noSee=6 hurt=154
+[bots] s18s__00     kit=1 lvl=3 hp=106/94 party=2 deaths=2 rxR=106 rxM=194 lastPid=1
+[bots] s18s__01     kit=3 lvl=3 hp=106/94 party=2 deaths=2 rxR=101 rxM=178 lastPid=1
+[bots] OK

@@ -356,6 +356,37 @@ void World::spawnVendor(Zone& zone) {
         e.dead = false;
         e.walker.place(sim::TilePos{x, y});
         insertEntity(std::move(e));
+      }
+    }
+  }
+  // T-065 Wanted Board: second spiral from the same spawn, skipping any
+  // furniture tile. Session-scoped (vanishes at reboot by design).
+  for (int r = 1; r < 10; ++r) {
+    for (int dy = -r; dy <= r; ++dy) {
+      for (int dx = -r; dx <= r; ++dx) {
+        if (std::max(std::abs(dx), std::abs(dy)) != r) continue;
+        const int x = zone.spawnPoint.x + dx;
+        const int y = zone.spawnPoint.y + dy;
+        if (!zone.map.inBounds(x, y) || zone.map.isBlocked(x, y)) continue;
+        bool occupied = false;
+        for (const Entity& ee : entities_)
+          if (ee.zoneId == 1 && !ee.dead && ee.walker.tile().x == x &&
+              ee.walker.tile().y == y &&
+              ee.wireKind >= content::kWireKindFurnitureFloor) { occupied = true; break; }
+        if (occupied) continue;
+        {
+          Entity b;
+          b.id = nextId_++;
+          b.zoneId = 1;  // spawnVendor is zone 1 only today
+          b.kind = EntityKind::kMob;  // furniture, non-combat; wire kind 66
+          b.wireKind = content::kWireKindBounty;
+          b.name = "Wanted Board";
+          b.hp = 1;
+          b.hpMax = 1;
+          b.dead = false;
+          b.walker.place(sim::TilePos{x, y});
+          insertEntity(std::move(b));
+        }
         return;
       }
     }
@@ -1574,6 +1605,38 @@ bool World::partyKick(Entity& leader, std::uint32_t targetId) {
   return partyLeave(*victim);  // same path; the msg reads as a leave
 }
 
+const content::BountyDef* World::bountyNow() const {
+  return content::bountyAt(static_cast<std::uint32_t>(tick_ / content::kBountyCycleTicks));
+}
+
+// T-065: assign/amend the quarry when a player stands near the Wanted Board.
+// Amends only when the cycle moved (a fresh sheet gets pinned to the wall);
+// otherwise confirms. Chat line names the price — era plain.
+void World::bountyAssign(Entity& e) {
+  if (e.kind != EntityKind::kPlayer || e.dead) return;
+  bool nearBoard = false;
+  for (const Entity& other : entities_) {
+    if (other.wireKind == content::kWireKindBounty && other.zoneId == e.zoneId &&
+        chebyshev(other.walker.tile(), e.walker.tile()) <= 3) {
+      nearBoard = true;
+      break;
+    }
+  }
+  if (!nearBoard) return;
+  const content::BountyDef* b = bountyNow();
+  const std::uint32_t cyc = static_cast<std::uint32_t>(tick_ / content::kBountyCycleTicks);
+  if (e.bountyMobId == b->mobId && e.bountyCycle == cyc) return;  // already marked
+  e.bountyMobId = b->mobId;
+  e.bountyCycle = cyc;
+  WorldEvent ev;
+  ev.aboutId = e.id;
+  ev.chatCh = 255;
+  const content::MobDef* md = content::findMob(b->mobId);
+  ev.chatText = std::string("the board wants: ") + (md != nullptr ? md->name : "?") +
+                " — " + std::to_string(b->payoutGold) + "g.";
+  events_.push_back(std::move(ev));
+}
+
 void World::killMob(Entity& mob, Entity* killer) {
   const sim::TilePos mobPos = mob.walker.tile();  // before despawn below
   if (killer != nullptr && killer->kind == EntityKind::kPlayer) {
@@ -1613,6 +1676,22 @@ void World::killMob(Entity& mob, Entity* killer) {
       }
     }
     const content::MobDef* md = content::findMob(mob.mobId);
+    // T-065 bounty treasurer: the held mark matches & still on-cycle -> pay out
+    if (md != nullptr && killer->bountyMobId == mob.mobId &&
+        killer->bountyCycle ==
+            static_cast<std::uint32_t>(tick_ / content::kBountyCycleTicks)) {
+      if (const content::BountyDef* b = bountyNow(); b->mobId == mob.mobId) {
+        killer->gold += b->payoutGold;
+        killer->bountyMobId = 0;  // one kill drains the sheet
+        WorldEvent bev;
+        bev.aboutId = killer->id;
+        bev.statsChanged = true;
+        bev.chatCh = 255;
+        bev.chatText = std::string("bounty paid: +") + std::to_string(b->payoutGold) +
+                       "g. The board sheet curls away.";
+        events_.push_back(std::move(bev));
+      }
+    }
     if (md != nullptr) {
       // T-059 affixes v1: named-gear side-drop with a rolled one-liner mod
       if (const content::GearDropDef* gd = content::findGearDrop(md->mobId)) {
@@ -1955,6 +2034,29 @@ void World::mobThink(Entity& mob) {
       return;
     }
     const int d = chebyshev(p, target->walker.tile());
+    // T-064 Blood Bolt: boss casts at range instead of padding into melee
+    if (const content::MobDef* bd = content::findMob(mob.mobId);
+        bd != nullptr && bd->boss && bd->boltRange > 0 && d > 1 &&
+        d <= bd->boltRange &&
+        tick_ - mob.lastSwingTick >= static_cast<sim::Tick>(bd->boltCdTicks)) {
+      mob.lastSwingTick = tick_;  // shared cadence, distinct cast
+      std::uint32_t bdmg = sim::rollDamage(bd->dmg, 0,
+          target->kind == EntityKind::kPlayer ? effDef(*target) / 2u : 0u, false);
+      if (isNight()) bdmg = bdmg * 125u / 100u;  // Blood Bolt bites +25% after dark
+      bdmg = bdmg < 1 ? 1 : bdmg;
+      target->hp = bdmg >= static_cast<std::uint32_t>(target->hp)
+                       ? 0 : target->hp - static_cast<std::int32_t>(bdmg);
+      WorldEvent ev;
+      ev.attacker = mob.id;
+      ev.target = target->id;
+      ev.kind = 9;  // T-064: Blood Bolt ranged callout
+      ev.amount = bdmg;
+      ev.statsChanged = true;
+      events_.push_back(std::move(ev));
+      if (target->hp == 0 && target->kind == EntityKind::kPlayer)
+        killPlayer(*target, &mob);
+      return;
+    }
     if (d <= 1) {
       mob.path.clear();
       trySwing(mob, *target);
@@ -2058,6 +2160,11 @@ void World::tick() {
     // portal fire: on arrival/settled (not every tick: world-transfer is chunky)
     if (e.kind == EntityKind::kPlayer && !e.dead && !e.walker.moving && e.path.empty()) {
       checkPortals(e);
+    }
+    // T-065: the board reads passively at ~0.5Hz per player while standing around
+    if (e.kind == EntityKind::kPlayer && !e.dead &&
+        (tick_ + e.id) % 40 == 0) {
+      bountyAssign(e);
     }
   }
 

@@ -10,6 +10,7 @@ namespace bh::content {
 inline constexpr std::uint8_t kWireKindFurnitureFloor = 64;
 inline constexpr std::uint8_t kWireKindVendor = 64;
 inline constexpr std::uint8_t kWireKindAnvil = 65;
+inline constexpr std::uint8_t kWireKindBounty = 66;  // T-065 wanted board
 
 inline bool wireIsFurniture(std::uint8_t k) { return k >= kWireKindFurnitureFloor; }
 inline bool wireIsMob(std::uint8_t k) { return k < kWireKindFurnitureFloor; }

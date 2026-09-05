@@ -3641,6 +3641,34 @@
        "value": 11
       }
      ]
+    },
+    {
+     "id": 6,
+     "name": "depths_stairs_down",
+     "type": "portal",
+     "x": 2816,
+     "y": 192,
+     "width": 128,
+     "height": 32,
+     "rotation": 0,
+     "visible": true,
+     "properties": [
+      {
+       "name": "targetMapId",
+       "type": "int",
+       "value": 5
+      },
+      {
+       "name": "targetX",
+       "type": "int",
+       "value": 3
+      },
+      {
+       "name": "targetY",
+       "type": "int",
+       "value": 30
+      }
+     ]
     }
    ],
    "opacity": 1,
@@ -3651,7 +3679,7 @@
   }
  ],
  "nextlayerid": 6,
- "nextobjectid": 6,
+ "nextobjectid": 7,
  "orientation": "isometric",
  "renderorder": "right-down",
  "tiledversion": "1.10.2",

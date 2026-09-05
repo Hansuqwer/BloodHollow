@@ -88,7 +88,7 @@ void sendMsg(ENetPeer* peer, const Msg& m, Server& s) {
 // Journal epoch: bump when the SIM semantics change under old journals
 // (whitening/moral split in S15 = epoch 3; kit sidecars = 2; pre-K = 1).
 // Replay refuses non-matching epoch journals instead of lying with them.
-constexpr int kJournalEpoch = 4;  // S16: affix gear-drop rolls reshuffle kill rng strata
+constexpr int kJournalEpoch = 5;  // S18: zones 4/5 add entities -> worldHash shifts
 
 // ---- world journal record helpers (M2) ------------------------------------
 void journalTickHash(Server& s) {
@@ -1001,7 +1001,9 @@ int runReplayWorld(const std::string& path, const std::string& mapPath) {
   }
   {  // mirror the server's boot set (any zone asset that's actually there)
     for (const auto& [zid, zpath] : {std::pair<std::uint16_t, const char*>{2, "assets/maps/fields_overflow.bhmap"},
-                                     {3, "assets/maps/thornwall_crypt.bhmap"}}) {
+                                     {3, "assets/maps/thornwall_crypt.bhmap"},
+                                     {4, "assets/maps/bonehowl_mine.bhmap"},
+                                     {5, "assets/maps/drowned_crypt.bhmap"}}) {
       std::string zerr;
       (void)world.loadZone(zid, zpath, &zerr);
     }
@@ -1286,7 +1288,9 @@ int run(int argc, char** argv) {
   }
   // T-036/T-035: load every zone that's present (optional on old deployments)
   for (const auto& [zid, zpath] : {std::pair<std::uint16_t, const char*>{2, "assets/maps/fields_overflow.bhmap"},
-                                   {3, "assets/maps/thornwall_crypt.bhmap"}}) {
+                                   {3, "assets/maps/thornwall_crypt.bhmap"},
+                                   {4, "assets/maps/bonehowl_mine.bhmap"},
+                                   {5, "assets/maps/drowned_crypt.bhmap"}}) {
     std::string zerr;
     if (s.world.loadZone(zid, zpath, &zerr)) {
       const sim::Map* zm = s.world.zoneMap(zid);

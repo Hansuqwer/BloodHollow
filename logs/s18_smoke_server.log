@@ -1,0 +1,11 @@
+[boot] zone 2 (assets/maps/fields_overflow.bhmap: 64x48) online
+[boot] zone 3 (assets/maps/thornwall_crypt.bhmap: 48x36) online
+[boot] zone 4 (assets/maps/bonehowl_mine.bhmap: 56x40) online
+[boot] zone 5 (assets/maps/drowned_crypt.bhmap: 48x36) online
+[journal] recording world to logs/s18_smoke.bwj (epoch 5)
+[boot] bh_server on 0.0.0.0:7818 | map 'assets/maps/thornwall.bhmap' | db '/tmp/s18_smoke.db' | tick 20Hz | aoi 26
+[net] s18s__00         entered the world (entity 582, online 1)
+[net] s18s__01         entered the world (entity 583, online 2)
+[soak] tick=600 online=2 entities=579 tickUs p50=736 p99=1558 worldHash=d96a3a55cf4e091e pkts=103/387390
+[soak] tick=1200 online=2 entities=579 tickUs p50=761 p99=1316 worldHash=14633efe00290d6d pkts=199/783013
+[soak] tick=1800 online=2 entities=574 tickUs p50=787 p99=1473 worldHash=6e3f479664bf2224 pkts=291/1233351

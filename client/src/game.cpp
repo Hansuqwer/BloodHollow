@@ -405,6 +405,20 @@ void Game::applyNetState() {
       f.r = 255;
       f.g = 60;
       f.b = 40;
+    } else if (cp.kind == 9) {
+      // T-064 Blood Bolt: Gravemother's ranged cast — violet crimson over the CASTER
+      {
+        auto ai2 = rents_.find(cp.attacker);
+        if (ai2 != rents_.end()) {
+          const Vector2 ap = entRenderPos(ai2->second);
+          f.x = ap.x;
+          f.y = ap.y;
+        }
+      }
+      f.text = "BLOOD BOLT " + std::to_string(cp.amount);
+      f.r = 235;
+      f.g = 40;
+      f.b = 160;
     } else if (cp.kind == 6) {
       // anvil ceremony (T-041): red-caps over the petitioner
       auto ai = rents_.find(cp.attacker);

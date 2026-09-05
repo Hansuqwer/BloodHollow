@@ -111,6 +111,7 @@ def main() -> int:
     spawn("gravecaller_pulpit", 42, 3, 4, 4, MOB_GRAVECALLER, 3, 1100)
     spawn("sexton_seat", 44, 5, 2, 3, MOB_REVENANT_SEXTON, 1, 6000)
     portal("stairs_up", 0, 17, 1, 2, 1, 10, 11)  # back to Thornwall chapel hatch (tiles)
+    portal("depths_stairs_down", 44, 6, 2, 1, 5, 3, 30)   # Drowned Crypt (S18)
 
     ground_data = [v + 1 for row in ground for v in row]
 

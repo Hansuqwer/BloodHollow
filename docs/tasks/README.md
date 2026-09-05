@@ -152,11 +152,22 @@ Gate: suite 87/87 (327,479 assertions); S17 smoke replay OK
 (ticks=1292 hashes=12 mismatches=0; journal epoch stays 4 — zero new rng
 draws). Devlog 0018.
 
+## Done — Sprint 18 (2026-09-05): content drop
+
+| Card | Title |
+|---|---|
+| [T-063](done/T-063.md) | Bonehowl Mine (mapId 4) + Drowned Crypt Depths (mapId 5), portals + validators |
+| [T-064](done/T-064.md) | Gravemother L14 (xp×20) + Sepulcher Elites (xp×8, 8 camps) + Blood Bolt (+25% night pin) |
+| [T-065](done/T-065.md) | Wanted Board (wire 66): session-scoped quarry cycle, payout over natural band |
+
+Gate: suite 91/91 (327,815 assertions); S18 smoke replay OK
+(ticks=1255 hashes=12 mismatches=0; epoch 5 — zones enter worldHash,
+entities 291→579). Devlog 0019. **M2b-final L1→8 chain now running.**
+
 ## Queued next (from the execution prompt)
 
 | Sprint | Cards |
 |---|---|
-| S18 content drop | T-063 Bonehowl Mine + Drowned Crypt, T-064 Gravemother + elites ×8 (Blood Bolt lives here), T-065 bounty board |
 | S19 VFX/audio | T-066 flash/callouts sweep, T-067 procedural audio stubs |
 
 ## Open — Phase 3 remaining

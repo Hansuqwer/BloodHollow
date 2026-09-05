@@ -112,6 +112,8 @@ struct Entity {
 
   // mobs
   std::uint32_t mobId = 0;
+  std::uint32_t bountyMobId = 0;      // T-065: quarry mark (0 = none posted)
+  std::uint32_t bountyCycle = 0;      // cycle stamp of the held mark
   sim::TilePos anchor{-1, -1};
   std::uint8_t aggroRadius = 0;
   std::uint8_t wanderRadius = 0;
@@ -247,6 +249,10 @@ class World {
   void debugKillMob(Entity& mob, Entity* killer) { killMob(mob, killer); }
   void debugSetTick(sim::Tick t) { tick_ = t; }  // T-061/62 test seam: hour dial
   bool isNight() const;  // T-061: dark hours 21:00-05:00 (game clock)
+  // T-065 session-scoped bounty board (no persistence by design)
+  void bountyAssign(Entity& e);                 // near board: get/amend the mark
+  const content::BountyDef* bountyNow() const;  // current quarry+cycle
+
 
   Entity& debugSpawnAnvil(sim::TilePos at) {  // T-060 test seam (spawner shape)
     Entity a;
@@ -259,6 +265,18 @@ class World {
     a.hpMax = 1;
     a.walker.place(at);
     return insertEntity(std::move(a));
+  }
+  Entity& debugSpawnBoard(sim::TilePos at) {  // T-065 test seam (spawner shape)
+    Entity b;
+    b.id = nextId_++;
+    b.zoneId = 1;
+    b.kind = EntityKind::kMob;  // furniture, non-combat
+    b.wireKind = content::kWireKindBounty;
+    b.name = "Wanted Board";
+    b.hp = 1;
+    b.hpMax = 1;
+    b.walker.place(at);
+    return insertEntity(std::move(b));
   }
   Entity& debugSpawnMob(const content::MobDef& def, sim::TilePos at,
                         std::uint16_t zoneId = 1) {
