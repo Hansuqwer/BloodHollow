@@ -95,3 +95,14 @@ gate: leg 12 replay: [replay] OK ticks=10737 sessionCmds=1584 hashes=107 mismatc
 leg12 verified
 gate: leg 12 end state: reached L6
 gate: chain done 15:31:16
+gate: leg 3 already verified, skip
+gate: leg 4 already verified, skip
+gate: leg 5 already verified, skip
+gate: leg 6 already verified, skip
+gate: leg 7 already verified, skip
+gate: leg 8 already verified, skip
+gate: leg 9 already verified, skip
+gate: leg 10 already verified, skip
+gate: leg 11 already verified, skip
+gate: leg 12 already verified, skip
+gate: chain done 20:17:57

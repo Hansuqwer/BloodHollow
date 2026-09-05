@@ -648,6 +648,14 @@ void World::tryBless(Entity& e, std::uint32_t targetId) {
   e.lastBlessTick = tick_;
   e.mp -= kBlessMpCost;
   t->blessUntil = tick_ + kBlessTicks;  // re-cast refreshes (stack-free)
+  {  // T-066 callout sweep: gold flash over the anointed
+    WorldEvent bev;
+    bev.attacker = e.id;
+    bev.target = t->id;
+    bev.kind = 10;   // bless
+    bev.amount = 10; // +10%
+    events_.push_back(bev);
+  }
   WorldEvent txt;
   txt.aboutId = t->id;
   txt.statsChanged = true;
@@ -666,6 +674,14 @@ void World::tryIronskin(Entity& e, std::uint32_t targetId) {
   e.lastIronskinTick = tick_;
   e.mp -= kIronskinMpCost;
   t->ironskinUntil = tick_ + kBlessTicks;
+  {  // T-066 callout sweep: steel flash over the armored
+    WorldEvent iev;
+    iev.attacker = e.id;
+    iev.target = t->id;
+    iev.kind = 11;  // ironskin
+    iev.amount = 0;
+    events_.push_back(iev);
+  }
   WorldEvent txt;
   txt.aboutId = t->id;
   txt.statsChanged = true;
@@ -1672,6 +1688,13 @@ void World::killMob(Entity& mob, Entity* killer) {
           sev.chatCh = 2;
           sev.chatText = "party share: " + std::to_string(each) + " xp.";
           events_.push_back(std::move(sev));
+          WorldEvent fx;  // T-066: xp shimmer floater over each sharer
+          fx.attacker = killer->id;
+          fx.target = mid;
+          fx.kind = 12;
+          fx.amount = static_cast<std::uint16_t>(
+              std::min<std::uint32_t>(each, 65535));
+          events_.push_back(std::move(fx));
         }
       }
     }

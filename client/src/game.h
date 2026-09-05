@@ -12,6 +12,7 @@
 #include "render/camera_rig.h"
 #include "sim/bhmap.h"
 #include "sim/journal.h"
+#include "synthkit.h"  // T-067 procedural audio kit
 #include "sim/walker.h"
 
 namespace bh {
@@ -21,6 +22,13 @@ struct Floater {
   float x = 0, y = 0;  // tile-space float
   std::string text{};
   unsigned char r = 255, g = 60, b = 60;
+  double at = 0;
+};
+
+// T-066: petrify-fade vestige — a dead/departed entity's last pose, 0.6s grey fade.
+struct Vestige {
+  float x = 0, y = 0;  // tile-space float (last known)
+  std::uint8_t kind = 0;
   double at = 0;
 };
 
@@ -38,6 +46,7 @@ class Game {
 
   // online mode (optional): NetClient is owned by main and outlives Game.
   void setOnline(NetClient* nc) { net_ = nc; }
+  void bakeAudio();  // T-067: one-shot synth, no-op when audio device is down
   void frameBegin();  // per rendered frame: network poll + online input
 
   // ---- offline command funnel (single body used by input/scripts/replay) ----
@@ -77,6 +86,8 @@ class Game {
   void drawHud() const;
   void drawChat() const;
   void drawFloaters();
+  void noteVestiges();   // T-066: harvest despawnedIds into vestige queue
+  void drawVestiges();   // T-066: petrify-fade silhouettes under the world
   void drawStatPanel() const;
   void drawPartyFrame() const;  // T-052 top-left HB-style party list
   std::uint32_t chanTarget() const;  // T-054: party-frame pick else self
@@ -117,6 +128,9 @@ class Game {
   std::string chatBuf_{};
   std::deque<ChatLine> chatLog_{};
   std::deque<Floater> floaters_{};
+  std::deque<Vestige> vestiges_{};  // T-066: capped 16
+  SynthKit kit_{};  // T-067: bake at boot (no assets)
+  void playCallout(std::uint8_t kind);  // T-067: map floater kinds to sounds
   std::uint32_t targetId_ = 0;
   sim::TilePos cmdMarker_{-1, -1};
   double cmdMarkerAt_ = -1.0;

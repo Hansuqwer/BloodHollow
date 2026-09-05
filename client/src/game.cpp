@@ -326,6 +326,7 @@ void Game::handleInputOnline() {
 
 void Game::applyNetState() {
   const double now = GetTime();
+  noteVestiges();  // T-066: capture last pose BEFORE the erase
   for (const std::uint32_t id : net_->despawnedIds) rents_.erase(id);
   for (const std::uint32_t id : net_->spawnedIds) {
     auto it = net_->ents.find(id);
@@ -419,6 +420,30 @@ void Game::applyNetState() {
       f.r = 235;
       f.g = 40;
       f.b = 160;
+    } else if (cp.kind == 10) {
+      // T-066: bless — gold over the anointed
+      {
+        auto ti = rents_.find(cp.target);
+        if (ti != rents_.end()) { const Vector2 tp = entRenderPos(ti->second); f.x = tp.x; f.y = tp.y; }
+      }
+      f.text = "BLESS +10%";
+      f.r = 255; f.g = 205; f.b = 40;
+    } else if (cp.kind == 11) {
+      // T-066: ironskin — steel-white over the armored
+      {
+        auto ti = rents_.find(cp.target);
+        if (ti != rents_.end()) { const Vector2 tp = entRenderPos(ti->second); f.x = tp.x; f.y = tp.y; }
+      }
+      f.text = "IRONSKIN";
+      f.r = 210; f.g = 215; f.b = 230;
+    } else if (cp.kind == 12) {
+      // T-066: party-share shimmer — warm gold xp over each sharer
+      {
+        auto ti = rents_.find(cp.target);
+        if (ti != rents_.end()) { const Vector2 tp = entRenderPos(ti->second); f.x = tp.x; f.y = tp.y; }
+      }
+      f.text = "+" + std::to_string(cp.amount) + " xp";
+      f.r = 255; f.g = 220; f.b = 120;
     } else if (cp.kind == 6) {
       // anvil ceremony (T-041): red-caps over the petitioner
       auto ai = rents_.find(cp.attacker);
@@ -462,6 +487,7 @@ void Game::applyNetState() {
     }
     floaters_.push_back(f);
     while (floaters_.size() > 24) floaters_.pop_front();
+    playCallout(cp.kind);  // T-067
   }
   for (const ChatLine& c : net_->chatIn) {
     chatLog_.push_back(c);
@@ -534,6 +560,26 @@ void Game::stepMovement() {
     }
     path_.clear();
     return;
+  }
+}
+
+void Game::bakeAudio() {  // T-067: presence pass 1
+  if (IsAudioDeviceReady()) kit_.init();
+}
+
+void Game::playCallout(std::uint8_t kind) {  // T-067
+  if (!kit_.ready) return;
+  switch (kind) {
+    case 1:                                  // hit
+    case 2: PlaySound(kit_.hit); break;      // crit (thud + "!")
+    case 3: PlaySound(kit_.death); break;    // SLAIN
+    case 5: PlaySound(kit_.swing); break;    // Power-Swing
+    case 6: PlaySound(kit_.toll); break;     // anvil ceremony
+    case 8:                                  // mend
+    case 10: PlaySound(kit_.choir); break;   // bless
+    case 9: PlaySound(kit_.bolt); break;     // BLOOD BOLT
+    case 11: PlaySound(kit_.toll); break;    // ironskin (armor-set ring)
+    default: break;                          // misses/xp shimmer: quiet
   }
 }
 
@@ -789,6 +835,44 @@ bool Game::zoneReload(std::uint16_t mapId) {
     }
   }
   return true;
+}
+
+// T-066 petrify-fade: on despawn, keep the departed silhouette 0.6s.
+// Furniture (vendor/anvil/board) never ghosts — only combatants.
+void Game::noteVestiges() {
+  if (net_ == nullptr) return;
+  const double now = GetTime();
+  for (const std::uint32_t id : net_->despawnedIds) {
+    auto it = rents_.find(id);
+    if (it == rents_.end()) continue;
+    const RenderEnt& re = it->second;
+    if (re.snap.kind >= 64) continue;  // furniture floor: no ghosts
+    Vestige v;
+    const Vector2 pos = entRenderPos(re);  // tile-space, interpolated
+    v.x = pos.x;
+    v.y = pos.y;
+    v.kind = re.snap.kind;
+    v.at = now;
+    vestiges_.push_back(v);
+    while (vestiges_.size() > 16) vestiges_.pop_front();
+  }
+}
+
+void Game::drawVestiges() {
+  const double now = GetTime();
+  while (!vestiges_.empty() && now - vestiges_.front().at > 0.6) vestiges_.pop_front();
+  for (const Vestige& v : vestiges_) {
+    const double age = now - v.at;
+    const auto a = static_cast<unsigned char>(140 * (1.0 - age / 0.6));
+    const Vector2 w =
+        iso::tileToWorldF(Vector2{v.x, v.y}, map_.tileW, map_.tileH);
+    // era ghost: a dim tombstone-grey silhouette circle settling into dark
+    const float sink = static_cast<float>(age) * 6.0f;
+    DrawEllipse(static_cast<int>(w.x), static_cast<int>(w.y) - 18 + static_cast<int>(sink),
+                8, 12, Color{150, 150, 160, a});
+    DrawEllipse(static_cast<int>(w.x), static_cast<int>(w.y), 12, 5,
+                Color{90, 90, 100, a});
+  }
 }
 
 void Game::drawFloaters() {
@@ -1191,6 +1275,7 @@ void Game::render(double /*interpAlpha*/) {
   drawGround();
   if (showPath_ && net_ == nullptr) drawPathPreview();
   drawCommandMarker();
+  if (net_ != nullptr) drawVestiges();   // T-066 petrify-fade silhouettes
   if (net_ != nullptr) drawFloaters();
   EndMode2D();
 

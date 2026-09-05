@@ -1,0 +1,21 @@
+[boot] zone 2 (assets/maps/fields_overflow.bhmap: 64x48) online
+[boot] zone 3 (assets/maps/thornwall_crypt.bhmap: 48x36) online
+[boot] zone 4 (assets/maps/bonehowl_mine.bhmap: 56x40) online
+[boot] zone 5 (assets/maps/drowned_crypt.bhmap: 48x36) online
+[journal] recording world to logs/m2b_final_leg3.bwj (epoch 5)
+[boot] bh_server on 0.0.0.0:7840 | map 'assets/maps/thornwall.bhmap' | db '/tmp/m2b_final_campaign.db' | tick 20Hz | aoi 26
+[net] m2b__00          entered the world (entity 582, online 1)
+[net] m2b__01          entered the world (entity 583, online 2)
+[soak] tick=600 online=2 entities=577 tickUs p50=725 p99=1387 worldHash=34ecf5d45b32d23c pkts=113/401643
+[soak] tick=1200 online=2 entities=574 tickUs p50=735 p99=1305 worldHash=45de746bdeca9b44 pkts=190/840551
+[soak] tick=1800 online=2 entities=576 tickUs p50=731 p99=1341 worldHash=228d89d8459831bc pkts=269/1292198
+[soak] tick=2400 online=2 entities=579 tickUs p50=766 p99=1749 worldHash=55ac2799dec77b00 pkts=358/1733963
+[soak] tick=3000 online=2 entities=580 tickUs p50=778 p99=1391 worldHash=8040f9eda07419d0 pkts=448/2181191
+[soak] tick=3600 online=2 entities=576 tickUs p50=813 p99=1553 worldHash=f56a6a1f4c0ab757 pkts=549/2637709
+[soak] tick=4200 online=2 entities=571 tickUs p50=745 p99=1588 worldHash=717a98e0d62fb011 pkts=650/3049939
+[soak] tick=4800 online=2 entities=567 tickUs p50=756 p99=1544 worldHash=e2dbf946a029f4d4 pkts=746/3451759
+[soak] tick=5400 online=2 entities=571 tickUs p50=743 p99=1418 worldHash=dfe890d41ce0bcf8 pkts=809/3816179
+[soak] tick=6000 online=2 entities=572 tickUs p50=724 p99=1279 worldHash=f636983125da7ee4 pkts=893/4178142
+[soak] tick=6600 online=2 entities=570 tickUs p50=744 p99=1327 worldHash=3c4d3df0971cc178 pkts=984/4584093
+[soak] tick=7200 online=2 entities=565 tickUs p50=759 p99=1501 worldHash=e397fee4259a2ff9 pkts=1094/5036256
+[soak] tick=7800 online=2 entities=566 tickUs p50=641 p99=1357 worldHash=cc64c57c05853d29 pkts=1163/5343412

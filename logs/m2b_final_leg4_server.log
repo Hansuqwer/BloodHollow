@@ -1,0 +1,10 @@
+[boot] zone 2 (assets/maps/fields_overflow.bhmap: 64x48) online
+[boot] zone 3 (assets/maps/thornwall_crypt.bhmap: 48x36) online
+[boot] zone 4 (assets/maps/bonehowl_mine.bhmap: 56x40) online
+[boot] zone 5 (assets/maps/drowned_crypt.bhmap: 48x36) online
+[journal] recording world to logs/m2b_final_leg4.bwj (epoch 5)
+[boot] bh_server on 0.0.0.0:7840 | map 'assets/maps/thornwall.bhmap' | db '/tmp/m2b_final_campaign.db' | tick 20Hz | aoi 26
+[net] m2b__00          entered the world (entity 582, online 1)
+[net] m2b__01          entered the world (entity 583, online 2)
+[soak] tick=600 online=2 entities=580 tickUs p50=735 p99=1299 worldHash=e5fa5e9622c24d91 pkts=110/420361
+[soak] tick=1200 online=2 entities=578 tickUs p50=774 p99=1493 worldHash=aea88c7ef19b1e5b pkts=214/851365

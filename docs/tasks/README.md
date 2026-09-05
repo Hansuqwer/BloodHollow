@@ -164,11 +164,18 @@ Gate: suite 91/91 (327,815 assertions); S18 smoke replay OK
 (ticks=1255 hashes=12 mismatches=0; epoch 5 — zones enter worldHash,
 entities 291→579). Devlog 0019. **M2b-final L1→8 chain now running.**
 
-## Queued next (from the execution prompt)
+## Done — Sprint 19 (2026-09-05): VFX + audio pass 1
 
-| Sprint | Cards |
+| Card | Title |
 |---|---|
-| S19 VFX/audio | T-066 flash/callouts sweep, T-067 procedural audio stubs |
+| [T-066](done/T-066.md) | Callout sweep: bless gold / ironskin steel / party shimmer + petrify-fade vestiges |
+| [T-067](done/T-067.md) | Procedural synth kit (7 voices, ~78 KB, BH_NO_AUDIO-safe) |
+
+Gate: suite 91/91 (327,815 assertions); S19 smoke replay OK
+(ticks=1182 hashes=11 mismatches=0; epoch 5). Devlog 0020.
+
+**Phase-3 queue drained.** Open: T-049 record-path flake; M2b-final gate
+chain running in background (fresh namespace, epoch-5 legs).
 
 ## Open — Phase 3 remaining
 

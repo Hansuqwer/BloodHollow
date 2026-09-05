@@ -115,6 +115,10 @@ int main(int argc, char** argv) {
   SetTraceLogLevel(LOG_WARNING);
   if (vsync) SetConfigFlags(FLAG_VSYNC_HINT);
   InitWindow(1024, 768, online ? "BLOODHOLLOW - online" : "BLOODHOLLOW - M0");
+  // T-067: audio presence pass 1 — synthesized kit, no assets. BH_NO_AUDIO=1
+  #if !defined(__EMSCRIPTEN__)
+  if (std::getenv("BH_NO_AUDIO") == nullptr) InitAudioDevice();  // headless-safe skip
+  #endif
   SetTargetFPS(60);
 
   bh::NetClient net;
@@ -130,6 +134,7 @@ int main(int argc, char** argv) {
   }
 
   bh::Game game(std::move(*map));
+  game.bakeAudio();  // T-067: one-shot synth (~78KB, ~40ms total)
   if (online) game.setOnline(&net);
   bh::TickStepper stepper(bh::sim::kTickSeconds);
 
