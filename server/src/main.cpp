@@ -88,7 +88,7 @@ void sendMsg(ENetPeer* peer, const Msg& m, Server& s) {
 // Journal epoch: bump when the SIM semantics change under old journals
 // (whitening/moral split in S15 = epoch 3; kit sidecars = 2; pre-K = 1).
 // Replay refuses non-matching epoch journals instead of lying with them.
-constexpr int kJournalEpoch = 3;
+constexpr int kJournalEpoch = 4;  // S16: affix gear-drop rolls reshuffle kill rng strata
 
 // ---- world journal record helpers (M2) ------------------------------------
 void journalTickHash(Server& s) {
@@ -210,7 +210,10 @@ void dropSession(Server& s, Session& sess) {
         std::string blob;
         for (const InvSlot& sl : e->inv) {
           blob += std::to_string(sl.itemId) + ":" + std::to_string(sl.qty) + ":" +
-                  (sl.equipped ? "1" : "0") + ";";
+                  (sl.equipped ? "1" : "0") + ":" + std::to_string(sl.aura) +
+                  ":" + std::to_string(sl.durability) + ":" +
+                  std::to_string(sl.affix) + ":" +
+                  std::to_string(sl.refine) + ";";
         }
         s.db.saveProgress(e->charRowId, e->level, e->xp, e->str, e->vit, e->dex,
                           e->statPoints, static_cast<int>(e->gold), blob,
@@ -299,8 +302,26 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
             const std::string tail = rec.substr(c2 + 1);
             const size_t c3 = tail.find(':');
             sl.equipped = (c3 == std::string::npos ? tail : tail.substr(0, c3)) == "1";
-            if (c3 != std::string::npos)
-              sl.aura = static_cast<std::uint8_t>(std::stoul(tail.substr(c3 + 1)));
+            if (c3 != std::string::npos) {
+              const std::string t2 = tail.substr(c3 + 1);
+              const size_t c4 = t2.find(':');
+              sl.aura = static_cast<std::uint8_t>(
+                  std::stoul(c4 == std::string::npos ? t2 : t2.substr(0, c4)));
+              if (c4 != std::string::npos) {  // v8+: durability (+v9 affix)
+                const std::string t3 = t2.substr(c4 + 1);
+                const size_t c5 = t3.find(':');
+                sl.durability = static_cast<std::uint8_t>(
+                    std::stoul(c5 == std::string::npos ? t3 : t3.substr(0, c5)));
+                if (c5 != std::string::npos) {  // v9+: affix (+v10 refine)
+                  const std::string t4 = t3.substr(c5 + 1);
+                  const size_t c6 = t4.find(':');
+                  sl.affix = static_cast<std::uint8_t>(
+                      std::stoul(c6 == std::string::npos ? t4 : t4.substr(0, c6)));
+                  if (c6 != std::string::npos)  // v10: refine tail
+                    sl.refine = static_cast<std::uint8_t>(std::stoul(t4.substr(c6 + 1)));
+                }
+              }
+            }
             pe->inv.push_back(sl);
           }
         }
@@ -424,6 +445,17 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
             }
           }
         } else if (m.text == "/forfeit") { c.kind = Command::kForfeit; }
+        else if (m.text == "/repair") { c.kind = Command::kRepair; }
+        else if (m.text.rfind("/refine ", 0) == 0) {  // T-060 anvil upgrade
+          bool digits = true;
+          for (char ch : m.text.substr(8))
+            if (ch < '0' || ch > '9') digits = false;
+          okCmd = digits && !m.text.substr(8).empty();
+          if (okCmd) {
+            c.kind = Command::kRefine;
+            c.a = std::stoi(m.text.substr(8));
+          }
+        }
         else if (m.text.rfind("/kit ", 0) == 0) {  // T-053 one-time swear
           const std::string k = m.text.substr(5);
           std::uint8_t kit = 0;
@@ -646,6 +678,9 @@ void pushInventory(Server& s, Session& sess) {
     m.qty = e->inv[i].qty;
     m.equipped = e->inv[i].equipped ? 1 : 0;
     m.aura = e->inv[i].aura;
+    m.durability = e->inv[i].durability;  // T-058
+    m.affix = e->inv[i].affix;            // T-059
+    m.refine = e->inv[i].refine;          // T-060
     sendMsg(sess.peer, m, s);
   }
 }

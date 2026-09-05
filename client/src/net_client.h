@@ -54,6 +54,9 @@ struct InvSlotWire {
   std::uint16_t qty = 0;
   bool equipped = false;
   std::uint8_t aura = 0;  // 0..5 (tint in inventory rows)
+  std::uint8_t durability = 100;  // T-058: 0 = dormant
+  std::uint8_t affix = 0;  // T-059: 0 none, 1 whet, 2 ward, 3 leech
+  std::uint8_t refine = 0;  // T-060: 0..3
 };
 
 // One combat pulse (hits, misses, kills) for floaters/flash.

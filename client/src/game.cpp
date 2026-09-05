@@ -945,15 +945,34 @@ void Game::drawInventoryPanel() const {
                     : kv.second.aura == 3 ? "III"   : kv.second.aura == 4 ? "IV"
                                           : "V");
     }
-    std::snprintf(buf, sizeof buf, "%s%s %s%s%s",
+    const bool gear = d->slot <= 1;
+    char duraMark[16] = "";
+    if (gear) {  // T-058 churn readout: durability on weapons/armor
+      if (kv.second.durability == 0)
+        std::snprintf(duraMark, sizeof duraMark, " [WORN]");
+      else if (kv.second.durability < 100)
+        std::snprintf(duraMark, sizeof duraMark, " %du", kv.second.durability);
+    }
+    char refineMark[8] = "";
+    if (kv.second.refine > 0)
+      std::snprintf(refineMark, sizeof refineMark, " +%u",
+                    static_cast<unsigned>(kv.second.refine));
+    const char* affixName =
+        kv.second.affix > 0 && kv.second.affix <= content::kAffixCount
+            ? content::kAffixNames[kv.second.affix]
+            : "";
+    std::snprintf(buf, sizeof buf, "%s%s %s%s%s%s%s%s",
                   kv.second.equipped ? "[E] " : "    ",
                   kv.second.qty > 1 ? (std::to_string(kv.second.qty) + "x").c_str() : "",
                   d->name, d->slot == 0 ? " (weapon)" : d->slot == 1 ? " (armor)" : "",
-                  auraMark);
+                  auraMark, duraMark, refineMark,
+                  affixName[0] ? (std::string(" ") + affixName).c_str() : "");
     const Rectangle rr{static_cast<float>(px + 6), static_cast<float>(y - 2), 226, 14};
+    const bool dormant = gear && kv.second.durability == 0;
     if (row == invHover_) DrawRectangleRec(rr, Color{120, 30, 30, 120});
     const Color rowCol =
-        kv.second.aura > 0 ? Color{120, 235, 235, 255}  // widow-blessed teal
+        dormant ? Color{110, 105, 100, 255}  // dormant: dust-grey (T-058)
+        : kv.second.aura > 0 ? Color{120, 235, 235, 255}  // widow-blessed teal
         : kv.second.equipped ? Color{255, 200, 90, 255}
                              : Color{200, 195, 185, 255};
     DrawText(buf, px + 10, y, 10, rowCol);

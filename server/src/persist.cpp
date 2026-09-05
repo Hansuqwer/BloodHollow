@@ -146,6 +146,19 @@ bool Db::open(const std::string& path, std::string* err) {
     }
     if (!exec("PRAGMA user_version=7;", err)) return false;
   }
+  if (uv < 8) {
+    // v8 (Sprint 16 / T-058): inv blob gains a 5th `durability` field per
+    // record (column-free, parser-backward-compatible — no ALTER needed).
+    if (!exec("PRAGMA user_version=8;", err)) return false;
+  }
+  if (uv < 9) {
+    // v9 (Sprint 16 / T-059): inv blob gains a 6th `affix` field per record.
+    if (!exec("PRAGMA user_version=9;", err)) return false;
+  }
+  if (uv < 10) {
+    // v10 (Sprint 16 / T-060): inv blob gains a 7th `refine` field per record.
+    if (!exec("PRAGMA user_version=10;", err)) return false;
+  }
   return true;
 }
 

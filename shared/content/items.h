@@ -34,6 +34,25 @@ inline constexpr ItemDef kItems[] = {
     {4005, "Revenant Ash",         3, 0,  0,  0,   75,   16},
 };
 
+// ---- T-059 affixes v1 -----------------------------------------------
+// drop-time one-liner mods; era-small, stack-free (one per item).
+// 1 whet (+10% weapon dmg), 2 ward (+2 armor def), 3 leech (+5% of dealt dmg healed)
+inline constexpr const char* kAffixNames[] = {"", "of Whet", "of Warding", "of Leech"};
+inline constexpr std::uint8_t kAffixCount = 3;
+
+// gear-drop side-table (kept off MobDef rows: content table stays 16-wide)
+struct GearDropDef { std::uint32_t mobId; std::uint32_t itemId; std::uint8_t chancePct; };
+inline constexpr GearDropDef kGearDrops[] = {
+    {1002, 2001, 4},   // Feral Ghoul: Rusty Shank
+    {1005, 2002, 3},   // Bonepicker Gnoll: Pit Blade
+    {1006, 2101, 3},   // Charnel Widow: Hide Armor
+    {1007, 2102, 2},   // Gravecaller: Bone Plate
+};
+inline const GearDropDef* findGearDrop(std::uint32_t mobId) {
+  for (const auto& g : kGearDrops) if (g.mobId == mobId) return &g;
+  return nullptr;
+}
+
 inline const ItemDef* findItem(std::uint32_t itemId) {
   for (const ItemDef& d : kItems) {
     if (d.itemId == itemId) return &d;

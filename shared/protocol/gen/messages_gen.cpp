@@ -417,6 +417,9 @@ void ItemSlot::serialize(Writer& w) const {
   w.u16(qty);
   w.u8(equipped);
   w.u8(aura);
+  w.u8(durability);
+  w.u8(affix);
+  w.u8(refine);
 }
 
 bool ItemSlot::deserialize(Reader r) {
@@ -425,6 +428,9 @@ bool ItemSlot::deserialize(Reader r) {
   if (!r.u16(qty)) return false;
   if (!r.u8(equipped)) return false;
   if (!r.u8(aura)) return false;
+  if (!r.u8(durability)) return false;
+  if (!r.u8(affix)) return false;
+  if (!r.u8(refine)) return false;
   return true;
 }
 

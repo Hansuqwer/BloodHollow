@@ -15,6 +15,7 @@ add_executable(bh_tests
   test_party.cpp
   test_kits.cpp
   test_alignment.cpp
+  test_gear_churn.cpp
 )
 target_link_libraries(bh_tests PRIVATE bh_shared bh_protocol bh_server_world bh_doctest bh_warnings)
 add_test(NAME bh_tests COMMAND bh_tests)

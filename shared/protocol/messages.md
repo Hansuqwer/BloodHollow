@@ -267,6 +267,9 @@ u32 itemId
 u16 qty
 u8 equipped
 u8 aura
+u8 durability
+u8 affix
+u8 refine
 ```
 
 All i32 positions are Q10 fixed-point tile coordinates (sim::kUnitsPerTile=1024).

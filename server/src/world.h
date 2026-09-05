@@ -43,6 +43,9 @@ struct InvSlot {
   std::uint16_t qty = 0;
   bool equipped = false;
   std::uint8_t aura = 0;   // T-042: applied aura tier (0=none, 1..5 per RFC 0001)
+  std::uint8_t durability = 100;  // T-058: 0 = dormant (kept, no stats); weapons/armor
+  std::uint8_t affix = 0;         // T-059: 0 none, 1 whet, 2 ward, 3 leech
+  std::uint8_t refine = 0;        // T-060: 0..3 (+2 weapon dmg / +1 armor def per tier)
 };
 
 struct Entity {
@@ -129,6 +132,7 @@ struct MobKillStat {
 class World {
  public:
   // alignment & PK (T-056/T-057)
+  bool repairAll(Entity& e);  // T-058: vendor-proximity, gold toll per point
   bool duelChallenge(Entity& e, std::uint32_t targetId);  // T-056 offer/accept
   bool duelForfeit(Entity& e);                            // T-056
   void bumpKarma(Entity& e, std::int32_t delta);          // clamp + crossing line
@@ -213,6 +217,7 @@ class World {
   static constexpr std::int32_t kKarmaAnvilOk = 2;      // craft tithe
   static constexpr std::int32_t kKarmaAnvilDestroy = -6;  // the Widow collects
   bool nearAnvil(const Entity& e) const;
+  bool tryRefine(Entity& e, std::uint8_t invSlot);  // T-060: anvil upgrade, tier risk
   std::uint32_t vendorSellJunk(Entity& e);  // returns gold gained
   void spawnVendor();                        // called from load
   void spawnVendor(Zone& zone);              // zone 1 town only
@@ -240,6 +245,18 @@ class World {
   void debugKillPlayerBy(Entity& e, Entity* killer) { killPlayer(e, killer); }
   void debugAwardXp(Entity& e, std::uint32_t amt) { awardXp(e, amt); }
   void debugKillMob(Entity& mob, Entity* killer) { killMob(mob, killer); }
+  Entity& debugSpawnAnvil(sim::TilePos at) {  // T-060 test seam (spawner shape)
+    Entity a;
+    a.id = nextId_++;
+    a.zoneId = 1;  // legacy single-zone maps key their grid under 1
+    a.kind = EntityKind::kMob;  // furniture: non-combat
+    a.wireKind = content::kWireKindAnvil;
+    a.name = "Widow Anvil";
+    a.hp = 1;
+    a.hpMax = 1;
+    a.walker.place(at);
+    return insertEntity(std::move(a));
+  }
   Entity& debugSpawnMob(const content::MobDef& def, sim::TilePos at,
                         std::uint16_t zoneId = 1) {
     return spawnMob(def, at, /*spawnerIdx=*/SIZE_MAX, zoneId);

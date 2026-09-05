@@ -130,11 +130,21 @@ One card = one agent session = one PR. Move to `done/` with evidence pasted.
 
 Execution prompt for the whole remainder queue: docs/prompts/phase3-remainder.md
 
+## Done — Sprint 16 (2026-09-05): anvil gear-churn
+
+| Card | Title |
+|---|---|
+| [T-058](done/T-058.md) | Durability: burn on swing/hit, dormancy at 0, `/repair` at Marta (persist v8) |
+| [T-059](done/T-059.md) | Affixes v1: Whet / Warding / Leech rolled at gear-drop time (persist v9, journal epoch 4) |
+| [T-060](done/T-060.md) | Refine at the Widow Anvil: parts+50g toll, 0→1/1→2 sure, 2→3 60% or SHATTER (persist v10) |
+
+Gate: suite 83/83 (327,466 assertions); epoch-4 smoke replay OK
+(ticks=1455 hashes=14 mismatches=0; bots mend=14). Devlog 0017.
+
 ## Queued next (from the execution prompt)
 
 | Sprint | Cards |
 |---|---|
-| S16 anvil gear-churn | T-058 durability, T-059 affixes v1, T-060 refine |
 | S17 day/night | T-061 nightcreep (pack boosts, Blood Bolt +25%), T-062 night economy (+25% loot, +10% XP) — tint floor stands |
 | S18 content drop | T-063 Bonehowl Mine + Drowned Crypt, T-064 Gravemother + elites ×8, T-065 bounty board |
 | S19 VFX/audio | T-066 flash/callouts sweep, T-067 procedural audio stubs |

@@ -349,7 +349,9 @@ void NetClient::poll() {
             case kIdItemSlot: {
               ItemSlot m;
               if (!m.deserialize(pv.body)) break;
-              inventory[m.slot] = InvSlotWire{m.itemId, m.qty, m.equipped != 0};
+              inventory[m.slot] = InvSlotWire{m.itemId, m.qty, m.equipped != 0,
+                                              m.aura, m.durability, m.affix,
+                                              m.refine};
               break;
             }
             case kIdPong: {

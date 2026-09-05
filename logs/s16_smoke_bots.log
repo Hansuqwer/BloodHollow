@@ -1,0 +1,8 @@
+[campaign] s16s__01 reached L1 at t=0.1s (map 1)
+[campaign] s16s__00 reached L1 at t=0.1s (map 1)
+[campaign] s16s__01 reached L2 at t=31.0s (map 1)
+[campaign] s16s__00 reached L2 at t=33.8s (map 1)
+[bots] SUMMARY welcomed=2/2 moved=2/2 minDeltas=2401 kills=23 pots=2 swings=50 deaths=4 shops=0 anvilTries=0 levelDrops=0 maxLevel=2 pkts=738476 bytes=16253667 gates b/g/p/a/r=0/0/0/0/0 mGold=0 mPelts=0 bless=0 mend=14 noSee=2 hurt=140
+[bots] s16s__00     kit=1 lvl=2 hp=39/94 party=2 deaths=4 rxR=127 rxM=236 lastPid=1
+[bots] s16s__01     kit=3 lvl=2 hp=62/94 party=2 deaths=0 rxR=122 rxM=220 lastPid=1
+[bots] OK

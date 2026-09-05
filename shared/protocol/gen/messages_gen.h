@@ -381,6 +381,9 @@ struct ItemSlot {
   std::uint16_t qty = 0;
   std::uint8_t equipped = 0;
   std::uint8_t aura = 0;
+  std::uint8_t durability = 0;
+  std::uint8_t affix = 0;
+  std::uint8_t refine = 0;
 
   void serialize(Writer& w) const;
   bool deserialize(Reader r);

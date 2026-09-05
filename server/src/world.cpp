@@ -386,7 +386,9 @@ std::uint32_t World::equippedWeaponDmg(const Entity& e) const {
     if (sl.equipped) {
       const content::ItemDef* d = content::findItem(sl.itemId);
       if (d != nullptr && d->slot == 0) {
-        std::uint32_t dmg = d->dmg;
+        if (sl.durability == 0) return kFistsBaseDmg;  // dormant (T-058)
+        std::uint32_t dmg = d->dmg + 2u * sl.refine;  // T-060 refine steps
+        if (sl.affix == 1) dmg = dmg + dmg / 10;      // of Whet (T-059): +10%
         if (sl.aura >= 1) {  // Edge Rite (tier I): flat attack bleed
           if (const content::AuraTier* t = content::findAuraTier(sl.aura))
             dmg += t->atkBonusFlat;
@@ -402,7 +404,11 @@ std::uint32_t World::equippedArmorDef(const Entity& e) const {
   for (const InvSlot& sl : e.inv) {
     if (sl.equipped) {
       const content::ItemDef* d = content::findItem(sl.itemId);
-      if (d != nullptr && d->slot == 1) return d->def;
+      if (d != nullptr && d->slot == 1) {
+        if (sl.durability == 0) return 0u;  // dormant (T-058)
+        const std::uint32_t def = d->def + sl.refine;  // T-060 refine steps
+        return sl.affix == 2 ? def + 2u : def;         // of Warding (T-059)
+      }
     }
   }
   return 0;
@@ -718,6 +724,46 @@ bool World::vendorBuy(Entity& e, std::uint32_t itemId, std::uint16_t qty) {
   return true;
 }
 
+// T-058 repair: vendor-proximity, 1 gold per 2 durability points per item
+// (rounded up per item; era shop-rate tax — the Widow undercuts with parts)
+bool World::repairAll(Entity& e) {
+  if (e.kind != EntityKind::kPlayer || e.dead) return false;
+  if (karmaBandOf(e.karma) == 2) return false;  // Marta's refusal stands
+  bool nearVendor = false;
+  for (const auto& v : entities_) {
+    if (v.wireKind == content::kWireKindVendor &&
+        chebyshev(v.walker.tile(), e.walker.tile()) <= 3) {
+      nearVendor = true;
+      break;
+    }
+  }
+  if (!nearVendor) return false;
+  std::uint32_t total = 0;
+  std::uint32_t fixed = 0;
+  for (InvSlot& sl : e.inv) {
+    const content::ItemDef* d = content::findItem(sl.itemId);
+    if (d == nullptr || d->slot > 1 || sl.durability >= 100) continue;
+    const std::uint32_t missing = 100u - sl.durability;
+    total += (missing + 1u) / 2u;  // 1g per 2 points
+  }
+  if (total == 0 || e.gold < total) return false;  // all-or-nothing, era-plain
+  e.gold -= total;
+  for (InvSlot& sl : e.inv) {
+    const content::ItemDef* d = content::findItem(sl.itemId);
+    if (d == nullptr || d->slot > 1) continue;
+    if (sl.durability < 100) { sl.durability = 100; ++fixed; }
+  }
+  WorldEvent ev;
+  ev.aboutId = e.id;
+  ev.statsChanged = true;
+  ev.invChanged = true;
+  ev.chatCh = 2;
+  ev.chatText = "Marta hammers out the dents (-" + std::to_string(total) +
+                "g, " + std::to_string(fixed) + " piece(s) good as new).";
+  events_.push_back(std::move(ev));
+  return true;
+}
+
 std::uint32_t World::vendorSellJunk(Entity& e) {
   if (e.kind != EntityKind::kPlayer || e.dead) return 0;
   if (karmaBandOf(e.karma) == 2) {  // T-056 refusal (pawn lane)
@@ -796,6 +842,68 @@ bool World::nearAnvil(const Entity& e) const {
     }
   }
   return false;
+}
+
+// T-060 refine: consume 1 monster part + 50g per attempt. Tiers 0->1 and
+// 1->2 guaranteed (era mercy), 2->3 is 60% with DESTRUCTION on failure
+// (Soma anvil law). Needs full durability — mend it first.
+bool World::tryRefine(Entity& e, std::uint8_t invSlot) {
+  if (e.kind != EntityKind::kPlayer || e.dead || !nearAnvil(e)) return false;
+  if (invSlot >= e.inv.size()) return false;
+  InvSlot& sl = e.inv[invSlot];
+  const content::ItemDef* d = content::findItem(sl.itemId);
+  if (d == nullptr || d->slot > 1) return false;  // gear only
+  if (sl.refine >= 3) {
+    WorldEvent ev;
+    ev.aboutId = e.id;
+    ev.chatCh = 255;
+    ev.chatText = "there is no hotter coal for this iron (refine is full).";
+    events_.push_back(ev);
+    return false;
+  }
+  if (sl.durability < 100) {
+    WorldEvent ev;
+    ev.aboutId = e.id;
+    ev.chatCh = 255;
+    ev.chatText = "mend it first — cracked metal lies about its temper.";
+    events_.push_back(ev);
+    return false;
+  }
+  int junkIdx = -1;
+  for (size_t i = 0; i < e.inv.size(); ++i) {
+    const content::ItemDef* jd = content::findItem(e.inv[i].itemId);
+    if (jd != nullptr && jd->slot == 3) { junkIdx = static_cast<int>(i); break; }
+  }
+  if (junkIdx < 0 || e.gold < 50) return false;
+  if (--e.inv[junkIdx].qty == 0) {
+    if (static_cast<size_t>(junkIdx) < e.inv.size() &&
+        static_cast<size_t>(junkIdx) != invSlot)
+      e.inv.erase(e.inv.begin() + junkIdx);
+    // (junk slot is never the gear slot; erase shifts indexes > junkIdx)
+    if (static_cast<size_t>(junkIdx) < invSlot) --invSlot;
+  }
+  InvSlot& tgt = e.inv[invSlot];
+  e.gold -= 50;
+  WorldEvent ev;
+  ev.aboutId = e.id;
+  ev.statsChanged = true;
+  ev.invChanged = true;
+  ev.chatCh = 255;
+  if (tgt.refine < 2 || rng_.range(1, 100) <= 60) {
+    ++tgt.refine;
+    std::printf("[anvil-refine] %s %u -> %u item=%u\n", e.name.c_str(),
+                static_cast<unsigned>(tgt.refine) - 1,
+                static_cast<unsigned>(tgt.refine), tgt.itemId);
+    ev.chatText = std::string("(anvil) the ring answers true: ") + d->name +
+                  " +" + std::to_string(tgt.refine) + ".";
+  } else {
+    std::printf("[anvil-refine] %s SHATTERED item=%u\n", e.name.c_str(), tgt.itemId);
+    ev.chatText = std::string("(anvil) the ") + d->name +
+                  " SINGS WRONG and falls apart. The Widow keeps the iron.";
+    e.inv.erase(e.inv.begin() + invSlot);
+  }
+  events_.push_back(std::move(ev));
+  return true;
 }
 
 bool World::tryAnvil(Entity& e, std::uint8_t tier) {
@@ -1159,6 +1267,27 @@ void World::trySwing(Entity& att, Entity& def) {
   def.lastHurtTick = tick_;
   if (att.kind == EntityKind::kPlayer) {
     ++att.swingLands;
+    // T-059 of Leech: equipped weapon drinks 5% of damage dealt
+    for (const InvSlot& sl : att.inv) {
+      const content::ItemDef* dd = content::findItem(sl.itemId);
+      if (sl.equipped && dd != nullptr && dd->slot == 0 && sl.affix == 3 &&
+          sl.durability > 0) {
+        const std::uint32_t sip = std::max<std::uint32_t>(1, dmg / 20);
+        att.hp = std::min<std::int32_t>(
+            att.hp + static_cast<std::int32_t>(sip), att.hpMax);
+        break;
+      }
+    }
+    // T-058 durability burn: weapon wears per landed swing
+    for (InvSlot& sl : att.inv)
+      if (sl.equipped && content::findItem(sl.itemId) != nullptr &&
+          content::findItem(sl.itemId)->slot == 0 && sl.durability > 0)
+        --sl.durability;
+    if (def.kind == EntityKind::kPlayer)
+      for (InvSlot& sl : def.inv)
+        if (sl.equipped && content::findItem(sl.itemId) != nullptr &&
+            content::findItem(sl.itemId)->slot == 1 && sl.durability > 0)
+          --sl.durability;
     const std::uint8_t newSkill =
         static_cast<std::uint8_t>(std::min<std::uint32_t>(100, att.swingLands / kSkillLandsPerPoint));
     if (newSkill != att.swordSkill) {
@@ -1473,6 +1602,28 @@ void World::killMob(Entity& mob, Entity* killer) {
     }
     const content::MobDef* md = content::findMob(mob.mobId);
     if (md != nullptr) {
+      // T-059 affixes v1: named-gear side-drop with a rolled one-liner mod
+      if (const content::GearDropDef* gd = content::findGearDrop(md->mobId)) {
+        if (rng_.range(1, 100) <= static_cast<std::int64_t>(gd->chancePct)) {
+          if (killer->inv.size() < 32) {  // inventory cap (addItem rule)
+            InvSlot sl;
+            sl.itemId = gd->itemId;
+            sl.qty = 1;
+            sl.equipped = false;
+            sl.aura = 0;
+            sl.affix = static_cast<std::uint8_t>(rng_.range(1, content::kAffixCount));
+            killer->inv.push_back(sl);
+            WorldEvent gev;
+            gev.aboutId = killer->id;
+            gev.invChanged = true;
+            gev.chatCh = 255;
+            const content::ItemDef* id = content::findItem(gd->itemId);
+            gev.chatText = std::string("looted ") + (id != nullptr ? id->name : "?") +
+                           " " + content::kAffixNames[sl.affix] + ".";
+            events_.push_back(std::move(gev));
+          }
+        }
+      }
       // loot roll (junk tier for now; gear tables land with affixes in P3)
       if (md->lootItemId != 0 &&
           rng_.range(1, 100) <= static_cast<std::int64_t>(md->lootChancePct)) {
