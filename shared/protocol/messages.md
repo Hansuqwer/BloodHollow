@@ -244,6 +244,11 @@ u8 mag
 u16 swordSkill
 u32 gold
 i32 karma
+u8 classId
+u32 mp
+u32 mpMax
+u16 blessTicksLeft
+u16 ironskinTicksLeft
 ```
 
 Inventory sync: InventoryReset wipes the client table (carries gold), then one

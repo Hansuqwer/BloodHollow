@@ -138,6 +138,14 @@ bool Db::open(const std::string& path, std::string* err) {
     }
     if (!exec("PRAGMA user_version=6;", err)) return false;
   }
+  if (uv < 7) {
+    // v7 (Sprint 14 / T-053): class kit column; existing = Ravager (freeze).
+    if (!exec("ALTER TABLE characters ADD COLUMN class_id INTEGER NOT NULL DEFAULT 1;",
+              err)) {
+      return false;
+    }
+    if (!exec("PRAGMA user_version=7;", err)) return false;
+  }
   return true;
 }
 
@@ -218,7 +226,7 @@ bool Db::loginOrCreate(const std::string& user, const std::string& pass,
   // v0: exactly one character per account, auto-created with the account name.
   sqlite3_stmt* cs = nullptr;
   if (sqlite3_prepare_v2(db_,
-                         "SELECT id, name, map_id, x, y, level, xp, str, vit, dex, stat_points, gold, inv, anvil_mercy, karma "
+                         "SELECT id, name, map_id, x, y, level, xp, str, vit, dex, stat_points, gold, inv, anvil_mercy, karma, class_id "
         "FROM characters "
                          "WHERE account_id=? LIMIT 1;",
                          -1, &cs, nullptr) != SQLITE_OK) {
@@ -244,6 +252,7 @@ bool Db::loginOrCreate(const std::string& user, const std::string& pass,
     out->invBlob = invTxt != nullptr ? reinterpret_cast<const char*>(invTxt) : "";
     out->anvilMercy = sqlite3_column_int64(cs, 13);
     out->karma = sqlite3_column_int(cs, 14);
+    out->classId = sqlite3_column_int(cs, 15);
     sqlite3_finalize(cs);
     return true;
   }
@@ -277,12 +286,12 @@ bool Db::loginOrCreate(const std::string& user, const std::string& pass,
 void Db::saveProgress(std::int64_t characterId, int level, std::int64_t xp, int str,
                       int vit, int dex, int statPoints, int gold,
                       const std::string& invBlob, std::int64_t anvilMercy,
-                      std::int32_t karma) {
+                      std::int32_t karma, int classId) {
   if (db_ == nullptr) return;
   sqlite3_stmt* st = nullptr;
   if (sqlite3_prepare_v2(db_,
                          "UPDATE characters SET level=?, xp=?, str=?, vit=?, dex=?, "
-                         "stat_points=?, gold=?, inv=?, anvil_mercy=?, karma=? WHERE id=?;",
+                         "stat_points=?, gold=?, inv=?, anvil_mercy=?, karma=?, class_id=? WHERE id=?;",
                          -1, &st, nullptr) != SQLITE_OK) {
     return;
   }
@@ -296,7 +305,8 @@ void Db::saveProgress(std::int64_t characterId, int level, std::int64_t xp, int 
   sqlite3_bind_text(st, 8, invBlob.c_str(), -1, SQLITE_TRANSIENT);
   sqlite3_bind_int64(st, 9, anvilMercy);
   sqlite3_bind_int(st, 10, karma);
-  sqlite3_bind_int64(st, 11, characterId);
+  sqlite3_bind_int(st, 11, classId);
+  sqlite3_bind_int64(st, 12, characterId);
   sqlite3_step(st);
   sqlite3_finalize(st);
 }

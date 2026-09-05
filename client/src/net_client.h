@@ -34,6 +34,9 @@ struct OwnStatsWire {
   std::uint16_t swordSkill = 0;
   std::uint32_t gold = 0;
   std::int32_t karma = 0;
+  std::uint8_t classId = 1;       // kit (kits.h) — stat panel label
+  std::uint32_t mp = 0, mpMax = 30;
+  std::uint16_t blessTicksLeft = 0, ironskinTicksLeft = 0;
 };
 
 struct PartyMemberWire {

@@ -22,7 +22,7 @@ struct Command {
                              kTradeOpen, kTradeItem, kTradeGold, kTradeCommit,
                              kTradeCancel, kAnvil,
                              kPartyInvite, kPartyAccept, kPartyLeave,
-                             kPartyKick } kind;
+                             kPartyKick, kKitChoose } kind;  // T-053: a = kit id
   std::int32_t a = 0, b = 0;
   std::uint8_t channel = 0;
   std::string text{};
@@ -109,6 +109,9 @@ inline void applyWorldCommand(World& w, Entity& e, const Command& c) {
       break;
     case Command::kPartyKick:
       w.partyKick(e, static_cast<std::uint32_t>(c.a));
+      break;
+    case Command::kKitChoose:
+      w.kitChoose(e, static_cast<std::uint8_t>(c.a));
       break;
     case Command::kChat:
     case Command::kPing:

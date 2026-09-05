@@ -6,6 +6,7 @@
 
 #include "assets/placeholder.h"
 #include "content/items.h"
+#include "content/kits.h"
 #include "content/auras.h"
 #include "content/wirekind.h"
 #include "render/daynight.h"
@@ -116,6 +117,19 @@ void Game::handleInput() {
   if (IsKeyPressed(KEY_N)) debugHourOffset_ -= 1.0f;
 
   if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+    // party frame rows are castable targets (T-052/T-054): click = select
+    if (net_->partyId != 0 && !net_->party.empty()) {
+      const Vector2 mp = GetMousePosition();
+      const float px = 8.0f, py = 110.0f;
+      const float ph = 18.0f + net_->party.size() * 24.0f;
+      if (mp.x >= px && mp.x <= px + 150 && mp.y >= py && mp.y <= py + ph) {
+        const int row = static_cast<int>((mp.y - (py + 18)) / 24.0f);
+        if (row >= 0 && static_cast<size_t>(row) < net_->party.size()) {
+          targetId_ = net_->party[static_cast<size_t>(row)].entityId;
+        }
+        return;  // swallow: clicking the frame never walks
+      }
+    }
     const Vector2 mw = GetScreenToWorld2D(GetMousePosition(), rig_.cam);
     commandPath(iso::worldToTilePos(mw, map_.tileW, map_.tileH));
   }
@@ -226,6 +240,13 @@ void Game::handleInputOnline() {
     if (IsKeyPressed(KEY_H)) net_->sendTradeOfferGold(net_->tradeGoldOffered + 10);
   }
   if (IsKeyPressed(KEY_ONE) && targetId_ != 0) net_->sendSkill(1, targetId_);
+  // kit channels (T-054): 2 Mend 3 Bless 4 Ironskin 5 Firebolt.
+  // Choir casts take the selected party target (else self); Firebolt wants the
+  // attack target specifically (selected mob), falling back to 0 = no-op server.
+  if (IsKeyPressed(KEY_TWO)) net_->sendSkill(2, chanTarget());
+  if (IsKeyPressed(KEY_THREE)) net_->sendSkill(3, chanTarget());
+  if (IsKeyPressed(KEY_FOUR)) net_->sendSkill(4, chanTarget());
+  if (IsKeyPressed(KEY_FIVE)) net_->sendSkill(5, targetId_);
   if (IsKeyPressed(KEY_Q)) {
     // quick-sip: first Blood Vial stack
     for (const auto& kv : net_->inventory) {
@@ -364,15 +385,23 @@ void Game::applyNetState() {
       f.r = 90;
       f.g = 220;
       f.b = 110;
+    } else if (cp.kind == 8) {
+      // T-054 Mend: life given floats over the RECIPIENT (green +N)
+      f.text = "mend +" + std::to_string(cp.amount);
+      f.r = 90;
+      f.g = 230;
+      f.b = 120;
     } else if (cp.kind == 5) {
-      // HB red-caps skill callout floats over the CASTER
-      auto ai = rents_.find(cp.attacker);
-      if (ai != rents_.end()) {
-        const Vector2 ap = entRenderPos(ai->second);
-        f.x = ap.x;
-        f.y = ap.y;
+      // skill hit (Power Swing + Firebolt): red-caps over the CASTER
+      {
+        auto ai2 = rents_.find(cp.attacker);
+        if (ai2 != rents_.end()) {
+          const Vector2 ap = entRenderPos(ai2->second);
+          f.x = ap.x;
+          f.y = ap.y;
+        }
       }
-      f.text = "Power-Swing!";
+      f.text = "Power-Swing! " + std::to_string(cp.amount);
       f.r = 255;
       f.g = 60;
       f.b = 40;
@@ -763,12 +792,17 @@ void Game::drawStatPanel() const {
   if (net_ == nullptr || !net_->welcomed) return;
   const OwnStatsWire& st = net_->ownStats;
   const int px = 1024 - 190;
-  DrawRectangle(px, 8, 182, st.statPoints > 0 ? 92 : 74, Color{0, 0, 0, 170});
+  // kit block grows: mp row always, buff rows only while active (era chrome)
+  const bool showBuffs = st.blessTicksLeft > 0 || st.ironskinTicksLeft > 0;
+  const int ph = (st.statPoints > 0 ? 92 : 74) + 26 + (showBuffs ? 12 : 0);
+  DrawRectangle(px, 8, 182, ph, Color{0, 0, 0, 170});
   DrawRectangleLinesEx(Rectangle{static_cast<float>(px), 8, 182,
-                                 st.statPoints > 0 ? 92.0f : 74.0f},
+                                 static_cast<float>(ph)},
                        1.0f, Color{150, 30, 30, 200});
   char buf[128];
-  std::snprintf(buf, sizeof buf, "LEVEL %u", st.level);
+  const content::KitDef* kit = content::findKit(st.classId);
+  std::snprintf(buf, sizeof buf, "LEVEL %u  %s", st.level,
+                kit != nullptr ? kit->name : "?");
   DrawText(buf, px + 8, 14, 10, Color{230, 210, 190, 255});
   // xp bar
   const float frac =
@@ -783,6 +817,31 @@ void Game::drawStatPanel() const {
     std::snprintf(buf, sizeof buf, "+%u pts: F5 STR F6 VIT F7 DEX", st.statPoints);
     DrawText(buf, px + 8, 70, 10, Color{255, 200, 80, 255});
   }
+  // T-053/54: mana bar + buff countdowns (kit resource legibility)
+  const int by = (st.statPoints > 0 ? 86 : 70) + 2;
+  const float mfrac = st.mpMax > 0 ? static_cast<float>(st.mp) / static_cast<float>(st.mpMax) : 0.0f;
+  DrawRectangle(px + 8, by, 166, 6, Color{20, 20, 30, 255});
+  DrawRectangle(px + 8, by, static_cast<int>(166.0f * mfrac), 6, Color{60, 70, 160, 255});
+  std::snprintf(buf, sizeof buf, "mp %u / %u", st.mp, st.mpMax);
+  DrawText(buf, px + 8, by + 10, 10, Color{170, 180, 235, 255});
+  if (showBuffs) {
+    const int byy = by + 24;
+    char nb[96];
+    std::snprintf(nb, sizeof nb, "%s%s%s    %us / %us",
+                  st.blessTicksLeft > 0 ? "BLESS " : "",
+                  st.blessTicksLeft > 0 && st.ironskinTicksLeft > 0 ? "+ " : "",
+                  st.ironskinTicksLeft > 0 ? "IRONSKIN" : "",
+                  st.blessTicksLeft / 20u, st.ironskinTicksLeft / 20u);
+    DrawText(nb, px + 8, byy, 10, Color{200, 235, 170, 255});
+  }
+}
+
+std::uint32_t Game::chanTarget() const {
+  if (net_ != nullptr && targetId_ != 0) {
+    for (const auto& m : net_->party)
+      if (m.entityId == targetId_) return targetId_;  // party pick stays
+  }
+  return 0;  // server choirTarget(): 0 = self
 }
 
 void Game::drawPartyFrame() const {

@@ -111,9 +111,18 @@ One card = one agent session = one PR. Move to `done/` with evidence pasted.
 | [T-052](done/T-052.md) | client party frame (roster panel, leader star, live hp bars) |
 | latent fix | command-path WorldEvents drained pre-tick (anvil-floater-class bug) |
 
+## Done — Sprint 14 (2026-09-05): class kits, Cultist-first
+
+| Card | Title |
+|---|---|
+| [T-053](done/T-053.md) | class kits foundation: classId, persist v7, /kit oath, skill dispatch, MP pool |
+| [T-054](done/T-054.md) | Cultist kit v1 (Mend/Bless/Ironskin) + Gravecaller Firebolt starter |
+| [T-055](done/T-055.md) | race-proofed choir bot + dual-kit gate leg (mixed verdict, levers listed) |
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |
 |---|---|---|
 | M2b-final | L8-in-one-sitting pacing rerun (S13 party XP exists; measure uplift) | evidence: logs/s13_party_leg.*, devlog 0014 |
 | T-034b | balance retune from duel table: camp leuk-for-leash levers | logs/duel-table-s12.csv |
+| T-054b | Cultist v2: Chorus (party-wide), Mass Mend, Haste; choir-bot v2 (potion priority, safe-chase) | devlog 0015 |

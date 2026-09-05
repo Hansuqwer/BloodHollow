@@ -1,3 +1,6 @@
+#include "content/kits.h"
+#include "content/mobs.h"
+
 #include "world.h"
 
 #include <algorithm>
@@ -20,6 +23,19 @@ constexpr std::uint32_t kFistsBaseDmg = 8;    // proto-Ravager bare hands
 constexpr sim::Tick kSipCdTicks = 10;         // GDD: 500 ms global sip
 constexpr sim::Tick kPowerSwingCdTicks = 40;  // GDD: 40t CD
 constexpr std::uint32_t kPowerSwingMultPct = 140;
+
+// ---- kit skills (T-054, GDD Cultist/Gravecaller v1 numbers) --------------
+constexpr sim::Tick kBlessTicks = 6000;      // buffs last 5 min
+constexpr sim::Tick kMendCdTicks = 25;
+constexpr sim::Tick kBlessCdTicks = 40;
+constexpr sim::Tick kIronskinCdTicks = 40;
+constexpr sim::Tick kFireboltCdTicks = 30;
+constexpr int kMendRange = 6;                // tiles, party-only target
+constexpr int kFireboltRange = 8;
+constexpr std::uint32_t kMendMpCost = 8;
+constexpr std::uint32_t kBlessMpCost = 15;
+constexpr std::uint32_t kIronskinMpCost = 15;
+constexpr std::uint32_t kFireboltMpCost = 6;
 constexpr std::uint32_t kSkillLandsPerPoint = 25;  // Soma: skill up by use
 
 int chebyshev(const sim::TilePos a, const sim::TilePos b) {
@@ -94,7 +110,8 @@ Entity& World::insertEntity(Entity e) {
 }
 
 Entity& World::spawn(const std::string& name, std::int64_t charRowId,
-                     std::optional<sim::TilePos> at, std::uint16_t zoneId) {
+                     std::optional<sim::TilePos> at, std::uint16_t zoneId,
+                     std::uint8_t classId) {
   if (zones_.count(zoneId) == 0) zoneId = 1;  // zoneless test maps fall back
   Zone& z = zones_.at(zoneId);
   Entity e;
@@ -103,12 +120,52 @@ Entity& World::spawn(const std::string& name, std::int64_t charRowId,
   e.name = name;
   e.charRowId = charRowId;
   e.zoneId = zoneId;
+  e.classId = classId;
+  if (const content::KitDef* kit = content::findKit(classId)) {  // T-053 seed
+    e.str = kit->str;
+    e.vit = kit->vit;
+    e.dex = kit->dex;
+    e.intg = kit->intg;
+    e.mag = kit->mag;
+  }
   sim::TilePos pos = z.spawnPoint;
   if (at && z.map.inBounds(at->x, at->y) && !z.map.isBlocked(at->x, at->y)) pos = *at;
   e.walker.place(pos);
   e.hpMax = recomputeHpMax(e);
   e.hp = e.hpMax;
+  e.mpMax = 30;  // L1 pool; recomputeMpMax at level-up
+  e.mp = e.mpMax;
   return insertEntity(std::move(e));
+}
+
+// T-053: one-time kit swear. Unsworn (0) at any level, or sworn at level 1
+// (early re-dedication window, era monastery trope). Emits a choir line so
+// the choice is seen — oath-fiction, not a silent stat swap.
+bool World::kitChoose(Entity& e, std::uint8_t kitId) {
+  if (e.kind != EntityKind::kPlayer || e.dead) return false;
+  const content::KitDef* kit = content::findKit(kitId);
+  if (kit == nullptr) return false;
+  const bool sworn = e.classId != content::kKitUnsworn;
+  if (sworn && e.level > 1) return false;  // past the window
+  e.classId = kitId;
+  e.str = kit->str + (e.str > 8 ? e.str - 8 : 0);    // keep assigned pts
+  e.vit = kit->vit + (e.vit > 8 ? e.vit - 8 : 0);
+  e.dex = kit->dex + (e.dex > 8 ? e.dex - 8 : 0);
+  e.intg = kit->intg;
+  e.mag = kit->mag;
+  {
+    const std::uint32_t newMax = recomputeHpMax(e);
+    e.hpMax = newMax;
+    if (e.hp > newMax) e.hp = newMax;
+    WorldEvent ev;
+    ev.aboutId = e.id;
+    ev.statsChanged = true;
+    ev.chatCh = 2;
+    ev.chatText = sworn ? (e.name + " re-swears to the " + kit->name + ".")
+                        : (e.name + " swears the oath of the " + kit->name + ".");
+    events_.push_back(std::move(ev));
+  }
+  return true;
 }
 
 Entity& World::spawnMob(const content::MobDef& def, sim::TilePos at, size_t spawnerIdx,
@@ -386,15 +443,58 @@ bool World::toggleEquip(Entity& e, std::uint8_t slot) {
   return true;
 }
 
+// T-053: kit-gated dispatch. wrong kit/channel or under-level = silent no-op
+// (the rite is not yours) — no event spam on keyspam.
+std::uint32_t World::effAcc(const Entity& e) const {
+  std::uint32_t acc = 2u * e.dex;
+  if (e.blessUntil >= 0 && tick_ < e.blessUntil) acc = acc * 110u / 100u;
+  return acc;
+}
+
+std::uint32_t World::effDmgBase(const Entity& e) const {
+  if (e.kind != EntityKind::kPlayer) {
+    const content::MobDef* md = content::findMob(e.mobId);
+    return md != nullptr ? md->dmg : 4;
+  }
+  std::uint32_t base = equippedWeaponDmg(e) + e.swordSkill / 20;
+  if (e.blessUntil >= 0 && tick_ < e.blessUntil) base = base * 110u / 100u;
+  return base;
+}
+
+std::uint32_t World::effDef(const Entity& e) const {
+  std::uint32_t d = 0;
+  if (e.kind == EntityKind::kPlayer) {
+    d = equippedArmorDef(e);
+    if (e.ironskinUntil >= 0 && tick_ < e.ironskinUntil) d = d * 120u / 100u;
+  } else if (const content::MobDef* md = content::findMob(e.mobId)) {
+    d = md->def;
+  }
+  return d;
+}
+
 void World::trySkill(Entity& e, std::uint8_t skill, std::uint32_t targetId) {
-  if (e.kind != EntityKind::kPlayer || e.dead || skill != 1) return;
+  if (e.kind != EntityKind::kPlayer || e.dead) return;
+  if (skill >= 2 && skill <= 5) {
+    const std::uint8_t unlock = content::kitSkillUnlock(e.classId, skill);
+    if (unlock == 0 || e.level < unlock) return;
+    switch (skill) {
+      case 2: tryMend(e, targetId); return;
+      case 3: tryBless(e, targetId); return;
+      case 4: tryIronskin(e, targetId); return;
+      case 5: tryFirebolt(e, targetId); return;
+      default: return;
+    }
+  }
+  if (skill != 1) return;
+  if (content::kitSkillUnlock(e.classId, 1) == 0) return;   // kit has no swing
+  if (e.level < content::kitSkillUnlock(e.classId, 1)) return;
   if (tick_ - e.lastPowerTick < kPowerSwingCdTicks) return;
   Entity* target = find(targetId);
   if (target == nullptr || target->dead || content::wireIsFurniture(target->wireKind)) return;
   if (chebyshev(e.walker.tile(), target->walker.tile()) > 1) return;
   e.lastPowerTick = tick_;
 
-  const int acc = 2 * e.dex;
+  const int acc = static_cast<int>(effAcc(e));
   const int evd = target->kind == EntityKind::kPlayer ? target->dex : target->dex;
   const sim::HitCheck hc = sim::rollHit(acc, evd, e.dex, rng_);
   if (!hc.hit) {
@@ -405,12 +505,8 @@ void World::trySkill(Entity& e, std::uint8_t skill, std::uint32_t targetId) {
     events_.push_back(std::move(ev));
     return;
   }
-  const std::uint32_t base = equippedWeaponDmg(e) + e.swordSkill / 20;
-  std::uint32_t def = equippedArmorDef(*target);
-  if (target->kind == EntityKind::kMob) {
-    const content::MobDef* md = content::findMob(target->mobId);
-    if (md != nullptr) def = md->def;
-  }
+  const std::uint32_t base = effDmgBase(e);
+  const std::uint32_t def = effDef(*target);
   std::uint32_t dmg = sim::rollDamage(base, e.str, def, hc.crit);
   dmg = dmg * kPowerSwingMultPct / 100u;
   if (target->kind == EntityKind::kPlayer) dmg = dmg * 65u / 100u;
@@ -442,6 +538,129 @@ void World::trySkill(Entity& e, std::uint8_t skill, std::uint32_t targetId) {
       kill.chatCh = 3;
       kill.chatText = victimName + " was slain by " + e.name + ".";
       killPlayer(*target, &e);
+    }
+    events_.push_back(std::move(kill));
+  }
+}
+
+// ---- T-054 kit skill handlers --------------------------------------------
+namespace {
+// shared cultist target rules: self or living party member, same zone, in range
+bh::server::Entity* choirTarget(bh::server::World& w, bh::server::Entity& e,
+                                std::uint32_t targetId) {
+  bh::server::Entity* t = w.find(targetId == 0 ? e.id : targetId);
+  if (t == nullptr || t->kind != bh::server::EntityKind::kPlayer || t->dead) return nullptr;
+  const bool isSelf = t->id == e.id;
+  const bool sameParty = e.partyId != 0 && t->partyId == e.partyId;
+  if (!isSelf && !sameParty) return nullptr;  // choir mends the sworn circle only
+  if (t->zoneId != e.zoneId) return nullptr;
+  return t;
+}
+}  // namespace
+
+void World::tryMend(Entity& e, std::uint32_t targetId) {
+  if (tick_ - e.lastMendTick < kMendCdTicks) return;
+  if (e.mp < kMendMpCost) return;  // out of breath (era: quiet fail)
+  Entity* t = choirTarget(*this, e, targetId);
+  if (t == nullptr) return;
+  if (chebyshev(e.walker.tile(), t->walker.tile()) > kMendRange) return;
+  e.lastMendTick = tick_;
+  e.mp -= kMendMpCost;
+  const std::uint32_t amount = 30u + 4u * e.level;
+  const std::uint32_t room = t->hpMax - t->hp;
+  const std::uint32_t healed = amount < room ? amount : room;
+  t->hp += healed;
+  // heal floater reuses combat-event path; kind 8 = life given (client: green)
+  WorldEvent ev;
+  ev.attacker = e.id;
+  ev.target = t->id;
+  ev.kind = 8;
+  ev.amount = static_cast<std::uint16_t>(healed > 65535 ? 65535 : healed);
+  events_.push_back(ev);
+  if (healed > 0) {
+    WorldEvent txt;
+    txt.aboutId = t->id;
+    txt.chatCh = 2;
+    txt.chatText = e.id == t->id ? e.name + " mends their own wounds (" +
+                                       std::to_string(healed) + ")."
+                                 : e.name + " mends " + t->name + " (" +
+                                       std::to_string(healed) + ").";
+    events_.push_back(std::move(txt));
+  }
+}
+
+void World::tryBless(Entity& e, std::uint32_t targetId) {
+  if (tick_ - e.lastBlessTick < kBlessCdTicks) return;
+  if (e.mp < kBlessMpCost) return;
+  Entity* t = choirTarget(*this, e, targetId);
+  if (t == nullptr) return;
+  if (chebyshev(e.walker.tile(), t->walker.tile()) > kMendRange) return;
+  e.lastBlessTick = tick_;
+  e.mp -= kBlessMpCost;
+  t->blessUntil = tick_ + kBlessTicks;  // re-cast refreshes (stack-free)
+  WorldEvent txt;
+  txt.aboutId = t->id;
+  txt.statsChanged = true;
+  txt.chatCh = 2;
+  txt.chatText = "the " + std::string(content::findKit(content::kKitCultist)->name) +
+                 " blesses " + t->name + " (+10% for 5 min).";
+  events_.push_back(std::move(txt));
+}
+
+void World::tryIronskin(Entity& e, std::uint32_t targetId) {
+  if (tick_ - e.lastIronskinTick < kIronskinCdTicks) return;
+  if (e.mp < kIronskinMpCost) return;
+  Entity* t = choirTarget(*this, e, targetId);
+  if (t == nullptr) return;
+  if (chebyshev(e.walker.tile(), t->walker.tile()) > kMendRange) return;
+  e.lastIronskinTick = tick_;
+  e.mp -= kIronskinMpCost;
+  t->ironskinUntil = tick_ + kBlessTicks;
+  WorldEvent txt;
+  txt.aboutId = t->id;
+  txt.statsChanged = true;
+  txt.chatCh = 2;
+  txt.chatText = t->name + "'s skin turns to grave-iron (+20% DR for 5 min).";
+  events_.push_back(std::move(txt));
+}
+
+void World::tryFirebolt(Entity& e, std::uint32_t targetId) {
+  if (tick_ - e.lastFireboltTick < kFireboltCdTicks) return;
+  if (e.mp < kFireboltMpCost) return;
+  Entity* t = find(targetId);
+  if (t == nullptr || t->dead || content::wireIsFurniture(t->wireKind)) return;
+  if (t->zoneId != e.zoneId ||
+      chebyshev(e.walker.tile(), t->walker.tile()) > kFireboltRange) return;
+  e.lastFireboltTick = tick_;
+  e.mp -= kFireboltMpCost;
+  // plague-fire ignores plate; PvP scalar applies (GDD), int adds via kit seed
+  std::uint32_t dmg = 8u + 2u * e.level + 2u * e.intg;
+  if (t->kind == EntityKind::kPlayer) dmg = dmg * 65u / 100u;
+  dmg = dmg < 1 ? 1 : dmg;
+  t->hp = dmg >= t->hp ? 0 : t->hp - dmg;
+  t->lastHurtTick = tick_;
+  if (t->kind == EntityKind::kMob && t->attackTarget == 0) t->attackTarget = e.id;
+  WorldEvent ev;
+  ev.attacker = e.id;
+  ev.target = t->id;
+  ev.kind = 5;  // skill hit callout (shares Power-Swing red-caps lane)
+  ev.amount = static_cast<std::uint16_t>(dmg > 65535 ? 65535 : dmg);
+  events_.push_back(ev);
+  if (t->hp == 0) {
+    WorldEvent kill;
+    kill.attacker = e.id;
+    kill.target = t->id;
+    kill.kind = 3;
+    kill.amount = ev.amount;
+    const std::string victimName = t->name;
+    if (t->kind == EntityKind::kMob) {
+      killMob(*t, &e);
+      kill.chatCh = 3;
+      kill.chatText = victimName + " bursts into plague-fire.";
+    } else {
+      kill.chatCh = 3;
+      kill.chatText = victimName + " was burned down by " + e.name + ".";
+      killPlayer(*t, &e);
     }
     events_.push_back(std::move(kill));
   }
@@ -881,9 +1100,9 @@ void World::trySwing(Entity& att, Entity& def) {
   int acc, evd, adex;
   std::uint32_t base, ddef;
   if (att.kind == EntityKind::kPlayer) {
-    acc = 2 * att.dex;
+    acc = static_cast<int>(effAcc(att));      // bless-aware (T-054)
     adex = att.dex;
-    base = equippedWeaponDmg(att) + att.swordSkill / 20;  // Soma: +1 per 20 skill
+    base = effDmgBase(att);
   } else {
     const content::MobDef* md = content::findMob(att.mobId);
     acc = 2 * att.dex;
@@ -892,7 +1111,7 @@ void World::trySwing(Entity& att, Entity& def) {
   }
   if (def.kind == EntityKind::kPlayer) {
     evd = def.dex;
-    ddef = equippedArmorDef(def);
+    ddef = effDef(def);                        // ironskin-aware (T-054)
   } else {
     const content::MobDef* md = content::findMob(def.mobId);
     evd = def.dex;
@@ -1318,6 +1537,8 @@ void World::awardXp(Entity& player, std::uint32_t amount) {
     const std::uint32_t newMax = recomputeHpMax(player);
     player.hpMax = newMax;
     player.hp = newMax;  // level-up full heal (era: ding restores)
+    player.mpMax = 30u + 6u * (player.level - 1u);
+    player.mp = player.mpMax;
     WorldEvent ding;
     ding.aboutId = player.id;
     ding.statsChanged = true;
@@ -1536,6 +1757,13 @@ void World::tick() {
     } else if (d > 12) {
       e.attackTarget = 0;  // gave up the chase
     }
+  }
+
+  // mana regen: 1 MP / tick (100/min), always on — mana is the kit's
+  // rhythm resource, not a second hp bar (GDD: MAG economy arrives w/ INT).
+  for (auto& e : entities_) {
+    if (e.kind == EntityKind::kPlayer && !e.dead && e.mp < e.mpMax &&
+        tick_ % 20 == 0) ++e.mp;  // 1 MP / s
   }
 
   // out-of-combat player regen (Blood Wed aura II accelerates: +N% hpMax / period)

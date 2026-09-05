@@ -372,6 +372,11 @@ void OwnStats::serialize(Writer& w) const {
   w.u16(swordSkill);
   w.u32(gold);
   w.i32(karma);
+  w.u8(classId);
+  w.u32(mp);
+  w.u32(mpMax);
+  w.u16(blessTicksLeft);
+  w.u16(ironskinTicksLeft);
 }
 
 bool OwnStats::deserialize(Reader r) {
@@ -387,6 +392,11 @@ bool OwnStats::deserialize(Reader r) {
   if (!r.u16(swordSkill)) return false;
   if (!r.u32(gold)) return false;
   if (!r.i32(karma)) return false;
+  if (!r.u8(classId)) return false;
+  if (!r.u32(mp)) return false;
+  if (!r.u32(mpMax)) return false;
+  if (!r.u16(blessTicksLeft)) return false;
+  if (!r.u16(ironskinTicksLeft)) return false;
   return true;
 }
 

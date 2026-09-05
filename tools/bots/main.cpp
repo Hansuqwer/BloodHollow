@@ -72,7 +72,18 @@ struct Bot {
   int campX = -1, campY = -1;                  // current hunting-camp waypoint
   bool campIsPortal = false;  // camp sits on a portal rect: land EXACTLY, no mill
   bool retreating = false;    // campaign: broke off at low hp, sip + return
-  bool partyTried = false;    // S13: auto-party pair-up fired once at t0
+  std::uint8_t partyTries = 0;    // S13: formation attempts (10 s cadence, cap 4)
+  double nextPartyTryAt = 0.0;
+  // T-054/55 choir: roster mirror + kit state (classId/mp from OwnStats)
+  struct RosterRow { std::string name; std::uint32_t hp = 1, hpMax = 1; int level = 1; std::uint16_t zoneId = 0; };
+  std::unordered_map<std::uint32_t, RosterRow> party{};
+  std::uint32_t partyLeaderId = 0;
+  int kitClass = 1;           // 1 ravager / 2 gravecaller / 3 cultist
+  std::uint32_t mp = 0, mpMax = 30;
+  bool kitSworn = false;      // /kit cultist sent
+  double nextMendAt = 0.0, nextBlessAt = 0.0;
+  std::uint64_t blessCasts = 0, mendCasts = 0, mendNoSee = 0, mendHurtCnt = 0;
+  std::uint64_t rcvReset = 0, rcvMember = 0; std::uint32_t lastResetPid = 0;
 };
 
 double nowSec() {
@@ -257,6 +268,25 @@ int run(int argc, char** argv) {
                   }
                 }
                 b.gold = m.gold;
+                b.kitClass = m.classId;
+                b.mp = m.mp;
+                b.mpMax = m.mpMax;
+              }
+            } else if (pv.id == bh::proto::kIdPartyReset) {
+              bh::proto::PartyReset m;
+              if (m.deserialize(pv.body)) {
+                b.partyLeaderId = m.leaderId;
+                ++b.rcvReset;
+                b.lastResetPid = m.partyId;
+                b.party.clear();
+              }
+            } else if (pv.id == bh::proto::kIdPartyMember) {
+              bh::proto::PartyMember m;
+              if (m.deserialize(pv.body)) {
+                ++b.rcvMember;
+                b.party[m.entityId] =
+                    Bot::RosterRow{m.name, m.hp, m.hpMax == 0 ? 1u : m.hpMax,
+                                   m.level, m.zoneId};
               }
             } else if (pv.id == bh::proto::kIdInventoryReset) {
               bh::proto::InventoryReset m;
@@ -313,22 +343,7 @@ int run(int argc, char** argv) {
           // S13 auto-party: sibling pair-up so party-shared legs gate M2b-final.
           // Even-indexed bot invites its successor, odd accepts (server
           // resolves the name -> entityId before journaling; replay-exact).
-          const size_t sib = botIdx % 2 == 0 ? botIdx + 1 : botIdx - 1;
-          if (!b.partyTried && bots.size() >= 2 && sib < bots.size() &&
-              !bots[sib].name.empty()) {
-            b.partyTried = true;
-            if (botIdx % 2 == 0) {
-              bh::proto::ChatSend cs;
-              cs.channel = 0;
-              cs.text = "/invite " + bots[sib].name;
-              sendProto(b.peer, bh::proto::pack(cs));
-            } else if (bots.size() >= 2 && botIdx % 2 == 1) {
-              bh::proto::ChatSend cs;
-              cs.channel = 0;
-              cs.text = "/accept";
-              sendProto(b.peer, bh::proto::pack(cs));
-            }
-          }
+          (void)0;
           b.nextRestAt = t + 60.0 + rng.range(0, 30);  // first break a minute in
         }
         // player-paced rhythm: ~60-90s engaged, then a 6-11s door-stop
@@ -353,6 +368,104 @@ int run(int argc, char** argv) {
             case 1:  b.campX = 46; b.campY = 13; break;  // rats_east
             case 2:  b.campX = 15; b.campY = 6;  break;  // bats_cryptyard
             default: b.campX = 55; b.campY = 19; break;  // ghouls_east spine (L3+ through L8)
+          }
+        }
+        // S13/14 party formation, race-free: even bot invites ONLY once the
+        // sibling is welcomed in-world (bot.name is pre-seeded and useless as
+        // an online signal — two S14 legs died to that race); retries every
+        // 10 s (invites expire at 10 s) with 4 attempts. Odd bot accepts on a
+        // heartbeat while roster-empty; same budget. Accept can fire before
+        // any invite exists — harmless chat blip at worst.
+        // retry while MY roster is missing the sibling (a 1-member "party" is
+        // the leader alone — invites are only done when roster size confirms)
+        const bool unformed = b.party.size() < 2;
+        if (bots.size() >= 2 && unformed) {
+          const size_t sib = botIdx % 2 == 0 ? botIdx + 1 : botIdx - 1;
+          if (sib < bots.size() && bots[sib].welcomed && b.partyTries < 4 &&
+              t >= b.nextPartyTryAt) {
+            b.nextPartyTryAt = t + 10.0;
+            ++b.partyTries;
+            bh::proto::ChatSend cs;
+            cs.channel = 0;
+            cs.text = botIdx % 2 == 0 ? ("/invite " + bots[sib].name) : "/accept";
+            sendProto(b.peer, bh::proto::pack(cs));
+          }
+        }
+        // oath first (T-053): odd bot swears Cultist 3 s after campaign start
+        if (!b.kitSworn && botIdx % 2 == 1 && t >= b.campaignT0 + 3.0) {
+          b.kitSworn = true;
+          bh::proto::ChatSend cs;
+          cs.channel = 0;
+          cs.text = "/kit cultist";
+          sendProto(b.peer, bh::proto::pack(cs));
+        }
+        // ---- T-055 choir behavior (Cultist kit bots) --------------------
+        // priority: mend any <60% party member (ranged 6), bless the leader,
+        // else glue to the leader and let the normal fighter flow swing.
+        if (b.kitClass == 3 && !b.party.empty()) {
+          auto cheb = [&](int ax, int ay, int bx, int by) {
+            const int dx = ax > bx ? ax - bx : bx - ax;
+            const int dy = ay > by ? ay - by : by - ay;
+            return dx > dy ? dx : dy;
+          };
+          std::uint32_t hurtId = 0;
+          int hurtDist = 99;
+          int hurtSeen = 0;
+          for (const auto& [mid, row] : b.party) {
+            if (row.hp * 5 < row.hpMax * 3) ++hurtSeen;  // sub-60% roster rows
+            if (row.hp * 5 >= row.hpMax * 3) continue;
+            const auto ei = b.ents.find(mid);
+            if (ei == b.ents.end()) continue;
+            const int d = cheb(b.tileX, b.tileY, ei->second.x, ei->second.y);
+            if (d < hurtDist) { hurtDist = d; hurtId = mid; }
+          }
+          if (hurtSeen > 0 && hurtId == 0) ++b.mendNoSee;
+          b.mendHurtCnt += static_cast<std::uint64_t>(hurtSeen);
+          if (hurtSeen > 0 && hurtId == 0) { ++b.mendNoSee; b.mendHurtCnt += 0; }
+          if (hurtSeen > 0) b.mendHurtCnt += static_cast<std::uint64_t>(hurtSeen);
+          const auto lead = b.party.find(b.partyLeaderId);
+          const auto leadE = lead != b.party.end() ? b.ents.find(lead->first)
+                                                   : b.ents.end();
+          const int leadDist = leadE != b.ents.end()
+              ? cheb(b.tileX, b.tileY, leadE->second.x, leadE->second.y) : 99;
+          // bless the leader on duty (5 min buff; refresh every ~4 min)
+          if (b.level >= 3 && leadE != b.ents.end() && leadDist <= 6 &&
+              t >= b.nextBlessAt && b.mp >= 15) {
+            bh::proto::SkillUse su;
+            su.skill = 3;
+            su.targetId = b.partyLeaderId;
+            sendProto(b.peer, bh::proto::pack(su));
+            b.nextBlessAt = t + 240.0;
+            ++b.blessCasts;
+          }
+          if (hurtId != 0) {
+            if (hurtDist <= 6 && t >= b.nextMendAt && b.mp >= 8) {
+              bh::proto::SkillUse su;
+              su.skill = 2;
+              su.targetId = hurtId;
+              sendProto(b.peer, bh::proto::pack(su));
+              b.nextMendAt = t + 1.5;  // server CD is 1.25 s; small slop
+              ++b.swings;              // book as a cast for telemetry
+              ++b.mendCasts;
+              continue;
+            }
+            // chase the wounded
+            const auto ei = b.ents.find(hurtId);
+            if (ei != b.ents.end()) {
+              bh::proto::InputPath ip;
+              ip.goalX = ei->second.x;
+              ip.goalY = ei->second.y;
+              sendProto(b.peer, bh::proto::pack(ip));
+              b.nextMoveAt = t + 0.6;
+              continue;
+            }
+          } else if (leadE != b.ents.end() && leadDist > 6) {
+            bh::proto::InputPath ip;
+            ip.goalX = leadE->second.x;
+            ip.goalY = leadE->second.y;
+            sendProto(b.peer, bh::proto::pack(ip));
+            b.nextMoveAt = t + 0.8;
+            continue;
           }
         }
         if (b.campaignDone) continue;  // target reached: idle out the clock
@@ -682,6 +795,7 @@ int run(int argc, char** argv) {
   std::uint64_t anvilTries = 0;
   std::uint64_t dbgNoBlade = 0, dbgNoGold = 0, dbgNoPelts = 0, dbgNoAnvil = 0,
                 dbgReady = 0;
+  std::uint64_t blessCasts = 0, mendCasts = 0, mendNoSee = 0, mendHurtCnt = 0;
   std::uint32_t mxGold = 0, mxPelts = 0;
   int maxLevel = 1;
   for (const Bot& b : bots) {
@@ -695,6 +809,8 @@ int run(int argc, char** argv) {
     shops += b.shops;
     levelDrops += b.levelDrops;
     anvilTries += b.anvilTries;
+    blessCasts += b.blessCasts; mendCasts += b.mendCasts;
+    mendNoSee += b.mendNoSee; mendHurtCnt += b.mendHurtCnt;
     dbgNoBlade += b.dbgNoBlade; dbgNoGold += b.dbgNoGold;
     dbgNoPelts += b.dbgNoPelts; dbgNoAnvil += b.dbgNoAnvil; dbgReady += b.dbgReady;
     if (b.dbgMaxGold > mxGold) mxGold = b.dbgMaxGold;
@@ -704,13 +820,20 @@ int run(int argc, char** argv) {
   std::printf("[bots] SUMMARY welcomed=%d/%d moved=%d/%d minDeltas=%" PRIu64
               " kills=%" PRIu64 " pots=%" PRIu64 " swings=%" PRIu64" deaths=%" PRIu64 " shops=%" PRIu64 " anvilTries=%" PRIu64 " levelDrops=%" PRIu64
               " maxLevel=%d pkts=%" PRIu64 " bytes=%" PRIu64
-              " gates b/g/p/a/r=%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 " mGold=%u mPelts=%u\n",
+              " gates b/g/p/a/r=%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 " mGold=%u mPelts=%u bless=%" PRIu64 " mend=%" PRIu64 " noSee=%" PRIu64 " hurt=%" PRIu64 "\n",
               welcomed, count, moved, count, minDeltas == UINT64_MAX ? 0 : minDeltas,
               kills, pots, swings, deaths, shops, anvilTries, levelDrops, maxLevel,
               packetsRx, bytesRx, dbgNoBlade, dbgNoGold, dbgNoPelts, dbgNoAnvil,
-              dbgReady, mxGold, mxPelts);
+              dbgReady, mxGold, mxPelts, blessCasts, mendCasts, mendNoSee,
+              mendHurtCnt);
 
-  for (Bot& b : bots) {
+  for (Bot& b : bots) {  // T-055 probe: per-bot kit/roster truth
+    std::printf("[bots] %-12s kit=%d lvl=%d hp=%d/%d party=%zu deaths=%llu rxR=%llu rxM=%llu lastPid=%u\n",
+                b.name.c_str(), b.kitClass, b.level, static_cast<int>(b.hp),
+                static_cast<int>(b.hpMax), b.party.size(),
+                static_cast<unsigned long long>(b.deaths),
+                static_cast<unsigned long long>(b.rcvReset),
+                static_cast<unsigned long long>(b.rcvMember), b.lastResetPid);
     if (b.peer != nullptr) enet_peer_disconnect_now(b.peer, 0);
   }
   enet_host_destroy(chost);

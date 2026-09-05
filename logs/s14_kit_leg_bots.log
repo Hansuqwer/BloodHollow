@@ -1,0 +1,14 @@
+[campaign] s14k__01 reached L1 at t=0.1s (map 1)
+[campaign] s14k__00 reached L1 at t=0.1s (map 1)
+[campaign] s14k__01 reached L2 at t=25.5s (map 1)
+[campaign] s14k__00 reached L2 at t=32.7s (map 1)
+[campaign] s14k__01 reached L3 at t=91.8s (map 1)
+[campaign] s14k__00 reached L3 at t=145.4s (map 1)
+[campaign] s14k__00 reached L4 at t=426.2s (map 1)
+[campaign] s14k__01 reached L4 at t=474.9s (map 1)
+[campaign] s14k__00 reached L5 at t=594.4s (map 1)
+[campaign] s14k__00 TARGET L5 DONE in 594.4s
+[bots] SUMMARY welcomed=2/2 moved=2/2 minDeltas=12001 kills=138 pots=6 swings=241 deaths=38 shops=4 anvilTries=0 levelDrops=3 maxLevel=5 pkts=3143735 bytes=69187842 gates b/g/p/a/r=0/0/0/0/0 mGold=0 mPelts=0 bless=3 mend=77 noSee=0 hurt=950
+[bots] s14k__00     kit=1 lvl=5 hp=118/94 party=2 deaths=22 rxR=607 rxM=1196 lastPid=1
+[bots] s14k__01     kit=3 lvl=4 hp=111/94 party=2 deaths=16 rxR=602 rxM=1180 lastPid=1
+[bots] OK

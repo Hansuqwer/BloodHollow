@@ -83,6 +83,17 @@ struct Entity {
 
   std::uint32_t partyId = 0;  // 0 = unaffiliated (T-050 party core)
 
+  // class kit (T-053/T-054): kit id (content/kits.h), mana, buff stamps, cast CDs
+  std::uint8_t classId = 1;     // kKitRavager default: pre-kit chars unchanged
+  std::uint8_t intg = 0, mag = 0;
+  std::uint32_t mp = 0, mpMax = 30;
+  sim::Tick blessUntil = -1;    // +10% hit&dmg (T-054)
+  sim::Tick ironskinUntil = -1; // +20% DR (T-054)
+  sim::Tick lastMendTick = -1000;
+  sim::Tick lastBlessTick = -1000;
+  sim::Tick lastIronskinTick = -1000;
+  sim::Tick lastFireboltTick = -1000;
+
   // trade (T-029): intents only until BOTH commit; swap validated at commit.
   std::uint32_t tradeWith = 0;
   std::vector<std::pair<std::uint32_t, std::uint16_t>> tradeOfferItems{};  // itemId, qty
@@ -137,7 +148,8 @@ class World {
   bool transferToZone(Entity& e, std::uint16_t mapId, sim::TilePos at);
 
   Entity& spawn(const std::string& name, std::int64_t charRowId,
-                std::optional<sim::TilePos> at, std::uint16_t zoneId = 1);
+                std::optional<sim::TilePos> at, std::uint16_t zoneId = 1,
+                std::uint8_t classId = 1);  // kKitRavager default (freeze)
   void despawn(std::uint32_t id);
 
   Entity* find(std::uint32_t id);
@@ -151,6 +163,18 @@ class World {
   bool useItem(Entity& e, std::uint8_t slot);        // consumable (sip cd 0.5s)
   bool toggleEquip(Entity& e, std::uint8_t slot);
   void trySkill(Entity& e, std::uint8_t skill, std::uint32_t targetId);
+  bool kitChoose(Entity& e, std::uint8_t kitId);  // T-053 one-time swear
+  std::uint32_t effAcc(const Entity& e) const;    // bless-adjusted accuracy
+  std::uint32_t effDmgBase(const Entity& e) const;
+  std::uint32_t effDef(const Entity& e) const;    // ironskin-adjusted mitigation
+
+ private:
+  void tryMend(Entity& e, std::uint32_t targetId);      // T-054 (chan 2)
+  void tryBless(Entity& e, std::uint32_t targetId);     // T-054 (chan 3)
+  void tryIronskin(Entity& e, std::uint32_t targetId);  // T-054 (chan 4)
+  void tryFirebolt(Entity& e, std::uint32_t targetId);  // T-054 (chan 5)
+
+ public:
   bool vendorBuy(Entity& e, std::uint32_t itemId, std::uint16_t qty);
   // ---- party (T-050/T-051): roster + XP share -----------------------------
   struct Party {

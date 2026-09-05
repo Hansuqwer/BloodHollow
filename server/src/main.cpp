@@ -122,6 +122,10 @@ void journalLogin(Server& s, const Session& sess, const CharacterRow& row,
                static_cast<unsigned>(row.gold),
                static_cast<unsigned>(row.anvilMercy), row.karma,
                row.invBlob.empty() ? "-" : row.invBlob.c_str());
+  // T-053: kit rides as a v2.1 sidecar line so pre-kit journals still parse.
+  std::fprintf(s.journal, "k %lld %u %u\n",
+               static_cast<long long>(s.tick + 1), idx,
+               static_cast<unsigned>(row.classId > 0 ? row.classId : 1));
 }
 
 void journalDisconnect(Server& s, const Session& sess) {
@@ -205,7 +209,7 @@ void dropSession(Server& s, Session& sess) {
         }
         s.db.saveProgress(e->charRowId, e->level, e->xp, e->str, e->vit, e->dex,
                           e->statPoints, static_cast<int>(e->gold), blob,
-                          e->anvilMercyMask, e->karma);
+                          e->anvilMercyMask, e->karma, e->classId);
       }
       std::printf("[net] %-16s saved at (%d,%d)\n", e->name.c_str(), p.x, p.y);
     }
@@ -255,7 +259,8 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
       if (row.x != 0 || row.y != 0) at = sim::TilePos{row.x, row.y};
       const std::uint16_t loginZone =
           static_cast<std::uint16_t>(row.mapId > 0 ? row.mapId : 1);
-      Entity& e = s.world.spawn(row.name, row.id, at, loginZone);
+      Entity& e = s.world.spawn(row.name, row.id, at, loginZone,
+                                static_cast<std::uint8_t>(row.classId));
       sess.entityId = e.id;
       journalLogin(s, sess, row, e);
       {
@@ -401,6 +406,18 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
               okCmd = true;
               break;
             }
+          }
+        } else if (m.text.rfind("/kit ", 0) == 0) {  // T-053 one-time swear
+          const std::string k = m.text.substr(5);
+          std::uint8_t kit = 0;
+          if (k == "ravager") kit = 1;
+          else if (k == "gravecaller") kit = 2;
+          else if (k == "cultist" || k == "choir") kit = 3;
+          if (kit != 0) {
+            c.kind = Command::kKitChoose;
+            c.a = kit;
+          } else {
+            okCmd = false;  // unknown oath name: say it aloud, era-right
           }
         } else { okCmd = false; }
         if (okCmd && sess.cmdq.size() < 32) { sess.cmdq.push_back(std::move(c)); break; }
@@ -627,11 +644,22 @@ void pushOwnStats(Server& s, Session& sess) {
   m.str = e->str;
   m.vit = e->vit;
   m.dex = e->dex;
-  m.intg = 0;
-  m.mag = 0;
+  m.intg = e->intg;
+  m.mag = e->mag;
   m.swordSkill = e->swordSkill;
   m.gold = e->gold;
   m.karma = e->karma;
+  m.classId = e->classId;  // T-053 kit + kit-state readout
+  m.mp = e->mp;
+  m.mpMax = e->mpMax == 0 ? 1 : e->mpMax;
+  auto left = [&](sim::Tick until) -> std::uint16_t {
+    const sim::Tick t = s.world.tickCount();
+    if (until < 0 || t >= until) return 0;
+    const sim::Tick d = until - t;
+    return d > 0xFFFF ? std::uint16_t(0xFFFF) : static_cast<std::uint16_t>(d);
+  };
+  m.blessTicksLeft = left(e->blessUntil);
+  m.ironskinTicksLeft = left(e->ironskinUntil);
   sendMsg(sess.peer, m, s);
 }
 
@@ -900,6 +928,7 @@ int runReplayWorld(const std::string& path, const std::string& mapPath) {
     std::string inv;
   };
   struct QueuedBless { sim::Tick tick; std::string name; std::string spec; };
+  std::unordered_map<std::uint32_t, std::uint32_t> loginKits;  // k-lines (T-053)
   
   struct QueuedCmd {
     sim::Tick tick;
@@ -945,6 +974,10 @@ int runReplayWorld(const std::string& path, const std::string& mapPath) {
                                    level, xp, st_, vit, dex, sp, gold, mercy, karma,
                                    inv});
       if (tick > lastTick) lastTick = tick;
+    } else if (line[0] == 'k') {  // T-053 kit sidecar: k tick idx kitId
+      long long ktick; unsigned kidx, kit;
+      if (std::sscanf(line, "k %lld %u %u", &ktick, &kidx, &kit) == 3)
+        loginKits[kidx] = kit;
     } else if (line[0] == 'b') {
       long long tick;
       char nm[64], spec[256];
@@ -981,8 +1014,11 @@ int runReplayWorld(const std::string& path, const std::string& mapPath) {
   size_t ci = 0, hi = 0, li = 0, di = 0;
   std::int64_t checked = 0, bad = 0;
   auto applyLogin = [&](const QueuedLogin& L) {
+    std::uint8_t kit = 1;  // pre-v2.1 journals default Ravager (freeze)
+    if (const auto ki = loginKits.find(L.idx); ki != loginKits.end())
+      kit = static_cast<std::uint8_t>(ki->second);
     Entity& e = world.spawn(L.name, 0, sim::TilePos{L.x, L.y},
-                            static_cast<std::uint16_t>(L.zoneId));
+                            static_cast<std::uint16_t>(L.zoneId), kit);
     Entity* pe = world.find(e.id);
     pe->level = static_cast<std::uint8_t>(L.level < 1 ? 1 : (L.level > 25 ? 25 : L.level));
     pe->xp = L.xp;

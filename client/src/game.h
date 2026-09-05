@@ -79,6 +79,7 @@ class Game {
   void drawFloaters();
   void drawStatPanel() const;
   void drawPartyFrame() const;  // T-052 top-left HB-style party list
+  std::uint32_t chanTarget() const;  // T-054: party-frame pick else self
   void drawInventoryPanel() const;
   void drawVendorPanel() const;
   void drawDeathOverlay() const;

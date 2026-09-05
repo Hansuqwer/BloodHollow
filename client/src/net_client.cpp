@@ -317,6 +317,11 @@ void NetClient::poll() {
               ownStats.swordSkill = m.swordSkill;
               ownStats.gold = m.gold;
               ownStats.karma = m.karma;
+              ownStats.classId = m.classId;
+              ownStats.mp = m.mp;
+              ownStats.mpMax = m.mpMax == 0 ? 1 : m.mpMax;
+              ownStats.blessTicksLeft = m.blessTicksLeft;
+              ownStats.ironskinTicksLeft = m.ironskinTicksLeft;
               break;
             }
             case kIdPartyReset: {

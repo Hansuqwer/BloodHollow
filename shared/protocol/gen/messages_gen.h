@@ -355,6 +355,11 @@ struct OwnStats {
   std::uint16_t swordSkill = 0;
   std::uint32_t gold = 0;
   std::int32_t karma = 0;
+  std::uint8_t classId = 0;
+  std::uint32_t mp = 0;
+  std::uint32_t mpMax = 0;
+  std::uint16_t blessTicksLeft = 0;
+  std::uint16_t ironskinTicksLeft = 0;
 
   void serialize(Writer& w) const;
   bool deserialize(Reader r);
