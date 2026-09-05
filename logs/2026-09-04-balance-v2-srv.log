@@ -1,0 +1,33 @@
+[boot] bh_server on 0.0.0.0:7788 | map 'assets/maps/thornwall.bhmap' | db 'var/balance2.db' | tick 20Hz | aoi 26
+[net] bal_00           entered the world (entity 58, online 1)
+[net] bal_01           entered the world (entity 59, online 2)
+[net] bal_02           entered the world (entity 60, online 3)
+[net] bal_03           entered the world (entity 61, online 4)
+[net] bal_04           entered the world (entity 62, online 5)
+[net] bal_05           entered the world (entity 63, online 6)
+[net] bal_06           entered the world (entity 64, online 7)
+[net] bal_07           entered the world (entity 65, online 8)
+[soak] tick=600 online=8 entities=48 tickUs p50=98 p99=166 worldHash=fa140cdafceb82d8 pkts=350/118642
+[soak] tick=1200 online=8 entities=47 tickUs p50=96 p99=295 worldHash=6bc5d004ae6787b8 pkts=577/229203
+[soak] tick=1800 online=8 entities=38 tickUs p50=97 p99=173 worldHash=84fdd485a6073d90 pkts=1046/361580
+[soak] tick=2400 online=8 entities=24 tickUs p50=68 p99=120 worldHash=f1845cd9047c34ef pkts=1521/452459
+[soak] tick=3000 online=8 entities=26 tickUs p50=56 p99=109 worldHash=455342bf414f02c2 pkts=1831/527013
+[soak] tick=3600 online=8 entities=24 tickUs p50=58 p99=138 worldHash=93cdc4ec9c9cf93c pkts=2162/598907
+[soak] tick=4200 online=8 entities=26 tickUs p50=69 p99=245 worldHash=b2e7187c2c028105 pkts=2367/659634
+[net] bal_00           saved at (38,7)
+[net] bal_01           saved at (19,14)
+[net] bal_02           saved at (40,21)
+[net] bal_03           saved at (32,17)
+[net] bal_04           saved at (28,21)
+[net] bal_05           saved at (33,29)
+[net] bal_06           saved at (33,4)
+[net] bal_07           saved at (40,31)
+[soak] tick=4800 online=0 entities=27 tickUs p50=14 p99=198 worldHash=8583fce5996f82ab pkts=2465/697138
+[soak] FINISH ticks=4801 online=0 entities=27 tickUs p50=13 p99=198
+[soak] OK p99=0.20ms budget=10.00ms
+[balance] Marsh Rat        L1  kills=17    TTK(25t hps)=5.0s xp=40
+[balance] Feral Ghoul      L3  kills=21    TTK(25t hps)=18.0s xp=90
+[balance] Hollow Hound     L5  kills=9     TTK(25t hps)=22.9s xp=150
+[balance] Plague Bat       L2  kills=7     TTK(25t hps)=4.9s xp=55
+[balance] Bonepicker Gnoll L7  kills=1     TTK(25t hps)=29.8s xp=300
+[balance] Gravecaller      L11 kills=2     TTK(25t hps)=329.0s xp=560

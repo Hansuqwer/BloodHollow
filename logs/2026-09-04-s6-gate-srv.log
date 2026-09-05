@@ -1,0 +1,67 @@
+[boot] bh_server on 0.0.0.0:7783 | map 'assets/maps/thornwall.bhmap' | db 'var/s6gate.db' | tick 20Hz | aoi 26
+[net] blademare_00     entered the world (entity 21, online 1)
+[net] blademare_01     entered the world (entity 22, online 2)
+[net] blademare_02     entered the world (entity 23, online 3)
+[net] blademare_03     entered the world (entity 24, online 4)
+[net] blademare_04     entered the world (entity 25, online 5)
+[net] blademare_05     entered the world (entity 26, online 6)
+[net] blademare_06     entered the world (entity 27, online 7)
+[net] blademare_07     entered the world (entity 28, online 8)
+[net] blademare_08     entered the world (entity 29, online 9)
+[net] blademare_09     entered the world (entity 30, online 10)
+[net] blademare_10     entered the world (entity 31, online 11)
+[net] blademare_11     entered the world (entity 32, online 12)
+[net] blademare_12     entered the world (entity 33, online 13)
+[net] blademare_13     entered the world (entity 34, online 14)
+[net] loaf_00          entered the world (entity 35, online 15)
+[net] loaf_01          entered the world (entity 36, online 16)
+[net] loaf_02          entered the world (entity 37, online 17)
+[net] loaf_03          entered the world (entity 38, online 18)
+[net] loaf_04          entered the world (entity 39, online 19)
+[net] loaf_05          entered the world (entity 40, online 20)
+[soak] tick=600 online=20 entities=29 tickUs p50=85 p99=215 worldHash=c63d17f7a3b7d5c2 pkts=388/139832
+[net] vanda            entered the world (entity 41, online 21)
+[net] vanda            saved at (32,16)
+[soak] tick=1200 online=20 entities=29 tickUs p50=138 p99=266 worldHash=9086f841f41bacaf pkts=639/395555
+[soak] tick=1800 online=20 entities=22 tickUs p50=120 p99=251 worldHash=b553879f915eebb7 pkts=959/596082
+[soak] tick=2400 online=20 entities=21 tickUs p50=88 p99=173 worldHash=17876917f0d3146d pkts=1151/735829
+[soak] tick=3000 online=20 entities=21 tickUs p50=107 p99=255 worldHash=e197f483ce07abfd pkts=1313/890346
+[soak] tick=3600 online=20 entities=21 tickUs p50=122 p99=235 worldHash=a43b1d3fd02ef9ef pkts=1468/1063998
+[soak] tick=4200 online=20 entities=22 tickUs p50=112 p99=216 worldHash=e565c68a3f39981d pkts=1649/1243154
+[soak] tick=4800 online=20 entities=21 tickUs p50=121 p99=228 worldHash=b642208adac9f0a0 pkts=1802/1419333
+[soak] tick=5400 online=20 entities=22 tickUs p50=119 p99=218 worldHash=81795a21f57e8a5e pkts=1945/1595074
+[soak] tick=6000 online=20 entities=21 tickUs p50=103 p99=176 worldHash=45d3fb52c7d93ec7 pkts=2144/1773925
+[soak] tick=6600 online=20 entities=21 tickUs p50=111 p99=208 worldHash=3ce0fd3952d454c3 pkts=2303/1955220
+[soak] tick=7200 online=20 entities=21 tickUs p50=124 p99=202 worldHash=d41c318f5ddfaac7 pkts=2474/2132894
+[soak] tick=7800 online=20 entities=21 tickUs p50=112 p99=206 worldHash=9a2f562ed8141dfa pkts=2667/2306579
+[soak] tick=8400 online=20 entities=21 tickUs p50=112 p99=219 worldHash=3d1b7acc5787de07 pkts=2820/2488595
+[soak] tick=9000 online=20 entities=22 tickUs p50=122 p99=224 worldHash=3d3be49d18e53695 pkts=2972/2662440
+[soak] tick=9600 online=20 entities=22 tickUs p50=123 p99=211 worldHash=1ca95a66819ee933 pkts=3152/2841034
+[soak] tick=10200 online=20 entities=21 tickUs p50=119 p99=273 worldHash=444aea46ae2c2125 pkts=3319/2993485
+[soak] tick=10800 online=20 entities=21 tickUs p50=131 p99=346 worldHash=0151a15b627962fd pkts=3495/3156536
+[soak] tick=11400 online=20 entities=21 tickUs p50=113 p99=230 worldHash=13611333f11bdbdd pkts=3648/3302493
+[soak] tick=12000 online=20 entities=21 tickUs p50=88 p99=160 worldHash=2f404f9c4c7ce2c5 pkts=3834/3438645
+[soak] tick=12600 online=20 entities=21 tickUs p50=82 p99=146 worldHash=3fe6e2ad92ccbfc8 pkts=3979/3584168
+[net] blademare_00     saved at (4,17)
+[net] blademare_01     saved at (14,28)
+[net] blademare_02     saved at (9,39)
+[net] blademare_03     saved at (31,45)
+[net] blademare_04     saved at (52,25)
+[net] blademare_05     saved at (1,4)
+[net] blademare_06     saved at (48,14)
+[net] blademare_07     saved at (26,31)
+[net] blademare_08     saved at (34,27)
+[net] blademare_09     saved at (57,27)
+[net] blademare_10     saved at (38,44)
+[net] blademare_11     saved at (28,28)
+[net] blademare_12     saved at (47,27)
+[net] blademare_13     saved at (47,30)
+[net] loaf_00          saved at (22,40)
+[net] loaf_01          saved at (52,7)
+[net] loaf_02          saved at (19,24)
+[net] loaf_03          saved at (14,36)
+[net] loaf_04          saved at (28,27)
+[net] loaf_05          saved at (58,15)
+[soak] tick=13200 online=0 entities=2 tickUs p50=81 p99=167 worldHash=8844a9375e8b1464 pkts=4097/3709912
+[soak] FINISH ticks=13201 online=0 entities=2 tickUs p50=81 p99=167
+[soak] OK p99=0.17ms budget=10.00ms

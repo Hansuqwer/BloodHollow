@@ -61,6 +61,7 @@ endif()
 if(BH_BUILD_SERVER)
   add_subdirectory(server)
   add_subdirectory(tools/bots)
+  add_subdirectory(tools/duel)
 endif()
 
 if(BH_BUILD_TESTS)

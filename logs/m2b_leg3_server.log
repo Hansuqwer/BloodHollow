@@ -1,0 +1,39 @@
+[boot] zone 2 (assets/maps/fields_overflow.bhmap: 64x48) online
+[boot] zone 3 (assets/maps/thornwall_crypt.bhmap: 48x36) online
+[journal] recording world to logs/m2b_leg3.bwj
+[boot] bh_server on 0.0.0.0:7840 | map 'assets/maps/thornwall.bhmap' | db '/tmp/m2b_campaign.db' | tick 20Hz | aoi 26
+[net] m2b__00          entered the world (entity 292, online 1)
+[net] m2b__01          entered the world (entity 293, online 2)
+[zone] m2b__00 -> map 1 at (32,16)
+[zone] m2b__00 -> map 2 at (2,14)
+[soak] tick=600 online=2 entities=292 tickUs p50=224 p99=446 worldHash=7e748123be4ee819 pkts=72/110954
+[zone] m2b__00 -> map 1 at (32,16)
+[zone] m2b__00 -> map 2 at (2,14)
+[soak] tick=1200 online=2 entities=288 tickUs p50=234 p99=453 worldHash=bd1aa6bfc333a3e2 pkts=156/243801
+[zone] m2b__00 -> map 1 at (32,16)
+[zone] m2b__00 -> map 2 at (2,14)
+[soak] tick=1800 online=2 entities=281 tickUs p50=261 p99=495 worldHash=73d5d2cad0ea2f6e pkts=236/377504
+[zone] m2b__00 -> map 1 at (32,16)
+[zone] m2b__00 -> map 2 at (2,14)
+[soak] tick=2400 online=2 entities=278 tickUs p50=206 p99=448 worldHash=7e4b26a642a53e63 pkts=323/475450
+[zone] m2b__00 -> map 1 at (32,16)
+[zone] m2b__00 -> map 2 at (2,14)
+[soak] tick=3000 online=2 entities=281 tickUs p50=176 p99=425 worldHash=395bae64a91897cd pkts=382/533050
+[zone] m2b__00 -> map 1 at (32,16)
+[soak] tick=3600 online=2 entities=283 tickUs p50=214 p99=500 worldHash=490bcd56d8ef0ce3 pkts=412/628125
+[zone] m2b__00 -> map 2 at (2,14)
+[soak] tick=4200 online=2 entities=280 tickUs p50=171 p99=348 worldHash=6879f560da9af87e pkts=471/679018
+[soak] tick=4800 online=2 entities=279 tickUs p50=150 p99=295 worldHash=5baff414b2557a1e pkts=544/726804
+[zone] m2b__01 -> map 2 at (2,14)
+[zone] m2b__00 -> map 1 at (32,16)
+[soak] tick=5400 online=2 entities=281 tickUs p50=128 p99=228 worldHash=91dceb41542609e0 pkts=604/756444
+[zone] m2b__00 -> map 2 at (2,14)
+[soak] tick=6000 online=2 entities=285 tickUs p50=110 p99=267 worldHash=eee3e0494d914827 pkts=665/763094
+[soak] tick=6600 online=2 entities=286 tickUs p50=120 p99=202 worldHash=caf7f094d4dc3af5 pkts=728/769280
+[soak] tick=7200 online=2 entities=287 tickUs p50=115 p99=207 worldHash=df62f75131900806 pkts=794/775404
+[soak] tick=7800 online=2 entities=289 tickUs p50=117 p99=182 worldHash=511651c8df74f388 pkts=853/781526
+[soak] tick=8400 online=2 entities=290 tickUs p50=125 p99=268 worldHash=a542d4bba963353b pkts=918/787703
+[soak] tick=9000 online=2 entities=292 tickUs p50=130 p99=221 worldHash=4656e82957a448c5 pkts=975/793809
+[soak] tick=9600 online=2 entities=292 tickUs p50=125 p99=216 worldHash=d01011a3c860244f pkts=1045/800053
+[soak] tick=10200 online=2 entities=292 tickUs p50=127 p99=238 worldHash=e00484dc43c5075c pkts=1104/806249
+[soak] tick=10800 online=2 entities=292 tickUs p50=132 p99=248 worldHash=8e74111516281c9d pkts=1166/812486

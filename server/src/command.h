@@ -40,7 +40,7 @@ inline void applyWorldCommand(World& w, Entity& e, const Command& c) {
           (c.a != 0 || c.b != 0)) {
         const sim::TilePos cur = e.walker.tile();
         e.path.clear();
-        e.walker.beginStep(w.map().costGrid(), sim::TilePos{cur.x + c.a, cur.y + c.b});
+        e.walker.beginStep(w.gridOf(e), sim::TilePos{cur.x + c.a, cur.y + c.b});  // zone-correct grid (was map/z1)
       }
       break;
     case Command::kAttack:

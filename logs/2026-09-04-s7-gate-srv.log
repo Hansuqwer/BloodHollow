@@ -1,0 +1,62 @@
+[boot] bh_server on 0.0.0.0:7787 | map 'assets/maps/thornwall.bhmap' | db 'var/s7gate.db' | tick 20Hz | aoi 26
+[net] rav_00           entered the world (entity 58, online 1)
+[net] rav_01           entered the world (entity 59, online 2)
+[net] rav_02           entered the world (entity 60, online 3)
+[net] rav_03           entered the world (entity 61, online 4)
+[net] rav_04           entered the world (entity 62, online 5)
+[net] rav_05           entered the world (entity 63, online 6)
+[net] rav_06           entered the world (entity 64, online 7)
+[net] rav_07           entered the world (entity 65, online 8)
+[net] rav_08           entered the world (entity 66, online 9)
+[net] rav_09           entered the world (entity 67, online 10)
+[net] rav_10           entered the world (entity 68, online 11)
+[net] rav_11           entered the world (entity 69, online 12)
+[net] bot_00           entered the world (entity 70, online 13)
+[net] bot_01           entered the world (entity 71, online 14)
+[net] bot_02           entered the world (entity 72, online 15)
+[net] bot_03           entered the world (entity 73, online 16)
+[soak] tick=600 online=16 entities=56 tickUs p50=230 p99=488 worldHash=17787f4b426e8d44 pkts=598/321427
+[soak] tick=1200 online=16 entities=49 tickUs p50=219 p99=424 worldHash=4f79da1b8088ae0c pkts=1116/636414
+[soak] tick=1800 online=16 entities=48 tickUs p50=207 p99=359 worldHash=9171436a063e0e22 pkts=1548/952753
+[soak] tick=2400 online=16 entities=40 tickUs p50=197 p99=445 worldHash=0e099a62d9ef597a pkts=2021/1246612
+[soak] tick=3000 online=16 entities=29 tickUs p50=155 p99=275 worldHash=ecab9c8036ade848 pkts=2454/1452086
+[soak] tick=3600 online=16 entities=31 tickUs p50=141 p99=253 worldHash=4612d0cdb137f84c pkts=2758/1610567
+[soak] tick=4200 online=16 entities=33 tickUs p50=145 p99=310 worldHash=b98b4221f2de5dd6 pkts=3061/1789640
+[soak] tick=4800 online=16 entities=31 tickUs p50=125 p99=247 worldHash=a1daac27e36e2bc5 pkts=3397/1945937
+[soak] tick=5400 online=16 entities=33 tickUs p50=121 p99=273 worldHash=cbf92594c408413a pkts=3599/2090578
+[soak] tick=6000 online=16 entities=34 tickUs p50=125 p99=214 worldHash=28516741c4ab937c pkts=3831/2227560
+[soak] tick=6600 online=16 entities=34 tickUs p50=134 p99=272 worldHash=ee6b6bdde7657c69 pkts=4151/2399576
+[soak] tick=7200 online=16 entities=28 tickUs p50=138 p99=277 worldHash=aba8870535b21256 pkts=4417/2559117
+[soak] tick=7800 online=16 entities=32 tickUs p50=140 p99=252 worldHash=13670ca734d50423 pkts=4684/2725551
+[soak] tick=8400 online=16 entities=36 tickUs p50=128 p99=245 worldHash=746fa79299fb773c pkts=4905/2884871
+[soak] tick=9000 online=16 entities=40 tickUs p50=161 p99=318 worldHash=a06b475852d7cc4b pkts=5268/3086152
+[soak] tick=9600 online=16 entities=39 tickUs p50=165 p99=341 worldHash=cfa57ecb55e9298f pkts=5634/3280216
+[soak] tick=10200 online=16 entities=36 tickUs p50=175 p99=387 worldHash=c19e80b18d18694b pkts=5906/3466357
+[soak] tick=10800 online=16 entities=44 tickUs p50=178 p99=384 worldHash=207ff3af516836d4 pkts=6131/3663985
+[soak] tick=11400 online=16 entities=42 tickUs p50=162 p99=284 worldHash=356afe4579704551 pkts=6475/3861681
+[soak] tick=12000 online=16 entities=43 tickUs p50=161 p99=282 worldHash=630ef1b591392dfa pkts=6784/4063922
+[net] rav_00           saved at (22,31)
+[net] rav_01           saved at (24,21)
+[net] rav_02           saved at (51,10)
+[net] rav_03           saved at (27,5)
+[net] rav_04           saved at (21,31)
+[net] rav_05           saved at (44,9)
+[net] rav_06           saved at (17,11)
+[net] rav_07           saved at (26,17)
+[net] rav_08           saved at (25,10)
+[net] rav_09           saved at (48,12)
+[net] rav_10           saved at (29,9)
+[net] rav_11           saved at (28,25)
+[net] bot_00           saved at (21,13)
+[net] bot_01           saved at (19,1)
+[net] bot_02           saved at (49,15)
+[net] bot_03           saved at (15,2)
+[soak] FINISH ticks=12401 online=0 entities=31 tickUs p50=23 p99=237
+[soak] OK p99=0.24ms budget=10.00ms
+[balance] Marsh Rat        L1  kills=36    TTK(25t hps)=4.8s xp=40
+[balance] Feral Ghoul      L3  kills=29    TTK(25t hps)=33.6s xp=90
+[balance] Hollow Hound     L5  kills=16    TTK(25t hps)=34.6s xp=150
+[balance] Plague Bat       L2  kills=21    TTK(25t hps)=4.7s xp=55
+[balance] Bonepicker Gnoll L7  kills=9     TTK(25t hps)=285.0s xp=300
+[balance] Charnel Widow    L9  kills=1     TTK(25t hps)=233.6s xp=420
+[balance] Gravecaller      L11 kills=4     TTK(25t hps)=131.7s xp=560

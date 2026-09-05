@@ -95,9 +95,16 @@ One card = one agent session = one PR. Move to `done/` with evidence pasted.
 |---|---|
 | [T-049](done/T-049.md) | record-path determinism: shared applyWorldCommand; replay 3×300s clean |
 
+## Done — Sprint 12 (2026-09-05): duel lab + campaign gate evidence
+
+| Card | Title |
+|---|---|
+| [T-034](done/T-034.md) | bh_duel: gear-aware offline duel harness + era table |
+| M2b (partial) | wipe-replay ACROSS chains bit-exact (12 legs, 1139 hashes); L1->8 campaign measured, plateau=L6, stays Phase-3 xparty |
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |
 |---|---|---|
-| T-034 | balancer v2: gear-aware duel harness | feeds the era curve |
-| M2b | L1->8 campaign run across both zones (player-paced) | gate carry-over |
+| M2b-final | L8-in-one-sitting pacing (party XP solves) | evidence: logs/m2b_gate.log, devlog 0013 |
+| T-034b | balance retune from duel table: camp leuk-for-leash levers | logs/duel-table-s12.csv |

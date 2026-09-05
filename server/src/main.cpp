@@ -112,8 +112,10 @@ void journalLogin(Server& s, const Session& sess, const CharacterRow& row,
   s.loginOrder.push_back(row.name);
   const sim::TilePos t = e.walker.tile();
   std::fprintf(s.journal,
-               "l %lld %u %s %d %d %d %u %u %u %u %u %u %u %d %s\n",
+               // v2: zoneId column after (x,y) — cross-zone persistence (T-036) must replay
+               "l %lld %u %s %d %d %u %d %u %u %u %u %u %u %u %d %s\n",
                static_cast<long long>(s.tick + 1), idx, row.name.c_str(), t.x, t.y,
+               static_cast<unsigned>(e.zoneId),
                static_cast<unsigned>(row.level), static_cast<unsigned>(row.xp),
                static_cast<unsigned>(row.str), static_cast<unsigned>(row.vit),
                static_cast<unsigned>(row.dex), static_cast<unsigned>(row.statPoints),
@@ -776,6 +778,7 @@ int runReplayWorld(const std::string& path, const std::string& mapPath) {
     std::uint32_t idx;
     std::string name;
     int x, y;
+    std::uint32_t zoneId = 1;  // v2 journals carry it; earlier = zone 1
     unsigned level, xp, st_, vit, dex, sp, gold;
     std::uint32_t mercyMask = 0;
     std::int32_t karma = 0;
@@ -806,18 +809,24 @@ int runReplayWorld(const std::string& path, const std::string& mapPath) {
       // l tick idx name x y level xp str vit dex sp gold inv
       char name[64], inv[768] = "-";
       long long tick;
-      unsigned idx, level, xp, st_, vit, dex, sp, gold, mercy = 0;
+      unsigned idx, level, xp, st_, vit, dex, sp, gold, mercy = 0, zone = 1;
       int x, y, karma = 0;
-      const int n = std::sscanf(line, "l %lld %u %63s %d %d %u %u %u %u %u %u %u %u %d %767s",
-                                &tick, &idx, name, &x, &y, &level, &xp, &st_, &vit,
-                                &dex, &sp, &gold, &mercy, &karma, inv);
-      if (n != 15 && n != 13) {
-        std::fprintf(stderr, "[replay] malformed l-line: %s", line);
-        std::fclose(f);
-        return 2;
+      int n = std::sscanf(line, "l %lld %u %63s %d %d %u %u %u %u %u %u %u %u %u %d %767s",
+                          &tick, &idx, name, &x, &y, &zone, &level, &xp, &st_, &vit,
+                          &dex, &sp, &gold, &mercy, &karma, inv);
+      if (n != 16) {  // legacy v1: no zone column
+        zone = 1;
+        n = std::sscanf(line, "l %lld %u %63s %d %d %u %u %u %u %u %u %u %u %d %767s",
+                        &tick, &idx, name, &x, &y, &level, &xp, &st_, &vit,
+                        &dex, &sp, &gold, &mercy, &karma, inv);
+        if (n != 15 && n != 13) {
+          std::fprintf(stderr, "[replay] malformed l-line: %s", line);
+          std::fclose(f);
+          return 2;
+        }
+        if (n == 13) { mercy = 0; karma = 0; }  // pre-v6 journals
       }
-      if (n == 13) { mercy = 0; karma = 0; }  // pre-v6 journals
-      logins.push_back(QueuedLogin{static_cast<sim::Tick>(tick), idx, name, x, y,
+      logins.push_back(QueuedLogin{static_cast<sim::Tick>(tick), idx, name, x, y, zone,
                                    level, xp, st_, vit, dex, sp, gold, mercy, karma,
                                    inv});
       if (tick > lastTick) lastTick = tick;
@@ -857,7 +866,8 @@ int runReplayWorld(const std::string& path, const std::string& mapPath) {
   size_t ci = 0, hi = 0, li = 0, di = 0;
   std::int64_t checked = 0, bad = 0;
   auto applyLogin = [&](const QueuedLogin& L) {
-    Entity& e = world.spawn(L.name, 0, sim::TilePos{L.x, L.y});
+    Entity& e = world.spawn(L.name, 0, sim::TilePos{L.x, L.y},
+                            static_cast<std::uint16_t>(L.zoneId));
     Entity* pe = world.find(e.id);
     pe->level = static_cast<std::uint8_t>(L.level < 1 ? 1 : (L.level > 25 ? 25 : L.level));
     pe->xp = L.xp;

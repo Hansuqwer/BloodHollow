@@ -15,3 +15,6 @@ add_executable(bh_tests
 )
 target_link_libraries(bh_tests PRIVATE bh_shared bh_protocol bh_server_world bh_doctest bh_warnings)
 add_test(NAME bh_tests COMMAND bh_tests)
+# T-034: balancer harness determinism gate — CI-visible replay-class guard
+add_test(NAME bh_duel_selftest COMMAND $<TARGET_FILE:bh_duel> --selftest)
+set_tests_properties(bh_duel_selftest PROPERTIES DEPENDS bh_duel)

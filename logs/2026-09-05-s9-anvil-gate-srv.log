@@ -1,0 +1,101 @@
+[boot] zone 2 (assets/maps/fields_overflow.bhmap: 64x48) online
+[boot] zone 3 (assets/maps/thornwall_crypt.bhmap: 48x36) online
+[journal] recording world to /tmp/s9g.bwj
+[boot] bh_server on 0.0.0.0:7814 | map 'assets/maps/thornwall.bhmap' | db '/tmp/s9g.db' | tick 20Hz | aoi 26
+[bless] bot_00 <- 2001:1,4001:35,skill:25,gold:400 (skill now 25, gold 400)
+[bless]   inv 2001:1 eq=0 aura=0
+[bless]   inv 4001:35 eq=0 aura=0
+[net] bot_00           entered the world (entity 292, online 1)
+[bless] bot_01 <- 2001:1,4001:35,skill:25,gold:400 (skill now 25, gold 400)
+[bless]   inv 2001:1 eq=0 aura=0
+[bless]   inv 4001:35 eq=0 aura=0
+[net] bot_01           entered the world (entity 293, online 2)
+[bless] bot_02 <- 2002:1,4002:16,4001:70,skill:60,gold:1100 (skill now 60, gold 1100)
+[bless]   inv 2002:1 eq=0 aura=0
+[bless]   inv 4002:16 eq=0 aura=0
+[bless]   inv 4001:70 eq=0 aura=0
+[net] bot_02           entered the world (entity 294, online 3)
+[bless] bot_03 <- 2002:1,4002:16,4004:12,4001:70,skill:90,gold:2200 (skill now 90, gold 2200)
+[bless]   inv 2002:1 eq=0 aura=0
+[bless]   inv 4002:16 eq=0 aura=0
+[bless]   inv 4004:12 eq=0 aura=0
+[bless]   inv 4001:70 eq=0 aura=0
+[net] bot_03           entered the world (entity 295, online 4)
+[bless] bot_04 <- 2001:1 (skill now 0, gold 50)
+[bless]   inv 2001:1 eq=0 aura=0
+[net] bot_04           entered the world (entity 296, online 5)
+[bless] bot_05 <- 2001:1 (skill now 0, gold 50)
+[bless]   inv 2001:1 eq=0 aura=0
+[net] bot_05           entered the world (entity 297, online 6)
+[aura] bot_03 tier=1 res=ok mercy
+[anvil-refuse] bot_03 tier=1 why=already aura=1
+[anvil-refuse] bot_03 tier=1 why=already aura=1
+[anvil-refuse] bot_03 tier=1 why=already aura=1
+[anvil-refuse] bot_03 tier=1 why=already aura=1
+[aura] bot_01 tier=1 res=ok mercy
+[soak] tick=600 online=6 entities=276 tickUs p50=507 p99=887 worldHash=dcddade05ceb8bd8 pkts=318/545930
+[anvil-refuse] bot_03 tier=1 why=already aura=1
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[anvil-refuse] bot_03 tier=1 why=already aura=1
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[soak] tick=1200 online=6 entities=271 tickUs p50=506 p99=905 worldHash=84472df6c427893e pkts=511/1055604
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[soak] tick=1800 online=6 entities=268 tickUs p50=501 p99=763 worldHash=8f47d07b26b07f69 pkts=784/1602701
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[soak] tick=2400 online=6 entities=265 tickUs p50=465 p99=734 worldHash=e5ea523cf4307e4b pkts=1018/2142643
+[aura] bot_00 tier=1 res=ok mercy
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[anvil-refuse] bot_00 tier=1 why=already aura=1
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[anvil-refuse] bot_00 tier=1 why=already aura=1
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[anvil-refuse] bot_00 tier=1 why=already aura=1
+[soak] tick=3000 online=6 entities=260 tickUs p50=466 p99=765 worldHash=9a3740539db30591 pkts=1227/2630030
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[anvil-refuse] bot_00 tier=1 why=already aura=1
+[aura] bot_02 tier=1 res=ok mercy
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[anvil-refuse] bot_00 tier=1 why=already aura=1
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[anvil-refuse] bot_02 tier=1 why=already aura=1
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[anvil-refuse] bot_00 tier=1 why=already aura=1
+[anvil-refuse] bot_02 tier=1 why=already aura=1
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[soak] tick=3600 online=6 entities=250 tickUs p50=421 p99=924 worldHash=ae59eed81a7d6e7b pkts=1456/3112671
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[anvil-refuse] bot_01 tier=1 why=already aura=1
+[anvil-refuse] bot_02 tier=1 why=already aura=1
+[anvil-refuse] bot_00 tier=1 why=already aura=1
+[net] bot_00           saved at (29,13)
+[net] bot_01           saved at (29,13)
+[net] bot_02           saved at (32,16)
+[net] bot_03           saved at (36,32)
+[net] bot_04           saved at (46,32)
+[net] bot_05           saved at (41,32)
+[soak] tick=4200 online=0 entities=252 tickUs p50=73 p99=842 worldHash=40b6d825ddf4da70 pkts=1552/3315043
+[soak] FINISH ticks=4401 online=0 entities=254 tickUs p50=66 p99=486
+[soak] OK p99=0.49ms budget=10.00ms
+[balance] Marsh Rat        L1  kills=16    TTK(25t hps)=5.9s xp=40
+[balance] Feral Ghoul      L3  kills=17    TTK(25t hps)=18.6s xp=90
+[balance] Hollow Hound     L5  kills=7     TTK(25t hps)=36.5s xp=150
+[balance] Plague Bat       L2  kills=7     TTK(25t hps)=0.5s xp=55
+[balance] Bonepicker Gnoll L7  kills=3     TTK(25t hps)=42.5s xp=300
+[balance] Gravecaller      L11 kills=1     TTK(25t hps)=16.6s xp=560

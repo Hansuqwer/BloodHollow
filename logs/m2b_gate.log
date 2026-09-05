@@ -1,0 +1,97 @@
+gate: leg 1 start 13:21:21
+LEG1_DONE bots_rc=0
+[replay] OK ticks=9225 sessionCmds=1222 hashes=92 mismatches=0 entities=281
+gate: leg 1 replay: [replay] OK ticks=9225 sessionCmds=1222 hashes=92 mismatches=0 entities=281
+leg1 verified
+gate: leg 1 end state: reached L5
+gate: leg 2 start 13:30:25
+LEG2_DONE bots_rc=0
+[replay] OK ticks=9385 sessionCmds=972 hashes=93 mismatches=0 entities=289
+gate: leg 2 replay: [replay] OK ticks=9385 sessionCmds=972 hashes=93 mismatches=0 entities=289
+leg2 verified
+gate: leg 2 end state: reached L3
+[replay] FAIL ticks=10381 sessionCmds=1173 hashes=103 mismatches=103 entities=301
+gate: leg 1 already verified, skip
+gate: leg 2 already verified, skip
+[replay] FAIL ticks=10523 sessionCmds=1184 hashes=105 mismatches=105 entities=301
+gate: leg 1 already verified, skip
+gate: leg 2 already verified, skip
+gate: leg 3 start 14:03:58
+LEG3_DONE bots_rc=0
+[replay] OK ticks=10700 sessionCmds=1155 hashes=107 mismatches=0 entities=292
+gate: leg 3 replay: [replay] OK ticks=10700 sessionCmds=1155 hashes=107 mismatches=0 entities=292
+leg3 verified
+gate: leg 3 end state: reached L5
+gate: leg 4 start 14:13:02
+LEG4_DONE bots_rc=0
+[replay] OK ticks=9833 sessionCmds=1158 hashes=98 mismatches=0 entities=297
+gate: leg 4 replay: [replay] OK ticks=9833 sessionCmds=1158 hashes=98 mismatches=0 entities=297
+leg4 verified
+gate: leg 4 end state: reached L5
+gate: leg 5 start 14:22:06
+Terminated
+LEG5_DONE bots_rc=143
+[boot] zone 3 (assets/maps/thornwall_crypt.bhmap: 48x36) online
+gate: leg 5 replay: [replay] OK ticks=3323 sessionCmds=384 hashes=33 mismatches=0 entities=296
+leg5 verified
+gate: leg 5 end state: reached L5
+gate: leg 6 start 14:25:21
+gate: leg 1 already verified, skip
+gate: leg 2 already verified, skip
+gate: leg 3 already verified, skip
+gate: leg 4 already verified, skip
+gate: leg 5 already verified, skip
+gate: leg 6 start 14:25:31
+LEG6_DONE bots_rc=0
+[replay] OK ticks=9300 sessionCmds=746 hashes=93 mismatches=0 entities=292
+gate: leg 6 replay: [replay] OK ticks=9300 sessionCmds=746 hashes=93 mismatches=0 entities=292
+leg6 verified
+gate: leg 6 end state: reached L5
+gate: chain done 14:34:25
+LEG6_DONE bots_rc=0
+[replay] OK ticks=9300 sessionCmds=746 hashes=93 mismatches=0 entities=292
+gate: leg 6 replay: [replay] OK ticks=9300 sessionCmds=746 hashes=93 mismatches=0 entities=292
+leg6 verified
+gate: leg 6 end state: reached L5
+gate: chain done 14:34:35
+gate: leg 3 already verified, skip
+gate: leg 4 already verified, skip
+gate: leg 5 already verified, skip
+gate: leg 6 already verified, skip
+gate: leg 7 start 14:36:53
+LEG7_DONE bots_rc=0
+[replay] OK ticks=10200 sessionCmds=1169 hashes=102 mismatches=0 entities=273
+gate: leg 7 replay: [replay] OK ticks=10200 sessionCmds=1169 hashes=102 mismatches=0 entities=273
+leg7 verified
+gate: leg 7 end state: reached L5
+gate: leg 8 start 14:45:56
+LEG8_DONE bots_rc=0
+[replay] OK ticks=9815 sessionCmds=957 hashes=98 mismatches=0 entities=277
+gate: leg 8 replay: [replay] OK ticks=9815 sessionCmds=957 hashes=98 mismatches=0 entities=277
+leg8 verified
+gate: leg 8 end state: reached L5
+gate: leg 9 start 14:55:00
+LEG9_DONE bots_rc=0
+[replay] OK ticks=9748 sessionCmds=955 hashes=97 mismatches=0 entities=273
+gate: leg 9 replay: [replay] OK ticks=9748 sessionCmds=955 hashes=97 mismatches=0 entities=273
+leg9 verified
+gate: leg 9 end state: reached L6
+gate: leg 10 start 15:04:04
+LEG10_DONE bots_rc=0
+[replay] OK ticks=9983 sessionCmds=955 hashes=99 mismatches=0 entities=277
+gate: leg 10 replay: [replay] OK ticks=9983 sessionCmds=955 hashes=99 mismatches=0 entities=277
+leg10 verified
+gate: leg 10 end state: reached L6
+gate: leg 11 start 15:13:08
+LEG11_DONE bots_rc=0
+[replay] OK ticks=10408 sessionCmds=1372 hashes=104 mismatches=0 entities=277
+gate: leg 11 replay: [replay] OK ticks=10408 sessionCmds=1372 hashes=104 mismatches=0 entities=277
+leg11 verified
+gate: leg 11 end state: reached L6
+gate: leg 12 start 15:22:12
+LEG12_DONE bots_rc=0
+[replay] OK ticks=10737 sessionCmds=1584 hashes=107 mismatches=0 entities=269
+gate: leg 12 replay: [replay] OK ticks=10737 sessionCmds=1584 hashes=107 mismatches=0 entities=269
+leg12 verified
+gate: leg 12 end state: reached L6
+gate: chain done 15:31:16

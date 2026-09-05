@@ -1,0 +1,37 @@
+[boot] zone 3 (thornwall_crypt 48x36) online
+[journal] recording world to /tmp/z9_gate.bwj
+[boot] bh_server on 0.0.0.0:7795 | map 'assets/maps/thornwall.bhmap' | db 'var/z9.db' | tick 20Hz | aoi 26
+[net] rav_00           entered the world (entity 75, online 1)
+[net] rav_01           entered the world (entity 76, online 2)
+[net] rav_02           entered the world (entity 77, online 3)
+[net] rav_03           entered the world (entity 78, online 4)
+[net] rav_04           entered the world (entity 79, online 5)
+[net] scout_00         entered the world (entity 80, online 6)
+[net] scout_01         entered the world (entity 81, online 7)
+[net] scout_02         entered the world (entity 82, online 8)
+[soak] tick=600 online=8 entities=68 tickUs p50=159 p99=291 worldHash=ec32e8e71189b4d9 pkts=299/122549
+[zone] scout_01 -> map 3 at (24,30)
+[soak] tick=1200 online=8 entities=70 tickUs p50=144 p99=309 worldHash=2fec2172a62ccba0 pkts=500/247865
+[soak] tick=1800 online=8 entities=69 tickUs p50=156 p99=328 worldHash=cb0cf4abfe5702db pkts=805/376436
+[zone] scout_00 -> map 3 at (24,30)
+[soak] tick=2400 online=8 entities=68 tickUs p50=144 p99=334 worldHash=ff75b0b33f89acfc pkts=1040/489915
+[soak] tick=3000 online=8 entities=67 tickUs p50=134 p99=292 worldHash=b98025af93e8bbcc pkts=1297/595593
+[soak] tick=3600 online=8 entities=68 tickUs p50=148 p99=328 worldHash=3e72f18705421a93 pkts=1544/698995
+[soak] tick=4200 online=8 entities=69 tickUs p50=145 p99=314 worldHash=90341fa1b71f7f23 pkts=1740/815210
+[soak] tick=4800 online=8 entities=66 tickUs p50=130 p99=337 worldHash=8b896abf0319bd9e pkts=2008/914496
+[soak] tick=5400 online=8 entities=62 tickUs p50=152 p99=495 worldHash=3fe392e4df3a8e5d pkts=2276/1029544
+[net] rav_00           saved at (19,18)
+[net] rav_01           saved at (19,19)
+[net] rav_02           saved at (17,38)
+[net] rav_03           saved at (34,27)
+[net] rav_04           saved at (16,38)
+[net] scout_00         saved at (22,14)
+[net] scout_01         saved at (30,21)
+[net] scout_02         saved at (32,16)
+[soak] tick=6000 online=0 entities=52 tickUs p50=135 p99=434 worldHash=3f39aea541f7e10d pkts=2453/1111337
+[soak] FINISH ticks=6001 online=0 entities=52 tickUs p50=135 p99=434
+[soak] OK p99=0.43ms budget=10.00ms
+[balance] Marsh Rat        L1  kills=13    TTK(25t hps)=8.0s xp=40
+[balance] Feral Ghoul      L3  kills=15    TTK(25t hps)=27.8s xp=90
+[balance] Hollow Hound     L5  kills=8     TTK(25t hps)=160.6s xp=150
+[balance] Plague Bat       L2  kills=9     TTK(25t hps)=59.1s xp=55

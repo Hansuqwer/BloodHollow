@@ -1,0 +1,62 @@
+[boot] zone 2 (assets/maps/fields_overflow.bhmap: 64x48) online
+[boot] zone 3 (assets/maps/thornwall_crypt.bhmap: 48x36) online
+[journal] recording world to logs/m2b_leg6.bwj
+[boot] bh_server on 0.0.0.0:7840 | map 'assets/maps/thornwall.bhmap' | db '/tmp/m2b_campaign.db' | tick 20Hz | aoi 26
+[net] m2b__00          entered the world (entity 292, online 1)
+[net] m2b__01          entered the world (entity 293, online 2)
+[zone] m2b__00 -> map 1 at (32,16)
+[zone] m2b__01 -> map 1 at (32,16)
+[zone] m2b__00 -> map 2 at (2,14)
+[zone] m2b__01 -> map 2 at (2,14)
+[soak] tick=600 online=2 entities=291 tickUs p50=161 p99=365 worldHash=7e73b133070cd6c2 pkts=58/45145
+[zone] m2b__00 -> map 1 at (32,16)
+[zone] m2b__01 -> map 1 at (32,16)
+[zone] m2b__00 -> map 2 at (2,14)
+[zone] m2b__01 -> map 2 at (2,14)
+[zone] m2b__00 -> map 1 at (32,16)
+[zone] m2b__01 -> map 1 at (32,16)
+[zone] m2b__00 -> map 2 at (2,14)
+[soak] tick=1200 online=2 entities=290 tickUs p50=175 p99=364 worldHash=3f10f64d2aac0cba pkts=113/120951
+[zone] m2b__01 -> map 2 at (2,14)
+[soak] tick=1800 online=2 entities=289 tickUs p50=125 p99=246 worldHash=809bef282e71d870 pkts=177/128152
+[zone] m2b__01 -> map 1 at (32,16)
+[zone] m2b__00 -> map 1 at (32,16)
+[zone] m2b__00 -> map 2 at (2,14)
+[zone] m2b__01 -> map 2 at (2,14)
+[zone] m2b__01 -> map 1 at (32,16)
+[zone] m2b__00 -> map 1 at (32,16)
+[soak] tick=2400 online=2 entities=291 tickUs p50=205 p99=501 worldHash=08678f22e176992e pkts=227/220358
+[zone] m2b__01 -> map 2 at (2,14)
+[zone] m2b__00 -> map 2 at (2,14)
+[zone] m2b__00 -> map 1 at (32,16)
+[zone] m2b__00 -> map 2 at (2,14)
+[soak] tick=3000 online=2 entities=292 tickUs p50=145 p99=313 worldHash=1b62fe19b015251c pkts=278/245587
+[zone] m2b__00 -> map 1 at (32,16)
+[soak] tick=3600 online=2 entities=292 tickUs p50=132 p99=250 worldHash=921120ef17837d8f pkts=313/255407
+[zone] m2b__00 -> map 2 at (2,14)
+[zone] m2b__00 -> map 1 at (32,16)
+[soak] tick=4200 online=2 entities=291 tickUs p50=142 p99=276 worldHash=c5b1f80c7fed640c pkts=372/297192
+[zone] m2b__01 -> map 1 at (32,16)
+[zone] m2b__01 -> map 2 at (2,14)
+[zone] m2b__00 -> map 2 at (2,14)
+[soak] tick=4800 online=2 entities=287 tickUs p50=190 p99=363 worldHash=6ee55fdf7d16e4f1 pkts=422/375761
+[zone] m2b__01 -> map 1 at (32,16)
+[zone] m2b__01 -> map 2 at (2,14)
+[zone] m2b__00 -> map 1 at (32,16)
+[zone] m2b__00 -> map 2 at (2,14)
+[soak] tick=5400 online=2 entities=286 tickUs p50=175 p99=335 worldHash=e311f538dc121d6c pkts=488/441417
+[zone] m2b__00 -> map 1 at (32,16)
+[zone] m2b__00 -> map 2 at (2,14)
+[soak] tick=6000 online=2 entities=285 tickUs p50=174 p99=358 worldHash=bcfbf46787db1b46 pkts=553/505355
+[soak] tick=6600 online=2 entities=286 tickUs p50=134 p99=224 worldHash=3ceabb8de596d078 pkts=585/512255
+[soak] tick=7200 online=2 entities=289 tickUs p50=147 p99=273 worldHash=7141cef833cf403b pkts=603/518546
+[soak] tick=7800 online=2 entities=292 tickUs p50=137 p99=280 worldHash=5c488517b436e63a pkts=630/525228
+[zone] m2b__00 -> map 1 at (32,16)
+[zone] m2b__00 -> map 2 at (2,14)
+[zone] m2b__01 -> map 1 at (32,16)
+[zone] m2b__01 -> map 2 at (2,14)
+[soak] tick=8400 online=2 entities=292 tickUs p50=161 p99=332 worldHash=64be51f577214a1b pkts=668/563346
+[soak] tick=9000 online=2 entities=292 tickUs p50=149 p99=378 worldHash=0ef15d091329ce8a pkts=719/569426
+[soak] tick=9600 online=2 entities=292 tickUs p50=145 p99=298 worldHash=95f4fbd89e664cd6 pkts=769/575566
+[soak] tick=10200 online=2 entities=292 tickUs p50=137 p99=268 worldHash=f65a74bef845c3bd pkts=818/581739
+[soak] tick=10800 online=2 entities=292 tickUs p50=149 p99=258 worldHash=7ee9ba71b8bef5b4 pkts=869/587867

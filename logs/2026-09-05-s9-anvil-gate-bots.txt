@@ -1,0 +1,1 @@
+[bots] SUMMARY welcomed=6/6 moved=6/6 minDeltas=3801 kills=51 pots=0 swings=180 deaths=24 shops=28 anvilTries=51 levelDrops=1 maxLevel=4 pkts=3315022 bytes=72930479 gates b/g/p/a/r=759/47/696/54/416 mGold=3083 mPelts=73

@@ -1,0 +1,3 @@
+/tmp/m2gate_f.log:[bots] SUMMARY welcomed=8/8 moved=8/8 minDeltas=17999 kills=146 pots=451 swings=956 deaths=0 shops=35 levelDrops=8 maxLevel=5 pkts=2656785 bytes=58309959
+/tmp/m2gate_r.log:[bots] SUMMARY welcomed=2/2 moved=2/2 minDeltas=18000 kills=24 pots=0 swings=228 deaths=0 shops=0 levelDrops=2 maxLevel=4 pkts=659677 bytes=14480109
+/tmp/m2gate_w.log:[bots] SUMMARY welcomed=4/4 moved=4/4 minDeltas=18000 kills=0 pots=0 swings=0 deaths=0 shops=0 levelDrops=0 maxLevel=1 pkts=1280262 bytes=28096999

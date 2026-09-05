@@ -1,0 +1,9 @@
+[campaign] m2b__00 reached L2 at t=7.8s (map 1)
+[campaign] m2b__01 reached L1 at t=15.4s (map 1)
+[campaign] m2b__01 reached L2 at t=32.7s (map 1)
+[campaign] m2b__00 reached L3 at t=172.6s (map 1)
+[campaign] m2b__01 reached L3 at t=234.6s (map 1)
+[campaign] m2b__00 reached L4 at t=289.2s (map 1)
+[campaign] m2b__00 reached L5 at t=536.8s (map 1)
+[bots] SUMMARY welcomed=2/2 moved=2/2 minDeltas=10801 kills=52 pots=144 swings=150 deaths=29 shops=9 anvilTries=0 levelDrops=4 maxLevel=5 pkts=2950017 bytes=64913215 gates b/g/p/a/r=0/0/0/0/0 mGold=0 mPelts=0
+[bots] OK

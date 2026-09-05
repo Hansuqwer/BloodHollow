@@ -26,6 +26,7 @@ namespace {
 struct SeenEnt {
   int x = 0, y = 0;
   std::uint8_t kind = 0;  // 0 = player
+  int level = 0;          // mob level (EntitySpawn); 0 = unknown
 };
 
 struct Bot {
@@ -62,6 +63,15 @@ struct Bot {
   std::uint64_t levelDrops = 0;
   double nextShopAt = 0.0;
   double nextPowerSwingAt = 0.0;
+  // campaign profile (T-034/M2b): player-paced L1->8 cross-zone route
+  std::uint32_t mapId = 1;
+  double campaignT0 = -1.0;
+  int announcedLevel = 0;
+  bool campaignDone = false;
+  double restUntil = 0.0, nextRestAt = 15.0;  // human pacing: fight 60-90s, idle 6-11s
+  int campX = -1, campY = -1;                  // current hunting-camp waypoint
+  bool campIsPortal = false;  // camp sits on a portal rect: land EXACTLY, no mill
+  bool retreating = false;    // campaign: broke off at low hp, sip + return
 };
 
 double nowSec() {
@@ -83,6 +93,7 @@ int run(int argc, char** argv) {
   std::string prefix = "bot";
   std::string profile = "wander";
   bool reckless = false;  // M2 gate hires: no flasks, no shopping
+  int targetLevel = 8;  // campaign profile: stop condition (OwnStats level)
   std::string visitGoal = "";
 
   for (int i = 1; i < argc; ++i) {
@@ -97,10 +108,11 @@ int run(int argc, char** argv) {
     else if (a == "--profile") profile = next(profile.c_str());
     else if (a == "--reckless") reckless = true;
     else if (a == "--visit") visitGoal = next("");  // "x,y" anchor: path into reach
+    else if (a == "--target-level") targetLevel = std::atoi(next("8"));
     else {
       std::fprintf(stderr,
                    "usage: bh_bots [--host H] [--port P] [--count N] [--secs S] [--map M] "
-                   "[--prefix P] [--profile wander|fighter]\n");
+                   "[--prefix P] [--profile wander|fighter|pilgrim|campaign] [--target-level N]\n");
       return 2;
     }
   }
@@ -143,6 +155,7 @@ int run(int argc, char** argv) {
 
   const double t0 = nowSec();
   const double tEnd = t0 + secs;
+  bool campaignAllDone = false;
   std::uint64_t packetsRx = 0;
   std::uint64_t bytesRx = 0;
 
@@ -170,6 +183,7 @@ int run(int argc, char** argv) {
             if (pv.id == bh::proto::kIdWelcome) {
               bh::proto::Welcome w;
               if (w.deserialize(pv.body)) {
+                b.mapId = w.mapId;
                 if (b.welcomed) {  // repeated Welcome = zone transfer (T-036)
                   b.ents.clear();
                   b.attackTarget = 0;
@@ -187,6 +201,7 @@ int run(int argc, char** argv) {
                 se.x = m.x / bh::sim::Walker::kUnitsPerTile;
                 se.y = m.y / bh::sim::Walker::kUnitsPerTile;
                 se.kind = m.kind;
+                se.level = m.level;
                 b.ents[m.id] = se;
                 if (m.id == b.ownId) {
                   b.hp = static_cast<std::int32_t>(m.hp);
@@ -226,6 +241,20 @@ int run(int argc, char** argv) {
               if (m.deserialize(pv.body)) {
                 if (m.level + 1 == b.level) ++b.levelDrops;  // XP-debt de-level
                 b.level = m.level;
+                if (profile == "campaign" && b.level > b.announcedLevel &&
+                    b.campaignT0 >= 0.0) {
+                  b.announcedLevel = b.level;
+                  std::printf("[campaign] %s reached L%d at t=%.1fs (map %u)\n",
+                              b.name.c_str(), b.level, nowSec() - b.campaignT0,
+                              b.mapId);
+                  std::fflush(stdout);
+                  if (b.level >= targetLevel && !b.campaignDone) {
+                    b.campaignDone = true;
+                    std::printf("[campaign] %s TARGET L%d DONE in %.1fs\n",
+                                b.name.c_str(), b.level, nowSec() - b.campaignT0);
+                    std::fflush(stdout);
+                  }
+                }
                 b.gold = m.gold;
               }
             } else if (pv.id == bh::proto::kIdInventoryReset) {
@@ -274,7 +303,39 @@ int run(int argc, char** argv) {
         }
       }
       const bool pilgrimRites = (profile == "pilgrim");
-      if (profile == "fighter" || pilgrimRites) {
+      const bool campaign = (profile == "campaign");
+      if (campaign) {
+        if (b.campaignT0 < 0.0) {
+          b.campaignT0 = t;
+          b.nextRestAt = t + 60.0 + rng.range(0, 30);  // first break a minute in
+        }
+        // player-paced rhythm: ~60-90s engaged, then a 6-11s door-stop
+        if (t >= b.nextRestAt) {
+          b.nextRestAt = t + 60.0 + rng.range(0, 30);
+          b.restUntil = t + 6.0 + rng.range(0, 5);
+        }
+        // hunting-camp waypoint for own level & zone (content coords, in tiles)
+        // Route v4 (pack-probe informed): leash-16 packs (hounds/north-gnolls)
+        // and the hatch-side widow cocoon are party-band content; a solo
+        // campaigner steps AROUND them.  Ghoul spine until L7, with a fields
+        // excursion at L5 for the cross-zone leg of the M2b gate.
+        b.campIsPortal = false;
+        if (b.mapId == 3) {
+          b.campX = 0; b.campY = 17; b.campIsPortal = true;   // crypt: back up
+        } else if (b.mapId == 2) {
+          // gate evidence gathered in early legs; fields grind is pack-country,
+          // so any later leg resumes here only to walk straight home
+          b.campX = 0; b.campY = 14; b.campIsPortal = true;  // west gate home
+        } else {
+          switch (b.level) {
+            case 1:  b.campX = 46; b.campY = 13; break;  // rats_east
+            case 2:  b.campX = 15; b.campY = 6;  break;  // bats_cryptyard
+            default: b.campX = 55; b.campY = 19; break;  // ghouls_east spine (L3+ through L8)
+          }
+        }
+        if (b.campaignDone) continue;  // target reached: idle out the clock
+      }
+      if (profile == "fighter" || pilgrimRites || campaign) {
         // nearest mob within 10 tiles -> chase / attack
         std::uint32_t bestId = 0;
         int bestD = 100;
@@ -282,6 +343,24 @@ int run(int argc, char** argv) {
           if (kv.second.kind == 0 || bh::content::wireIsFurniture(kv.second.kind)) continue;  // players, furniture
           const int d = std::max(std::abs(kv.second.x - b.tileX),
                                  std::abs(kv.second.y - b.tileY));
+          if (campaign && kv.second.level > b.level + 2 && d > 2) continue;  // no walls
+          if (campaign && t < b.restUntil && d > 1) continue;  // resting: fight back only
+          if (campaign && b.campIsPortal) continue;  // portal leg: hands off the sword —
+              // any AttackRequest path-clears; bat harassment at the chapel door
+              // otherwise livelocks the crossing (observed smoke v2)
+          if (campaign && b.retreating) continue;      // disengaging: no new pulls
+          if (campaign && d > 1) {                     // pull singles: skip packed targets
+            int pack = 0;
+            for (const auto& kv2 : b.ents) {
+              if (kv2.first == kv.first || kv2.second.kind == 0 ||
+                  bh::content::wireIsFurniture(kv2.second.kind)) continue;
+              if (std::max(std::abs(kv2.second.x - kv.second.x),
+                           std::abs(kv2.second.y - kv.second.y)) <= 3) ++pack;
+            }
+            // singles-only pulls for anything dangerous; trash swarms (own-2)
+            // are era fodder and may be dived freely
+            if (pack > 0 && kv.second.level >= b.level - 1) continue;
+          }
           if (d < bestD) {
             bestD = d;
             bestId = kv.first;
@@ -306,6 +385,8 @@ int run(int argc, char** argv) {
         bool bladeArmed = false;
         std::uint8_t bladeAura = 0;
         std::uint8_t bladeSlot = 255;
+        bool hasArmor = false, armorWorn = false;
+        std::uint8_t armorSlot = 255;
         for (const auto& kv : b.inv) {
           if (kv.second.itemId == 4001) pelts += kv.second.qty;
           if (kv.second.itemId == 4001 || kv.second.itemId == 4002 ||
@@ -313,6 +394,9 @@ int run(int argc, char** argv) {
           if (kv.second.itemId == 2002 || kv.second.itemId == 2001) {
             hasBlade = true; bladeSlot = kv.first;
             bladeArmed = kv.second.equipped; bladeAura = kv.second.aura;
+          }
+          if (kv.second.itemId == 2101 || kv.second.itemId == 2102) {
+            hasArmor = true; armorSlot = kv.first; armorWorn = kv.second.equipped;
           }
         }
         if (pilgrimRites) {
@@ -323,6 +407,7 @@ int run(int argc, char** argv) {
           else if (pelts < 30) ++b.dbgNoPelts;
           else ++b.dbgReady;
         }
+
         bool anvilAdj = false;
         for (const auto& kv2 : b.ents) {
           if (kv2.second.kind == bh::content::kWireKindAnvil) {
@@ -331,8 +416,22 @@ int run(int argc, char** argv) {
             if (std::max(ax, ay) <= 2) { anvilAdj = true; break; }
           }
         }
-        const bool nearTown = b.homeX >= 0 && std::abs(b.tileX - b.homeX) < 4 &&
+        const bool nearTown = b.mapId == 1 && b.homeX >= 0 &&  // town = map 1 only
+                              std::abs(b.tileX - b.homeX) < 4 &&
                               std::abs(b.tileY - b.homeY) < 4;
+        if (campaign && nearTown && hasBlade && bladeArmed && t >= b.nextShopAt) {
+          int vials = 0;
+          for (const auto& kv : b.inv)
+            if (kv.second.itemId == 3001) vials += kv.second.qty;
+          if (vials < 4 && b.gold >= 90) {  // keep a 3-deep flask belt for packs
+            b.nextShopAt = t + 2.0;
+            bh::proto::BuyRequest buy;
+            buy.itemId = 3001;
+            buy.qty = 2;
+            sendProto(b.peer, bh::proto::pack(buy));
+            ++b.shops;
+          }
+        }
         // tier-table driven rite math (T-047): parts+gold for the NEXT tier
         std::uint32_t needGold = 120, haveParts = 0, wantParts = 0;
         const auto* nextTier = bh::content::findAuraTier(
@@ -379,6 +478,18 @@ int run(int argc, char** argv) {
           aop.tier = static_cast<std::uint8_t>(bladeAura + 1);
           sendProto(b.peer, bh::proto::pack(aop));
           ++b.anvilTries;
+        } else if (campaign && nearTown && bladeArmed && hasArmor && !armorWorn && t >= b.nextShopAt) {
+          b.nextShopAt = t + 2.0;
+          bh::proto::ToggleEquip te;
+          te.slot = armorSlot;
+          sendProto(b.peer, bh::proto::pack(te));
+        } else if (campaign && nearTown && bladeArmed && !hasArmor && b.gold >= 120 && t >= b.nextShopAt) {
+          b.nextShopAt = t + 2.0;
+          bh::proto::BuyRequest buy;
+          buy.itemId = 2101;  // Hide Armor: the 120g life insurance
+          buy.qty = 1;
+          sendProto(b.peer, bh::proto::pack(buy));
+          ++b.shops;
         } else if (hasBlade && !bladeArmed && t >= b.nextShopAt) {
           b.nextShopAt = t + 3.0;
           for (const auto& kv : b.inv) {
@@ -417,6 +528,28 @@ int run(int argc, char** argv) {
           b.nextMoveAt = t + 1.2;
           continue;  // walk home for the rite
         }
+        if (campaign) {
+          const bool hurt = b.hpMax > 0 && b.hp * 100 < b.hpMax * 50;
+          if (hurt && !b.retreating && bestId != 0 && bestD <= 2) {
+            b.retreating = true;
+          } else if (b.retreating && b.hp * 100 >= b.hpMax * 85) {
+            b.retreating = false;
+          }
+          if (b.retreating) {
+            // walk away from the threat axis, sip handled by the common block
+            const SeenEnt* threat = bestId != 0 ? &b.ents[bestId] : nullptr;
+            int fx = b.tileX + (threat ? (b.tileX - threat->x >= 0 ? 10 : -10) : 8);
+            int fy = b.tileY + (threat ? (b.tileY - threat->y >= 0 ? 10 : -10) : 8);
+            if (map->inBounds(fx, fy) && !map->isBlocked(fx, fy)) {
+              bh::proto::InputPath ip;
+              ip.goalX = fx;
+              ip.goalY = fy;
+              sendProto(b.peer, bh::proto::pack(ip));
+            }
+            b.nextMoveAt = t + 0.8;
+            continue;
+          }
+        }
         if (bestId != 0 && bestD <= 12) {
           if (bestD > 1) {
             b.attackTarget = 0;
@@ -446,7 +579,40 @@ int run(int argc, char** argv) {
           }
           continue;
         }
-        // nothing near: wander toward a random mob-area direction anyway
+        // nothing near: campaign walks the level route instead of milling
+        if (campaign) {
+          if (b.campX >= 0 && b.campIsPortal) {
+            // portals: the fire check needs the walker SETTLED on the rect;
+            // keep re-pathing to the exact tile (the level filter above keeps
+            // over-level mobs near the hatch from detouring us into a fight)
+            if (b.restUntil <= t) {
+              bh::proto::InputPath ip;
+              ip.goalX = b.campX;
+              ip.goalY = b.campY;
+              sendProto(b.peer, bh::proto::pack(ip));
+              b.nextMoveAt = t + 1.2;
+            }
+            continue;
+          }
+          if (b.campX >= 0 && b.restUntil <= t) {
+            const int ddx = std::abs(b.tileX - b.campX);
+            const int ddy = std::abs(b.tileY - b.campY);
+            if (ddx > 2 || ddy > 2) {
+              bh::proto::InputPath ip;
+              ip.goalX = b.campX;
+              ip.goalY = b.campY;
+              sendProto(b.peer, bh::proto::pack(ip));
+            } else {
+              // at camp: short mill so respawned mobs drift into reach
+              bh::proto::InputPath ip;
+              ip.goalX = b.campX + static_cast<int>(rng.unit() * 6) - 3;
+              ip.goalY = b.campY + static_cast<int>(rng.unit() * 6) - 3;
+              sendProto(b.peer, bh::proto::pack(ip));
+            }
+            b.nextMoveAt = t + 1.2;
+          }
+          continue;
+        }
       } else if (profile != "wander" && profile != "pilgrim") {
         std::fprintf(stderr, "bh_bots: unknown profile '%s'\n", profile.c_str());
         return 2;
@@ -473,8 +639,15 @@ int run(int argc, char** argv) {
       }
       b.nextMoveAt = t + 1.5 + rng.unit() * 4.0;
     }
+    if (profile == "campaign" && !bots.empty() && !bots[0].name.empty()) {
+      bool all = true;
+      for (const Bot& cc : bots) all = all && cc.welcomed && cc.campaignDone;
+      if (all) { campaignAllDone = true; break; }
+    }
   }
 
+  if (campaignAllDone)
+    std::printf("[campaign] all bots reached target level\n");
   int welcomed = 0;
   int moved = 0;
   std::uint64_t minDeltas = UINT64_MAX;

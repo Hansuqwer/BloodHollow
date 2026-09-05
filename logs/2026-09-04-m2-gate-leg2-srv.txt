@@ -1,0 +1,9 @@
+[soak] FINISH ticks=12401 online=0 entities=30 tickUs p50=14 p99=118
+[soak] OK p99=0.12ms budget=10.00ms
+[balance] Marsh Rat        L1  kills=36    TTK(25t hps)=6.5s xp=40
+[balance] Feral Ghoul      L3  kills=42    TTK(25t hps)=22.4s xp=90
+[balance] Hollow Hound     L5  kills=11    TTK(25t hps)=73.8s xp=150
+[balance] Plague Bat       L2  kills=16    TTK(25t hps)=6.0s xp=55
+[balance] Bonepicker Gnoll L7  kills=4     TTK(25t hps)=115.4s xp=300
+[balance] Charnel Widow    L9  kills=1     TTK(25t hps)=93.4s xp=420
+[balance] Gravecaller      L11 kills=5     TTK(25t hps)=71.2s xp=560
