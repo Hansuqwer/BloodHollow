@@ -141,12 +141,22 @@ Execution prompt for the whole remainder queue: docs/prompts/phase3-remainder.md
 Gate: suite 83/83 (327,466 assertions); epoch-4 smoke replay OK
 (ticks=1455 hashes=14 mismatches=0; bots mend=14). Devlog 0017.
 
+## Done — Sprint 17 (2026-09-05): day/night stakes
+
+| Card | Title |
+|---|---|
+| [T-061](done/T-061.md) | Nightcreep: mobs ×1.15 dmg & +1 aggro 21:00–05:00, paired-world bites pinned |
+| [T-062](done/T-062.md) | Night economy: +10% XP / +25% relative drops after dark; overlay alpha floor 150 documented |
+
+Gate: suite 87/87 (327,479 assertions); S17 smoke replay OK
+(ticks=1292 hashes=12 mismatches=0; journal epoch stays 4 — zero new rng
+draws). Devlog 0018.
+
 ## Queued next (from the execution prompt)
 
 | Sprint | Cards |
 |---|---|
-| S17 day/night | T-061 nightcreep (pack boosts, Blood Bolt +25%), T-062 night economy (+25% loot, +10% XP) — tint floor stands |
-| S18 content drop | T-063 Bonehowl Mine + Drowned Crypt, T-064 Gravemother + elites ×8, T-065 bounty board |
+| S18 content drop | T-063 Bonehowl Mine + Drowned Crypt, T-064 Gravemother + elites ×8 (Blood Bolt lives here), T-065 bounty board |
 | S19 VFX/audio | T-066 flash/callouts sweep, T-067 procedural audio stubs |
 
 ## Open — Phase 3 remaining

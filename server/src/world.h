@@ -245,6 +245,9 @@ class World {
   void debugKillPlayerBy(Entity& e, Entity* killer) { killPlayer(e, killer); }
   void debugAwardXp(Entity& e, std::uint32_t amt) { awardXp(e, amt); }
   void debugKillMob(Entity& mob, Entity* killer) { killMob(mob, killer); }
+  void debugSetTick(sim::Tick t) { tick_ = t; }  // T-061/62 test seam: hour dial
+  bool isNight() const;  // T-061: dark hours 21:00-05:00 (game clock)
+
   Entity& debugSpawnAnvil(sim::TilePos at) {  // T-060 test seam (spawner shape)
     Entity a;
     a.id = nextId_++;

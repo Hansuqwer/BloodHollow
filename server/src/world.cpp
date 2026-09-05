@@ -9,6 +9,7 @@
 
 #include "content/auras.h"
 #include "content/wirekind.h"
+#include "sim/clock.h"
 #include "sim/combat.h"
 
 namespace bh::server {
@@ -379,6 +380,11 @@ bool World::addItem(Entity& e, std::uint32_t itemId, std::uint16_t qty) {
   sl.equipped = false;
   e.inv.push_back(sl);
   return true;
+}
+
+bool World::isNight() const {
+  const float h = sim::hourAt(tick_);
+  return h >= 21.0f || h < 5.0f;  // dark hours; legibility floor caps the look
 }
 
 std::uint32_t World::equippedWeaponDmg(const Entity& e) const {
@@ -1256,6 +1262,10 @@ void World::trySwing(Entity& att, Entity& def) {
   }
   std::uint32_t dmg = sim::rollDamage(base, att.kind == EntityKind::kPlayer ? att.str : 0,
                                       ddef, hc.crit);
+  if (att.kind == EntityKind::kMob && isNight()) {
+    dmg = dmg * 115u / 100u;  // T-061 nightcreep: +15% mob bite after dark
+    dmg = dmg < 1 ? 1 : dmg;
+  }
   if (att.kind == EntityKind::kPlayer && def.kind == EntityKind::kPlayer) {
     dmg = dmg * 65u / 100u;  // GDD PvP scalar 0.65
     dmg = dmg < 1 ? 1 : dmg;
@@ -1581,12 +1591,14 @@ void World::killMob(Entity& mob, Entity* killer) {
         }
       }
     }
+    const std::uint32_t nightXp = isNight() ? mob.xpValue * 110u / 100u
+                                            : mob.xpValue;  // T-062
     if (sharers.size() <= 1) {
-      awardXp(*killer, mob.xpValue);
+      awardXp(*killer, nightXp);
     } else {
       const std::uint32_t bonus = 100u +
           kPartyXpBonusPct * static_cast<std::uint32_t>(sharers.size() - 1);
-      const std::uint32_t each = mob.xpValue * bonus / 100u /
+      const std::uint32_t each = nightXp * bonus / 100u /
                                  static_cast<std::uint32_t>(sharers.size());
       for (const std::uint32_t mid : sharers) {
         Entity* m = find(mid);
@@ -1604,7 +1616,10 @@ void World::killMob(Entity& mob, Entity* killer) {
     if (md != nullptr) {
       // T-059 affixes v1: named-gear side-drop with a rolled one-liner mod
       if (const content::GearDropDef* gd = content::findGearDrop(md->mobId)) {
-        if (rng_.range(1, 100) <= static_cast<std::int64_t>(gd->chancePct)) {
+        const std::int64_t gearPct =  // T-062 nightcreep rides drops too
+            isNight() ? static_cast<std::int64_t>(gd->chancePct) * 125 / 100
+                      : static_cast<std::int64_t>(gd->chancePct);
+        if (rng_.range(1, 100) <= gearPct) {
           if (killer->inv.size() < 32) {  // inventory cap (addItem rule)
             InvSlot sl;
             sl.itemId = gd->itemId;
@@ -1625,8 +1640,11 @@ void World::killMob(Entity& mob, Entity* killer) {
         }
       }
       // loot roll (junk tier for now; gear tables land with affixes in P3)
+      const std::int64_t nightLootPct =  // T-062: +25% relative under dark
+          isNight() ? static_cast<std::int64_t>(md->lootChancePct) * 125 / 100
+                    : static_cast<std::int64_t>(md->lootChancePct);
       if (md->lootItemId != 0 &&
-          rng_.range(1, 100) <= static_cast<std::int64_t>(md->lootChancePct)) {
+          rng_.range(1, 100) <= nightLootPct) {
         const content::ItemDef* item = content::findItem(md->lootItemId);
         if (item != nullptr && addItem(*killer, md->lootItemId, 1)) {
           WorldEvent ev;
@@ -1922,7 +1940,10 @@ void World::mobThink(Entity& mob) {
   // player attacked me? handled in trySwing. Acquire aggro:
   if (mob.attackTarget == 0 && mob.aggroRadius > 0 &&
       mob.id % kAggroThinkPeriod == static_cast<std::uint32_t>(tick_ % kAggroThinkPeriod)) {
-    std::vector<Entity*> near = playersNear(zoneOf(mob), p.x, p.y, mob.aggroRadius);
+    // T-061 nightcreep: dark eyes see one tile further
+    const std::uint8_t effAggro =
+        static_cast<std::uint8_t>(std::min(255, mob.aggroRadius + (isNight() ? 1 : 0)));
+    std::vector<Entity*> near = playersNear(zoneOf(mob), p.x, p.y, effAggro);
     if (!near.empty()) mob.attackTarget = near[0]->id;  // deterministic: spatial order
   }
 
