@@ -1,0 +1,26 @@
+[boot] zone 2 (assets/maps/fields_overflow.bhmap: 64x48) online
+[boot] zone 3 (assets/maps/thornwall_crypt.bhmap: 48x36) online
+[boot] zone 4 (assets/maps/bonehowl_mine.bhmap: 56x40) online
+[boot] zone 5 (assets/maps/drowned_crypt.bhmap: 48x36) online
+[journal] recording world to logs/m2b_rerun_leg2.bwj (epoch 6)
+[boot] bh_server on 0.0.0.0:7851 | map 'assets/maps/thornwall.bhmap' | db '/tmp/m2b_rerun_campaign.db' | tick 20Hz | aoi 26
+[net] m2br__00         entered the world (entity 582, online 1)
+[net] m2br__01         entered the world (entity 583, online 2)
+[soak] tick=600 online=2 entities=578 tickUs p50=1722 p99=2694 worldHash=b6fb6c62df828e41 pkts=91/391177
+[soak] tick=1200 online=2 entities=575 tickUs p50=1692 p99=2674 worldHash=a70b6c013112cfb4 pkts=197/807466
+[soak] tick=1800 online=2 entities=573 tickUs p50=1703 p99=2740 worldHash=4e4455004629f1a5 pkts=289/1210583
+[soak] tick=2400 online=2 entities=572 tickUs p50=1436 p99=2679 worldHash=4901d67db731cb42 pkts=380/1504687
+[soak] tick=3000 online=2 entities=571 tickUs p50=1650 p99=2650 worldHash=df21dfa1f6deaf7a pkts=483/1871128
+[soak] tick=3600 online=2 entities=570 tickUs p50=1686 p99=2571 worldHash=3639a34144a98af8 pkts=587/2238586
+[soak] tick=4200 online=2 entities=561 tickUs p50=1721 p99=2504 worldHash=d207bc020f24a2a1 pkts=712/2649567
+[soak] tick=4800 online=2 entities=560 tickUs p50=1639 p99=2471 worldHash=a59c529a7c75c2ea pkts=817/2989066
+[soak] tick=5400 online=2 entities=561 tickUs p50=1675 p99=2655 worldHash=871f114d3f0d505c pkts=905/3339831
+[soak] tick=6000 online=2 entities=564 tickUs p50=1556 p99=2613 worldHash=961d57d6877a4f13 pkts=992/3659373
+[soak] tick=6600 online=2 entities=565 tickUs p50=1656 p99=2665 worldHash=95ef20e427193fc0 pkts=1079/4021527
+[soak] tick=7200 online=2 entities=566 tickUs p50=1562 p99=2523 worldHash=dafc0f57b0843ca3 pkts=1170/4342081
+[soak] tick=7800 online=2 entities=566 tickUs p50=1649 p99=2617 worldHash=73e2828d9fe0bac6 pkts=1251/4671112
+[soak] tick=8400 online=2 entities=567 tickUs p50=1516 p99=2314 worldHash=ce6769ab996d095c pkts=1342/5004061
+[soak] tick=9000 online=2 entities=567 tickUs p50=1638 p99=2947 worldHash=5f117f0cdcfd139b pkts=1418/5337575
+[soak] tick=9600 online=2 entities=567 tickUs p50=1726 p99=2780 worldHash=ad7cec977755dd56 pkts=1507/5697993
+[soak] tick=10200 online=2 entities=567 tickUs p50=1667 p99=2672 worldHash=344b4b15212993eb pkts=1611/6041650
+[soak] tick=10800 online=2 entities=567 tickUs p50=1548 p99=2569 worldHash=f968c576a9161ea0 pkts=1692/6341360

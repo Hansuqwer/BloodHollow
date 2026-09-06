@@ -221,4 +221,4 @@ smoke leg `tools/s22_smoke.sh` replay 0 mismatches; fresh duel table
 
 | Card | Title | Notes |
 |---|---|---|
-| M2b-final | L8-in-one-sitting pacing rerun (S13 party XP exists; measure uplift) | post-T-034b retune; evidence: logs/s22_smoke.*, devlog 0024 |
+| T-034c | L4-L5 gear-band investigation: the hound band (blade+armor 9/9) is the real wall — gear-churn economics, not mob numbers | evidence: logs/m2b_rerun_gate.log, duel-table-s22.csv, devlog 0025 |
