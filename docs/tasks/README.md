@@ -228,8 +228,17 @@ Finding: 24–48 deaths/leg × ~190 XP debt ≈ 7.6k XP wiped, ~break-even vs
 trip, (2) Hide Armor 120→80, (3) hound dmg 13→12, (4) L4-L5 death-tax
 relief. Devlog 0026.
 
+## Done — T-034d (2026-09-06): campaign re-gear trip
+
+| Card | Title |
+|---|---|
+| [T-034d](done/T-034d.md) | Campaign re-gear trip: walk home when gold clears the next gear tier (blade @260g, then armor @120g), then back out |
+
+Gate: smoke `tools/t034d_smoke.sh` (2 bots × 240 s) — `regear=2`, replay
+0 mismatches. Devlog 0027.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |
 |---|---|---|
-| T-034d | Campaign re-gear trip: walk home when gold ≥ next gear tier (blade @260g, then armor @120g), then back out | evidence: docs/tasks/done/T-034c.md, devlog 0026; measure, then Hide Armor 120→80 if L6 not cleared |
+| M2b chain rerun | Re-run `tools/m2b_rerun_chain.sh` on the T-034d build to measure whether the plateau moves past L5 | if it stalls at the armor band → Hide Armor 120→80 (T-034c lever 2) |

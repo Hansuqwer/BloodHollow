@@ -73,6 +73,8 @@ struct Bot {
   int campX = -1, campY = -1;                  // current hunting-camp waypoint
   bool campIsPortal = false;  // camp sits on a portal rect: land EXACTLY, no mill
   bool retreating = false;    // campaign: broke off at low hp, sip + return
+  bool regearHome = false;    // T-034d: walking home for the next gear tier
+  std::uint64_t regearTrips = 0;
   std::uint8_t partyTries = 0;    // S13: formation attempts (10 s cadence, cap 4)
   double nextPartyTryAt = 0.0;
   // T-054/55 choir: roster mirror + kit state (classId/mp from OwnStats)
@@ -786,6 +788,26 @@ int run(int argc, char** argv) {
         }
         // nothing near: campaign walks the level route instead of milling
         if (campaign) {
+          // T-034d re-gear trip: walk home when the next gear tier is
+          // affordable, instead of hitching shopping to death-respawn. The
+          // economy block above does the actual buy/equip once nearTown.
+          const bool wantGear = (!hasBlade && b.gold >= 260) ||
+                                (bladeArmed && !hasArmor && b.gold >= 120);
+          if (wantGear && b.mapId == 1 && b.homeX >= 0) {
+            if (!b.regearHome) {
+              b.regearHome = true;
+              ++b.regearTrips;
+            }
+            if (!nearTown) {
+              bh::proto::InputPath ip;
+              ip.goalX = b.homeX;
+              ip.goalY = b.homeY;
+              sendProto(b.peer, bh::proto::pack(ip));
+            }
+            b.nextMoveAt = t + 1.2;
+            continue;
+          }
+          b.regearHome = false;
           if (b.campX >= 0 && b.campIsPortal) {
             // portals: the fire check needs the walker SETTLED on the rect;
             // keep re-pathing to the exact tile (the level filter above keeps
@@ -862,6 +884,7 @@ int run(int argc, char** argv) {
   std::uint64_t deaths = 0;
   std::uint64_t shops = 0;
   std::uint64_t levelDrops = 0;
+  std::uint64_t regear = 0;
   std::uint64_t anvilTries = 0;
   std::uint64_t dbgNoBlade = 0, dbgNoGold = 0, dbgNoPelts = 0, dbgNoAnvil = 0,
                 dbgReady = 0;
@@ -879,6 +902,7 @@ int run(int argc, char** argv) {
     deaths += b.deaths;
     shops += b.shops;
     levelDrops += b.levelDrops;
+    regear += b.regearTrips;
     anvilTries += b.anvilTries;
     blessCasts += b.blessCasts; mendCasts += b.mendCasts;
     mendNoSee += b.mendNoSee; mendHurtCnt += b.mendHurtCnt;
@@ -892,11 +916,12 @@ int run(int argc, char** argv) {
   }
   std::printf("[bots] SUMMARY welcomed=%d/%d moved=%d/%d minDeltas=%" PRIu64
               " kills=%" PRIu64 " pots=%" PRIu64 " swings=%" PRIu64" deaths=%" PRIu64 " shops=%" PRIu64 " anvilTries=%" PRIu64 " levelDrops=%" PRIu64
-              " maxLevel=%d pkts=%" PRIu64 " bytes=%" PRIu64
+              " regear=%" PRIu64 " maxLevel=%d pkts=%" PRIu64 " bytes=%" PRIu64
               " gates b/g/p/a/r=%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 " mGold=%u mPelts=%u bless=%" PRIu64 " mend=%" PRIu64 " noSee=%" PRIu64 " hurt=%" PRIu64
               " choir c6=%" PRIu64 " c7=%" PRIu64 " c8=%" PRIu64 "\n",
               welcomed, count, moved, count, minDeltas == UINT64_MAX ? 0 : minDeltas,
-              kills, pots, swings, deaths, shops, anvilTries, levelDrops, maxLevel,
+              kills, pots, swings, deaths, shops, anvilTries, levelDrops, regear,
+              maxLevel,
               packetsRx, bytesRx, dbgNoBlade, dbgNoGold, dbgNoPelts, dbgNoAnvil,
               dbgReady, mxGold, mxPelts, blessCasts, mendCasts, mendNoSee,
               mendHurtCnt, chorusCasts, massCasts, hasteCasts);

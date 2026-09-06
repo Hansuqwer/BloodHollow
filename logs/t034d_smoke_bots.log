@@ -1,0 +1,10 @@
+[campaign] t34d__01 reached L1 at t=0.1s (map 1)
+[campaign] t34d__00 reached L1 at t=0.1s (map 1)
+[campaign] t34d__00 reached L2 at t=13.8s (map 1)
+[campaign] t34d__01 reached L2 at t=18.2s (map 1)
+[campaign] t34d__00 reached L3 at t=129.3s (map 1)
+[campaign] t34d__01 reached L3 at t=129.3s (map 1)
+[bots] SUMMARY welcomed=2/2 moved=2/2 minDeltas=4800 kills=65 pots=10 swings=123 deaths=22 shops=6 anvilTries=0 levelDrops=1 regear=2 maxLevel=3 pkts=3586104 bytes=78904229 gates b/g/p/a/r=0/0/0/0/0 mGold=0 mPelts=0 bless=1 mend=31 noSee=0 hurt=386 choir c6=0 c7=0 c8=0
+[bots] t34d__00     kit=1 lvl=3 hp=63/94 party=2 deaths=12 rxR=253 rxM=461 lastPid=1 casts c6=0 c7=0 c8=0
+[bots] t34d__01     kit=3 lvl=3 hp=96/94 party=2 deaths=10 rxR=244 rxM=418 lastPid=1 casts c6=0 c7=0 c8=0
+[bots] OK
