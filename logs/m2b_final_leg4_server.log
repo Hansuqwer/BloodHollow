@@ -21,3 +21,6 @@
 [soak] tick=7800 online=2 entities=571 tickUs p50=583 p99=972 worldHash=7cc56e99c1511eda pkts=1172/5227535
 [soak] tick=8400 online=2 entities=569 tickUs p50=706 p99=1424 worldHash=4a4899ac39a3b469 pkts=1253/5660218
 [soak] tick=9000 online=2 entities=569 tickUs p50=702 p99=1667 worldHash=cf491c74f48376a2 pkts=1329/6003289
+[soak] tick=9600 online=2 entities=569 tickUs p50=703 p99=1378 worldHash=5bca8e9c924b73ce pkts=1395/6350841
+[soak] tick=10200 online=2 entities=569 tickUs p50=646 p99=1256 worldHash=f60636118c32bc26 pkts=1469/6691796
+[soak] tick=10800 online=2 entities=568 tickUs p50=644 p99=1193 worldHash=2e18f0fdbf5a418f pkts=1549/7040580

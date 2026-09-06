@@ -1,0 +1,6 @@
+[campaign] m2b__00 reached L6 at t=0.4s (map 1)
+[campaign] m2b__01 reached L6 at t=2.9s (map 1)
+[bots] SUMMARY welcomed=2/2 moved=2/2 minDeltas=10800 kills=117 pots=0 swings=283 deaths=98 shops=33 anvilTries=0 levelDrops=5 maxLevel=5 pkts=7320807 bytes=161059407 gates b/g/p/a/r=0/0/0/0/0 mGold=0 mPelts=0 bless=3 mend=102 noSee=1404 hurt=2786
+[bots] m2b__00      kit=1 lvl=5 hp=59/124 party=2 deaths=44 rxR=544 rxM=1074 lastPid=1
+[bots] m2b__01      kit=3 lvl=4 hp=72/124 party=2 deaths=54 rxR=541 rxM=1062 lastPid=1
+[bots] OK
