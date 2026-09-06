@@ -48,6 +48,19 @@ struct InvSlot {
   std::uint8_t refine = 0;        // T-060: 0..3 (+2 weapon dmg / +1 armor def per tier)
 };
 
+// T-049x (relog-launderer fix): ONE grammar for persisted inventory blobs —
+// "iid:qty:equipped:aura:durability:affix:refine;..." — shared by the live
+// login path and the world-replay applyLogin. Legacy short tails (v3 3-field,
+// v5 4-field aura, v8 +durability, v9 +affix) parse with InvSlot defaults.
+// Records are appended in blob order; NOTHING stacks or reorders. Pre-fix BOTH
+// lanes laundered: live login used an rfind 3-field heuristic (dropped
+// equipped + aura/durability/affix/refine on v5+ records), replay used a
+// 4-field sscanf + debugGive (resurrected dormant 0-durability gear to 100,
+// dropped affix/refine, scrambled slot order via stacking).
+void parseInvBlob(const std::string& blob, std::vector<InvSlot>& out);
+// Canonical 7-field serialization (logout save path + BH_DUMP_ENTS probes).
+std::string canonicalInvBlob(const std::vector<InvSlot>& inv);
+
 struct Entity {
   std::uint32_t id = 0;
   EntityKind kind = EntityKind::kPlayer;

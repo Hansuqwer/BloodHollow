@@ -11,3 +11,65 @@ gate: leg 3 end state: reached L4
 gate: leg 4 start 21:12:05
 gate: leg 3 already verified, skip
 gate: leg 4 start 06:40:03
+FINAL_LEG4_DONE bots_rc=0
+[replay] OK ticks=9638 sessionCmds=1400 hashes=96 mismatches=0 entities=569
+gate: leg 4 replay: [replay] OK ticks=9638 sessionCmds=1400 hashes=96 mismatches=0 entities=569
+leg4 verified
+gate: leg 4 end state: reached L4
+gate: leg 5 start 06:52:27
+FINAL_LEG5_DONE bots_rc=0
+[replay] FAIL ticks=10268 sessionCmds=1577 hashes=102 mismatches=102 entities=591
+gate: leg 5 replay: [replay] FAIL ticks=10268 sessionCmds=1577 hashes=102 mismatches=102 entities=591
+gate: leg 5 REPLAY FAILED -> [replay] FAIL ticks=10268 sessionCmds=1577 hashes=102 mismatches=102 entities=591
+gate: leg 3 already verified, skip
+gate: leg 4 already verified, skip
+gate: leg 5 start 07:39:22
+FINAL_LEG5_DONE bots_rc=0
+[replay] OK ticks=10180 sessionCmds=1592 hashes=101 mismatches=0 entities=566
+gate: leg 5 replay: [replay] OK ticks=10180 sessionCmds=1592 hashes=101 mismatches=0 entities=566
+leg5 verified
+gate: leg 5 end state: reached L6
+gate: leg 6 start 07:48:30
+FINAL_LEG6_DONE bots_rc=0
+[replay] OK ticks=10159 sessionCmds=1580 hashes=101 mismatches=0 entities=567
+gate: leg 6 replay: [replay] OK ticks=10159 sessionCmds=1580 hashes=101 mismatches=0 entities=567
+leg6 verified
+gate: leg 6 end state: reached L6
+gate: leg 7 start 07:57:36
+FINAL_LEG7_DONE bots_rc=0
+[replay] OK ticks=10000 sessionCmds=1584 hashes=100 mismatches=0 entities=577
+gate: leg 7 replay: [replay] OK ticks=10000 sessionCmds=1584 hashes=100 mismatches=0 entities=577
+leg7 verified
+gate: leg 7 end state: reached L6
+gate: leg 8 start 08:06:43
+FINAL_LEG8_DONE bots_rc=0
+[replay] OK ticks=10009 sessionCmds=1578 hashes=100 mismatches=0 entities=568
+gate: leg 8 replay: [replay] OK ticks=10009 sessionCmds=1578 hashes=100 mismatches=0 entities=568
+leg8 verified
+gate: leg 8 end state: reached L5
+gate: leg 9 start 08:15:50
+FINAL_LEG9_DONE bots_rc=0
+[replay] OK ticks=10341 sessionCmds=1573 hashes=103 mismatches=0 entities=578
+gate: leg 9 replay: [replay] OK ticks=10341 sessionCmds=1573 hashes=103 mismatches=0 entities=578
+leg9 verified
+gate: leg 9 end state: reached L4
+gate: leg 10 start 08:24:58
+FINAL_LEG10_DONE bots_rc=0
+[replay] OK ticks=10795 sessionCmds=1557 hashes=107 mismatches=0 entities=580
+gate: leg 10 replay: [replay] OK ticks=10795 sessionCmds=1557 hashes=107 mismatches=0 entities=580
+leg10 verified
+gate: leg 10 end state: reached L5
+gate: leg 11 start 08:34:05
+FINAL_LEG11_DONE bots_rc=0
+[replay] OK ticks=9988 sessionCmds=1572 hashes=99 mismatches=0 entities=567
+gate: leg 11 replay: [replay] OK ticks=9988 sessionCmds=1572 hashes=99 mismatches=0 entities=567
+leg11 verified
+gate: leg 11 end state: reached L5
+gate: leg 12 start 08:43:12
+FINAL_LEG12_DONE bots_rc=0
+[replay] OK ticks=9921 sessionCmds=1573 hashes=99 mismatches=0 entities=574
+gate: leg 12 replay: [replay] OK ticks=9921 sessionCmds=1573 hashes=99 mismatches=0 entities=574
+leg12 verified
+gate: leg 12 end state: reached L4
+gate: chain done 08:52:19
+gate: incident-closed 2026-09-06 08:53Z — legs 3,4 pre-fix OK; legs 5-12 re-recorded post-launderer-fix, all replay OK 0 mismatches (ticks 9988-10795). TARGET L8 NOT reached (bots plateau L4-L6 across legs 5-12: mid-kit gear-gate band; see docs/tasks/T-034b.md lever shortlist)

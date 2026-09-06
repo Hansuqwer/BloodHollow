@@ -10,13 +10,27 @@
 [net] t49r3__03        entered the world (entity 585, online 4)
 [net] t49r3__04        entered the world (entity 586, online 5)
 [net] t49r3__05        entered the world (entity 587, online 6)
-[soak] tick=600 online=6 entities=575 tickUs p50=1492 p99=2952 worldHash=4c3bef86e571c8b1 pkts=307/1259502
-[soak] tick=1200 online=6 entities=572 tickUs p50=1519 p99=2654 worldHash=2910edaf61c744a7 pkts=592/2633452
-[soak] tick=1800 online=6 entities=574 tickUs p50=1592 p99=3411 worldHash=583e4a6572f94fb1 pkts=832/3991755
-[soak] tick=2400 online=6 entities=568 tickUs p50=1461 p99=2759 worldHash=baa30784533b0e5f pkts=1060/5278662
-[soak] tick=3000 online=6 entities=568 tickUs p50=1379 p99=2561 worldHash=00e1393605a3bb45 pkts=1252/6513185
-[soak] tick=3600 online=6 entities=567 tickUs p50=1435 p99=2722 worldHash=1885d8396a767f3a pkts=1453/7809322
-[soak] tick=4200 online=6 entities=566 tickUs p50=1422 p99=2617 worldHash=2ce23ebbb11d1730 pkts=1689/9012731
-[soak] tick=4800 online=6 entities=562 tickUs p50=1600 p99=3092 worldHash=de08cd8891f535cd pkts=1970/10330435
-[soak] tick=5400 online=6 entities=563 tickUs p50=1478 p99=3545 worldHash=7dd03ff016017831 pkts=2214/11581967
-[soak] tick=6000 online=6 entities=564 tickUs p50=1420 p99=2566 worldHash=54e42a6709265181 pkts=2456/12825478
+[soak] tick=600 online=6 entities=576 tickUs p50=3616 p99=9754 worldHash=5606b5bd673ef237 pkts=273/1263519
+[soak] tick=1200 online=6 entities=572 tickUs p50=3593 p99=7512 worldHash=3a9fd006679b84d1 pkts=542/2557542
+[soak] tick=1800 online=6 entities=572 tickUs p50=3755 p99=9477 worldHash=c1351ab82b608683 pkts=697/3882745
+[soak] tick=2400 online=6 entities=575 tickUs p50=3617 p99=7738 worldHash=8f636ef4bcc8c67c pkts=904/5217437
+[soak] tick=3000 online=6 entities=576 tickUs p50=3579 p99=8549 worldHash=a3d35505327b85f0 pkts=1122/6553932
+[soak] tick=3600 online=6 entities=571 tickUs p50=3637 p99=7877 worldHash=0fdbfcc16eab42ee pkts=1351/7850283
+[soak] tick=4200 online=6 entities=571 tickUs p50=3454 p99=8492 worldHash=0b8d2c44eef76a64 pkts=1549/8971677
+[soak] tick=4800 online=6 entities=571 tickUs p50=3368 p99=7383 worldHash=75fb8af36566d57b pkts=1739/10093000
+[soak] tick=5400 online=6 entities=567 tickUs p50=3409 p99=6684 worldHash=cc76fe9740b6e228 pkts=1937/11280258
+[soak] tick=6000 online=6 entities=564 tickUs p50=3272 p99=7201 worldHash=003a7a43a9fab6d9 pkts=2202/12462808
+[boot] zone 2 (assets/maps/fields_overflow.bhmap: 64x48) online
+[boot] zone 3 (assets/maps/thornwall_crypt.bhmap: 48x36) online
+[boot] zone 4 (assets/maps/bonehowl_mine.bhmap: 56x40) online
+[boot] zone 5 (assets/maps/drowned_crypt.bhmap: 48x36) online
+[journal] recording world to logs/t49_run3p.bwj (epoch 5)
+[boot] bh_server on 0.0.0.0:7749 | map 'assets/maps/thornwall.bhmap' | db '/tmp/t49_run3.db' | tick 20Hz | aoi 26
+[net] t49r3__00        entered the world (entity 582, online 1)
+[net] t49r3__01        entered the world (entity 583, online 2)
+[net] t49r3__02        entered the world (entity 584, online 3)
+[net] t49r3__03        entered the world (entity 585, online 4)
+[net] t49r3__04        entered the world (entity 586, online 5)
+[net] t49r3__05        entered the world (entity 587, online 6)
+[soak] tick=600 online=6 entities=575 tickUs p50=3437 p99=7102 worldHash=f8329175a4922b73 pkts=304/1281958
+[soak] tick=1200 online=6 entities=568 tickUs p50=3319 p99=6248 worldHash=3944c392b1c1915f pkts=597/2583522

@@ -3,7 +3,7 @@
 # recorded and replayed. Prints one verdict line per run and a final verdict.
 # usage: t49_repro.sh <runs> — writes logs/t49_run<i>.* + logs/t49_verdict.log
 set -u
-cd /home/user/bloodhollow || exit 1
+cd "$(dirname "$0")/.." || exit 1
 RUNS=${1:-3}
 : > logs/t49_verdict.log
 FAIL=0
@@ -26,5 +26,19 @@ for i in $(seq 1 "$RUNS"); do
   echo "run$i replay2: $R2" >> logs/t49_verdict.log
   case "$R" in *"OK"*) : ;; *) FAIL=1;; esac
   if [ "$R" != "$R2" ]; then echo "run$i READER UNSTABLE" >> logs/t49_verdict.log; FAIL=1; fi
+  # leg-5 class: SECOND session on the SAME DB — characters log back in from
+  # persisted 7-field inventory blobs (worn/dormant/affixed/refined gear).
+  pkill -x bh_server 2>/dev/null; sleep 1
+  BH_HASH_CADENCE=25 ./build/server/bh_server --db /tmp/t49_run${i}.db --port 7749 \
+    --soak-secs 120 --record-world logs/t49_run${i}p.bwj \
+    >> logs/t49_run${i}_server.log 2>&1 &
+  SRV=$!
+  sleep 2
+  ./build/tools/bots/bh_bots --port 7749 --profile campaign --count 6 \
+    --secs 60 --target-level 8 --prefix t49r${i}_ >> logs/t49_run${i}_bots.log 2>&1
+  kill $SRV 2>/dev/null; wait $SRV 2>/dev/null
+  RP=$(./build/server/bh_server --replay-world logs/t49_run${i}p.bwj 2>/dev/null | tail -1)
+  echo "run$i persist-round replay: $RP" >> logs/t49_verdict.log
+  case "$RP" in *"OK"*) : ;; *) FAIL=1;; esac
 done
 echo "T49_VERDICT fail=$FAIL" >> logs/t49_verdict.log

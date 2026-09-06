@@ -1,0 +1,2 @@
+probe leg bots_rc=0 replay: [replay] OK ticks=941 sessionCmds=424 hashes=940 mismatches=0 entities=568
+PROBE_VERDICT equal

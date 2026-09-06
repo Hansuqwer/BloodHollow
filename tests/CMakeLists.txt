@@ -20,6 +20,7 @@ add_executable(bh_tests
   test_s18_dropzone.cpp
   test_burst_stamp.cpp
   test_kit_v2.cpp
+  test_inv_blob.cpp
 )
 target_link_libraries(bh_tests PRIVATE bh_shared bh_protocol bh_server_world bh_doctest bh_warnings)
 add_test(NAME bh_tests COMMAND bh_tests)

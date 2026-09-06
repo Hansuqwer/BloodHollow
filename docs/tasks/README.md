@@ -195,6 +195,16 @@ Gate: suite 98/98 (327,852 assertions); ctest 2/2; epoch stays 5. Devlog 0022.
 Deferred on purpose: choir-bot v2 profile + T-034b retune → after the
 M2b-final chain closes (binary-swap would poison pacing evidence).
 
+## Closed — T-049x (2026-09-06): the relog launderer
+
+The M2b-final chain closed; its persist-round replay leg exposed a launderer:
+live login and replay applyLogin parsed 7-field inventory blobs differently
+(equipped dropped / dormant gear resurrected / affix-refine lost / slot order
+scrambled), below `worldHash`'s id/zone/pos/hp coverage. One shared grammar
+(`parseInvBlob`) + canonical logout save + `BH_DUMP_ENTS` fingerprint probes
++ `tools/bh_probe_leg.sh`. Suite 105/105; all journals replay 0 mismatches.
+Devlog 0023. Epoch stays 5.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |

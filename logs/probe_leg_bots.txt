@@ -1,0 +1,20 @@
+[campaign] probe__04 reached L1 at t=0.1s (map 1)
+[campaign] probe__01 reached L1 at t=0.1s (map 1)
+[campaign] probe__00 reached L1 at t=0.1s (map 1)
+[campaign] probe__05 reached L1 at t=0.1s (map 1)
+[campaign] probe__03 reached L1 at t=0.1s (map 1)
+[campaign] probe__02 reached L1 at t=0.1s (map 1)
+[campaign] probe__03 reached L2 at t=11.4s (map 1)
+[campaign] probe__04 reached L2 at t=15.9s (map 1)
+[campaign] probe__05 reached L2 at t=13.7s (map 1)
+[campaign] probe__01 reached L2 at t=21.4s (map 1)
+[campaign] probe__02 reached L2 at t=34.3s (map 1)
+[campaign] probe__00 reached L2 at t=39.1s (map 1)
+[bots] SUMMARY welcomed=6/6 moved=6/6 minDeltas=900 kills=29 pots=2 swings=56 deaths=2 shops=0 anvilTries=0 levelDrops=0 maxLevel=2 pkts=1972087 bytes=43413362 gates b/g/p/a/r=0/0/0/0/0 mGold=0 mPelts=0 bless=0 mend=4 noSee=0 hurt=26
+[bots] probe__00    kit=1 lvl=2 hp=100/94 party=1 deaths=2 rxR=52 rxM=52 lastPid=2
+[bots] probe__01    kit=3 lvl=2 hp=90/94 party=0 deaths=0 rxR=46 rxM=0 lastPid=0
+[bots] probe__02    kit=1 lvl=2 hp=100/94 party=2 deaths=0 rxR=50 rxM=79 lastPid=3
+[bots] probe__03    kit=3 lvl=2 hp=86/94 party=2 deaths=0 rxR=47 rxM=66 lastPid=3
+[bots] probe__04    kit=1 lvl=2 hp=100/94 party=2 deaths=0 rxR=50 rxM=93 lastPid=1
+[bots] probe__05    kit=3 lvl=2 hp=100/94 party=2 deaths=0 rxR=47 rxM=88 lastPid=1
+[bots] OK

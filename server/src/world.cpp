@@ -403,6 +403,67 @@ void World::spawnVendor(Zone& zone) {
   }
 }
 
+// T-049x: the single inv-blob grammar (see world.h). Sequential field split —
+// the pre-fix live login used an rfind(':') 3-field heuristic that only worked
+// for legacy records: on v5+ blobs it read qty across colons (stoul stops at
+// the ':' so qty survived by luck) and then took the LAST field as the
+// equipped flag, laundering aura/durability/affix/refine and dropping
+// equipped. Replay had its own 4-field sscanf + debugGive lane. Both are
+// replaced by this one parser.
+void parseInvBlob(const std::string& blob, std::vector<InvSlot>& out) {
+  size_t pos = 0;
+  while (pos < blob.size()) {
+    const size_t end = blob.find(';', pos);
+    const std::string rec =
+        blob.substr(pos, end == std::string::npos ? end : end - pos);
+    pos = end == std::string::npos ? blob.size() : end + 1;
+    // split into at most 7 colon-fields
+    std::string f[7];
+    int nf = 0;
+    size_t p = 0;
+    while (nf < 7) {
+      const size_t c = rec.find(':', p);
+      if (c == std::string::npos) {
+        f[nf++] = rec.substr(p);
+        break;
+      }
+      f[nf++] = rec.substr(p, c - p);
+      p = c + 1;
+    }
+    if (nf < 3) continue;  // need at least iid:qty:equipped
+    auto num = [](const std::string& s, unsigned* out) -> bool {
+      if (s.empty()) return false;
+      for (const char c : s)
+        if (c < '0' || c > '9') return false;
+      *out = static_cast<unsigned>(std::stoul(s));
+      return true;
+    };
+    InvSlot sl;
+    unsigned v = 0;
+    if (!num(f[0], &v)) continue;
+    sl.itemId = static_cast<std::uint32_t>(v);
+    if (!num(f[1], &v)) continue;
+    sl.qty = static_cast<std::uint16_t>(v);
+    sl.equipped = f[2] == "1";
+    if (nf > 3) { if (!num(f[3], &v)) continue; sl.aura = static_cast<std::uint8_t>(v); }
+    if (nf > 4) { if (!num(f[4], &v)) continue; sl.durability = static_cast<std::uint8_t>(v); }
+    if (nf > 5) { if (!num(f[5], &v)) continue; sl.affix = static_cast<std::uint8_t>(v); }
+    if (nf > 6) { if (!num(f[6], &v)) continue; sl.refine = static_cast<std::uint8_t>(v); }
+    out.push_back(sl);
+  }
+}
+
+std::string canonicalInvBlob(const std::vector<InvSlot>& inv) {
+  std::string blob;
+  for (const InvSlot& sl : inv) {
+    blob += std::to_string(sl.itemId) + ":" + std::to_string(sl.qty) + ":" +
+            (sl.equipped ? "1" : "0") + ":" + std::to_string(sl.aura) + ":" +
+            std::to_string(sl.durability) + ":" + std::to_string(sl.affix) +
+            ":" + std::to_string(sl.refine) + ";";
+  }
+  return blob;
+}
+
 bool World::addItem(Entity& e, std::uint32_t itemId, std::uint16_t qty) {
   const content::ItemDef* d = content::findItem(itemId);
   if (d == nullptr || qty == 0 || e.inv.size() >= 32) return false;

@@ -105,6 +105,23 @@ void journalTickHash(Server& s) {
                    ent.walker.moving ? 1 : 0, ent.walker.target.x, ent.walker.target.y);
     }
   }
+  if (std::getenv("BH_DUMP_ENTS") != nullptr) {
+    // T-049x probes: rng stream fingerprint + per-player progression/gear
+    // fingerprint at hash cadence (pairs with [replay-rng]/[replay-ply]).
+    std::fprintf(stderr, "[live-rng] t=%lld state=%016llx\n",
+                 static_cast<long long>(s.tick),
+                 static_cast<unsigned long long>(s.world.rng().stateFingerprint()));
+    for (const auto& ent : s.world.entities()) {
+      if (ent.kind != EntityKind::kPlayer) continue;
+      std::fprintf(stderr,
+                   "[live-ply] t=%lld id=%u name=%s lvl=%u xp=%u gold=%u "
+                   "hp=%u/%u skill=%u inv=%s\n",
+                   static_cast<long long>(s.tick), ent.id, ent.name.c_str(),
+                   static_cast<unsigned>(ent.level), ent.xp, ent.gold, ent.hp,
+                   ent.hpMax, static_cast<unsigned>(ent.swordSkill),
+                   canonicalInvBlob(ent.inv).c_str());
+    }
+  }
   std::fprintf(s.journal, "h %lld %016llx\n", static_cast<long long>(s.tick),
                static_cast<unsigned long long>(s.world.worldHash()));
 }
@@ -207,14 +224,8 @@ void dropSession(Server& s, Session& sess) {
       const sim::TilePos p = e->walker.tile();
       s.db.savePosition(e->charRowId, e->zoneId, p.x, p.y);  // T-039: zone travels
       {
-        std::string blob;
-        for (const InvSlot& sl : e->inv) {
-          blob += std::to_string(sl.itemId) + ":" + std::to_string(sl.qty) + ":" +
-                  (sl.equipped ? "1" : "0") + ":" + std::to_string(sl.aura) +
-                  ":" + std::to_string(sl.durability) + ":" +
-                  std::to_string(sl.affix) + ":" +
-                  std::to_string(sl.refine) + ";";
-        }
+        // T-049x: canonical 7-field serializer shared with the probes
+        const std::string blob = canonicalInvBlob(e->inv);
         s.db.saveProgress(e->charRowId, e->level, e->xp, e->str, e->vit, e->dex,
                           e->statPoints, static_cast<int>(e->gold), blob,
                           e->anvilMercyMask, e->karma, e->classId);
@@ -284,47 +295,10 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
         // hpMax follows level/VIT; heal in full on login
         pe->hpMax = sim::playerHpMax(pe->level, pe->vit);
         pe->hp = pe->hpMax;
-        // inventory blob "itemId:qty:equipped;..."
-        if (!row.invBlob.empty()) {
-          size_t pos = 0;
-          while (pos < row.invBlob.size()) {
-            const size_t end = row.invBlob.find(';', pos);
-            const std::string rec =
-                row.invBlob.substr(pos, end == std::string::npos ? end : end - pos);
-            pos = end == std::string::npos ? row.invBlob.size() : end + 1;
-            const size_t c1 = rec.find(':');
-            const size_t c2 = rec.rfind(':');
-            if (c1 == std::string::npos || c2 == c1) continue;
-            InvSlot sl;
-            sl.itemId = static_cast<std::uint32_t>(std::stoul(rec.substr(0, c1)));
-            sl.qty = static_cast<std::uint16_t>(std::stoul(rec.substr(c1 + 1, c2 - c1 - 1)));
-            // 3-field (legacy) or 4-field (v5 aura) tail
-            const std::string tail = rec.substr(c2 + 1);
-            const size_t c3 = tail.find(':');
-            sl.equipped = (c3 == std::string::npos ? tail : tail.substr(0, c3)) == "1";
-            if (c3 != std::string::npos) {
-              const std::string t2 = tail.substr(c3 + 1);
-              const size_t c4 = t2.find(':');
-              sl.aura = static_cast<std::uint8_t>(
-                  std::stoul(c4 == std::string::npos ? t2 : t2.substr(0, c4)));
-              if (c4 != std::string::npos) {  // v8+: durability (+v9 affix)
-                const std::string t3 = t2.substr(c4 + 1);
-                const size_t c5 = t3.find(':');
-                sl.durability = static_cast<std::uint8_t>(
-                    std::stoul(c5 == std::string::npos ? t3 : t3.substr(0, c5)));
-                if (c5 != std::string::npos) {  // v9+: affix (+v10 refine)
-                  const std::string t4 = t3.substr(c5 + 1);
-                  const size_t c6 = t4.find(':');
-                  sl.affix = static_cast<std::uint8_t>(
-                      std::stoul(c6 == std::string::npos ? t4 : t4.substr(0, c6)));
-                  if (c6 != std::string::npos)  // v10: refine tail
-                    sl.refine = static_cast<std::uint8_t>(std::stoul(t4.substr(c6 + 1)));
-                }
-              }
-            }
-            pe->inv.push_back(sl);
-          }
-        }
+        // inventory blob "iid:qty:equipped:aura:durability:affix:refine;..."
+        // T-049x: one shared grammar with the replay path (parseInvBlob),
+        // slots appended in blob order — nothing laundered on relog.
+        if (!row.invBlob.empty()) parseInvBlob(row.invBlob, pe->inv);
         pe->anvilMercyMask = static_cast<std::uint32_t>(row.anvilMercy);
         pe->karma = row.karma;
         const auto bit = s.bless.find(row.name);
@@ -365,6 +339,17 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
                          static_cast<long long>(s.tick + 1), row.name.c_str(),
                          bit->second.c_str());
           }
+        }
+        // T-049x probe: post-application login fingerprint (pairs with
+        // [replay-login] — the relog-launderer canary).
+        if (std::getenv("BH_DUMP_ENTS") != nullptr) {
+          std::fprintf(stderr,
+                       "[live-login] name=%s lvl=%u xp=%u gold=%u hp=%u/%u "
+                       "skill=%u mercy=%u karma=%d inv=%s\n",
+                       row.name.c_str(), static_cast<unsigned>(pe->level), pe->xp,
+                       pe->gold, pe->hp, pe->hpMax,
+                       static_cast<unsigned>(pe->swordSkill), pe->anvilMercyMask,
+                       pe->karma, canonicalInvBlob(pe->inv).c_str());
         }
       }
 
@@ -1099,7 +1084,20 @@ int runReplayWorld(const std::string& path, const std::string& mapPath) {
     } else if (line[0] == 'h') {
       long long tick;
       unsigned long long h;
-      if (std::sscanf(line, "h %lld %llx", &tick, &h) == 2) {
+      char hex[40];
+      // T-049x: a hash field that isn't exactly 16 hex digits is a TRUNCATED
+      // line (ungraceful kill mid-write) — refuse to verify against garbage;
+      // say so and stop instead of failing later with a phantom mismatch.
+      if (std::sscanf(line, "h %lld %39s", &tick, hex) == 2) {
+        if (std::strlen(hex) != 16 ||
+            std::sscanf(hex, "%llx", &h) != 1) {
+          std::fprintf(stderr,
+                       "[replay] truncated hash line at tick %lld: '%s' — "
+                       "journal tail cut mid-write?\n",
+                       tick, line);
+          std::fclose(f);
+          return 4;
+        }
         hashes.push_back(QueuedHash{static_cast<sim::Tick>(tick), h});
         if (tick > lastTick) lastTick = tick;
       }
@@ -1123,9 +1121,18 @@ int runReplayWorld(const std::string& path, const std::string& mapPath) {
     pe->dex = static_cast<std::uint8_t>(L.dex);
     pe->statPoints = static_cast<std::uint8_t>(L.sp);
     pe->gold = L.gold;
+    pe->hpMax = sim::playerHpMax(pe->level, pe->vit);
+    pe->hp = pe->hpMax;
+    // T-049x: full 7-field grammar via the SHARED parser, slots appended in
+    // blob order — the live login path verbatim. (The old 4-field sscanf +
+    // debugGive lane laundered gear: dormant 0-durability items resurrected
+    // to 100, affix/refine dropped, slot order scrambled by stacking.)
+    if (L.inv != "-") parseInvBlob(L.inv, pe->inv);
     pe->anvilMercyMask = L.mercyMask;
     pe->karma = L.karma;
-    // replay bless grants (debug lane recorded as b-lines)
+    // replay bless grants (debug lane recorded as b-lines) — AFTER the
+    // persisted blob, exactly like the live login order, so debugGive
+    // stacking/appending lands identically on both sides.
     for (const auto& qb : queuedBlesses) {
       if (qb.name != L.name) continue;
       size_t bpos = 0;
@@ -1152,32 +1159,16 @@ int runReplayWorld(const std::string& path, const std::string& mapPath) {
                         static_cast<std::uint16_t>(std::stoul(pr.substr(colon + 1))));
       }
     }
-    pe->hpMax = sim::playerHpMax(pe->level, pe->vit);
-    pe->hp = pe->hpMax;
-    if (L.inv != "-") {
-      size_t pos = 0;
-      const std::string& blob = L.inv;
-      while (pos < blob.size()) {
-        const size_t end = blob.find(';', pos);
-        const std::string rec =
-            blob.substr(pos, end == std::string::npos ? std::string::npos : end - pos);
-        unsigned iid = 0, qty = 0, eqf = 0, aur = 0;
-        if (std::sscanf(rec.c_str(), "%u:%u:%u:%u", &iid, &qty, &eqf, &aur) >= 3 &&
-            qty > 0) {
-          if (world.debugGive(*pe, iid, static_cast<std::uint16_t>(qty)) &&
-              content::findItem(iid) != nullptr) {
-            for (auto& sl : pe->inv) {
-              if (sl.itemId == iid) {
-                sl.aura = static_cast<std::uint8_t>(aur);
-                if (eqf) sl.equipped = true;
-                break;
-              }
-            }
-          }
-        }
-        if (end == std::string::npos) break;
-        pos = end + 1;
-      }
+    // T-049x probe: post-application login fingerprint (pairs with
+    // [live-login] — diff these two lanes to catch any future laundering).
+    if (std::getenv("BH_DUMP_ENTS") != nullptr) {
+      std::fprintf(stderr,
+                   "[replay-login] name=%s lvl=%u xp=%u gold=%u hp=%u/%u "
+                   "skill=%u mercy=%u karma=%d inv=%s\n",
+                   pe->name.c_str(), static_cast<unsigned>(pe->level), pe->xp,
+                   pe->gold, pe->hp, pe->hpMax,
+                   static_cast<unsigned>(pe->swordSkill), pe->anvilMercyMask,
+                   pe->karma, canonicalInvBlob(pe->inv).c_str());
     }
     entities.push_back(ReplayEnt{e.id});
   };
@@ -1213,6 +1204,21 @@ int runReplayWorld(const std::string& path, const std::string& mapPath) {
                      ent.attackTarget, ent.path.size(),
                      static_cast<long long>(ent.lastChaseTick), static_cast<long long>(ent.lastSwingTick),
                      ent.walker.moving ? 1 : 0, ent.walker.target.x, ent.walker.target.y);
+      }
+      // T-049x probes (pair with [live-rng]/[live-ply]; live emits at hash
+      // cadence, replay every tick — grep by tick to compare).
+      std::fprintf(stderr, "[replay-rng] t=%lld state=%016llx\n",
+                   static_cast<long long>(t),
+                   static_cast<unsigned long long>(world.rng().stateFingerprint()));
+      for (const auto& ent : world.entities()) {
+        if (ent.kind != EntityKind::kPlayer) continue;
+        std::fprintf(stderr,
+                     "[replay-ply] t=%lld id=%u name=%s lvl=%u xp=%u gold=%u "
+                     "hp=%u/%u skill=%u inv=%s\n",
+                     static_cast<long long>(t), ent.id, ent.name.c_str(),
+                     static_cast<unsigned>(ent.level), ent.xp, ent.gold, ent.hp,
+                     ent.hpMax, static_cast<unsigned>(ent.swordSkill),
+                     canonicalInvBlob(ent.inv).c_str());
       }
     }
     while (hi < hashes.size() && hashes[hi].tick <= t) {
@@ -1316,6 +1322,12 @@ int run(int argc, char** argv) {
                    s.recordWorldPath.c_str());
       return 1;
     }
+    // T-049x: line-buffer the journal. The repro harness SIGTERMs the server
+    // mid-soak (bots finish first); a block-buffered journal lost its
+    // unflushed tail on kill — run3p died with a HALF-WRITTEN hash line
+    // ("h 875 a52a7e3"), and the replay dutifully failed on the garbage
+    // expected hash. Complete lines must survive an ungraceful kill.
+    std::setvbuf(s.journal, nullptr, _IOLBF, 0);
     std::fprintf(s.journal, "v %d\n", kJournalEpoch);
     std::fflush(s.journal);
     std::fprintf(stderr, "[journal] recording world to %s (epoch %d)\n",

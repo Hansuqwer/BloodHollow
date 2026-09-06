@@ -1,10 +1,13 @@
 run1 bots_rc=0
-run1 replay1: [replay] OK ticks=5561 sessionCmds=1918 hashes=222 mismatches=0 entities=573
-run1 replay2: [replay] OK ticks=5561 sessionCmds=1918 hashes=222 mismatches=0 entities=573
+run1 replay1: [replay] OK ticks=6031 sessionCmds=1706 hashes=241 mismatches=0 entities=586
+run1 replay2: [replay] OK ticks=6031 sessionCmds=1706 hashes=241 mismatches=0 entities=586
+run1 persist-round replay: [replay] OK ticks=1242 sessionCmds=463 hashes=49 mismatches=0 entities=568
 run2 bots_rc=0
-run2 replay1: [replay] OK ticks=6005 sessionCmds=2317 hashes=240 mismatches=0 entities=562
-run2 replay2: [replay] OK ticks=6005 sessionCmds=2317 hashes=240 mismatches=0 entities=562
+run2 replay1: [replay] OK ticks=6040 sessionCmds=2181 hashes=241 mismatches=0 entities=567
+run2 replay2: [replay] OK ticks=6040 sessionCmds=2181 hashes=241 mismatches=0 entities=567
+run2 persist-round replay: [replay] OK ticks=1238 sessionCmds=512 hashes=49 mismatches=0 entities=573
 run3 bots_rc=0
-run3 replay1: [replay] OK ticks=5717 sessionCmds=2338 hashes=228 mismatches=0 entities=563
-run3 replay2: [replay] OK ticks=5717 sessionCmds=2338 hashes=228 mismatches=0 entities=563
+run3 replay1: [replay] OK ticks=6039 sessionCmds=2210 hashes=241 mismatches=0 entities=564
+run3 replay2: [replay] OK ticks=6039 sessionCmds=2210 hashes=241 mismatches=0 entities=564
+run3 persist-round replay: [replay] OK ticks=1232 sessionCmds=598 hashes=49 mismatches=0 entities=568
 T49_VERDICT fail=0
