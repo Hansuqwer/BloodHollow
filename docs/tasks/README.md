@@ -205,10 +205,20 @@ scrambled), below `worldHash`'s id/zone/pos/hp coverage. One shared grammar
 + `tools/bh_probe_leg.sh`. Suite 105/105; all journals replay 0 mismatches.
 Devlog 0023. Epoch stays 5.
 
+## Done — Sprint 22 (2026-09-06): choir-bot v2 + T-034b retune
+
+| Card | Title |
+|---|---|
+| [T-054b](done/T-054b.md) | Cultist v2: Chorus (party-wide), Mass Mend, Haste; choir-bot v2 (potion priority, safe-chase, ch6/7/8 usage) |
+| [T-034b](done/T-034b.md) | balance retune from duel table: widow dmg 24→22, widow leash 12→10, gnoll dmg 18→17 |
+
+Gate: suite 105/105 (327,925 assertions); ctest 2/2; journal epoch 5→6
+(content shifts sim under v5 journals; replay refuses by contract); fresh
+smoke leg `tools/s22_smoke.sh` replay 0 mismatches; fresh duel table
+`logs/duel-table-s22.csv`. Devlog 0024.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |
 |---|---|---|
-| M2b-final | L8-in-one-sitting pacing rerun (S13 party XP exists; measure uplift) | evidence: logs/s13_party_leg.*, devlog 0014 |
-| T-034b | balance retune from duel table: camp leuk-for-leash levers | logs/duel-table-s12.csv |
-| T-054b | Cultist v2: Chorus (party-wide), Mass Mend, Haste; choir-bot v2 (potion priority, safe-chase) | devlog 0015 |
+| M2b-final | L8-in-one-sitting pacing rerun (S13 party XP exists; measure uplift) | post-T-034b retune; evidence: logs/s22_smoke.*, devlog 0024 |

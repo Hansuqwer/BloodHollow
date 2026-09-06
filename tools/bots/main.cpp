@@ -16,6 +16,7 @@
 
 #include "protocol/messages_gen.h"
 #include "content/auras.h"
+#include "content/kits.h"
 #include "content/wirekind.h"
 #include "sim/bhmap.h"
 #include "sim/rng.h"
@@ -82,6 +83,10 @@ struct Bot {
   std::uint32_t mp = 0, mpMax = 30;
   bool kitSworn = false;      // /kit cultist sent
   double nextMendAt = 0.0, nextBlessAt = 0.0;
+  // T-054b choir-bot v2: kit-v2 channel pacing (ch6 Chorus / ch7 Mass Mend /
+  // ch8 Haste) + per-channel cast counters for the SUMMARY line
+  double nextChorusAt = 0.0, nextMassMendAt = 0.0, nextHasteAt = 0.0;
+  std::uint64_t chorusCasts = 0, massCasts = 0, hasteCasts = 0;
   std::uint64_t blessCasts = 0, mendCasts = 0, mendNoSee = 0, mendHurtCnt = 0;
   std::uint64_t rcvReset = 0, rcvMember = 0; std::uint32_t lastResetPid = 0;
 };
@@ -438,7 +443,66 @@ int run(int argc, char** argv) {
             b.nextBlessAt = t + 240.0;
             ++b.blessCasts;
           }
-          if (hurtId != 0) {
+          // T-054b choir-bot v2: kit-v2 channels. Level gates come from the
+          // shared chUnlock table — the server enforces them too, so an early
+          // cast is a quiet no-op, never a gamble.
+          // ch6 Chorus (Choir L9): the S13 formation above supplies the real
+          // party; >=2 voices inside the 6-tile sweep or the verse is a hum.
+          // The song lasts 2 min and refreshes (never stacks): recast ~2.5 min.
+          if (b.level >= bh::content::kitSkillUnlock(b.kitClass, 6) &&
+              b.party.size() >= 2 && b.mp >= 14 && t >= b.nextChorusAt) {
+            std::uint32_t voices = 1;  // the caster sings too
+            for (const auto& [mid, row] : b.party) {
+              const auto ei = b.ents.find(mid);
+              if (ei != b.ents.end() &&
+                  cheb(b.tileX, b.tileY, ei->second.x, ei->second.y) <= 6)
+                ++voices;
+            }
+            if (voices >= 2) {
+              bh::proto::SkillUse su;
+              su.skill = 6;
+              su.targetId = b.ownId;
+              sendProto(b.peer, bh::proto::pack(su));
+              b.nextChorusAt = t + 150.0;
+              ++b.chorusCasts;
+            }
+          }
+          // ch7 Mass Mend (Choir L12): two+ hurt voices in range make the 18
+          // mp beat single-target mends; full-hp members are skipped
+          // server-side (the half-strength stitch never spills over).
+          bool massMended = false;
+          if (b.level >= bh::content::kitSkillUnlock(b.kitClass, 7) &&
+              b.mp >= 18 && hurtSeen >= 2 && t >= b.nextMassMendAt) {
+            bh::proto::SkillUse su;
+            su.skill = 7;
+            su.targetId = b.ownId;
+            sendProto(b.peer, bh::proto::pack(su));
+            b.nextMassMendAt = t + 3.5;  // server CD 3 s
+            ++b.massCasts;
+            massMended = true;
+          }
+          // ch8 Haste (Gravecaller L10 / Choir L11): self rotation gear while
+          // something stands in swing range (60 s of fast steel, ~70 s refresh).
+          bool mobAdj = false;
+          for (const auto& kv : b.ents) {
+            if (kv.second.kind == 0 ||
+                bh::content::wireIsFurniture(kv.second.kind))
+              continue;
+            if (cheb(b.tileX, b.tileY, kv.second.x, kv.second.y) <= 2) {
+              mobAdj = true;
+              break;
+            }
+          }
+          if (b.level >= bh::content::kitSkillUnlock(b.kitClass, 8) &&
+              b.mp >= 10 && mobAdj && t >= b.nextHasteAt) {
+            bh::proto::SkillUse su;
+            su.skill = 8;
+            su.targetId = b.ownId;
+            sendProto(b.peer, bh::proto::pack(su));
+            b.nextHasteAt = t + 70.0;
+            ++b.hasteCasts;
+          }
+          if (hurtId != 0 && !massMended) {
             if (hurtDist <= 6 && t >= b.nextMendAt && b.mp >= 8) {
               bh::proto::SkillUse su;
               su.skill = 2;
@@ -636,8 +700,11 @@ int run(int argc, char** argv) {
             }
           }
         }
-        // sip when hurt and holding a vial (reckless hires never sip)
-        if (!reckless && b.hpMax > 0 && b.hp * 2 < b.hpMax) {
+        // choir-bot v2 potion priority: baseline band <50%, but with a mob in
+        // swing range or a live retreat the band raises — flask before fangs.
+        const bool threatAdj = bestId != 0 && bestD <= 2;
+        const int sipPct = (campaign && (b.retreating || threatAdj)) ? 65 : 50;
+        if (!reckless && b.hpMax > 0 && b.hp * 100 < b.hpMax * sipPct) {
           for (const auto& kv : b.inv) {
             if (kv.second.itemId == 3001) {
               bh::proto::UseItem u;
@@ -665,8 +732,11 @@ int run(int argc, char** argv) {
         }
         if (campaign) {
           const bool hurt = b.hpMax > 0 && b.hp * 100 < b.hpMax * 50;
+          const bool critical = b.hpMax > 0 && b.hp * 100 < b.hpMax * 35;
           if (hurt && !b.retreating && bestId != 0 && bestD <= 2) {
             b.retreating = true;
+          } else if (critical && !b.retreating && bestId != 0 && bestD <= 6) {
+            b.retreating = true;  // v2 band: sub-35% with a threat near — break
           } else if (b.retreating && b.hp * 100 >= b.hpMax * 85) {
             b.retreating = false;
           }
@@ -796,6 +866,7 @@ int run(int argc, char** argv) {
   std::uint64_t dbgNoBlade = 0, dbgNoGold = 0, dbgNoPelts = 0, dbgNoAnvil = 0,
                 dbgReady = 0;
   std::uint64_t blessCasts = 0, mendCasts = 0, mendNoSee = 0, mendHurtCnt = 0;
+  std::uint64_t chorusCasts = 0, massCasts = 0, hasteCasts = 0;
   std::uint32_t mxGold = 0, mxPelts = 0;
   int maxLevel = 1;
   for (const Bot& b : bots) {
@@ -811,6 +882,8 @@ int run(int argc, char** argv) {
     anvilTries += b.anvilTries;
     blessCasts += b.blessCasts; mendCasts += b.mendCasts;
     mendNoSee += b.mendNoSee; mendHurtCnt += b.mendHurtCnt;
+    chorusCasts += b.chorusCasts; massCasts += b.massCasts;
+    hasteCasts += b.hasteCasts;
     dbgNoBlade += b.dbgNoBlade; dbgNoGold += b.dbgNoGold;
     dbgNoPelts += b.dbgNoPelts; dbgNoAnvil += b.dbgNoAnvil; dbgReady += b.dbgReady;
     if (b.dbgMaxGold > mxGold) mxGold = b.dbgMaxGold;
@@ -820,20 +893,24 @@ int run(int argc, char** argv) {
   std::printf("[bots] SUMMARY welcomed=%d/%d moved=%d/%d minDeltas=%" PRIu64
               " kills=%" PRIu64 " pots=%" PRIu64 " swings=%" PRIu64" deaths=%" PRIu64 " shops=%" PRIu64 " anvilTries=%" PRIu64 " levelDrops=%" PRIu64
               " maxLevel=%d pkts=%" PRIu64 " bytes=%" PRIu64
-              " gates b/g/p/a/r=%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 " mGold=%u mPelts=%u bless=%" PRIu64 " mend=%" PRIu64 " noSee=%" PRIu64 " hurt=%" PRIu64 "\n",
+              " gates b/g/p/a/r=%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 " mGold=%u mPelts=%u bless=%" PRIu64 " mend=%" PRIu64 " noSee=%" PRIu64 " hurt=%" PRIu64
+              " choir c6=%" PRIu64 " c7=%" PRIu64 " c8=%" PRIu64 "\n",
               welcomed, count, moved, count, minDeltas == UINT64_MAX ? 0 : minDeltas,
               kills, pots, swings, deaths, shops, anvilTries, levelDrops, maxLevel,
               packetsRx, bytesRx, dbgNoBlade, dbgNoGold, dbgNoPelts, dbgNoAnvil,
               dbgReady, mxGold, mxPelts, blessCasts, mendCasts, mendNoSee,
-              mendHurtCnt);
+              mendHurtCnt, chorusCasts, massCasts, hasteCasts);
 
   for (Bot& b : bots) {  // T-055 probe: per-bot kit/roster truth
-    std::printf("[bots] %-12s kit=%d lvl=%d hp=%d/%d party=%zu deaths=%llu rxR=%llu rxM=%llu lastPid=%u\n",
+    std::printf("[bots] %-12s kit=%d lvl=%d hp=%d/%d party=%zu deaths=%llu rxR=%llu rxM=%llu lastPid=%u casts c6=%llu c7=%llu c8=%llu\n",
                 b.name.c_str(), b.kitClass, b.level, static_cast<int>(b.hp),
                 static_cast<int>(b.hpMax), b.party.size(),
                 static_cast<unsigned long long>(b.deaths),
                 static_cast<unsigned long long>(b.rcvReset),
-                static_cast<unsigned long long>(b.rcvMember), b.lastResetPid);
+                static_cast<unsigned long long>(b.rcvMember), b.lastResetPid,
+                static_cast<unsigned long long>(b.chorusCasts),
+                static_cast<unsigned long long>(b.massCasts),
+                static_cast<unsigned long long>(b.hasteCasts));
     if (b.peer != nullptr) enet_peer_disconnect_now(b.peer, 0);
   }
   enet_host_destroy(chost);
