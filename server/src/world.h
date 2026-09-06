@@ -93,8 +93,13 @@ struct Entity {
   std::uint32_t mp = 0, mpMax = 30;
   sim::Tick blessUntil = -1;    // +10% hit&dmg (T-054)
   sim::Tick ironskinUntil = -1; // +20% DR (T-054)
+  sim::Tick chorusUntil = -1;   // +5% hit&dmg, party-wide song (T-054b ch6)
+  sim::Tick hasteUntil = -1;    // -25% swing cadence (T-054b ch8)
   sim::Tick lastMendTick = -1000;
   sim::Tick lastBlessTick = -1000;
+  sim::Tick lastChorusTick = -1000;
+  sim::Tick lastMassTick = -1000;
+  sim::Tick lastHasteTick = -1000;
   sim::Tick lastIronskinTick = -1000;
   sim::Tick lastFireboltTick = -1000;
 
@@ -192,6 +197,9 @@ class World {
   void tryMend(Entity& e, std::uint32_t targetId);      // T-054 (chan 2)
   void tryBless(Entity& e, std::uint32_t targetId);     // T-054 (chan 3)
   void tryIronskin(Entity& e, std::uint32_t targetId);  // T-054 (chan 4)
+  void tryChorus(Entity& e);                    // T-054b (chan 6)
+  void tryMassMend(Entity& e);                  // T-054b (chan 7)
+  void tryHaste(Entity& e);                     // T-054b (chan 8)
   void tryFirebolt(Entity& e, std::uint32_t targetId);  // T-054 (chan 5)
 
  public:

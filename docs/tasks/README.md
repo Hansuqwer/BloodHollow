@@ -185,6 +185,16 @@ Gate: suite 91/91 (327,815 assertions); S19 smoke replay OK
 Gate: 93/93 suite; t49_repro verdict fail=0; ctest 100%. Devlog 0021.
 M2b-final chain resumed (leg-4+) after the sandbox-eviction restart.
 
+## Done — Sprint 21 (2026-09-06): kit v2 content half
+
+| Card | Title |
+|---|---|
+| [T-054b](done/T-054b.md) | Chorus (ch6, L9) / Mass Mend (ch7, L12) / Haste (ch8, L10-11) — party law, cadence, gates pinned |
+
+Gate: suite 98/98 (327,852 assertions); ctest 2/2; epoch stays 5. Devlog 0022.
+Deferred on purpose: choir-bot v2 profile + T-034b retune → after the
+M2b-final chain closes (binary-swap would poison pacing evidence).
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |

@@ -32,6 +32,16 @@ constexpr sim::Tick kBlessCdTicks = 40;
 constexpr sim::Tick kIronskinCdTicks = 40;
 constexpr sim::Tick kFireboltCdTicks = 30;
 constexpr int kMendRange = 6;                // tiles, party-only target
+
+// ---- kit skills v2 (T-054b) ----------------------------------------------
+constexpr sim::Tick kChorusTicks = 2400;    // song lasts 2 min
+constexpr sim::Tick kChorusCdTicks = 240;   // 12s between verses
+constexpr sim::Tick kMassMendCdTicks = 60;
+constexpr sim::Tick kHasteTicks = 1200;  // 60s of fast steel
+constexpr sim::Tick kHasteCdTicks = 400;
+constexpr std::uint32_t kChorusMpCost = 14;
+constexpr std::uint32_t kMassMendMpCost = 18;
+constexpr std::uint32_t kHasteMpCost = 10;
 constexpr int kFireboltRange = 8;
 constexpr std::uint32_t kMendMpCost = 8;
 constexpr std::uint32_t kBlessMpCost = 15;
@@ -497,7 +507,8 @@ bool World::toggleEquip(Entity& e, std::uint8_t slot) {
 // (the rite is not yours) — no event spam on keyspam.
 std::uint32_t World::effAcc(const Entity& e) const {
   std::uint32_t acc = 2u * e.dex;
-  if (e.blessUntil >= 0 && tick_ < e.blessUntil) acc = acc * 110u / 100u;
+  if (e.blessUntil >= 0 && tick_ < e.blessUntil) acc = acc * 110u / 100u;  
+  if (e.chorusUntil >= 0 && tick_ < e.chorusUntil) acc = acc * 105u / 100u;  // T-054b
   return acc;
 }
 
@@ -507,7 +518,8 @@ std::uint32_t World::effDmgBase(const Entity& e) const {
     return md != nullptr ? md->dmg : 4;
   }
   std::uint32_t base = equippedWeaponDmg(e) + e.swordSkill / 20;
-  if (e.blessUntil >= 0 && tick_ < e.blessUntil) base = base * 110u / 100u;
+  if (e.blessUntil >= 0 && tick_ < e.blessUntil) base = base * 110u / 100u;  
+  if (e.chorusUntil >= 0 && tick_ < e.chorusUntil) base = base * 105u / 100u;  // T-054b
   return base;
 }
 
@@ -524,7 +536,7 @@ std::uint32_t World::effDef(const Entity& e) const {
 
 void World::trySkill(Entity& e, std::uint8_t skill, std::uint32_t targetId) {
   if (e.kind != EntityKind::kPlayer || e.dead) return;
-  if (skill >= 2 && skill <= 5) {
+  if (skill >= 2 && skill <= 8) {
     const std::uint8_t unlock = content::kitSkillUnlock(e.classId, skill);
     if (unlock == 0 || e.level < unlock) return;
     switch (skill) {
@@ -532,6 +544,9 @@ void World::trySkill(Entity& e, std::uint8_t skill, std::uint32_t targetId) {
       case 3: tryBless(e, targetId); return;
       case 4: tryIronskin(e, targetId); return;
       case 5: tryFirebolt(e, targetId); return;
+      case 6: tryChorus(e); return;     // T-054b
+      case 7: tryMassMend(e); return;   // T-054b
+      case 8: tryHaste(e); return;      // T-054b
       default: return;
     }
   }
@@ -662,6 +677,93 @@ void World::tryBless(Entity& e, std::uint32_t targetId) {
   txt.chatCh = 2;
   txt.chatText = "the " + std::string(content::findKit(content::kKitCultist)->name) +
                  " blesses " + t->name + " (+10% for 5 min).";
+  events_.push_back(std::move(txt));
+}
+
+// T-054b Chorus (chan 6): the whole choir sounds at once — every living
+// party member in range carries the +5% hit&dmg stamp; refresh, never stack.
+void World::tryChorus(Entity& e) {
+  if (tick_ - e.lastChorusTick < kChorusCdTicks || e.mp < kChorusMpCost) return;
+  const Party* p = partyOf(e.id);
+  if (p == nullptr) return;  // a choir of one is a hum (era law: needs a party)
+  e.lastChorusTick = tick_;
+  e.mp -= kChorusMpCost;
+  std::uint32_t sung = 0;
+  for (const std::uint32_t mid : p->members) {
+    Entity* m = find(mid);
+    if (m == nullptr || m->dead || m->zoneId != e.zoneId) continue;
+    if (chebyshev(m->walker.tile(), e.walker.tile()) > kMendRange) continue;
+    m->chorusUntil = tick_ + kChorusTicks;
+    ++sung;
+    WorldEvent sev;
+    sev.attacker = e.id;
+    sev.target = mid;
+    sev.kind = 13;   // T-066 table: chorus shimmer (gold crown)
+    sev.amount = 5;  // +5%
+    events_.push_back(std::move(sev));
+  }
+  WorldEvent txt;
+  txt.aboutId = e.id;
+  txt.statsChanged = true;
+  txt.chatCh = 2;
+  txt.chatText = "the choir lifts its verse on " + std::to_string(sung) +
+                 " voice(s) (+5% for 2 min).";
+  events_.push_back(std::move(txt));
+}
+
+// T-054b Mass Mend (chan 7): one hand over the whole party — each member in
+// range catches the half-strength stitch (era mass tax).
+void World::tryMassMend(Entity& e) {
+  if (tick_ - e.lastMassTick < kMassMendCdTicks || e.mp < kMassMendMpCost) return;
+  const Party* p = partyOf(e.id);
+  if (p == nullptr) return;
+  e.lastMassTick = tick_;
+  e.mp -= kMassMendMpCost;
+  std::uint32_t healedAny = 0;
+  for (const std::uint32_t mid : p->members) {
+    Entity* m = find(mid);
+    if (m == nullptr || m->dead || m->zoneId != e.zoneId) continue;
+    if (chebyshev(m->walker.tile(), e.walker.tile()) > kMendRange) continue;
+    const std::uint32_t mend = std::min<std::uint32_t>(
+        static_cast<std::uint32_t>(m->hpMax - m->hp), (30u + 4u * e.level) / 2u);
+    if (mend == 0) continue;
+    m->hp += mend;
+    ++healedAny;
+    WorldEvent sev;
+    sev.attacker = e.id;
+    sev.target = mid;
+    sev.kind = 8;  // mend lane (green)
+    sev.amount = static_cast<std::uint16_t>(std::min<std::uint32_t>(mend, 65535));
+    events_.push_back(std::move(sev));
+  }
+  WorldEvent txt;
+  txt.aboutId = e.id;
+  txt.statsChanged = true;
+  txt.chatCh = 2;
+  txt.chatText = "mass mend knits " + std::to_string(healedAny) + " body(ies).";
+  events_.push_back(std::move(txt));
+}
+
+// T-054b Haste (chan 8): self-cast rotation gear — swing cadence -25% for
+// the duration; read in trySwing where cd is computed.
+void World::tryHaste(Entity& e) {
+  if (tick_ - e.lastHasteTick < kHasteCdTicks || e.mp < kHasteMpCost) return;
+  e.lastHasteTick = tick_;
+  e.mp -= kHasteMpCost;
+  e.hasteUntil = tick_ + kHasteTicks;
+  {
+    WorldEvent sev;
+    sev.attacker = e.id;
+    sev.target = e.id;
+    sev.kind = 14;  // haste: amber streak
+    sev.amount = 25;
+    events_.push_back(std::move(sev));
+  }
+  WorldEvent txt;
+  txt.aboutId = e.id;
+  txt.statsChanged = true;
+  txt.chatCh = 2;
+  txt.chatText = "haste: the blood remembers its own beat (-25% swing cadence).";
   events_.push_back(std::move(txt));
 }
 
@@ -1271,8 +1373,11 @@ void World::trySwing(Entity& att, Entity& def) {
   const sim::TilePos a = att.walker.tile();
   const sim::TilePos b = def.walker.tile();
   if (chebyshev(a, b) > 1) return;  // not adjacent
-  const sim::Tick cd = att.kind == EntityKind::kPlayer ? kPlayerAtkCdTicks
-                                                       : static_cast<sim::Tick>(att.atkCdTicks);
+  sim::Tick cd = att.kind == EntityKind::kPlayer ? kPlayerAtkCdTicks
+                                                 : static_cast<sim::Tick>(att.atkCdTicks);
+  if (att.kind == EntityKind::kPlayer &&
+      att.hasteUntil >= 0 && tick_ < att.hasteUntil)
+    cd = kPlayerAtkCdTicks * 75u / 100u;  // T-054b Haste: -25% cadence
   if (tick_ - att.lastSwingTick < cd) return;
   att.lastSwingTick = tick_;
 

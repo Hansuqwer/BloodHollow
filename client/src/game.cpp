@@ -420,6 +420,22 @@ void Game::applyNetState() {
       f.r = 235;
       f.g = 40;
       f.b = 160;
+    } else if (cp.kind == 13) {
+      // T-066/T-054b: chorus — molten-gold crown over each sung member
+      {
+        auto ti = rents_.find(cp.target);
+        if (ti != rents_.end()) { const Vector2 tp = entRenderPos(ti->second); f.x = tp.x; f.y = tp.y; }
+      }
+      f.text = "CHORUS +5%";
+      f.r = 255; f.g = 180; f.b = 30;
+    } else if (cp.kind == 14) {
+      // T-054b: haste — amber streak over the quickened
+      {
+        auto ti = rents_.find(cp.target);
+        if (ti != rents_.end()) { const Vector2 tp = entRenderPos(ti->second); f.x = tp.x; f.y = tp.y; }
+      }
+      f.text = "HASTE -25%";
+      f.r = 255; f.g = 140; f.b = 30;
     } else if (cp.kind == 10) {
       // T-066: bless — gold over the anointed
       {
@@ -579,6 +595,8 @@ void Game::playCallout(std::uint8_t kind) {  // T-067
     case 10: PlaySound(kit_.choir); break;   // bless
     case 9: PlaySound(kit_.bolt); break;     // BLOOD BOLT
     case 11: PlaySound(kit_.toll); break;    // ironskin (armor-set ring)
+    case 13: PlaySound(kit_.choir); break;   // chorus (the whole song at once)
+    case 14: PlaySound(kit_.swing); break;   // haste (steel quickens)
     default: break;                          // misses/xp shimmer: quiet
   }
 }

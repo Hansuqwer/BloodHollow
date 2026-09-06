@@ -9,3 +9,5 @@ gate: leg 3 replay: [replay] OK ticks=8192 sessionCmds=1204 hashes=81 mismatches
 leg3 verified
 gate: leg 3 end state: reached L4
 gate: leg 4 start 21:12:05
+gate: leg 3 already verified, skip
+gate: leg 4 start 06:40:03
