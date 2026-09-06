@@ -1,0 +1,24 @@
+[campaign] t49r3__04 reached L1 at t=0.1s (map 1)
+[campaign] t49r3__01 reached L1 at t=0.1s (map 1)
+[campaign] t49r3__00 reached L1 at t=0.1s (map 1)
+[campaign] t49r3__05 reached L1 at t=0.1s (map 1)
+[campaign] t49r3__03 reached L1 at t=0.1s (map 1)
+[campaign] t49r3__02 reached L1 at t=0.1s (map 1)
+[campaign] t49r3__04 reached L2 at t=14.6s (map 1)
+[campaign] t49r3__05 reached L2 at t=12.4s (map 1)
+[campaign] t49r3__00 reached L2 at t=19.6s (map 1)
+[campaign] t49r3__03 reached L2 at t=22.8s (map 1)
+[campaign] t49r3__01 reached L2 at t=30.1s (map 1)
+[campaign] t49r3__02 reached L2 at t=39.5s (map 1)
+[campaign] t49r3__02 reached L3 at t=82.7s (map 1)
+[campaign] t49r3__03 reached L3 at t=83.2s (map 1)
+[campaign] t49r3__03 reached L4 at t=195.9s (map 1)
+[campaign] t49r3__02 reached L4 at t=208.2s (map 1)
+[bots] SUMMARY welcomed=6/6 moved=6/6 minDeltas=6000 kills=110 pots=3 swings=321 deaths=40 shops=2 anvilTries=0 levelDrops=0 maxLevel=4 pkts=12917144 bytes=284209612 gates b/g/p/a/r=0/0/0/0/0 mGold=0 mPelts=0 bless=1 mend=87 noSee=550 hurt=1798
+[bots] t49r3__00    kit=1 lvl=2 hp=61/94 party=2 deaths=14 rxR=308 rxM=586 lastPid=2
+[bots] t49r3__01    kit=3 lvl=2 hp=47/94 party=2 deaths=10 rxR=303 rxM=560 lastPid=2
+[bots] t49r3__02    kit=1 lvl=4 hp=92/94 party=2 deaths=2 rxR=305 rxM=590 lastPid=3
+[bots] t49r3__03    kit=3 lvl=4 hp=112/94 party=2 deaths=0 rxR=302 rxM=578 lastPid=3
+[bots] t49r3__04    kit=1 lvl=2 hp=0/94 party=2 deaths=10 rxR=305 rxM=603 lastPid=1
+[bots] t49r3__05    kit=3 lvl=2 hp=7/94 party=2 deaths=4 rxR=302 rxM=598 lastPid=1
+[bots] OK

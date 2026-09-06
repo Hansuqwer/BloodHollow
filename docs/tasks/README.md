@@ -174,8 +174,16 @@ entities 291→579). Devlog 0019. **M2b-final L1→8 chain now running.**
 Gate: suite 91/91 (327,815 assertions); S19 smoke replay OK
 (ticks=1182 hashes=11 mismatches=0; epoch 5). Devlog 0020.
 
-**Phase-3 queue drained.** Open: T-049 record-path flake; M2b-final gate
-chain running in background (fresh namespace, epoch-5 legs).
+**Phase-3 queue drained.**
+
+## Done — Sprint 20 (2026-09-06): replay trust
+
+| Card | Title |
+|---|---|
+| [T-049](done/T-049.md) | record-path determinism CLOSED: 3× cadence-25 6-bot soaks clean, burst-semantics pins, ctest working-dir fix |
+
+Gate: 93/93 suite; t49_repro verdict fail=0; ctest 100%. Devlog 0021.
+M2b-final chain resumed (leg-4+) after the sandbox-eviction restart.
 
 ## Open — Phase 3 remaining
 

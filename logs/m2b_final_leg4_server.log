@@ -8,3 +8,4 @@
 [net] m2b__01          entered the world (entity 583, online 2)
 [soak] tick=600 online=2 entities=580 tickUs p50=735 p99=1299 worldHash=e5fa5e9622c24d91 pkts=110/420361
 [soak] tick=1200 online=2 entities=578 tickUs p50=774 p99=1493 worldHash=aea88c7ef19b1e5b pkts=214/851365
+[soak] tick=1800 online=2 entities=578 tickUs p50=730 p99=1304 worldHash=518913e9ec887738 pkts=298/1284307

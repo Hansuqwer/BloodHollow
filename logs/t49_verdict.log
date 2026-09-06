@@ -1,0 +1,10 @@
+run1 bots_rc=0
+run1 replay1: [replay] OK ticks=5561 sessionCmds=1918 hashes=222 mismatches=0 entities=573
+run1 replay2: [replay] OK ticks=5561 sessionCmds=1918 hashes=222 mismatches=0 entities=573
+run2 bots_rc=0
+run2 replay1: [replay] OK ticks=6005 sessionCmds=2317 hashes=240 mismatches=0 entities=562
+run2 replay2: [replay] OK ticks=6005 sessionCmds=2317 hashes=240 mismatches=0 entities=562
+run3 bots_rc=0
+run3 replay1: [replay] OK ticks=5717 sessionCmds=2338 hashes=228 mismatches=0 entities=563
+run3 replay2: [replay] OK ticks=5717 sessionCmds=2338 hashes=228 mismatches=0 entities=563
+T49_VERDICT fail=0
