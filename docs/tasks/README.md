@@ -217,8 +217,19 @@ Gate: suite 105/105 (327,925 assertions); ctest 2/2; journal epoch 5→6
 smoke leg `tools/s22_smoke.sh` replay 0 mismatches; fresh duel table
 `logs/duel-table-s22.csv`. Devlog 0024.
 
+## Done — T-034c (2026-09-06): L4-L5 gear-band investigation
+
+| Card | Title |
+|---|---|
+| [T-034c](done/T-034c.md) | L4-L5 gear-band investigation: the wall is a death-tax treadmill in the hound band — blade-only L4 = 7/9 @30% hp, and the campaign profile has no re-gear trip (shopping coupled to death-respawn) |
+
+Finding: 24–48 deaths/leg × ~190 XP debt ≈ 7.6k XP wiped, ~break-even vs
+~11–14k kill XP at L5 — the plateau. Ranked levers: (1) campaign re-gear
+trip, (2) Hide Armor 120→80, (3) hound dmg 13→12, (4) L4-L5 death-tax
+relief. Devlog 0026.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |
 |---|---|---|
-| T-034c | L4-L5 gear-band investigation: the hound band (blade+armor 9/9) is the real wall — gear-churn economics, not mob numbers | evidence: logs/m2b_rerun_gate.log, duel-table-s22.csv, devlog 0025 |
+| T-034d | Campaign re-gear trip: walk home when gold ≥ next gear tier (blade @260g, then armor @120g), then back out | evidence: docs/tasks/done/T-034c.md, devlog 0026; measure, then Hide Armor 120→80 if L6 not cleared |
