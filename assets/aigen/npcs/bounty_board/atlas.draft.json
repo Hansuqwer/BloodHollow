@@ -1,0 +1,38 @@
+{
+ "anims": {
+  "has_bounty": {
+   "frameW": 32,
+   "frameH": 48,
+   "frames": 1,
+   "dirs": 8,
+   "fps": 1,
+   "offsetX": 0,
+   "offsetY": 0,
+   "anchorY": 42
+  },
+  "empty": {
+   "frameW": 32,
+   "frameH": 48,
+   "frames": 1,
+   "dirs": 8,
+   "fps": 1,
+   "offsetX": 32,
+   "offsetY": 0,
+   "anchorY": 42
+  }
+ },
+ "_draft": {
+  "status": "UNVALIDATED in engine (loader-rule replica only)",
+  "cell": [
+   32,
+   48
+  ],
+  "anchorY_note": "anchorY is written per anim; engine/assets/atlas.cpp ignores unknown keys until T-ART-10",
+  "note": "1-dir furniture packed as 8 identical rows (loader requires dirs 8)",
+  "sheet_px": [
+   64,
+   384
+  ],
+  "loader_rule_replica": "clean"
+ }
+}

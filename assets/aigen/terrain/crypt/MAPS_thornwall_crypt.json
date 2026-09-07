@@ -1,0 +1,136 @@
+{
+ "map": "thornwall_crypt",
+ "mapId": 3,
+ "size": [
+  48,
+  36
+ ],
+ "zone_dir": "crypt",
+ "terrain_ids": {
+  "1": "FLOOR",
+  "2": "WALL",
+  "3": "SLAB",
+  "4": "BONEPIT",
+  "5": "CANDLE"
+ },
+ "terrain_pct": {
+  "WALL": 56.9,
+  "FLOOR": 42.0,
+  "BONEPIT": 0.6,
+  "CANDLE": 0.3,
+  "SLAB": 0.2
+ },
+ "adjacency_pairs": [
+  {
+   "a": "FLOOR",
+   "b": "WALL",
+   "boundary_len": 212
+  },
+  {
+   "a": "FLOOR",
+   "b": "BONEPIT",
+   "boundary_len": 34
+  },
+  {
+   "a": "FLOOR",
+   "b": "CANDLE",
+   "boundary_len": 24
+  },
+  {
+   "a": "FLOOR",
+   "b": "SLAB",
+   "boundary_len": 9
+  }
+ ],
+ "zones": [
+  0,
+  10,
+  11,
+  12
+ ],
+ "spawn_point": [
+  22,
+  14
+ ],
+ "spawners": [
+  {
+   "name": "ghoul_racks",
+   "mobId": 1002,
+   "mob": "Feral Ghoul",
+   "maxAlive": 7,
+   "respawnTicks": 600,
+   "x0": 18,
+   "y0": 15,
+   "x1": 26,
+   "y1": 21
+  },
+  {
+   "name": "widow_cocoon",
+   "mobId": 1006,
+   "mob": "Charnel Widow",
+   "maxAlive": 6,
+   "respawnTicks": 850,
+   "x0": 24,
+   "y0": 26,
+   "x1": 30,
+   "y1": 32
+  },
+  {
+   "name": "gravecaller_pulpit",
+   "mobId": 1007,
+   "mob": "Gravecaller",
+   "maxAlive": 3,
+   "respawnTicks": 1100,
+   "x0": 42,
+   "y0": 3,
+   "x1": 46,
+   "y1": 7
+  },
+  {
+   "name": "sexton_seat",
+   "mobId": 1008,
+   "mob": "Revenant Sexton",
+   "maxAlive": 1,
+   "respawnTicks": 6000,
+   "x0": 44,
+   "y0": 5,
+   "x1": 46,
+   "y1": 8
+  }
+ ],
+ "portals": [
+  {
+   "name": "stairs_up",
+   "targetMapId": 1,
+   "targetX": 10,
+   "targetY": 11,
+   "x0": 0,
+   "y0": 17,
+   "x1": 1,
+   "y1": 19
+  },
+  {
+   "name": "depths_stairs_down",
+   "targetMapId": 5,
+   "targetX": 3,
+   "targetY": 30,
+   "x0": 44,
+   "y0": 6,
+   "x1": 46,
+   "y1": 7
+  }
+ ],
+ "furniture_runtime": [
+  {
+   "kind": 65,
+   "name": "Widow Anvil (bone barrow)",
+   "x": 44,
+   "y": 6
+  }
+ ],
+ "scatter_bands_tiles": {
+  "0_inside_spawner (least scatter)": 102,
+  "1_within_3_tiles": 299,
+  "2_elsewhere (full scatter)": 1327
+ }
+}

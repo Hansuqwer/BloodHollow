@@ -1,0 +1,88 @@
+{
+ "anims": {
+  "idle": {
+   "frameW": 32,
+   "frameH": 56,
+   "frames": 1,
+   "dirs": 8,
+   "fps": 1,
+   "offsetX": 0,
+   "offsetY": 0,
+   "anchorY": 50
+  },
+  "walk": {
+   "frameW": 32,
+   "frameH": 56,
+   "frames": 6,
+   "dirs": 8,
+   "fps": 10,
+   "offsetX": 32,
+   "offsetY": 0,
+   "anchorY": 50
+  },
+  "attack": {
+   "frameW": 32,
+   "frameH": 56,
+   "frames": 3,
+   "dirs": 8,
+   "fps": 12,
+   "offsetX": 224,
+   "offsetY": 0,
+   "anchorY": 50
+  },
+  "cast": {
+   "frameW": 32,
+   "frameH": 56,
+   "frames": 4,
+   "dirs": 8,
+   "fps": 10,
+   "offsetX": 320,
+   "offsetY": 0,
+   "anchorY": 50
+  },
+  "hurt": {
+   "frameW": 32,
+   "frameH": 56,
+   "frames": 2,
+   "dirs": 8,
+   "fps": 12,
+   "offsetX": 448,
+   "offsetY": 0,
+   "anchorY": 50
+  },
+  "die": {
+   "frameW": 32,
+   "frameH": 56,
+   "frames": 4,
+   "dirs": 8,
+   "fps": 8,
+   "offsetX": 512,
+   "offsetY": 0,
+   "anchorY": 50
+  },
+  "gib": {
+   "frameW": 32,
+   "frameH": 56,
+   "frames": 3,
+   "dirs": 8,
+   "fps": 12,
+   "offsetX": 640,
+   "offsetY": 0,
+   "anchorY": 50
+  }
+ },
+ "_draft": {
+  "status": "UNVALIDATED in engine (loader-rule replica only)",
+  "cell": [
+   32,
+   56
+  ],
+  "anchorY_note": "anchorY is written per anim; engine/assets/atlas.cpp ignores unknown keys until T-ART-10",
+  "note": "D2b: 32x56 body 52",
+  "sheet_px": [
+   736,
+   448
+  ],
+  "loader_rule_replica": "clean"
+ }
+}

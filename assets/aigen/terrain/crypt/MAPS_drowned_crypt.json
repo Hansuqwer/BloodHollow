@@ -1,0 +1,198 @@
+{
+ "map": "drowned_crypt",
+ "mapId": 5,
+ "size": [
+  48,
+  36
+ ],
+ "zone_dir": "crypt",
+ "terrain_ids": {
+  "1": "DIRT",
+  "3": "WATER",
+  "4": "WOOD",
+  "6": "MUD",
+  "7": "DARKGRASS"
+ },
+ "terrain_pct": {
+  "WATER": 68.9,
+  "DIRT": 28.1,
+  "MUD": 1.5,
+  "DARKGRASS": 1.0,
+  "WOOD": 0.5
+ },
+ "adjacency_pairs": [
+  {
+   "a": "DIRT",
+   "b": "WATER",
+   "boundary_len": 245
+  },
+  {
+   "a": "DIRT",
+   "b": "WOOD",
+   "boundary_len": 31
+  },
+  {
+   "a": "DIRT",
+   "b": "MUD",
+   "boundary_len": 30
+  },
+  {
+   "a": "DIRT",
+   "b": "DARKGRASS",
+   "boundary_len": 22
+  },
+  {
+   "a": "WATER",
+   "b": "MUD",
+   "boundary_len": 10
+  }
+ ],
+ "zones": [
+  5
+ ],
+ "spawn_point": [
+  24,
+  12
+ ],
+ "spawners": [
+  {
+   "name": "elite_entry_chapel",
+   "mobId": 1010,
+   "mob": "Sepulcher Elite",
+   "maxAlive": 1,
+   "respawnTicks": 1200,
+   "x0": 3,
+   "y0": 29,
+   "x1": 7,
+   "y1": 33
+  },
+  {
+   "name": "elite_transept_west",
+   "mobId": 1010,
+   "mob": "Sepulcher Elite",
+   "maxAlive": 1,
+   "respawnTicks": 1200,
+   "x0": 8,
+   "y0": 8,
+   "x1": 12,
+   "y1": 10
+  },
+  {
+   "name": "elite_transept_east",
+   "mobId": 1010,
+   "mob": "Sepulcher Elite",
+   "maxAlive": 1,
+   "respawnTicks": 1200,
+   "x0": 38,
+   "y0": 8,
+   "x1": 42,
+   "y1": 10
+  },
+  {
+   "name": "elite_west_chapel",
+   "mobId": 1010,
+   "mob": "Sepulcher Elite",
+   "maxAlive": 1,
+   "respawnTicks": 1200,
+   "x0": 13,
+   "y0": 18,
+   "x1": 17,
+   "y1": 22
+  },
+  {
+   "name": "elite_east_row_south",
+   "mobId": 1010,
+   "mob": "Sepulcher Elite",
+   "maxAlive": 1,
+   "respawnTicks": 1200,
+   "x0": 33,
+   "y0": 20,
+   "x1": 37,
+   "y1": 23
+  },
+  {
+   "name": "elite_east_row_north",
+   "mobId": 1010,
+   "mob": "Sepulcher Elite",
+   "maxAlive": 1,
+   "respawnTicks": 1200,
+   "x0": 33,
+   "y0": 16,
+   "x1": 37,
+   "y1": 19
+  },
+  {
+   "name": "elite_apse_l",
+   "mobId": 1010,
+   "mob": "Sepulcher Elite",
+   "maxAlive": 1,
+   "respawnTicks": 1200,
+   "x0": 16,
+   "y0": 4,
+   "x1": 20,
+   "y1": 7
+  },
+  {
+   "name": "elite_apse_r",
+   "mobId": 1010,
+   "mob": "Sepulcher Elite",
+   "maxAlive": 1,
+   "respawnTicks": 1200,
+   "x0": 25,
+   "y0": 4,
+   "x1": 29,
+   "y1": 7
+  },
+  {
+   "name": "causeway_bend",
+   "mobId": 1007,
+   "mob": "Gravecaller",
+   "maxAlive": 2,
+   "respawnTicks": 1000,
+   "x0": 8,
+   "y0": 8,
+   "x1": 12,
+   "y1": 11
+  },
+  {
+   "name": "apse_sexton",
+   "mobId": 1008,
+   "mob": "Revenant Sexton",
+   "maxAlive": 1,
+   "respawnTicks": 1400,
+   "x0": 21,
+   "y0": 5,
+   "x1": 24,
+   "y1": 8
+  },
+  {
+   "name": "gravemother_font",
+   "mobId": 1009,
+   "mob": "Gravemother",
+   "maxAlive": 1,
+   "respawnTicks": 4000,
+   "x0": 21,
+   "y0": 2,
+   "x1": 25,
+   "y1": 5
+  }
+ ],
+ "portals": [
+  {
+   "name": "depths_stairs_up",
+   "targetMapId": 3,
+   "targetX": 44,
+   "targetY": 6,
+   "x0": 2,
+   "y0": 30,
+   "x1": 3,
+   "y1": 32
+  }
+ ],
+ "furniture_runtime": [],
+ "scatter_bands_tiles": {
+  "0_inside_spawner (least scatter)": 121,
+  "1_within_3_tiles": 559,
+  "2_elsewhere (full scatter)": 1048
+ }
+}

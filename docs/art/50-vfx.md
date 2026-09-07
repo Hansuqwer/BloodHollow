@@ -30,7 +30,7 @@ T-ART-04 covers this).
 | 11 | Firebolt (Gc ch5) | projectile 24×12 × 2 @ 12 (ember comet, tail 5 px alternating) + impact 24×24 × 3 · ember `#c8622a` core, iron edge, red-caps "Firebolt!" callout on cast. Proven in the style tile. |
 | 12 | Blood Bolt (Gravemother) | projectile 32×16 × 2 + impact 32×32 × 3 · **arterial** `#8e101c→#d8302a` comet, matte spatter on impact (leaves decal #24); callout kind 9 `(235,40,160)` is the *engine's* current colour — flag: the bible says arterial; keep engine's magenta-red for the text, arterial for the sprite (text must differ from blood decals to read). |
 | 13 | Corpse Explosion (later) | 48×48 × 4 · rib burst outward, 6 bone chunks + matte red disc decal; violet 1-frame flash at f0 (curse licence). |
-| 14 | Blood Curse (later) | 16×16 × 4 glyph over target's head, **violet** `#8b5cf6` dithered to `#3a2a50`; persistent icon in the debuff strip. |
+| 14 | Blood Curse (later) | 16×16 × 4 glyph over target's head, **violet** `#6B4A8A` (highlight `#A884C4`) dithered to `#3a2a50`; persistent icon in the debuff strip. |
 | 15 | Bone Wall (later) | 64×48 × 3 rise + static frame · five femurs punch up from the ground, bone-white, dust puff. |
 | 16 | Wither (later) | ground decal 64×32 × 3 states · violet-black rot creeping across a tile; persistent. |
 | 17 | Mend / Mass Mend (Cul ch2/ch7) | target: 16×24 × 4 rising bone-white motes (kind 8 green text `90,230,120` — flag: text is green, motes are bone-white; both allowed, text follows engine); Mass Mend adds cast ring #10 in bone-white at 64×32 under the Cultist. |
@@ -69,6 +69,10 @@ frame [n] of [N]"` — generate the key frame only (contact/peak), draw the
 in/out frames by hand from it; AI is bad at coherent 3-frame strips and the
 frames are 8–48 px anyway.
 
-Callout font (§12, R-TEXT): 8×11 red-caps bitmap, 1 px black outline, glyph
-set A–Z ! - ' 0–9, exported as `icons/ui/callout_font.png` + `.fnt`; night
-plate 2 px `#0c0a0a` α160. Replaces raylib `DrawText` in `drawFloaters`.
+Callout font (§12, R-TEXT): red-caps bitmap, 1 px black outline, glyph set
+A–Z 0–9 ! - ' . : + / (cell 7×11 per rulebook R-TEXT; a 5×7 parity draft
+also exists — decision D4, `docs/art/PARALLEL-ROADMAP.md §5`; drafts in
+`docs/research-notes/style-tile/export/font/`, `tools/atlaspack/bhfont.py`),
+exported as `icons/ui/callout_font.png` + `.fnt`; night plate 2 px `#0c0a0a`
+α160. Replaces raylib `DrawText` in `drawFloaters` (proposed T-ART-13; no
+client bitmap-font path exists at `game.cpp:904`).

@@ -1,0 +1,136 @@
+{
+ "map": "fields_overflow",
+ "mapId": 2,
+ "size": [
+  64,
+  48
+ ],
+ "zone_dir": "fields",
+ "terrain_ids": {
+  "0": "GRASS",
+  "2": "WALL",
+  "5": "PATH",
+  "6": "MUD",
+  "7": "DARKGRASS"
+ },
+ "terrain_pct": {
+  "GRASS": 71.0,
+  "WALL": 13.3,
+  "DARKGRASS": 6.9,
+  "MUD": 5.4,
+  "PATH": 3.5
+ },
+ "adjacency_pairs": [
+  {
+   "a": "GRASS",
+   "b": "WALL",
+   "boundary_len": 614
+  },
+  {
+   "a": "GRASS",
+   "b": "PATH",
+   "boundary_len": 116
+  },
+  {
+   "a": "GRASS",
+   "b": "DARKGRASS",
+   "boundary_len": 80
+  },
+  {
+   "a": "GRASS",
+   "b": "MUD",
+   "boundary_len": 52
+  },
+  {
+   "a": "WALL",
+   "b": "PATH",
+   "boundary_len": 38
+  },
+  {
+   "a": "PATH",
+   "b": "DARKGRASS",
+   "boundary_len": 4
+  }
+ ],
+ "zones": [
+  2
+ ],
+ "spawn_point": [
+  31,
+  15
+ ],
+ "spawners": [
+  {
+   "name": "bats_ruin",
+   "mobId": 1004,
+   "mob": "Plague Bat",
+   "maxAlive": 9,
+   "respawnTicks": 360,
+   "x0": 6,
+   "y0": 28,
+   "x1": 16,
+   "y1": 37
+  },
+  {
+   "name": "gnoll_camp_north",
+   "mobId": 1005,
+   "mob": "Bonepicker Gnoll",
+   "maxAlive": 7,
+   "respawnTicks": 650,
+   "x0": 49,
+   "y0": 7,
+   "x1": 58,
+   "y1": 12
+  },
+  {
+   "name": "widows_stone_circle",
+   "mobId": 1006,
+   "mob": "Charnel Widow",
+   "maxAlive": 6,
+   "respawnTicks": 800,
+   "x0": 46,
+   "y0": 22,
+   "x1": 58,
+   "y1": 28
+  },
+  {
+   "name": "gravecaller_hedge",
+   "mobId": 1007,
+   "mob": "Gravecaller",
+   "maxAlive": 3,
+   "respawnTicks": 1000,
+   "x0": 22,
+   "y0": 30,
+   "x1": 30,
+   "y1": 35
+  }
+ ],
+ "portals": [
+  {
+   "name": "west_gate_back",
+   "targetMapId": 1,
+   "targetX": 61,
+   "targetY": 14,
+   "x0": 0,
+   "y0": 14,
+   "x1": 1,
+   "y1": 16
+  },
+  {
+   "name": "mine_mouth_in",
+   "targetMapId": 4,
+   "targetX": 4,
+   "targetY": 31,
+   "x0": 63,
+   "y0": 20,
+   "x1": 64,
+   "y1": 22
+  }
+ ],
+ "furniture_runtime": [],
+ "scatter_bands_tiles": {
+  "0_inside_spawner (least scatter)": 247,
+  "1_within_3_tiles": 528,
+  "2_elsewhere (full scatter)": 2297
+ }
+}

@@ -1,0 +1,149 @@
+{
+ "map": "bonehowl_mine",
+ "mapId": 4,
+ "size": [
+  56,
+  40
+ ],
+ "zone_dir": "mine",
+ "terrain_ids": {
+  "1": "DIRT",
+  "2": "WALL",
+  "4": "WOOD",
+  "6": "MUD",
+  "7": "DARKGRASS"
+ },
+ "terrain_pct": {
+  "WALL": 74.0,
+  "DIRT": 23.7,
+  "MUD": 1.1,
+  "DARKGRASS": 1.1,
+  "WOOD": 0.1
+ },
+ "adjacency_pairs": [
+  {
+   "a": "DIRT",
+   "b": "WALL",
+   "boundary_len": 210
+  },
+  {
+   "a": "DIRT",
+   "b": "MUD",
+   "boundary_len": 20
+  },
+  {
+   "a": "DIRT",
+   "b": "DARKGRASS",
+   "boundary_len": 20
+  },
+  {
+   "a": "DIRT",
+   "b": "WOOD",
+   "boundary_len": 6
+  }
+ ],
+ "zones": [
+  4
+ ],
+ "spawn_point": [
+  28,
+  13
+ ],
+ "spawners": [
+  {
+   "name": "bats_mouth",
+   "mobId": 1004,
+   "mob": "Plague Bat",
+   "maxAlive": 10,
+   "respawnTicks": 300,
+   "x0": 3,
+   "y0": 30,
+   "x1": 8,
+   "y1": 35
+  },
+  {
+   "name": "hounds_drift_west",
+   "mobId": 1003,
+   "mob": "Hollow Hound",
+   "maxAlive": 8,
+   "respawnTicks": 420,
+   "x0": 10,
+   "y0": 24,
+   "x1": 18,
+   "y1": 28
+  },
+  {
+   "name": "hounds_drift_east",
+   "mobId": 1003,
+   "mob": "Hollow Hound",
+   "maxAlive": 8,
+   "respawnTicks": 420,
+   "x0": 36,
+   "y0": 24,
+   "x1": 44,
+   "y1": 28
+  },
+  {
+   "name": "gnolls_gallery2",
+   "mobId": 1005,
+   "mob": "Bonepicker Gnoll",
+   "maxAlive": 9,
+   "respawnTicks": 600,
+   "x0": 23,
+   "y0": 10,
+   "x1": 30,
+   "y1": 15
+  },
+  {
+   "name": "gnolls_gallery3",
+   "mobId": 1005,
+   "mob": "Bonepicker Gnoll",
+   "maxAlive": 9,
+   "respawnTicks": 600,
+   "x0": 42,
+   "y0": 14,
+   "x1": 49,
+   "y1": 19
+  },
+  {
+   "name": "widow_vein",
+   "mobId": 1006,
+   "mob": "Charnel Widow",
+   "maxAlive": 4,
+   "respawnTicks": 800,
+   "x0": 44,
+   "y0": 14,
+   "x1": 49,
+   "y1": 18
+  },
+  {
+   "name": "hounds_ore_spur",
+   "mobId": 1003,
+   "mob": "Hollow Hound",
+   "maxAlive": 6,
+   "respawnTicks": 420,
+   "x0": 41,
+   "y0": 33,
+   "x1": 47,
+   "y1": 36
+  }
+ ],
+ "portals": [
+  {
+   "name": "mine_mouth_out",
+   "targetMapId": 2,
+   "targetX": 62,
+   "targetY": 20,
+   "x0": 2,
+   "y0": 31,
+   "x1": 3,
+   "y1": 34
+  }
+ ],
+ "furniture_runtime": [],
+ "scatter_bands_tiles": {
+  "0_inside_spawner (least scatter)": 177,
+  "1_within_3_tiles": 585,
+  "2_elsewhere (full scatter)": 1478
+ }
+}

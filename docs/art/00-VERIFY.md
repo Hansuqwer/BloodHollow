@@ -29,7 +29,7 @@ must not assume it.
 | 19 | Maps: town, fields, mine, crypt (+castle) | 5 maps: thornwall(1), fields_overflow(2), thornwall_crypt(3), bonehowl_mine(4), drowned_crypt(5); client `mapFileFor` knows only 1–3 | **Amended**: client needs cases 4/5 (T-ART-08, trivial) |
 | 20 | Terrain type ids | std maps: 0 GRASS,1 DIRT,2 WALL(prism),3 WATER,4 WOOD,5 PATH,6 MUD,7 DARKGRASS; thornwall_crypt: 0 STONE,1 FLOOR,2 WALL,3 SLAB,4 BONEPIT,5 CANDLE | **Verified**; tileset families map 1:1 onto these ids (see 10-terrain.md) |
 | 21 | Blood decal 10 min, corpse stages | client has 0.6 s vestige only | **Missing** decal system (T-ART-09); decals designed |
-| 22 | Boss cell 48×64 / 64×64 | `loadAtlas` accepts any frameW/H per anim; draw origin is hard-coded `{w/2, 42}` | **Amended**: feet anchor for taller cells must come from JSON (`anchorY`) — add optional key, default 42 (T-ART-10) |
+| 22 | Boss cell 64×64; elite cell **40×60** (`docs/art/20-mobs.md`, true 1.25×) vs **48×64** (T-ART-10 card text) — open decision D5 in `PARALLEL-ROADMAP.md` | `loadAtlas` accepts any frameW/H per anim; draw origin is hard-coded `{w/2, 42}` | **Amended**: feet anchor for taller cells must come from JSON (`anchorY`) — add optional key, default 42 (T-ART-10); elite anchorY = 52 (40×60) or 56 (48×64) |
 | 23 | `assets/final/` untouched | nothing written there | **Verified** |
 | 24 | "item glows from +5" | T-060 refine exists; no glow render | **Missing** render (T-ART-11); glow overlays designed |
 | 25 | Base res 1024×768 | `InitWindow(1024,768)`, `rig_.init(1024,768)` | **Verified** |

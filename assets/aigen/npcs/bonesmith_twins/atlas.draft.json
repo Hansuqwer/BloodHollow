@@ -1,0 +1,27 @@
+{
+ "anims": {
+  "idle": {
+   "frameW": 64,
+   "frameH": 48,
+   "frames": 4,
+   "dirs": 8,
+   "fps": 4,
+   "offsetX": 0,
+   "offsetY": 0,
+   "anchorY": 42
+  }
+ },
+ "_draft": {
+  "status": "UNVALIDATED in engine (loader-rule replica only)",
+  "cell": [
+   64,
+   48
+  ],
+  "anchorY_note": "anchorY is written per anim; engine/assets/atlas.cpp ignores unknown keys until T-ART-10",
+  "sheet_px": [
+   256,
+   384
+  ],
+  "loader_rule_replica": "clean"
+ }
+}

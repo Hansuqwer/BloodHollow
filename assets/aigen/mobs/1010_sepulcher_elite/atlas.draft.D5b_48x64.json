@@ -1,0 +1,58 @@
+{
+ "anims": {
+  "walk": {
+   "frameW": 48,
+   "frameH": 64,
+   "frames": 4,
+   "dirs": 8,
+   "fps": 10,
+   "offsetX": 0,
+   "offsetY": 0,
+   "anchorY": 56
+  },
+  "attack": {
+   "frameW": 48,
+   "frameH": 64,
+   "frames": 3,
+   "dirs": 8,
+   "fps": 12,
+   "offsetX": 192,
+   "offsetY": 0,
+   "anchorY": 56
+  },
+  "hurt": {
+   "frameW": 48,
+   "frameH": 64,
+   "frames": 2,
+   "dirs": 8,
+   "fps": 12,
+   "offsetX": 336,
+   "offsetY": 0,
+   "anchorY": 56
+  },
+  "die": {
+   "frameW": 48,
+   "frameH": 64,
+   "frames": 3,
+   "dirs": 8,
+   "fps": 8,
+   "offsetX": 432,
+   "offsetY": 0,
+   "anchorY": 56
+  }
+ },
+ "_draft": {
+  "status": "UNVALIDATED in engine (loader-rule replica only)",
+  "cell": [
+   48,
+   64
+  ],
+  "anchorY_note": "anchorY is written per anim; engine/assets/atlas.cpp ignores unknown keys until T-ART-10",
+  "note": "D5b: T-ART-10 card cell 48x64",
+  "sheet_px": [
+   576,
+   512
+  ],
+  "loader_rule_replica": "clean"
+ }
+}
