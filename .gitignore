@@ -6,3 +6,5 @@ out/
 .DS_Store
 assets/maps/*.bhmap
 logs/*.dump
+logs/*.bwj
+logs/diag_*

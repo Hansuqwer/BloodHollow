@@ -48,6 +48,8 @@ struct Bot {
   std::uint64_t kills = 0;
   std::int32_t hp = 100, hpMax = 100;
   int level = 1;
+  std::unordered_map<int, std::uint64_t> deathByKillerLevel{};  // diagnostic: killer mob level -> deaths
+  int lastDeathX = -1, lastDeathY = -1;
   std::uint32_t gold = 0;
   struct InvRow { std::uint32_t itemId = 0; std::uint16_t qty = 0; bool equipped = false; std::uint8_t aura = 0; };
   std::unordered_map<std::uint8_t, InvRow> inv{};  // slot -> row
@@ -253,7 +255,15 @@ int run(int argc, char** argv) {
               bh::proto::CombatEvent m;
               if (m.deserialize(pv.body) && m.kind == 3) {
                 if (m.attackerId == b.ownId) ++b.kills;
-                if (m.targetId == b.ownId) ++b.deaths;  // T-040: authoritative source
+                if (m.targetId == b.ownId) {  // T-040: authoritative source
+                  ++b.deaths;
+                  int kl = 0;
+                  const auto ki = b.ents.find(m.attackerId);
+                  if (ki != b.ents.end()) kl = ki->second.level;
+                  ++b.deathByKillerLevel[kl];
+                  b.lastDeathX = b.tileX;
+                  b.lastDeathY = b.tileY;
+                }
               }
             } else if (pv.id == bh::proto::kIdOwnStats) {
               bh::proto::OwnStats m;
@@ -927,7 +937,7 @@ int run(int argc, char** argv) {
               mendHurtCnt, chorusCasts, massCasts, hasteCasts);
 
   for (Bot& b : bots) {  // T-055 probe: per-bot kit/roster truth
-    std::printf("[bots] %-12s kit=%d lvl=%d hp=%d/%d party=%zu deaths=%llu rxR=%llu rxM=%llu lastPid=%u casts c6=%llu c7=%llu c8=%llu\n",
+    std::printf("[bots] %-12s kit=%d lvl=%d hp=%d/%d party=%zu deaths=%llu rxR=%llu rxM=%llu lastPid=%u casts c6=%llu c7=%llu c8=%llu lastDeath=(%d,%d) killerByLvl=",
                 b.name.c_str(), b.kitClass, b.level, static_cast<int>(b.hp),
                 static_cast<int>(b.hpMax), b.party.size(),
                 static_cast<unsigned long long>(b.deaths),
@@ -935,7 +945,17 @@ int run(int argc, char** argv) {
                 static_cast<unsigned long long>(b.rcvMember), b.lastResetPid,
                 static_cast<unsigned long long>(b.chorusCasts),
                 static_cast<unsigned long long>(b.massCasts),
-                static_cast<unsigned long long>(b.hasteCasts));
+                static_cast<unsigned long long>(b.hasteCasts),
+                b.lastDeathX, b.lastDeathY);
+    {
+      bool first = true;
+      for (const auto& kv : b.deathByKillerLevel) {
+        std::printf("%sL%d:%llu", first ? "" : " ", kv.first,
+                    static_cast<unsigned long long>(kv.second));
+        first = false;
+      }
+    }
+    std::printf("\n");
     if (b.peer != nullptr) enet_peer_disconnect_now(b.peer, 0);
   }
   enet_host_destroy(chost);
