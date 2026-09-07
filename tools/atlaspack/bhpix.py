@@ -321,3 +321,171 @@ def greyscale(img: Image.Image) -> Image.Image:
 
 def upscale(img: Image.Image, k: int) -> Image.Image:
     return img.resize((img.width * k, img.height * k), Image.NEAREST)
+
+
+# --------------------------------------------------------------------------
+# B0.5 additions (docs/art/PARALLEL-ROADMAP.md A12/A13/A16)
+# --------------------------------------------------------------------------
+def luma_mean(img: Image.Image, *, body_only: bool = True, exclude_outline: bool = True) -> float:
+    """Mean Rec.601 luma of opaque pixels. body_only excludes the alpha-70
+    contact shadow; exclude_outline drops the #1a1214 contour so R-LUMA measures
+    the *body* (the rulebook's definition), not the dark rim."""
+    a = np.asarray(img.convert("RGBA")).astype(np.float32)
+    m = a[..., 3] == 255 if body_only else a[..., 3] > 0
+    if exclude_outline:
+        m &= ~((a[..., 0] == OUTLINE_RGB[0]) & (a[..., 1] == OUTLINE_RGB[1]) & (a[..., 2] == OUTLINE_RGB[2]))
+    if not m.any():
+        return 0.0
+    px = a[m]
+    return float((px[:, 0] * 0.299 + px[:, 1] * 0.587 + px[:, 2] * 0.114).mean())
+
+
+def rim_light(cell: Image.Image, rgb=(0xC9, 0xBF, 0xAE), *, side: str = "NW", strength: int = 1) -> Image.Image:
+    """R-LUMA fix step 3: a 1px bone rim on the lit edge. Replaces the body
+    pixel just *inside* the outline on the lit side (never widens the sprite,
+    never touches the outline itself). side = compass of the key light."""
+    a = np.asarray(cell.convert("RGBA")).copy()
+    h, w = a.shape[:2]
+    outline = (a[..., 3] == 255) & (a[..., 0] == OUTLINE_RGB[0]) & (a[..., 1] == OUTLINE_RGB[1]) & (a[..., 2] == OUTLINE_RGB[2])
+    body = (a[..., 3] == 255) & ~outline
+    dx = {"W": 1, "NW": 1, "N": 0, "NE": -1, "E": -1, "SW": 1, "S": 0, "SE": -1}[side]
+    dy = {"W": 0, "NW": 1, "N": 1, "NE": 1, "E": 0, "SW": -1, "S": -1, "SE": -1}[side]
+    lit = np.zeros_like(body)
+    # a body pixel is 'lit' if stepping toward the light lands on outline
+    for k in range(1, strength + 1):
+        src_y = np.clip(np.arange(h)[:, None] - dy * k, 0, h - 1)
+        src_x = np.clip(np.arange(w)[None, :] - dx * k, 0, w - 1)
+        lit |= body & outline[src_y, src_x]
+    a[lit, :3] = rgb
+    return Image.fromarray(a, "RGBA")
+
+
+def diamond_mask(w: int = 64, h: int = 32) -> Image.Image:
+    """Seamless 2:1 diamond: pixel-centre test |dx|/(w/2) + |dy|/(h/2) < 1 with
+    a half-open rule so diamonds laid at (±w/2, ±h/2) offsets cover the plane
+    exactly once (like iso::drawDiamond's two triangles; PIL's polygon() left
+    dotted seams)."""
+    ys, xs = np.mgrid[0:h, 0:w]
+    px = xs + 0.5 - w / 2.0
+    py = ys + 0.5 - h / 2.0
+    d = np.abs(px) / (w / 2.0) + np.abs(py) / (h / 2.0)
+    inside = d < 1.0
+    # half-open tie-break on the exact boundary: keep the pixel for the diamond
+    # whose centre is up-left of it (so each boundary pixel belongs to one tile)
+    tie = np.isclose(d, 1.0) & ((px < 0) | ((px == 0) & (py < 0)))
+    return Image.fromarray(((inside | tie) * 255).astype(np.uint8), "L")
+
+
+def cut_diamond(plate: Image.Image, x: int, y: int, *, w: int = 64, h: int = 32) -> Image.Image:
+    """Paint-then-cut (Soma/Mir): cut the diamond at its own screen position so
+    neighbours are continuous by construction. Plate coords wrap."""
+    pw, ph = plate.size
+    x %= max(1, pw); y %= max(1, ph)
+    if x + w <= pw and y + h <= ph:
+        t = plate.crop((x, y, x + w, y + h)).copy()
+    else:  # wrap by tiling 2x2
+        big = Image.new("RGBA", (pw * 2, ph * 2))
+        for i in range(2):
+            for j in range(2):
+                big.paste(plate.convert("RGBA"), (i * pw, j * ph))
+        t = big.crop((x, y, x + w, y + h)).copy()
+    t = t.convert("RGBA")
+    t.putalpha(diamond_mask(w, h))
+    return t
+
+
+# --- A12 edge/transition masks -------------------------------------------------
+# Tile-space adjacency → screen side, from engine/render/iso.cpp tileToWorld
+# (x = (tx-ty)*w/2, y = (tx+ty)*h/2): +tx moves screen SE, +ty moves screen SW.
+EDGE_FACES = {"NE": (0, -1), "SE": (1, 0), "SW": (0, 1), "NW": (-1, 0)}      # share a face
+EDGE_POINTS = {"N": (-1, -1), "E": (1, -1), "S": (1, 1), "W": (-1, 1)}      # touch at a point
+_POINT_FACES = {"N": ("NE", "NW"), "E": ("NE", "SE"), "S": ("SE", "SW"), "W": ("SW", "NW")}
+
+
+def _face_depth(u: np.ndarray, v: np.ndarray, face: str) -> np.ndarray:
+    """Signed depth measured inward from one diamond face, in diamond units
+    (0 on the face, 2 at the opposite face). u,v = pixel centre / half-size."""
+    return {"NE": 1.0 - (u - v), "SE": 1.0 - (u + v),
+            "SW": 1.0 - (-u + v), "NW": 1.0 - (-u - v)}[face]
+
+
+def edge_masks(w: int = 64, h: int = 32, *, depth: float = 0.6, cap: float = 0.5,
+               feather: int = 2, seed: int = 1999) -> dict[str, Image.Image]:
+    """A12: the 8 transition masks per adjacency pair as 'L' images — 255 =
+    material B over material A, 128 = 50 % checker band, 0 = A.
+
+    * edge_<face>  — B is the tile across that face: a band parallel to the
+      face, `depth` (diamond units, 0.6 ≈ 10 px tall at 64×32) deep, boundary
+      jittered ±1 px per scanline (fixed seed). The face row itself is always
+      B, so the piece butts seamlessly against the full-B neighbour.
+    * corner_<pt>  — B only touches at that point (diagonal neighbour): a
+      mini-diamond cap = intersection of the two adjoining face bands at
+      depth `cap`; its inner edges stay parallel to the tile's own faces.
+    Any 8-neighbour configuration is a union of these (see edge_mask_for)."""
+    rng = np.random.default_rng(seed)
+    ys, xs = np.mgrid[0:h, 0:w]
+    u = (xs + 0.5 - w / 2.0) / (w / 2.0)
+    v = (ys + 0.5 - h / 2.0) / (h / 2.0)
+    dm = np.asarray(diamond_mask(w, h)) > 0
+    px_v = 2.0 / h                      # one vertical pixel in diamond units
+    band = feather * px_v               # width of the checker band
+    # per-scanline jitter: ±1 horizontal px (= px_v/2 in depth units) + slow wobble
+    jit = (rng.integers(-1, 2, size=h) * (px_v / 2.0)
+           + 0.5 * px_v * np.sin(np.arange(h) / 2.7 + rng.uniform(0, 6.28))).astype(np.float32)
+    jit2d = jit[:, None]
+
+    def three_step(s: np.ndarray, thr: float) -> np.ndarray:
+        m = np.zeros((h, w), np.uint8)
+        m[s <= thr + jit2d + band] = 128
+        m[s <= thr + jit2d] = 255
+        m[~dm] = 0
+        return m
+
+    out: dict[str, Image.Image] = {}
+    for face in EDGE_FACES:
+        out[f"edge_{face}"] = Image.fromarray(three_step(_face_depth(u, v, face), depth), "L")
+    for pt, (fa, fb) in _POINT_FACES.items():
+        s = np.maximum(_face_depth(u, v, fa), _face_depth(u, v, fb))   # inside both bands
+        out[f"corner_{pt}"] = Image.fromarray(three_step(s, cap), "L")
+    return out
+
+
+def edge_mask_for(b_neighbours: set[str] | list[str], masks: dict[str, Image.Image] | None = None,
+                  **kw) -> Image.Image:
+    """Mask for an A tile whose B neighbours are the given sides ("NE","SE",
+    "SW","NW" faces; "N","E","S","W" points). Points are only added when
+    neither adjoining face is B (the face band already covers the vertex).
+    Returns the pixel-wise max of the selected base masks (empty set → all 0)."""
+    masks = masks or edge_masks(**kw)
+    nb = set(b_neighbours)
+    sel = [masks[f"edge_{f}"] for f in EDGE_FACES if f in nb]
+    for pt, (fa, fb) in _POINT_FACES.items():
+        if pt in nb and fa not in nb and fb not in nb:
+            sel.append(masks[f"corner_{pt}"])
+    w, h = next(iter(masks.values())).size
+    acc = np.zeros((h, w), np.uint8)
+    for m in sel:
+        acc = np.maximum(acc, np.asarray(m))
+    return Image.fromarray(acc, "L")
+
+
+def blend_edge(tile_a: Image.Image, tile_b: Image.Image, mask: Image.Image, *, palette: np.ndarray | None = None) -> Image.Image:
+    """Compose an edge tile from two cut diamonds + an edge mask; the 128 band
+    is resolved by an exact 50 % checkerboard (era-correct), other grey levels
+    by Bayer-2 ordered dither, then optionally quantised to the *union* family
+    palette. Alpha = max(a, b) so the diamond stays fully opaque."""
+    a = np.asarray(tile_a.convert("RGBA")).astype(np.float32)
+    b = np.asarray(tile_b.convert("RGBA")).astype(np.float32)
+    m = np.asarray(mask).astype(np.float32) / 255.0
+    h, w = m.shape
+    # thresholds {0.125, 0.625, 0.875, 0.375}: m=0.5 → exactly 2 of 4 cells
+    bay = np.tile(_BAYER2 + 0.5 + 0.125, (h // 2 + 1, w // 2 + 1))[:h, :w]
+    use_b = (m >= 1.0) | ((m > 0.0) & (bay < m))
+    out = np.where(use_b[..., None], b, a)
+    out[..., 3] = np.maximum(a[..., 3], b[..., 3])
+    im = Image.fromarray(out.astype(np.uint8), "RGBA")
+    if palette is not None:
+        im = quantize(im, palette, dither="none")
+        im.putalpha(Image.fromarray(out[..., 3].astype(np.uint8), "L"))
+    return im
+

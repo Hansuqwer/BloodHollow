@@ -25,7 +25,7 @@ OUT = ROOT / "docs/research-notes/style-tile"
 TW, TH = 64, 32  # engine tile
 
 # ---- reserved accent ramp (bible §4.2) — only ever on magic/curse pixels
-VIOLET_CURSE = (0x8B, 0x5C, 0xF6)
+VIOLET_CURSE = (0x6B, 0x4A, 0x8A)  # era-violet (44ad327); highlight #A884C4
 ARTERIAL = (0x8E, 0x10, 0x1C)
 CHOIR_GOLD = (0xD9, 0xB0, 0x4A)
 CALLOUT_RED = (0xFF, 0x3C, 0x28)  # T-066 kind-5 red-caps (255,60,40)
