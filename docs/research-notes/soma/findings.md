@@ -20,8 +20,9 @@ line: the mechanic survived, the visual was amputated because it was unreadable.
 **Painterly, pre-rendered ground.** The 640×480 swamp capture: ground is a
 continuous painted plate (no visible diamond grid), mid-frequency detail
 (root ridges, mud sheen, leaf litter) with **no hard outlines**, colour range
-olive-brown → cold blue-black water, luma floor ≈ 35, ceiling ≈ 140 on rocks.
-Sprites over it are ~55–60 px tall with dark contours — R-LUMA Δ≈50. The
+olive-brown → cold blue-black water, cell-median 55, p90 87 (Δ 32; `qa/luma-audit.json` `soma_web_3`) — the
+first-draft "floor ≈ 35, ceiling ≈ 140, Δ≈50" was overstated and is struck.
+Sprites over it are ~55–60 px tall with dark contours. The
 painterly surface *is* low contrast; the sprites carry the contrast. This is
 the split lock justified from a single frame.
 

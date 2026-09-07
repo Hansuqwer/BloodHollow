@@ -15,7 +15,7 @@ Native files: `style_tile_256_day.png`, `_night.png`, `_grey.png`.
 | Bible lock | Element in tile | How it was made |
 |---|---|---|
 | Terrain = Soma painterly | Fields of the Overflow mud/furrow ground; 2-tile dead willow with root cluster | 4× painterly plate → box-reduce + blur → contrast 0.70 + floor lift → 32-colour quantize, Bayer-2 dither → diamonds **cut from one plate** at screen position (`cut_diamond`) |
-| Characters = Helbreath | Ravager (46 px body, oversized cleaver, chain belt, sallow skin) · Marsh Rat ×2 (20 px, low teardrop) | 4× plate → chroma key → nearest downscale → gamma-lift palette → 32-colour quantize, Bayer-2 → 1 px `#1a1214` outline → 32×48 cell, feet y=42, alpha-70 contact ellipse (placeholder.cpp geometry) |
+| Characters = Helbreath | Ravager (43 px body — requested 46, clipped by the cell top; see `docs/art/60-paperdoll-layers.md` — oversized cleaver, chain belt, sallow skin) · Marsh Rat ×2 (20 px, low teardrop) | 4× plate → chroma key → nearest downscale → gamma-lift palette → 32-colour quantize, Bayer-2 → 1 px `#1a1214` outline → 32×48 cell, feet y=42, alpha-70 contact ellipse (placeholder.cpp geometry) |
 | Combat storytelling = HB | "FIREBOLT!" red-caps callout (T-066 kind-5 colour `255,60,40`), name tags in the neutral band tint `190,190,200`, T-066 white hit-flash frame on the struck rat | hand-drawn in `make_style_tile.py` |
 | Grade = L1 + DE accents | whole scene ≤ 30 % saturation; only saturated pixels = callout + Firebolt ember/arterial + blood decal | palette audit below |
 | Gore language | matte `#3A080C` decal under the far rat | §4.4 |
@@ -31,6 +31,8 @@ Native files: `style_tile_256_day.png`, `_night.png`, `_grey.png`.
 | Night alpha at 02:00 | 145/255 = 57 % | ≤ ~65 % | pass |
 | Cells | 32×48 both; tree 138×112 | §5 | pass |
 | Dither visible | yes (Bayer-2 on flesh, bark, mud) | era feature | pass |
+| Plate min luma | **22.1** (`bh_qa_sheet --kind plate`) | ≥ 24 (above outline `#1a1214`) | **fail by 2** — the darkest mud pixels sit below the sprite outline; fix at B1 by clamping the plate floor to 24 in `make_ground_tiles` (does not need a new plate) |
+| R-LUMA, rulebook definition (body excl. outline) | ravager **+42.7** · rat **+50.0** (`qa/cell_*_audit.json`) | ≥ 25 | pass — the 23.7 above included the outline ring |
 | Accent hue on terrain/gear | none | reject if present | pass |
 
 ## Notes for the director (decisions requested)
@@ -40,7 +42,7 @@ Native files: `style_tile_256_day.png`, `_night.png`, `_grey.png`.
    1 px bone rim on the lit shoulder edge (R-LUMA fix step 3). I recommend (b)
    for the B6 base bodies and leave the tile as-is so you can see the un-rimmed
    read.
-2. **Zoom.** 46 px body on a 32 px tile-height = 1.45 tile-heights (HB ≈ 1.7,
+2. **Zoom.** 43 px body (measured) on a 32 px tile-height = 1.34 tile-heights (HB ≈ 1.7,
    Soma ≈ 2.4). If this reads "too small", the only non-sim-breaking lever is
    a 32×56 player cell (body 52 px) — `loadAtlas` takes any frameH; the feet
    anchor stays 42→50. Say the word and B6 uses 32×56.
@@ -48,8 +50,12 @@ Native files: `style_tile_256_day.png`, `_night.png`, `_grey.png`.
    ≈ 95). It is dark because Vessalia is; the L1 grade is achieved by keeping
    sprites at ≈ 75+ and nothing pitch-black. If you want the L1 floor brighter,
    change `lift floor` in `make_ground_tiles` (currently `*0.95 + 14`).
-4. **Callout font.** The tile uses Pillow's default bitmap font as a stand-in;
-   the real deliverable (B8) is an 8×11 red-caps bitmap font with black outline.
+4. **Callout font.** The tile uses Pillow's default bitmap font as a stand-in.
+   Two hand-authored drafts now exist for the decision (D4): 5×7 (parity with
+   the client's raylib default @ size 10 ⟨UNVERIFIED cap height⟩) and 7×11
+   (rulebook R-TEXT) — `export/font/font_specimen_3x.png`; regenerate with
+   `python3 tools/atlaspack/bhfont.py`. Neither is wired into the client
+   (`game.cpp:904` still `DrawText`; proposed T-ART-13).
 
 ## Reproduce
 

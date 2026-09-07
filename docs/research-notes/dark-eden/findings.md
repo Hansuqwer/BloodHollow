@@ -18,7 +18,8 @@ Vampire note: the base body must permit a *second spine* (hunched idle,
 forward-hanging arms); don't bake an upright idle into shared bones.
 
 **Red / black / arterial palette.** The Dracula Castle interior (frames
-t0034–t0104) is near-black stone with **red carpet runners and red-lit
+t0034–t0104; measured cell-median 11–15, 74–78 % of pixels under luma 30,
+mean saturation 8–11/255 — `qa/luma-audit.json`) is near-black stone with **red carpet runners and red-lit
 windows** as the only saturated surfaces; blood pools and the "Cause Critical
 Wounds"-class spells are the same arterial red pushed brighter. Everything else
 (walls, floors, skin) sits under ~25 % saturation. Lesson we adopt: *one*

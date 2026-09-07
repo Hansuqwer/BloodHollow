@@ -1,0 +1,246 @@
+{
+ "provisional": true,
+ "material_a": "docs/research-notes/style-tile/plate_fields_mud_b0.png",
+ "material_b": "flat terrainColor(0) GRASS (64,84,46) \u2014 client placeholder",
+ "masks": {
+  "edge_NE": {
+   "b_frac": 0.305,
+   "band_frac": 0.062,
+   "face_px": 31,
+   "face_all_B": true
+  },
+  "edge_SE": {
+   "b_frac": 0.305,
+   "band_frac": 0.063,
+   "face_px": 31,
+   "face_all_B": true
+  },
+  "edge_SW": {
+   "b_frac": 0.305,
+   "band_frac": 0.063,
+   "face_px": 31,
+   "face_all_B": true
+  },
+  "edge_NW": {
+   "b_frac": 0.305,
+   "band_frac": 0.062,
+   "face_px": 31,
+   "face_all_B": true
+  },
+  "corner_N": {
+   "b_frac": 0.07,
+   "band_frac": 0.039
+  },
+  "corner_E": {
+   "b_frac": 0.061,
+   "band_frac": 0.034
+  },
+  "corner_S": {
+   "b_frac": 0.07,
+   "band_frac": 0.039
+  },
+  "corner_W": {
+   "b_frac": 0.061,
+   "band_frac": 0.034
+  }
+ },
+ "autotile_patch": {
+  "b_tiles": [
+   [
+    2,
+    1
+   ],
+   [
+    2,
+    2
+   ],
+   [
+    3,
+    1
+   ],
+   [
+    3,
+    2
+   ],
+   [
+    5,
+    3
+   ]
+  ],
+  "edge_tiles": [
+   {
+    "tile": [
+     1,
+     0
+    ],
+    "b_sides": [
+     "S"
+    ]
+   },
+   {
+    "tile": [
+     2,
+     0
+    ],
+    "b_sides": [
+     "S",
+     "SW"
+    ]
+   },
+   {
+    "tile": [
+     3,
+     0
+    ],
+    "b_sides": [
+     "SW",
+     "W"
+    ]
+   },
+   {
+    "tile": [
+     4,
+     0
+    ],
+    "b_sides": [
+     "W"
+    ]
+   },
+   {
+    "tile": [
+     1,
+     1
+    ],
+    "b_sides": [
+     "S",
+     "SE"
+    ]
+   },
+   {
+    "tile": [
+     4,
+     1
+    ],
+    "b_sides": [
+     "NW",
+     "W"
+    ]
+   },
+   {
+    "tile": [
+     1,
+     2
+    ],
+    "b_sides": [
+     "E",
+     "SE"
+    ]
+   },
+   {
+    "tile": [
+     4,
+     2
+    ],
+    "b_sides": [
+     "N",
+     "NW",
+     "S"
+    ]
+   },
+   {
+    "tile": [
+     5,
+     2
+    ],
+    "b_sides": [
+     "SW"
+    ]
+   },
+   {
+    "tile": [
+     6,
+     2
+    ],
+    "b_sides": [
+     "W"
+    ]
+   },
+   {
+    "tile": [
+     1,
+     3
+    ],
+    "b_sides": [
+     "E"
+    ]
+   },
+   {
+    "tile": [
+     2,
+     3
+    ],
+    "b_sides": [
+     "E",
+     "NE"
+    ]
+   },
+   {
+    "tile": [
+     3,
+     3
+    ],
+    "b_sides": [
+     "N",
+     "NE"
+    ]
+   },
+   {
+    "tile": [
+     4,
+     3
+    ],
+    "b_sides": [
+     "N",
+     "SE"
+    ]
+   },
+   {
+    "tile": [
+     6,
+     3
+    ],
+    "b_sides": [
+     "NW"
+    ]
+   },
+   {
+    "tile": [
+     4,
+     4
+    ],
+    "b_sides": [
+     "E"
+    ]
+   },
+   {
+    "tile": [
+     5,
+     4
+    ],
+    "b_sides": [
+     "NE"
+    ]
+   },
+   {
+    "tile": [
+     6,
+     4
+    ],
+    "b_sides": [
+     "N"
+    ]
+   }
+  ]
+ },
+ "lattice_coverage_exact": true
+}

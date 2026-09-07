@@ -32,8 +32,10 @@ engine-night / greyscale. **Awaiting director approval before any volume work.**
    sprite.** L1 red name, HB green party names, DE guild tag plate. The bible's
    rule (§9 "sprites do NOT change") is era-correct; `karmaBand` already ships.
 3. **Every ancestor's ground is darker and lower-contrast than its sprites.**
-   Measured on the HB koreahb thumbnail: dungeon floor mean luma ≈ 58, sprite
-   bodies ≈ 110–140. On the L1 Void capture: stone ≈ 95, characters ≈ 150+.
+   Re-audited numerically (`qa/luma-audit.json`, cell-median vs p90 proxy):
+   HB dungeon 37 → 103 (Δ 66), L1 Tower 72–82 → 109–124 (Δ 37–42), Soma swamp
+   55 → 87 (Δ 32), DE castle 11–15 → 52–81. First-draft eyeball figures were
+   20–40 luma too high on the sprite side and have been struck in the dossiers.
    This is the single most important readability lever and it is now a
    numeric gate: **R-LUMA ≥ 25** (sprite body mean − terrain mean, 0–255) in the
    rulebook. Our first style-tile pass *failed* it (Δ 10) until the terrain

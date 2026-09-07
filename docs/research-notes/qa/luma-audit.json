@@ -1,0 +1,182 @@
+{
+ "helbreath_koreahb_dungeon": {
+  "size": [
+   1280,
+   720
+  ],
+  "cell_luma_p10": 13.7,
+  "cell_luma_median(\u2248ground)": 36.7,
+  "cell_luma_p90(\u2248sprites/lights)": 102.7,
+  "p90_minus_median": 65.9,
+  "mean_saturation_0_255": 24.7,
+  "pct_pixels_luma_lt_30": 45.7
+ },
+ "helbreath_olympia_forest_t0290": {
+  "size": [
+   640,
+   360
+  ],
+  "cell_luma_p10": 23.8,
+  "cell_luma_median(\u2248ground)": 38.7,
+  "cell_luma_p90(\u2248sprites/lights)": 78.1,
+  "p90_minus_median": 39.3,
+  "mean_saturation_0_255": 17.7,
+  "pct_pixels_luma_lt_30": 31.8
+ },
+ "helbreath_olympia_forest_t0385": {
+  "size": [
+   640,
+   360
+  ],
+  "cell_luma_p10": 32.2,
+  "cell_luma_median(\u2248ground)": 54.6,
+  "cell_luma_p90(\u2248sprites/lights)": 92.1,
+  "p90_minus_median": 37.5,
+  "mean_saturation_0_255": 40.8,
+  "pct_pixels_luma_lt_30": 13.5
+ },
+ "helbreath_olympia_town_t0000": {
+  "size": [
+   640,
+   360
+  ],
+  "cell_luma_p10": 32.7,
+  "cell_luma_median(\u2248ground)": 82.9,
+  "cell_luma_p90(\u2248sprites/lights)": 116.0,
+  "p90_minus_median": 33.0,
+  "mean_saturation_0_255": 16.3,
+  "pct_pixels_luma_lt_30": 12.6
+ },
+ "helbreath_olympia_dungeon_t0095": {
+  "size": [
+   640,
+   360
+  ],
+  "cell_luma_p10": 6.2,
+  "cell_luma_median(\u2248ground)": 33.4,
+  "cell_luma_p90(\u2248sprites/lights)": 49.4,
+  "p90_minus_median": 16.0,
+  "mean_saturation_0_255": 12.6,
+  "pct_pixels_luma_lt_30": 54.2
+ },
+ "lineage1_void_tower_t0270": {
+  "size": [
+   600,
+   360
+  ],
+  "cell_luma_p10": 55.7,
+  "cell_luma_median(\u2248ground)": 72.0,
+  "cell_luma_p90(\u2248sprites/lights)": 109.3,
+  "p90_minus_median": 37.3,
+  "mean_saturation_0_255": 19.2,
+  "pct_pixels_luma_lt_30": 4.3
+ },
+ "lineage1_void_tower_t0540": {
+  "size": [
+   600,
+   360
+  ],
+  "cell_luma_p10": 56.9,
+  "cell_luma_median(\u2248ground)": 81.7,
+  "cell_luma_p90(\u2248sprites/lights)": 123.6,
+  "p90_minus_median": 41.9,
+  "mean_saturation_0_255": 24.3,
+  "pct_pixels_luma_lt_30": 2.2
+ },
+ "lineage1_void_town_t1080": {
+  "size": [
+   600,
+   360
+  ],
+  "cell_luma_p10": 8.0,
+  "cell_luma_median(\u2248ground)": 65.9,
+  "cell_luma_p90(\u2248sprites/lights)": 114.0,
+  "p90_minus_median": 48.1,
+  "mean_saturation_0_255": 15.2,
+  "pct_pixels_luma_lt_30": 28.2
+ },
+ "lineage1_remaster_t0155": {
+  "size": [
+   640,
+   360
+  ],
+  "cell_luma_p10": 20.0,
+  "cell_luma_median(\u2248ground)": 55.3,
+  "cell_luma_p90(\u2248sprites/lights)": 101.1,
+  "p90_minus_median": 45.8,
+  "mean_saturation_0_255": 20.6,
+  "pct_pixels_luma_lt_30": 28.9
+ },
+ "darkeden_castle_t0034": {
+  "size": [
+   640,
+   360
+  ],
+  "cell_luma_p10": 11.8,
+  "cell_luma_median(\u2248ground)": 14.6,
+  "cell_luma_p90(\u2248sprites/lights)": 80.8,
+  "p90_minus_median": 66.2,
+  "mean_saturation_0_255": 11.0,
+  "pct_pixels_luma_lt_30": 73.9
+ },
+ "darkeden_castle_t0104": {
+  "size": [
+   640,
+   360
+  ],
+  "cell_luma_p10": 3.6,
+  "cell_luma_median(\u2248ground)": 10.8,
+  "cell_luma_p90(\u2248sprites/lights)": 51.8,
+  "p90_minus_median": 41.1,
+  "mean_saturation_0_255": 8.1,
+  "pct_pixels_luma_lt_30": 78.2
+ },
+ "soma_web_3": {
+  "size": [
+   480,
+   360
+  ],
+  "cell_luma_p10": 16.5,
+  "cell_luma_median(\u2248ground)": 54.9,
+  "cell_luma_p90(\u2248sprites/lights)": 87.1,
+  "p90_minus_median": 32.2,
+  "mean_saturation_0_255": 22.6,
+  "pct_pixels_luma_lt_30": 34.0
+ },
+ "soma_web_4": {
+  "size": [
+   480,
+   360
+  ],
+  "cell_luma_p10": 96.5,
+  "cell_luma_median(\u2248ground)": 121.8,
+  "cell_luma_p90(\u2248sprites/lights)": 146.7,
+  "p90_minus_median": 24.9,
+  "mean_saturation_0_255": 57.2,
+  "pct_pixels_luma_lt_30": 0.6
+ },
+ "mir2_web_1": {
+  "size": [
+   360,
+   360
+  ],
+  "cell_luma_p10": 47.7,
+  "cell_luma_median(\u2248ground)": 118.7,
+  "cell_luma_p90(\u2248sprites/lights)": 173.5,
+  "p90_minus_median": 54.8,
+  "mean_saturation_0_255": 38.0,
+  "pct_pixels_luma_lt_30": 11.3
+ },
+ "mir2_web_5": {
+  "size": [
+   480,
+   270
+  ],
+  "cell_luma_p10": 15.5,
+  "cell_luma_median(\u2248ground)": 49.0,
+  "cell_luma_p90(\u2248sprites/lights)": 115.9,
+  "p90_minus_median": 66.8,
+  "mean_saturation_0_255": 16.9,
+  "pct_pixels_luma_lt_30": 45.4
+ }
+}

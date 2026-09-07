@@ -1,0 +1,83 @@
+{
+ "provisional": true,
+ "name_tag_pairs_overlapping": 7,
+ "finding": "text load, not silhouettes, is the crowd failure: with 5 players in ~2 tiles the always-on name tags collide into a band. Era answer: HB shows names on hover/target only; L1 always-on but with shorter names. Proposal for the rulebook (R-TEXT-2): overhead names fade to the karma badge glyph only when >3 tags would overlap.",
+ "stand_ins": "B0 rat/ravager cells; real sheets replace via this script",
+ "entities": 13,
+ "players": 5,
+ "mobs": 8,
+ "fx": 2,
+ "callouts": 2,
+ "name_tags": 8,
+ "occlusion": {
+  "per_entity": [
+   {
+    "name": "mob",
+    "hidden_frac": 0.0
+   },
+   {
+    "name": "mob",
+    "hidden_frac": 0.0
+   },
+   {
+    "name": "mob",
+    "hidden_frac": 0.08
+   },
+   {
+    "name": "mob",
+    "hidden_frac": 0.0
+   },
+   {
+    "name": "mob",
+    "hidden_frac": 0.0
+   },
+   {
+    "name": "Marsh Rat",
+    "hidden_frac": 0.02
+   },
+   {
+    "name": "Marsh Rat",
+    "hidden_frac": 0.0
+   },
+   {
+    "name": "Cultist L7",
+    "hidden_frac": 0.0
+   },
+   {
+    "name": "Cultist L6",
+    "hidden_frac": 0.0
+   },
+   {
+    "name": "Marsh Rat",
+    "hidden_frac": 0.02
+   },
+   {
+    "name": "Ravager L5",
+    "hidden_frac": 0.0
+   },
+   {
+    "name": "Gravecaller L8",
+    "hidden_frac": 0.37
+   },
+   {
+    "name": "Ravager L7",
+    "hidden_frac": 0.33
+   }
+  ],
+  "max_hidden": 0.37,
+  "entities_over_50pct_hidden": 0
+ },
+ "gates": {
+  "no_entity_over_50pct_hidden": true,
+  "callouts_le_3_simultaneous": true,
+  "fx_cover_le_40pct_caster": true
+ },
+ "checklist": [
+  "every player HP bar visible",
+  "chaotic red name reads first",
+  "cast ring under (not over) the caster",
+  "bolt shape (comet) identifiable at 1x",
+  "rats still count as individuals in grey",
+  "callouts legible under night overlay"
+ ]
+}

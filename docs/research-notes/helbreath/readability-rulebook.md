@@ -8,8 +8,14 @@ frames, the L1 Void Tower corridor fights and the DE castle brawl. Each rule is
 ## R-LUMA — ground/sprite contrast (the master rule)
 
 `mean luma(sprite opaque body pixels) − mean luma(terrain under it) ≥ 25` (0–255).
-Ancestor measurements: HB dungeon Δ≈60, HB forest Δ≈80, L1 Tower Δ≈55, our
-first style-tile pass Δ=10 (**fail**), after palette lift Δ=24–27 (pass).
+Ancestor measurements (re-audited 2026-09-07 with `qa/luma-audit.json`: 16×16
+cell means, median ≈ ground, p90 ≈ sprites/lights — a statistical proxy, not a
+segmentation): HB dungeon Δ 66 · HB forest Δ 37–39 · HB town Δ 33 · L1 Tower
+Δ 37–42 · L1 town Δ 48 · DE castle Δ 41–66 · Soma swamp Δ 32 · Mir Δ 55–67.
+Only an HB tunnel frame (t0095, all rock) falls to Δ 16. The ≥ 25 gate holds;
+the earlier eyeball figures ("HB forest Δ≈80, L1 Δ≈55") were overstated on
+the sprite side and are struck. Our style tile: outline-inclusive Δ 24,
+body-only Δ 43 (rat 50) — see `qa/cell_ravager_S_audit.json`.
 Fix order when failing: (1) lower terrain contrast/lift its floor, (2) gamma-lift
 the *sprite family palette*, (3) add a 1 px bone rim on the lit edge. Never
 alpha or glow hacks (§14.7).

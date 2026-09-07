@@ -24,7 +24,7 @@ a flat sallow tone. Hair is a single dark mass. → §4.2 palette rule and §4.5
 
 **15+ player mass-PvP readability.** Thumbnail: 22 bodies in ~12×8 tiles.
 What survives: (1) each body's dark contour against a floor whose luma is
-~58/255, (2) the **white-blue circular cast rings** under casters, (3) the
+~37/255 (cell-median, `qa/luma-audit.json`; my first eyeball said 58 — struck), (2) the **white-blue circular cast rings** under casters, (3) the
 red-caps callouts, (4) party names in green. What does *not* survive: gear
 detail, faces, which way a sword points. Conclusion: readability is
 **contour + ground contrast + text**, never detail. The rulebook's silhouette
@@ -59,9 +59,12 @@ overrides chaotic red** (law is louder than friendship — L1 precedent).
 **Olympia footage adds:** (a) torch-lit town at night with visible **warm
 pools on cobbles** (t0000) — light radius is painted into the ground around
 the source, not just an additive circle; (b) forest PvP frames (t0290–t0385)
-show grass at luma ≈ 50 with characters ≈ 130 — again Δ ≥ 25; (c) the
-Elvine-dungeon brown-rock tunnels (t0095–t0190) are *lit* brown, not black:
-their darkest ambient is still ~40/255. This is the same lesson as Soma's
+measure ground-median 39–55 with a p90 of 78–92 (Δ 37–39; the earlier
+"characters ≈ 130, Δ ≈ 80" was an overstatement — struck); (c) the
+Elvine-dungeon tunnels (t0095) are darker than first claimed: median 33,
+54 % of pixels under luma 30, Δ only 16 in an all-rock frame — HB *did* go
+near-black in tunnels, and that frame is the one where bodies are hardest to
+find. Keep it as the negative example for the mine. This is the same lesson as Soma's
 "permanent daytime" from the other direction: HB never went pitch-black.
 
 ## Things NOT to copy

@@ -1,0 +1,30 @@
+{
+ "candle_64x32": {
+  "size": [
+   64,
+   32
+  ],
+  "colours": 5,
+  "frames": 2,
+  "blend_note": "composited at alpha 0.6 in the preview; the engine decal layer (T-ART-09) or textured ground (T-ART-12) decides the real blend \u2014 pools must sort UNDER entities"
+ },
+ "torch_96x48": {
+  "size": [
+   96,
+   48
+  ],
+  "colours": 5,
+  "frames": 2,
+  "blend_note": "composited at alpha 0.6 in the preview; the engine decal layer (T-ART-09) or textured ground (T-ART-12) decides the real blend \u2014 pools must sort UNDER entities"
+ },
+ "anvil_128x64": {
+  "size": [
+   128,
+   64
+  ],
+  "colours": 5,
+  "frames": 2,
+  "blend_note": "composited at alpha 0.6 in the preview; the engine decal layer (T-ART-09) or textured ground (T-ART-12) decides the real blend \u2014 pools must sort UNDER entities"
+ },
+ "_finding": "Under the engine night overlay (normal blend (18,22,70,a145) drawn after EndMode2D, game.cpp:1300-1301) the warm pool loses its hue: ember #f2c88a -> mauve. Painted pool decals therefore only work BY DAY. For pools to read at night they must be composited AFTER the overlay (additive or as a hole in the overlay). T-ART-03 phase 1 ('0 engine change') cannot satisfy its own acceptance line 'warm pools visible at night'. Proposal: fold the light pass into T-ART-03 phase 2 now, or draw pools inside the 2D pass with BLEND_ADDITIVE *after* the overlay rectangle."
+}

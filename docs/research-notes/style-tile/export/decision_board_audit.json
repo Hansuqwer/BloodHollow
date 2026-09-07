@@ -1,0 +1,59 @@
+{
+ "provisional": true,
+ "signs_gate": false,
+ "terrain_luma_plate0": 50.3,
+ "D1a rim OFF": {
+  "body_luma": 92.9,
+  "delta_vs_plate": 42.6
+ },
+ "D1b rim ON (1px bone, NW)": {
+  "body_luma": 106.0,
+  "delta_vs_plate": 55.7
+ },
+ "D2a 32x48 body 46 (1.45 tile-h)": {
+  "cell": [
+   32,
+   48
+  ],
+  "colours": 32
+ },
+ "D2b 32x56 body 52 (1.63 tile-h, anchorY 50)": {
+  "cell": [
+   32,
+   56
+  ],
+  "colours": 32
+ },
+ "D3 lift 0": {
+  "terrain_luma": 50.3,
+  "ravager_delta": 42.7,
+  "rat_delta": 50.0,
+  "plate_min_luma": 22.0
+ },
+ "D3 lift 15": {
+  "terrain_luma": 64.9,
+  "ravager_delta": 28.1,
+  "rat_delta": 35.4,
+  "plate_min_luma": 37.0
+ },
+ "D3 lift 30": {
+  "terrain_luma": 79.7,
+  "ravager_delta": 13.2,
+  "rat_delta": 20.5,
+  "plate_min_luma": 52.0
+ },
+ "D5a 40x60 (1.25x) anchorY 52": {
+  "cell": [
+   40,
+   60
+  ],
+  "body_px": 58
+ },
+ "D5b 48x64 (T-ART-10 text) anchorY 56": {
+  "cell": [
+   48,
+   64
+  ],
+  "body_px": 62
+ }
+}

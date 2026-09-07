@@ -13,10 +13,11 @@ Island, reddit r/Lineage), hiddenhosts.com Classic-vs-Remastered table.
 **The overall grade — this is OUR base grade.** Void-server frames: stone is a
 warm-grey/olive (~#6a6656), grass a dead olive-brown, wood a cold brown; whites
 are bone, never pure. Saturation stays under ~30 % everywhere except spell FX
-and name tags. Blacks are *not* crushed — dungeon floor luma sits ≈ 95/255 in
-the Tower frames, which is why sprites at ≈ 150+ pop. Measured on the field
-frame (t1080 town): grass mean ≈ 70, characters ≈ 140. **Adopted as the R-LUMA
-gate (Δ ≥ 25) in the Helbreath rulebook.** Our earths are darker than L1's
+and name tags. Blacks are *not* crushed — Tower floor cell-median 72–82/255 with only
+2–4 % of pixels under luma 30 (`qa/luma-audit.json`), p90 109–124 (Δ 37–42).
+Town frame t1080: median 66, p90 114 (Δ 48). The first-draft figures
+("floor ≈ 95, sprites ≈ 150+") were eyeballed high — struck. **The Δ, not the
+absolute floor, is what the R-LUMA gate (≥ 25) adopts.** Our earths are darker than L1's
 (mud, rot) so we hit the gate by lifting the sprite palette, not the ground.
 
 **Parchment / iron UI.** Bottom HP/MP bar with numeric readout inside a carved

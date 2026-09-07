@@ -1,0 +1,38 @@
+{
+ "input": "docs/research-notes/style-tile/cell_marsh_rat_S.png",
+ "kind": "cell",
+ "cell": [
+  32,
+  48
+ ],
+ "anchor_y": 42,
+ "hour": 2.0,
+ "night_overlay": [
+  18,
+  22,
+  70,
+  145
+ ],
+ "gates": {
+  "cell_dims": true,
+  "feet_on_anchor": true,
+  "colours_le_max": true,
+  "r_luma_day_ge_gate": true,
+  "r_luma_night_ge_gate": true
+ },
+ "engine_validated": false,
+ "terrain_luma": 50.3,
+ "colours": 27,
+ "r_luma": {
+  "body_mean": 100.3,
+  "terrain_mean": 50.3,
+  "delta_day": 50.0,
+  "body_mean_incl_outline": 77.7,
+  "delta_day_incl_outline": 27.4,
+  "definition": "rulebook R-LUMA = opaque body pixels EXCLUDING the #1a1214 outline; the B0 style_tile_audit.json included the outline (hence its lower 23.7)",
+  "body_night": 58.2,
+  "terrain_night": 36.5,
+  "delta_night": 21.7
+ },
+ "failures": []
+}

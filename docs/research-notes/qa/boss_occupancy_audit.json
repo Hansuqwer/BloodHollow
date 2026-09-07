@@ -1,0 +1,56 @@
+{
+ "provisional": true,
+ "source_rects": "data/maps-src/drowned_crypt.tmj spawns: gravemother_font x21-25 y2-5, apse_sexton x21-24 y5-8, elite_apse_l x16-20 y4-7, elite_apse_r x25-29 y4-7",
+ "boss_cell": [
+  64,
+  64
+ ],
+ "elite_cell": "40x60 (D5a stand-in)",
+ "occlusion": {
+  "per_entity": [
+   {
+    "name": "Sepulcher Elite",
+    "hidden_frac": 0.0
+   },
+   {
+    "name": "Ravager L13",
+    "hidden_frac": 0.0
+   },
+   {
+    "name": "Cultist L11",
+    "hidden_frac": 0.0
+   },
+   {
+    "name": "Cultist L14",
+    "hidden_frac": 0.0
+   },
+   {
+    "name": "Ravager L10",
+    "hidden_frac": 0.23
+   },
+   {
+    "name": "Gravecaller L12",
+    "hidden_frac": 0.27
+   },
+   {
+    "name": "Revenant Sexton",
+    "hidden_frac": 0.0
+   },
+   {
+    "name": "The Gravemother",
+    "hidden_frac": 0.0
+   },
+   {
+    "name": "Sepulcher Elite",
+    "hidden_frac": 0.0
+   }
+  ],
+  "max_hidden": 0.27,
+  "entities_over_50pct_hidden": 0
+ },
+ "findings": [
+  "the boss's 64px cell overlaps a 5-player pile only when players stand INSIDE the font rect (x21-25, y2-5); the apse sexton row (y5-8) is where piles form \u2014 keep the bell dome's lower 16 px free of detail so player heads read against it",
+  "R-SILH boss rule holds: arm-sweep attacks must stay inside the 64x64 cell or they will cover the sexton row",
+  "3-tile telegraph ring (192x96) extends past the font rect by one tile on each side \u2014 the decal layer (T-ART-09) must sort under entities or the ring will read as a wall"
+ ]
+}
