@@ -1,0 +1,9 @@
+[campaign] m2br__00 reached L5 at t=0.1s (map 1)
+[campaign] m2br__01 reached L5 at t=6.2s (map 1)
+[campaign] m2br__00 reached L6 at t=47.2s (map 1)
+[campaign] m2br__01 reached L6 at t=228.5s (map 1)
+[campaign] m2br__00 reached L7 at t=531.6s (map 1)
+[bots] SUMMARY welcomed=2/2 moved=2/2 minDeltas=10800 kills=131 pots=40 swings=262 deaths=10 shops=25 anvilTries=0 levelDrops=1 regear=0 maxLevel=7 pkts=7296334 bytes=160537428 gates b/g/p/a/r=0/0/0/0/0 mGold=0 mPelts=0 bless=3 mend=60 noSee=2 hurt=584 choir c6=0 c7=0 c8=0
+[bots] m2br__00     kit=1 lvl=7 hp=80/118 party=2 deaths=0 rxR=547 rxM=1076 lastPid=1 casts c6=0 c7=0 c8=0 lastDeath=(-1,-1) killerByLvl=
+[bots] m2br__01     kit=3 lvl=6 hp=104/118 party=2 deaths=10 rxR=542 rxM=1060 lastPid=1 casts c6=0 c7=0 c8=0 lastDeath=(25,30) killerByLvl=L5:10
+[bots] OK

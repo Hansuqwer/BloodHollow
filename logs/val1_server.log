@@ -1,0 +1,18 @@
+[boot] zone 2 (assets/maps/fields_overflow.bhmap: 64x48) online
+[boot] zone 3 (assets/maps/thornwall_crypt.bhmap: 48x36) online
+[boot] zone 4 (assets/maps/bonehowl_mine.bhmap: 56x40) online
+[boot] zone 5 (assets/maps/drowned_crypt.bhmap: 48x36) online
+[journal] recording world to logs/val1.bwj (epoch 6)
+[boot] bh_server on 0.0.0.0:7833 | map 'assets/maps/thornwall.bhmap' | db '/tmp/val1.db' | tick 20Hz | aoi 26
+[net] m2br__00         entered the world (entity 582, online 1)
+[net] m2br__01         entered the world (entity 583, online 2)
+[soak] tick=600 online=2 entities=579 tickUs p50=1918 p99=3989 worldHash=0c44aa773ce40ee9 pkts=97/441389
+[soak] tick=1200 online=2 entities=576 tickUs p50=1674 p99=3848 worldHash=a6411053144235c9 pkts=205/903738
+[soak] tick=1800 online=2 entities=573 tickUs p50=1810 p99=3827 worldHash=567c53fe5b2abd0a pkts=313/1364285
+[soak] tick=2400 online=2 entities=575 tickUs p50=1645 p99=3582 worldHash=93cb5bd66b4690fa pkts=401/1758212
+[soak] tick=3000 online=2 entities=577 tickUs p50=1558 p99=3536 worldHash=01d1bf74d5df6658 pkts=490/2148242
+[soak] tick=3600 online=2 entities=577 tickUs p50=1653 p99=3236 worldHash=f030d72460c6b1dd pkts=559/2517117
+[soak] tick=4200 online=2 entities=579 tickUs p50=1809 p99=4172 worldHash=0643c3faccfc5db2 pkts=660/2998032
+[soak] tick=4800 online=2 entities=576 tickUs p50=1800 p99=3956 worldHash=f749a218c9ccb891 pkts=751/3483683
+[soak] tick=5400 online=2 entities=578 tickUs p50=1894 p99=4142 worldHash=dd62b45ffcaf344d pkts=852/3910589
+[soak] tick=6000 online=2 entities=570 tickUs p50=1779 p99=3751 worldHash=a3273b5eef646e8d pkts=952/4345028

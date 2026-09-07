@@ -99,7 +99,40 @@ In flight at issue time (started 18:41 UTC); the leg table below is filled from
 a resumed-DB leg at the exact level band where v4 stalled (L5), same harness,
 same seed — and it cleared L7 with zero deaths on bot 00.
 
-<!-- CHAIN_TABLE -->
+Full 12-leg run (`tools/m2b_rerun_chain.sh`, fresh DB, 2 campaign bots,
+~10.8k ticks/leg, characters persist across legs): **every journal replays 0
+mismatches**; `TARGET L8` never fires. Methodology identical to devlog 0028 —
+`peak` = last "reached L" line, `end` = SUMMARY `maxLevel`.
+
+| leg | peak | end | deaths | kills | replay | baseline (0028) peak/end/deaths |
+|---|---|---|---|---|---|---|
+| 1 | L5 | L5 | **8** | 128 | OK 0 mm | L3 / L3 / 58 |
+| 2 | L5 | L5 | 60 | 127 | OK 0 mm | L5 / L5 / 14 |
+| 3 | L5 | L3 | 142 | 99 | OK 0 mm | L6 / L6 / 40 |
+| 4 | L5 | L5 | 26 | 113 | OK 0 mm | L6 / L5 / 76 |
+| 5 | L4 | L2 | 134 | 72 | OK 0 mm | L6 / L3 / 128 |
+| 6 | L5 | L5 | **4** | 136 | OK 0 mm | L3 / L1 / 182 |
+| 7 | L5 | L4 | 116 | 122 | OK 0 mm | L4 / L4 / 56 |
+| 8 | L5 | L5 | **10** | 118 | OK 0 mm | L4 / L4 / 48 |
+| 9 | L5 | L5 | 30 | 129 | OK 0 mm | L4 / L3 / 68 |
+| 10 | L5 | L4 | 90 | 94 | OK 0 mm | L5 / L4 / 22 |
+| 11 | **L6** | **L6** | 20 | 116 | OK 0 mm | L5 / L5 / 16 |
+| 12 | **L6** | **L6** | 22 | 123 | OK 0 mm | L6 / L6 / 32 |
+| **Σ** | — | — | **662** | 1477 | 12/12 | — / — / 740 |
+
+**Verdict: the floor came up a full level.** Mean end level 4.08 → **4.58**;
+the death spiral no longer collapses bots into the starter bands — worst close
+is L2 (leg 5) against the baseline's **L1** (leg 6, 182 deaths), and legs
+ending at L5+ go 5/12 → **8/12**. Peaks never drop below L4 (baseline spent
+legs 1, 6, 7, 8, 9 at L3-L4). Total deaths fall only ~10% (740 → 662) — v5c
+still takes heavy legs (142/134/116) — but the debt now costs a level or two
+instead of the whole ladder, which is exactly what "retreat home and regen"
+buys: the bot walks the loss off and comes back.
+
+The ceiling is unchanged at **L6** (legs 11-12 reach and hold it, same as the
+baseline's legs 3/12). val4's L7 came from a resumed DB with gear already
+banked; a fresh-DB chain still ends its legs at L5-L6. L7→L8 stays blocked by
+the content gate below.
 
 ## Scope boundary that remains
 

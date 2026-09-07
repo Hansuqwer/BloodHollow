@@ -262,8 +262,35 @@ ticks/leg). Every journal replays **0 mismatches**; `TARGET L8` never fires.
 58→14 across legs 1→2). But L6 is a new wall — the over-level gnoll/widow
 triangle — not the armor band. Devlog 0028.
 
+## Done — Route v5c (2026-09-07): the wall was the waypoint, not the mobs
+
+Closes the "L6 over-level wall" card. Devlog 0028's hypothesis (over-level
+gnoll/widow triangle) was **wrong**: the death diagnostics showed `killerByLvl`
+was L3-dominated (Feral Ghoul) and `lastDeath` clustered on `(55,18)/(55,20)` —
+the centre of the `ghouls_east` rect (x[52,58] y[17,22], maxAlive 8) that Route
+v4 parked every L3+ bot on. The wall was **pack density at the waypoint**, plus
+a threat-axis retreat that walked bots past the L11 gravecaller barricade.
+
+Fix (`tools/bots/main.cpp` only — no content/price/mob numbers):
+edge-stand the ladder `(55,19)→(55,14)`, level-blind pack cap for L3+,
+retreat **home** on map 1 (sticky until healed *and* unpursued), defend at
+point-blank while disengaging, swarm panic-break at 5.
+
+val4 (resumed DB at L5, 540 s, same harness/seed as val2): **maxLevel 5 → 7**,
+deaths **66 → 10**, bot 00 deaths **32 → 0** (L5→L6 t=47 s, L7 t=531 s,
+`killerByLvl` empty), replay 0 mismatches. Full 12-leg chain (fresh DB): 12/12
+replay 0 mismatches, mean end level **4.08 → 4.58**, worst close **L2** vs the
+baseline's L1, legs ending L5+ **5/12 → 8/12**, deaths 740 → 662; ceiling stays
+L6 (legs 11-12). Suite 105/105, ctest 2/2, journal epoch unchanged at 6.
+Devlog 0029; analysis prompt
+`docs/prompts/campaign-pack-wall-analysis.md`. Commit `a2dcc6b`.
+
+| Card | Title |
+|---|---|
+| [Route v5c](devlog/0029-wall-was-the-waypoint.md) | Campaign pack wall: edge-stand waypoint, level-blind pack cap, retreat home, defend-while-fleeing |
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |
 |---|---|---|
-| L6 over-level wall | Campaign at L6 walks into gnoll (L7)/widow (L9) camps and death-spirals (legs 5-6: 128/182 deaths, 19 level-drops → L1) | next lever is L6+ campaign target selection, not gear/price; flagged for director |
+| L8 content gate | L7→L8 has no reachable step-up on map 1: `gnolls_pits` (L7) and `widow_glade` (L9) sit south of the river behind the bridge that passes the L11 gravecaller barricade `(6,18)` | **content** change (move the barricade / add a crossing / re-anchor the gnolls) — for the director, not a bot-profile fix |
