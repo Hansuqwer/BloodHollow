@@ -237,8 +237,33 @@ relief. Devlog 0026.
 Gate: smoke `tools/t034d_smoke.sh` (2 bots × 240 s) — `regear=2`, replay
 0 mismatches. Devlog 0027.
 
+## Done — T-034d chain rerun (2026-09-06): plateau moves L4-L5 → L6
+
+Full `tools/m2b_rerun_chain.sh` (12 legs, fresh DB, 2 campaign bots, ~10.8k
+ticks/leg). Every journal replays **0 mismatches**; `TARGET L8` never fires.
+
+| leg | peak | end | deaths | kills |
+|---|---|---|---|---|
+| 1 | L3 | L3 | 58 | 81 |
+| 2 | L5 | L5 | 14 | 126 |
+| 3 | L6 | L6 | 40 | 139 |
+| 4 | L6 | L5 | 76 | 113 |
+| 5 | L6 | L3 | 128 | 88 |
+| 6 | L3 | L1 | 182 | 45 |
+| 7 | L4 | L4 | 56 | 125 |
+| 8 | L4 | L4 | 48 | 126 |
+| 9 | L4 | L3 | 68 | 97 |
+| 10 | L5 | L4 | 22 | 108 |
+| 11 | L5 | L5 | 16 | 112 |
+| 12 | L6 | L6 | 32 | 143 |
+
+**Verdict: the plateau moved past L5.** Baseline (T-034c) never touched L6 in
+12 legs; this run reaches L6 four times and holds it in legs 3 and 12 (deaths
+58→14 across legs 1→2). But L6 is a new wall — the over-level gnoll/widow
+triangle — not the armor band. Devlog 0028.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |
 |---|---|---|
-| M2b chain rerun | Re-run `tools/m2b_rerun_chain.sh` on the T-034d build to measure whether the plateau moves past L5 | if it stalls at the armor band → Hide Armor 120→80 (T-034c lever 2) |
+| L6 over-level wall | Campaign at L6 walks into gnoll (L7)/widow (L9) camps and death-spirals (legs 5-6: 128/182 deaths, 19 level-drops → L1) | next lever is L6+ campaign target selection, not gear/price; flagged for director |

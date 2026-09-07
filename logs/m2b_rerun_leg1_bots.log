@@ -1,11 +1,10 @@
 [campaign] m2br__01 reached L1 at t=0.1s (map 1)
 [campaign] m2br__00 reached L1 at t=0.1s (map 1)
-[campaign] m2br__00 reached L2 at t=14.6s (map 1)
-[campaign] m2br__01 reached L2 at t=41.2s (map 1)
-[campaign] m2br__01 reached L3 at t=103.9s (map 1)
-[campaign] m2br__00 reached L3 at t=133.3s (map 1)
-[campaign] m2br__01 reached L4 at t=311.8s (map 1)
-[bots] SUMMARY welcomed=2/2 moved=2/2 minDeltas=10800 kills=96 pots=4 swings=131 deaths=26 shops=2 anvilTries=0 levelDrops=0 maxLevel=4 pkts=6058041 bytes=133296138 gates b/g/p/a/r=0/0/0/0/0 mGold=0 mPelts=0 bless=0 mend=0 noSee=0 hurt=0 choir c6=0 c7=0 c8=0
-[bots] m2br__00     kit=1 lvl=3 hp=73/94 party=1 deaths=12 rxR=549 rxM=549 lastPid=1 casts c6=0 c7=0 c8=0
-[bots] m2br__01     kit=3 lvl=4 hp=74/94 party=0 deaths=14 rxR=541 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0
+[campaign] m2br__01 reached L2 at t=11.4s (map 1)
+[campaign] m2br__00 reached L2 at t=16.2s (map 1)
+[campaign] m2br__00 reached L3 at t=426.2s (map 1)
+[campaign] m2br__01 reached L3 at t=426.3s (map 1)
+[bots] SUMMARY welcomed=2/2 moved=2/2 minDeltas=10800 kills=81 pots=2 swings=219 deaths=58 shops=3 anvilTries=0 levelDrops=1 regear=2 maxLevel=3 pkts=7950962 bytes=174935417 gates b/g/p/a/r=0/0/0/0/0 mGold=0 mPelts=0 bless=1 mend=89 noSee=0 hurt=1156 choir c6=0 c7=0 c8=0
+[bots] m2br__00     kit=1 lvl=3 hp=68/94 party=2 deaths=26 rxR=547 rxM=1076 lastPid=1 casts c6=0 c7=0 c8=0
+[bots] m2br__01     kit=3 lvl=3 hp=96/94 party=2 deaths=32 rxR=542 rxM=1060 lastPid=1 casts c6=0 c7=0 c8=0
 [bots] OK
