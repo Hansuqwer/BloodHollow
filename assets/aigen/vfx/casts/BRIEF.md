@@ -4,7 +4,7 @@
 **Spec:** `docs/art/50-vfx.md` (sizes × frames @ fps, colour family, callout kind per effect).
 **Contents:** cast ring, Firebolt (proven in B0 tile), Blood Bolt, Corpse Explosion, Blood Curse, Bone Wall, Wither, Raise Skeleton/Exorcise
 
-Rules (R-FX): hit FX ≤ 0.6 s · persistent effects are ground decals · ≤ 40 % caster coverage · reserved accent ramp only (violet #8B5CF6 curse, arterial #8E101C blood, choir gold #D9B04A holy) · no additive glow assumptions (engine has none).
+Rules (R-FX): hit FX ≤ 0.6 s · persistent effects are ground decals · ≤ 40 % caster coverage · reserved accent ramp only (violet #6B4A8A curse, arterial #8E101C blood, choir gold #D9B04A holy) · no additive glow assumptions (engine has none).
 
 ## Generation prompt
 ```

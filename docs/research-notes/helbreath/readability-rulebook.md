@@ -51,7 +51,8 @@ alpha or glow hacks (§14.7).
 - Shape language: bolt = comet with tail · buff = ring under + glyph over ·
   curse = violet glyph over · heal = rising motes · AoE = ground ring first
   (telegraph), burst second.
-- Accent ramp only: violet `#8B5CF6` family, arterial `#8E101C→#D8302A`,
+- Accent ramp only: violet `#6B4A8A` family (highlight `#A884C4`) — era violet,
+  desaturated; never design-tool purple — arterial `#8E101C→#D8302A`,
   choir gold `#D9B04A`. Iron/red for damage, ash-blue for utility (T-066).
 - The T-066 2-frame hit flash (bone-white → palette) is the *only* time a
   sprite body leaves its palette.

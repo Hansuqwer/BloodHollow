@@ -143,9 +143,11 @@ findings note answering the listed questions. Archive thumbnails under
 - Base grade: desaturated earths — mud browns, rust reds, bone off-whites,
   soot greys, stagnant greens. Flesh is grey-pink, blood is the deepest red on
   screen. Candle-light is the warmest permitted light source.
-- Reserved accent ramp (magic/curse only): violet `#8B5CF6`-family for curses,
-  arterial crimson for blood magic, choir-gold for blessings. If an accent hue
-  appears on terrain or mundane gear, the asset is rejected.
+- Reserved accent ramp (magic/curse only): violet `#6B4A8A`-family (era violet;
+  desaturated — explicitly NOT design-tool purple like Tailwind `#8B5CF6`, which
+  fails the 1999–2003 era test; highlight `#A884C4`), arterial crimson for blood
+  magic, choir-gold for blessings. If an accent hue appears on terrain or
+  mundane gear, the asset is rejected.
 - Skin tones: 3 human tones (pale, sallow, weathered-tan) shared across classes.
 
 ### 4.3 Night rule (locked research finding)

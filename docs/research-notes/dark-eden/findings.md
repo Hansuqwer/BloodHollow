@@ -34,7 +34,7 @@ the bounty-board progress readout.
 **Curse/magic light against a drained world.** Spell light is *additive* and
 briefly enormous (the pillar in t0034: a white-gold column 3–4 tiles tall,
 0.5 s). Because the world is drained, even a 6 px violet glyph reads. This is
-the licence the bible grants us: violet `#8B5CF6` curses, arterial red, choir
+the licence the bible grants us: violet `#6B4A8A` curses, arterial red, choir
 gold — **never on terrain or mundane gear**. Verified in the style tile: the
 only saturated pixels are the callout text and the firebolt.
 
