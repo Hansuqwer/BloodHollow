@@ -1,7 +1,8 @@
 # Style-lock proof — B0 gate (bible §0 step 2, §4)
 
-**Status: AWAITING DIRECTOR APPROVAL.** No volume work (B1+) starts until this
-tile is approved or its notes are answered.
+**Status: APPROVED 2026-09-08** — see `docs/art/B0-GATE-DECISION.md` (gate sign-off + D1–D12
+rulings). Volume work (B1+) may start. Carried fix: plate min-luma 22.1 < 24 →
+clamp the floor to 24 in `make_ground_tiles` at B1 (no new plate needed).
 
 ![board](style_tile_board_3x.png)
 

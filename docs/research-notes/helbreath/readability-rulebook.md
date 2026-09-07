@@ -7,7 +7,7 @@ frames, the L1 Void Tower corridor fights and the DE castle brawl. Each rule is
 
 ## R-LUMA — ground/sprite contrast (the master rule)
 
-`mean luma(sprite opaque body pixels) − mean luma(terrain under it) ≥ 25` (0–255).
+`mean luma(sprite opaque body pixels, EXCLUDING the #1a1214 outline ring) − mean luma(terrain under it) ≥ 25` (0–255). The outline is a constant dark frame and never counts against the delta (B0 gate D1, 2026-09-08).
 Ancestor measurements (re-audited 2026-09-07 with `qa/luma-audit.json`: 16×16
 cell means, median ≈ ground, p90 ≈ sprites/lights — a statistical proxy, not a
 segmentation): HB dungeon Δ 66 · HB forest Δ 37–39 · HB town Δ 33 · L1 Tower
@@ -72,6 +72,15 @@ alpha or glow hacks (§14.7).
 - Damage numbers: white (normal) / orange "!" (crit, existing kind 2) /
   grey "miss"; never red (red is reserved for callouts and chaotic names).
 
+## R-TEXT-2 — name-tag degrade (the crowd rule)
+
+The crowd15 failure is name-tag pile-up, not silhouettes (7 overlaps in a 5-player
+pile). When more than 3 overhead name tags would overlap, they degrade to the
+**karma-badge glyph only** (lawful / chaotic / neutral). Era-consistent: HB shows
+names on hover/target; L1 always-on but shorter. The karma read — the thing PvP
+needs — survives; the wall of text does not. (B0 gate, 2026-09-08; client render
+change, sibling lane.)
+
 ## R-NIGHT — the floor
 
 - Test under the **engine** overlay at hour 02:00–04:00 (alpha 145–150 ≈ 57–59 %),
@@ -83,7 +92,8 @@ alpha or glow hacks (§14.7).
 
 ## R-SCALE — the zoom signature
 
-- Humans ~46 px body in a 48 px cell (≈ 1.45 tile-heights); GDD's "~56 px
+- Humans ~43 px body in a 48 px cell (≈ 1.34 tile-heights; the B0 "46 px" was
+  clipped by the cell top — A7); GDD's "~56 px
   including headroom" = cell + name tag. Common mobs 20–40 px; elites 1.25×;
   Gravemother in 64×64 with the bell dome ≥ 48 px wide.
 - Scatter trees/pillars ≥ 2 tiles tall so bodies can *lurk under* them (Soma).
