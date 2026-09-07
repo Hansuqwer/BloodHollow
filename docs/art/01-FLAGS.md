@@ -1,0 +1,29 @@
+# Flags & contradictions (bible §18 — surfaced, not silently fixed)
+
+Priority when sources disagree: task card > GDD > ADRs > AGENTS.md > code
+(AGENTS.md). Where the bible itself disagrees with the code, the code wins for
+*numbers* and the bible for *intent*; each such case is listed here with a
+recommended resolution for the director.
+
+| # | Conflict | Sources | Recommendation |
+|---|---|---|---|
+| F1 | **Mob roster mismatch.** GDD §11 MVP monsters: Marsh Rat, Feral Ghoul, Hollow Hound, Plague Bat, Bonepicker Gnoll, Pale Cultist, Mine Wretch, Lantern Spider, Mud Golem, Crypt Revenant, Grave Banshee, Bell Ringer (+ nameds). Shipped `kMobs`: 1001–1010 including Charnel Widow, Gravecaller (mob), Revenant Sexton, Sepulcher Elite — not in the GDD list. | `docs/02-gdd.md §11` vs `shared/content/mobs.h` | Content tables are ground truth (bible §7): brief all 10 shipped fully; GDD roster designed as a table (`20-mobs.md`). GDD §11 needs a refresh by its owner. |
+| F2 | **"Gravecaller" is both a player class and mob 1007.** A player named "Gravecaller L11" and the mob's name tag will read identically in a crowd. | `kits.h` kit 2 vs `mobs.h` 1007 | Art keeps them apart (full featureless mask vs half-mask). Recommend renaming the mob ("Gravecaller Acolyte"/"Bell Warden") in `mobs.h` before ship — a content change, not art. |
+| F3 | **Character height.** GDD/bible say ~56 px incl. headroom; engine cell is 32×48 with feet at 42 (body ≈ 46). Soma ratio would want ~58 px on our 32 px tile. | GDD §11 vs `placeholder.cpp`, `game.cpp:730` | Decision requested in style-tile note 2: keep 32×48, or move players to 32×56 (needs `anchorY` in atlas JSON, T-ART-10). |
+| F4 | **Anim set vs engine.** Bible/GDD require idle/walk/attack/cast/hurt/die/gib; the client only plays `walk`/`idle`. | `game.cpp animFrame(...)` | Deliver full sheets (they cost nothing extra to generate) and open T-ART-04. |
+| F5 | **Sheet-size caps in the bible are arithmetically wrong.** "≤ 256×384 per common mob" cannot hold 10 columns of 32 px; boss "≤ 512×512" cannot hold 21 columns of 64 px. | bible §7 | Amended in `20-mobs.md`: ≤ 320×384 common, ≤ 480×480 elite, ≤ 1344×512 boss (still tiny PNGs). |
+| F6 | **Night implementation.** Bible: "multiply + additive light mask, ≤ 65 %". Code: normal-blend fullscreen rect, peak 59 %, drawn after `EndMode2D` and before the HUD (HUD clean; world-space callouts and name tags are tinted), no light mask. | `daynight.cpp`, `game.cpp:1298–1303` | Cap is already met. Light pools ship as painted decals; callouts get the R-TEXT 2 px night plate so they survive the tint. |
+| F7 | **Lawful name colour.** Bible/GDD §5 say lawful = white; client uses pale blue `(170,200,255)`; neutral is the grey `(190,190,200)`. | `game.cpp drawRemoteEnt` | Keep code (blue reads better than white against bone-white callouts); update GDD wording. |
+| F8 | **Blood Bolt callout colour.** T-066 kind 9 is magenta-red `(235,40,160)`; bible says the Blood Bolt is arterial `#8E101C`. | `game.cpp` floaters vs bible §4.1 | Keep both: text magenta-red (must differ from blood decals to read), sprite arterial. Noted in `50-vfx.md #12`. |
+| F9 | **Mend callout green vs bone-white heal language.** Kind 8 text is green `(90,230,120)`; bible's heal colour is bone-white. | T-066 vs bible §12 | Text stays green (engine, and green = "good" in every ancestor log), motes bone-white. |
+| F10 | **Client map table.** `mapFileFor` knows zones 1–3; server loads 1–5. Art for mine/drowned crypt can't be seen in the client until cases 4/5 exist. | `client/src/game.cpp` vs `server/src/main.cpp` | T-ART-08 (two lines). |
+| F11 | **Per-kind sprites.** Every entity is drawn with `heroAtlas_`; `wireKind` carries the mob index but the client ignores it. | `world.cpp:186`, `game.cpp:733` | T-ART-05: `atlasFor(wireKind)` table keyed by `mobs/<id>_<slug>/`. |
+| F12 | **Party name green.** Bible §11 and every ancestor show party members green; nothing in the client tints party names. | `game.cpp` | T-ART-07; rulebook fixes priority chaotic-red > party-green. |
+| F13 | **01-research §6 mis-numbering.** The Soma entry is numbered out of sequence in `docs/01-research.md`. | `docs/01-research.md` | Leave; note for the doc owner (AGENTS: no silent edits to research). |
+| F14 | **Wheel zoom 0.25 steps to 2.5×.** Bible: integer/1.5× only. Non-snapped zoom shimmers pixel art. | `engine/render/camera_rig.h:53–60` | T-ART-02 snap to {1, 1.5, 2}; art validated at those three. |
+| F15 | **Coin colour.** Bible/GDD call it "gold" everywhere; the ash grade has no yellow except choir-gold (holy). | bible §4.1 vs GDD §7 | Icon design uses **black-iron coins with a nail stamp**; if lore insists on gold, use grave-gold `#a88a4a` (dull), never choir-gold. Lore call. |
+| F16 | **Red carpet runner in the Drowned Crypt nave.** Dark Eden licence suggests one saturated cloth element; bible §4.1 says accent colours never on terrain. | `dark-eden/findings.md` vs bible §4.1 | Recommend allowing it as *furniture* (a decal, not a tile) — one exception, boss room only. Director call. |
+| F17 | **Lineage 1 cell size unverified.** Dossier ratios for L1 (≈1.6 tile-heights) are estimated from frames, not from format docs. | `lineage1/findings.md` | Marked "unverified" in the dossier; does not affect any lock. |
+| F18 | **Elite scale 1.25× cell (40×60).** `loadAtlas` accepts it but the hard-coded draw origin `{w/2, 42}` will float the Elite 10 px. | `game.cpp:730/765` | Same fix as F3: `anchorY` in JSON (T-ART-10). |
+
+Nothing in `docs/01-research.md`, `docs/02-gdd.md`, or `AGENTS.md` was edited.

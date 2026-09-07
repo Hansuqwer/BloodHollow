@@ -1,0 +1,45 @@
+{
+ "R-LUMA (sprite body mean - terrain mean, want >= 25)": {
+  "terrain_mean": 51.0,
+  "ravager_mean": 74.7,
+  "rat_mean": 77.7,
+  "ravager_delta": 23.7,
+  "rat_delta": 26.8
+ },
+ "colours_opaque": {
+  "rat_cell": 26,
+  "ravager_cell": 31,
+  "tree": 28,
+  "tiles_union": 23
+ },
+ "colours_incl_shadow_alpha70": {
+  "rat_cell": 27,
+  "ravager_cell": 32,
+  "tree": 28
+ },
+ "palette_sizes": {
+  "mob": 32,
+  "player": 32,
+  "terrain": 32
+ },
+ "night_overlay_0200": [
+  18,
+  22,
+  70,
+  145
+ ],
+ "cells": {
+  "rat": [
+   32,
+   48
+  ],
+  "ravager": [
+   32,
+   48
+  ],
+  "tree": [
+   138,
+   112
+  ]
+ }
+}
