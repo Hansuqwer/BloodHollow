@@ -17,6 +17,7 @@
 #include "protocol/messages_gen.h"
 #include "content/auras.h"
 #include "content/kits.h"
+#include "content/mobs.h"
 #include "content/wirekind.h"
 #include "sim/bhmap.h"
 #include "sim/rng.h"
@@ -29,6 +30,15 @@ struct SeenEnt {
   std::uint8_t kind = 0;  // 0 = player
   int level = 0;          // mob level (EntitySpawn); 0 = unknown
 };
+
+// Route v5: whether a mob can pile onto us at all.  wireKind is the 1-based
+// kMobs index (server/src/world.cpp:189), so the passive starters -- Marsh Rat
+// has aggroRadius 0 -- read false here and stay diveable at L1; everything
+// that actually aggroes counts toward the pack math.
+bool entAggressive(std::uint8_t kind) {
+  if (kind == 0 || kind > bh::content::kMobKindCount) return false;
+  return bh::content::kMobs[kind - 1].aggroRadius > 0;
+}
 
 struct Bot {
   ENetPeer* peer = nullptr;
@@ -369,10 +379,13 @@ int run(int argc, char** argv) {
           b.restUntil = t + 6.0 + rng.range(0, 5);
         }
         // hunting-camp waypoint for own level & zone (content coords, in tiles)
-        // Route v4 (pack-probe informed): leash-16 packs (hounds/north-gnolls)
-        // and the hatch-side widow cocoon are party-band content; a solo
-        // campaigner steps AROUND them.  Ghoul spine until L7, with a fields
-        // excursion at L5 for the cross-zone leg of the M2b gate.
+        // Route v5 (killer-histogram informed): v4 parked every level >= 3 on
+        // (55,19), the CENTRE of the ghouls_east rect x[52,58] y[17,22] at
+        // maxAlive 8 -- lastDeath clustered on (55,18)/(55,20) and killerByLvl
+        // was L3-dominated, so the wall was pack DENSITY, not mob level.  Stand
+        // on the east road 3 tiles north of the rect instead: ghoul aggro is 6
+        // (7 at night) so only the north row pulls, and the leash (14 from
+        // anchor) lets a retreat home break the fight cleanly.
         b.campIsPortal = false;
         if (b.mapId == 3) {
           b.campX = 0; b.campY = 17; b.campIsPortal = true;   // crypt: back up
@@ -382,10 +395,16 @@ int run(int argc, char** argv) {
           b.campX = 0; b.campY = 14; b.campIsPortal = true;  // west gate home
         } else {
           switch (b.level) {
-            case 1:  b.campX = 46; b.campY = 13; break;  // rats_east
+            case 1:  b.campX = 46; b.campY = 13; break;  // rats_east (passive)
             case 2:  b.campX = 15; b.campY = 6;  break;  // bats_cryptyard
-            default: b.campX = 55; b.campY = 19; break;  // ghouls_east spine (L3+ through L8)
+            default: b.campX = 55; b.campY = 14; break;  // ghouls_east NORTH EDGE
           }
+          // There is no L6+ step-up on map 1: gnolls_pits (50,42) L7 and
+          // widow_glade (58,42) L9 sit south of the river (WATER y[34,37]) and
+          // the only crossing (bridge x[14,16]) runs 3 tiles past the L11
+          // gravecaller_barricade (6,18).  Opening that is a content change, so
+          // L6+ keeps the ghoul perch -- see docs/prompts/
+          // campaign-pack-wall-analysis.md section 4.
         }
         // S13/14 party formation, race-free: even bot invites ONLY once the
         // sibling is welcomed in-world (bot.name is pre-seeded and useless as
@@ -550,26 +569,39 @@ int run(int argc, char** argv) {
         // nearest mob within 10 tiles -> chase / attack
         std::uint32_t bestId = 0;
         int bestD = 100;
+        int swarmOnUs = 0;  // Route v5: aggressive mobs within 2 tiles of US --
+                            // the dive-death gauge that drives the early break
         for (const auto& kv : b.ents) {
           if (kv.second.kind == 0 || bh::content::wireIsFurniture(kv.second.kind)) continue;  // players, furniture
           const int d = std::max(std::abs(kv.second.x - b.tileX),
                                  std::abs(kv.second.y - b.tileY));
-          if (campaign && kv.second.level > b.level + 2 && d > 2) continue;  // no walls
+          if (campaign && d <= 2 && entAggressive(kv.second.kind)) ++swarmOnUs;
+          if (campaign && kv.second.level > b.level + 2 && d > 1) continue;  // no walls: strike back only at point-blank
           if (campaign && t < b.restUntil && d > 1) continue;  // resting: fight back only
           if (campaign && b.campIsPortal) continue;  // portal leg: hands off the sword —
               // any AttackRequest path-clears; bat harassment at the chapel door
               // otherwise livelocks the crossing (observed smoke v2)
-          if (campaign && b.retreating) continue;      // disengaging: no new pulls
+          // Route v5c: "no new pulls" means no new pulls -- a fleeing bot must
+          // still swing at whatever is already on it (see the defend block in
+          // the retreat branch below).  Skipping point-blank here too left
+          // bestId == 0 for the whole disengage and zeroed XP gain.
+          if (campaign && b.retreating && d > 1) continue;
           if (campaign && d > 1) {                     // pull singles: skip packed targets
             int pack = 0;
             for (const auto& kv2 : b.ents) {
               if (kv2.first == kv.first || kv2.second.kind == 0 ||
                   bh::content::wireIsFurniture(kv2.second.kind)) continue;
+              if (!entAggressive(kv2.second.kind)) continue;  // passive: cannot pile on
               if (std::max(std::abs(kv2.second.x - kv.second.x),
                            std::abs(kv2.second.y - kv.second.y)) <= 3) ++pack;
             }
-            // singles-only pulls for anything dangerous; trash swarms (own-2)
-            // are era fodder and may be dived freely
+            // Route v5, L3+ only (the L1/L2 starter camps are passive-rat and
+            // bat-swarm content the route is MEANT to dive): the pack cap
+            // ignores LEVEL.  v4 exempted own-2 "era fodder" from the singles
+            // rule, which waved an 8-ghoul cluster through as free XP at L5
+            // (3 >= 5-1 is false) -- that exemption is what put lastDeath on
+            // the waypoint.  `pack` counts OTHERS, so >= 2 means 3+ clustered.
+            if (b.level >= 3 && pack >= 2) continue;
             if (pack > 0 && kv.second.level >= b.level - 1) continue;
           }
           if (d < bestD) {
@@ -689,11 +721,13 @@ int run(int argc, char** argv) {
           aop.tier = static_cast<std::uint8_t>(bladeAura + 1);
           sendProto(b.peer, bh::proto::pack(aop));
           ++b.anvilTries;
-        } else if (campaign && nearTown && bladeArmed && hasArmor && !armorWorn && t >= b.nextShopAt) {
+        } else if (campaign && bladeArmed && hasArmor && !armorWorn && t >= b.nextShopAt) {
           b.nextShopAt = t + 2.0;
           bh::proto::ToggleEquip te;
           te.slot = armorSlot;
-          sendProto(b.peer, bh::proto::pack(te));
+          sendProto(b.peer, bh::proto::pack(te));  // equip anywhere: the re-gear
+          // trip buys armor but the bot leaves town before the nearTown-gated
+          // branch fires — blade-only bots get shredded by ghoul/hound packs
         } else if (campaign && nearTown && bladeArmed && !hasArmor && b.gold >= 120 && t >= b.nextShopAt) {
           b.nextShopAt = t + 2.0;
           bh::proto::BuyRequest buy;
@@ -745,24 +779,61 @@ int run(int argc, char** argv) {
         if (campaign) {
           const bool hurt = b.hpMax > 0 && b.hp * 100 < b.hpMax * 50;
           const bool critical = b.hpMax > 0 && b.hp * 100 < b.hpMax * 35;
-          if (hurt && !b.retreating && bestId != 0 && bestD <= 2) {
+          if (b.level >= 3 && swarmOnUs >= 5 && !b.retreating) {
+            b.retreating = true;  // Route v5: 5+ aggressive on us is a lost
+                                  // trade at ANY hp -- break before the red.
+                                  // Threshold is high on purpose: at 3 the bot
+                                  // disengaged from every normal ghoul trade at
+                                  // the north edge and never banked XP.
+          } else if (hurt && !b.retreating && bestId != 0 && bestD <= 2) {
             b.retreating = true;
           } else if (critical && !b.retreating && bestId != 0 && bestD <= 6) {
             b.retreating = true;  // v2 band: sub-35% with a threat near — break
-          } else if (b.retreating && b.hp * 100 >= b.hpMax * 85) {
+          } else if (b.retreating &&
+                     b.hp * 100 >= b.hpMax * (nearTown ? 75 : 85) &&
+                     (nearTown || bestId == 0 || bestD > 8)) {
+            // Route v5: sticky until healed AND unpursued.  Clearing on hp
+            // alone let the bot pivot mid-flight and re-aggro the same pack.
+            // nearTown drops the bar to 75% -- the flask belt and the choir
+            // mend finish the job on the walk back out.
             b.retreating = false;
           }
           if (b.retreating) {
-            // walk away from the threat axis, sip handled by the common block
-            const SeenEnt* threat = bestId != 0 ? &b.ents[bestId] : nullptr;
-            int fx = b.tileX + (threat ? (b.tileX - threat->x >= 0 ? 10 : -10) : 8);
-            int fy = b.tileY + (threat ? (b.tileY - threat->y >= 0 ? 10 : -10) : 8);
-            if (map->inBounds(fx, fy) && !map->isBlocked(fx, fy)) {
-              bh::proto::InputPath ip;
-              ip.goalX = fx;
-              ip.goalY = fy;
-              sendProto(b.peer, bh::proto::pack(ip));
+            // Route v5c: defend at point-blank while disengaging.  This block
+            // `continue`s before the attack block below, so a fleeing bot never
+            // swung -- it walked home as a free punching bag for the pursuers.
+            if (bestId != 0 && bestD <= 1 && t >= b.nextAttackAt) {
+              bh::proto::AttackRequest ar;
+              ar.targetId = bestId;
+              sendProto(b.peer, bh::proto::pack(ar));
+              b.attackTarget = bestId;
+              b.nextAttackAt = t + 0.9;
             }
+            if (b.mapId == 1 && b.homeX >= 0 && !nearTown) {
+              // Route v5: walk HOME, not away along the threat axis.  The v4
+              // +-10 flee west-walked bots off (55,19) down the south road
+              // x[14,15] y[17,33], which passes 3 tiles from the L11
+              // gravecaller_barricade (6,18) and on into hounds_marsh (10,40)
+              // -- hence the L11/L5 kills at lastDeath (18,30)/(24,46), far
+              // from camp.  Home (~32,16) is outside every aggro radius, and
+              // the ghoul leash (14 from anchor) drops the chase en route.
+              bh::proto::InputPath ip;
+              ip.goalX = b.homeX;
+              ip.goalY = b.homeY;
+              sendProto(b.peer, bh::proto::pack(ip));
+            } else if (!nearTown) {
+              // maps 2/3 (or no home anchor yet): keep the old threat-axis flee
+              const SeenEnt* threat = bestId != 0 ? &b.ents[bestId] : nullptr;
+              int fx = b.tileX + (threat ? (b.tileX - threat->x >= 0 ? 10 : -10) : 8);
+              int fy = b.tileY + (threat ? (b.tileY - threat->y >= 0 ? 10 : -10) : 8);
+              if (map->inBounds(fx, fy) && !map->isBlocked(fx, fy)) {
+                bh::proto::InputPath ip;
+                ip.goalX = fx;
+                ip.goalY = fy;
+                sendProto(b.peer, bh::proto::pack(ip));
+              }
+            }
+            // nearTown: stand fast; the economy + choir blocks sip and mend
             b.nextMoveAt = t + 0.8;
             continue;
           }
