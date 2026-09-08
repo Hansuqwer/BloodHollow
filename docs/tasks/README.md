@@ -59,7 +59,7 @@ One card = one agent session = one PR. Move to `done/` with evidence pasted.
 
 | Card | Title | Notes |
 |---|---|---|
-| T-033 | M2 gate run: 620s soak w/ grinder mix, balance bands checked, wipe replay attached, human trade pass | gate=of record + devlog |
+| T-033 (human slice) | Trade-pass UX review: trade window / `/repair` / anvil feel | **human-only**; soak telemetry attached in devlog 0031. The programmable half (14-bot grinder soak, bands, wipe replay) re-PASSed 2026-09-08 — see `done/T-033.md` |
 
 ## Done — Sprint 8 (2026-09-04): zones-in-process (Phase 3 launch)
 
