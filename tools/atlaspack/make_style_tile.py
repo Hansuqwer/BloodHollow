@@ -43,7 +43,28 @@ def diamond_mask(w=TW, h=TH) -> Image.Image:
     return m
 
 
-def make_ground_tiles(src: Image.Image, pal: np.ndarray, n: int = 6):
+PLATE_MIN_LUMA = 24  # B0 gate carried fix #1: nothing on a plate darker than the sprite outline #1a1214 (luma ≈ 22)
+
+
+def clamp_plate_floor(img: Image.Image, floor: int = PLATE_MIN_LUMA) -> Image.Image:
+    """Lift only the pixels whose luma is below `floor` (scale RGB up so luma == floor);
+    everything else untouched. Keeps the plate mean and the approved look; kills the
+    'darker than the outline' pixels that failed `bh_qa_sheet --kind plate` (min 22.1)."""
+    a = np.asarray(img.convert("RGBA")).astype(np.float32)
+    rgb = a[..., :3]
+    luma = rgb[..., 0] * 0.299 + rgb[..., 1] * 0.587 + rgb[..., 2] * 0.114
+    low = luma < floor
+    if low.any():
+        target = floor + 1.0  # +1 so uint8 rounding cannot land below the floor
+        scale = np.where(luma > 0.5, target / np.maximum(luma, 0.5), 1.0)
+        lifted = np.clip(np.rint(rgb * scale[..., None]), 0, 255)
+        lifted[luma <= 0.5] = np.ceil(target)  # pure black → flat grey at the floor
+        rgb[low] = lifted[low]
+    a[..., :3] = rgb
+    return Image.fromarray(np.rint(a).astype(np.uint8), "RGBA")
+
+
+def make_ground_tiles(src: Image.Image, pal: np.ndarray, n: int = 6, *, clamp_floor: bool = True):
     """Six non-repeating 64x32 diamonds cut from a nearest-downscaled painterly
     plate (§6: >=6 base variants per ground type). The plate is scaled so one
     tile spans ~1/4 of it — the Soma 'large zoom' read."""
@@ -58,6 +79,9 @@ def make_ground_tiles(src: Image.Image, pal: np.ndarray, n: int = 6):
     arr = np.clip(arr * 0.95 + 14.0, 0, 255)  # lift floor: terrain min luma > outline #1a1214
     small = Image.fromarray(arr.astype(np.uint8), "RGB").convert("RGBA")
     small = P.quantize(small, pal, dither="bayer2", strength=0.05)
+    if clamp_floor:  # default ON since B1 (min-luma ≥ 24); the approved B0 tile is built with clamp_floor=False (md5-locked)
+        small = clamp_plate_floor(small)
+        small = P.quantize(small, pal, dither="none")
     mask = diamond_mask()
     tiles = []
     rng = np.random.default_rng(1999)
@@ -172,7 +196,7 @@ def main() -> int:
     P.palette_strip(pal_ter, OUT / "palette_terrain_fields.png")
 
     # ---- assets at engine scale
-    tiles, plate = make_ground_tiles(ground_raw, pal_ter)
+    tiles, plate = make_ground_tiles(ground_raw, pal_ter, clamp_floor=False)  # B0 approved tile: md5-locked, see B0-GATE-DECISION
     tree = make_tree(PLATES / "dead_tree_4x_raw.png", pal_ter)
     # rat: a low, wide mob — 20 px tall in a 32x48 cell; ravager: 46 px tall (GDD "~56 px incl. headroom")
     rat = make_sprite(PLATES / "marsh_rat_4x_raw.png", 20, pal_mob, shadow_rx=10, gamma=0.80)

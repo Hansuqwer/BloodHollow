@@ -72,6 +72,7 @@ def main() -> int:
     ap.add_argument("--terrain-luma", type=float, default=None)
     ap.add_argument("--cell", default="32x48")
     ap.add_argument("--anchor-y", type=int, default=42)
+    ap.add_argument("--hover", type=int, default=0, help="hoverers (REGISTRY: bat body bottom ≈ anchor-12): flight anims check anchor-hover; die/corpse frames must land on the anchor")
     ap.add_argument("--hour", type=float, default=2.0)
     ap.add_argument("--out")
     ap.add_argument("--gate", type=float, default=25.0)
@@ -93,7 +94,7 @@ def main() -> int:
 
     audit: dict = {"input": str(src.relative_to(ROOT)) if src.is_relative_to(ROOT) else str(src),
                    "kind": kind, "cell": [cw, ch], "anchor_y": args.anchor_y, "hour": args.hour,
-                   "night_overlay": P.night_overlay(args.hour), "gates": {}, "engine_validated": False}
+                   "night_overlay": P.night_overlay(args.hour), "hover": args.hover, "gates": {}, "engine_validated": False}
 
     plate = Image.open(args.plate).convert("RGBA") if args.plate else None
     if plate is not None:
@@ -139,7 +140,7 @@ def main() -> int:
                 these = [c[3] for c in cells if c[0] == name]
                 per_anim[name] = {"frames": a["frames"], "fps": a.get("fps"),
                                   "max_colours": max(P.count_colours(c) for c in these),
-                                  "feet_ok_all_dirs": all(feet_check(c, args.anchor_y) for c in these)}
+                                  "feet_ok_all_dirs": all(feet_check(c, args.anchor_y - (0 if name == "die" else args.hover)) for c in these)}
             audit["anims"] = per_anim
             g = audit["gates"]
             g["colours_le_max_all_frames"] = all(v["max_colours"] <= args.max_colours for v in per_anim.values())
@@ -149,7 +150,7 @@ def main() -> int:
             rep = img
             g = audit["gates"]
             g["cell_dims"] = img.size == (cw, ch)
-            g["feet_on_anchor"] = feet_check(img, args.anchor_y)
+            g["feet_on_anchor"] = feet_check(img, args.anchor_y - args.hover)
             g["colours_le_max"] = P.count_colours(img) <= args.max_colours
             audit["colours"] = P.count_colours(img)
             failures += [k for k, v in g.items() if not v]
