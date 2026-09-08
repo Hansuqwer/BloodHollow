@@ -1,0 +1,59 @@
+{
+ "input": "assets/aigen/mobs/1007_gravecaller/sheet.png",
+ "kind": "sheet",
+ "cell": [
+  32,
+  48
+ ],
+ "anchor_y": 42,
+ "hour": 2.0,
+ "night_overlay": [
+  18,
+  22,
+  70,
+  145
+ ],
+ "hover": 0,
+ "gates": {
+  "colours_le_max_all_frames": true,
+  "feet_on_anchor_all_frames": true,
+  "r_luma_day_ge_gate": true,
+  "r_luma_night_ge_gate": true
+ },
+ "engine_validated": false,
+ "terrain_luma": 49.3,
+ "loader_rule_replica": "clean",
+ "frames_total": 80,
+ "anims": {
+  "walk": {
+   "frames": 4,
+   "fps": 10.0,
+   "max_colours": 30,
+   "feet_ok_all_dirs": true
+  },
+  "attack": {
+   "frames": 3,
+   "fps": 12.0,
+   "max_colours": 30,
+   "feet_ok_all_dirs": true
+  },
+  "die": {
+   "frames": 3,
+   "fps": 8.0,
+   "max_colours": 30,
+   "feet_ok_all_dirs": true
+  }
+ },
+ "r_luma": {
+  "body_mean": 89.7,
+  "terrain_mean": 49.3,
+  "delta_day": 40.4,
+  "body_mean_incl_outline": 74.7,
+  "delta_day_incl_outline": 25.4,
+  "definition": "rulebook R-LUMA = opaque body pixels EXCLUDING the #1a1214 outline; the B0 style_tile_audit.json included the outline (hence its lower 23.7)",
+  "body_night": 53.5,
+  "terrain_night": 36.2,
+  "delta_night": 17.3
+ },
+ "failures": []
+}

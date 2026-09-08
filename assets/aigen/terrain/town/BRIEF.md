@@ -1,6 +1,6 @@
 # Thornwall tileset
 
-**Status:** design brief only — no art generated (gated on B0 approval).
+**Status:** B1 plates + D12 edge sets + prism skin generated 2026-09-08 (`tools/atlaspack/b1_build.sh`, offline QA exit 0) — **UNVALIDATED in engine** (no textured-ground renderer; T-ART-12). Record: `docs/art/batches/B1-terrain-town-fields.md`; manifest `terrain.json`.
 **Spec:** `docs/art/10-terrain.md` (plate list, edge pairs measured from `data/maps-src/*.tmj`, furniture, palette anchors).
 **Contents:** plates: turf, plaza dirt, cobble, lane mud, graveyard turf, river · prism skin: nailed palisade on fieldstone · 7 edge pairs · furniture: Widow Anvil (65), Marta stall (64), Wanted Board (66), well, bell post, gallows rim, gravestones ×6
 

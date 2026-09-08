@@ -1,0 +1,896 @@
+{
+ "zone": "town",
+ "map": "thornwall",
+ "engine_validated": false,
+ "status": "UNVALIDATED in engine (no textured-ground renderer; T-ART-12 / D6)",
+ "tile": [
+  64,
+  32
+ ],
+ "plate": [
+  512,
+  256
+ ],
+ "cut": "bhpix.cut_diamond(plate, world_px_x, world_px_y) \u2014 plate coords = world px mod plate",
+ "prism_px": 28,
+ "palette": "palette_town.png",
+ "palette_colours": 32,
+ "terrain_ids": {
+  "0": "GRASS",
+  "1": "DIRT",
+  "2": "WALL",
+  "3": "WATER",
+  "4": "WOOD",
+  "5": "PATH",
+  "6": "MUD",
+  "7": "DARKGRASS"
+ },
+ "plates": {
+  "GRASS": {
+   "file": "assets/aigen/terrain/town/plates/0_GRASS.png",
+   "luma_mean": 48.5,
+   "luma_min": 30.3,
+   "colours": 23,
+   "gain": 0.708,
+   "raw": "assets/aigen/terrain/town/raw/turf_4x_raw.png"
+  },
+  "DIRT": {
+   "file": "assets/aigen/terrain/town/plates/1_DIRT.png",
+   "luma_mean": 48.6,
+   "luma_min": 30.3,
+   "colours": 23,
+   "gain": 0.646,
+   "raw": "assets/aigen/terrain/town/raw/plaza_dirt_4x_raw.png"
+  },
+  "WATER": {
+   "file": "assets/aigen/terrain/town/plates/3_WATER.png",
+   "luma_mean": 46.1,
+   "luma_min": 38.0,
+   "colours": 17,
+   "gain": 1.182,
+   "raw": "assets/aigen/terrain/town/raw/river_4x_raw.png"
+  },
+  "PATH": {
+   "file": "assets/aigen/terrain/town/plates/5_PATH.png",
+   "luma_mean": 48.5,
+   "luma_min": 30.3,
+   "colours": 25,
+   "gain": 0.77,
+   "raw": "assets/aigen/terrain/town/raw/cobble_4x_raw.png"
+  },
+  "MUD": {
+   "file": "assets/aigen/terrain/town/plates/6_MUD.png",
+   "luma_mean": 47.3,
+   "luma_min": 30.3,
+   "colours": 28,
+   "gain": 0.68,
+   "raw": "assets/aigen/terrain/town/raw/lane_mud_4x_raw.png"
+  },
+  "DARKGRASS": {
+   "file": "assets/aigen/terrain/town/plates/7_DARKGRASS.png",
+   "luma_mean": 45.9,
+   "luma_min": 30.3,
+   "colours": 28,
+   "gain": 0.9,
+   "raw": "assets/aigen/terrain/town/raw/graveyard_turf_4x_raw.png"
+  },
+  "WOOD": {
+   "file": null,
+   "note": "id 4 WOOD uses the PATH plate until the B2 crypt gangway plate lands (0.4 % of the town map)"
+  }
+ },
+ "bleed_rule": "D12 organic-over-built: overlay = the bleeder's pieces drawn on the base tile whose 8-neighbour set contains the bleeder (faces first, points only when neither adjoining face bleeds \u2014 bhpix.edge_mask_for); WALL never bleeds: ground tiles touching a WALL draw prism/skirt_* instead",
+ "pairs": [
+  {
+   "a": "GRASS",
+   "b": "WALL",
+   "boundary_len": 248,
+   "bleeder": null,
+   "pieces": "prism/skirt_* (WALL never bleeds \u2014 footing skirt on the ground tile)"
+  },
+  {
+   "a": "GRASS",
+   "b": "PATH",
+   "boundary_len": 119,
+   "bleeder": "GRASS",
+   "dir": "assets/aigen/terrain/town/edges/PATH_GRASS",
+   "variants": 3,
+   "base_tile": "PATH",
+   "overlay": "GRASS"
+  },
+  {
+   "a": "GRASS",
+   "b": "WATER",
+   "boundary_len": 118,
+   "bleeder": "WATER",
+   "dir": "assets/aigen/terrain/town/edges/GRASS_WATER",
+   "variants": 3,
+   "base_tile": "GRASS",
+   "overlay": "WATER"
+  },
+  {
+   "a": "GRASS",
+   "b": "MUD",
+   "boundary_len": 67,
+   "bleeder": "MUD",
+   "dir": "assets/aigen/terrain/town/edges/GRASS_MUD",
+   "variants": 3,
+   "base_tile": "GRASS",
+   "overlay": "MUD"
+  },
+  {
+   "a": "GRASS",
+   "b": "DARKGRASS",
+   "boundary_len": 52,
+   "bleeder": "DARKGRASS",
+   "dir": "assets/aigen/terrain/town/edges/GRASS_DARKGRASS",
+   "variants": 3,
+   "base_tile": "GRASS",
+   "overlay": "DARKGRASS"
+  },
+  {
+   "a": "DIRT",
+   "b": "WALL",
+   "boundary_len": 31,
+   "bleeder": null,
+   "pieces": "prism/skirt_* (WALL never bleeds \u2014 footing skirt on the ground tile)"
+  },
+  {
+   "a": "GRASS",
+   "b": "DIRT",
+   "boundary_len": 30,
+   "bleeder": "GRASS",
+   "dir": "assets/aigen/terrain/town/edges/DIRT_GRASS",
+   "variants": 3,
+   "base_tile": "DIRT",
+   "overlay": "GRASS"
+  },
+  {
+   "a": "WALL",
+   "b": "DARKGRASS",
+   "boundary_len": 14,
+   "bleeder": null,
+   "pieces": "prism/skirt_* (WALL never bleeds \u2014 footing skirt on the ground tile)"
+  },
+  {
+   "a": "WALL",
+   "b": "WOOD",
+   "boundary_len": 12,
+   "bleeder": null,
+   "pieces": "prism/skirt_* (WALL never bleeds \u2014 footing skirt on the ground tile)"
+  },
+  {
+   "a": "PATH",
+   "b": "DARKGRASS",
+   "boundary_len": 9,
+   "bleeder": "DARKGRASS",
+   "dir": "assets/aigen/terrain/town/edges/PATH_DARKGRASS",
+   "variants": 3,
+   "base_tile": "PATH",
+   "overlay": "DARKGRASS"
+  },
+  {
+   "a": "WALL",
+   "b": "MUD",
+   "boundary_len": 9,
+   "bleeder": null,
+   "pieces": "prism/skirt_* (WALL never bleeds \u2014 footing skirt on the ground tile)"
+  },
+  {
+   "a": "WALL",
+   "b": "WATER",
+   "boundary_len": 8,
+   "bleeder": null,
+   "pieces": "prism/skirt_* (WALL never bleeds \u2014 footing skirt on the ground tile)"
+  },
+  {
+   "a": "WATER",
+   "b": "PATH",
+   "boundary_len": 8,
+   "bleeder": "WATER",
+   "dir": "assets/aigen/terrain/town/edges/PATH_WATER",
+   "variants": 3,
+   "base_tile": "PATH",
+   "overlay": "WATER"
+  },
+  {
+   "a": "DIRT",
+   "b": "DARKGRASS",
+   "boundary_len": 5,
+   "bleeder": "DARKGRASS",
+   "dir": "assets/aigen/terrain/town/edges/DIRT_DARKGRASS",
+   "variants": 3,
+   "base_tile": "DIRT",
+   "overlay": "DARKGRASS"
+  },
+  {
+   "a": "WALL",
+   "b": "PATH",
+   "boundary_len": 4,
+   "bleeder": null,
+   "pieces": "prism/skirt_* (WALL never bleeds \u2014 footing skirt on the ground tile)"
+  },
+  {
+   "a": "DIRT",
+   "b": "PATH",
+   "boundary_len": 4,
+   "bleeder": "DIRT",
+   "dir": "assets/aigen/terrain/town/edges/PATH_DIRT",
+   "variants": 3,
+   "base_tile": "PATH",
+   "overlay": "DIRT"
+  },
+  {
+   "a": "PATH",
+   "b": "MUD",
+   "boundary_len": 4,
+   "bleeder": "MUD",
+   "dir": "assets/aigen/terrain/town/edges/PATH_MUD",
+   "variants": 3,
+   "base_tile": "PATH",
+   "overlay": "MUD"
+  }
+ ],
+ "edge_seam_audit": {
+  "PATH_GRASS/v0": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.308
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.307
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.307
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.309
+   }
+  },
+  "PATH_GRASS/v1": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.309
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.308
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.308
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.309
+   }
+  },
+  "PATH_GRASS/v2": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.306
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.312
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.312
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.307
+   }
+  },
+  "GRASS_WATER/v0": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.379
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.379
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.379
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.379
+   }
+  },
+  "GRASS_WATER/v1": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.379
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.382
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.381
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.38
+   }
+  },
+  "GRASS_WATER/v2": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.381
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.38
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.381
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.382
+   }
+  },
+  "GRASS_MUD/v0": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.327
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.331
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.331
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.327
+   }
+  },
+  "GRASS_MUD/v1": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.327
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.334
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.334
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.327
+   }
+  },
+  "GRASS_MUD/v2": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.33
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.326
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.325
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.329
+   }
+  },
+  "GRASS_DARKGRASS/v0": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.31
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.307
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.307
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.31
+   }
+  },
+  "GRASS_DARKGRASS/v1": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.305
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.309
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.309
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.305
+   }
+  },
+  "GRASS_DARKGRASS/v2": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.312
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.312
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.311
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.312
+   }
+  },
+  "DIRT_GRASS/v0": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.304
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.304
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.304
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.303
+   }
+  },
+  "DIRT_GRASS/v1": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.311
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.312
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.312
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.311
+   }
+  },
+  "DIRT_GRASS/v2": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.305
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.308
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.309
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.306
+   }
+  },
+  "PATH_DARKGRASS/v0": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.313
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.312
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.312
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.312
+   }
+  },
+  "PATH_DARKGRASS/v1": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.313
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.314
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.313
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.313
+   }
+  },
+  "PATH_DARKGRASS/v2": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.311
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.311
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.312
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.312
+   }
+  },
+  "PATH_WATER/v0": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.378
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.38
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.379
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.378
+   }
+  },
+  "PATH_WATER/v1": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.377
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.375
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.375
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.378
+   }
+  },
+  "PATH_WATER/v2": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.38
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.383
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.383
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.38
+   }
+  },
+  "DIRT_DARKGRASS/v0": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.303
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.303
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.303
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.304
+   }
+  },
+  "DIRT_DARKGRASS/v1": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.309
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.309
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.309
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.308
+   }
+  },
+  "DIRT_DARKGRASS/v2": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.31
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.31
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.31
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.31
+   }
+  },
+  "PATH_DIRT/v0": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.281
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.284
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.284
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.282
+   }
+  },
+  "PATH_DIRT/v1": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.281
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.281
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.281
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.28
+   }
+  },
+  "PATH_DIRT/v2": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.283
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.284
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.283
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.283
+   }
+  },
+  "PATH_MUD/v0": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.33
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.329
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.329
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.331
+   }
+  },
+  "PATH_MUD/v1": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.326
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.323
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.324
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.327
+   }
+  },
+  "PATH_MUD/v2": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.333
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.331
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.332
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.334
+   }
+  }
+ }
+}

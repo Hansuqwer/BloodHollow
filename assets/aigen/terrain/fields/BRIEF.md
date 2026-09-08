@@ -1,6 +1,6 @@
 # Fields of the Overflow tileset
 
-**Status:** design brief only — no art generated (gated on B0 approval).
+**Status:** B1 plates + D12 edge sets + prism skin generated 2026-09-08 (`tools/atlaspack/b1_build.sh`, offline QA exit 0) — **UNVALIDATED in engine** (no textured-ground renderer; T-ART-12). Record: `docs/art/batches/B1-terrain-town-fields.md`; manifest `terrain.json`.
 **Spec:** `docs/art/10-terrain.md` (plate list, edge pairs measured from `data/maps-src/*.tmj`, furniture, palette anchors).
 **Contents:** plates: furrow turf (26.6° furrows), field mud, cart track, shadow turf · prism skin: root/hedge wall · 4 edge pairs · scatter day/night sets · Old Maw den decal
 

@@ -1,0 +1,110 @@
+{
+ "zone": "fields",
+ "engine_validated": false,
+ "pairs": {
+  "PATH<GRASS": {
+   "pieces_in_patch": 16,
+   "variants": 3,
+   "seam": {
+    "NE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.308
+    },
+    "SE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.307
+    },
+    "SW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.307
+    },
+    "NW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.309
+    }
+   }
+  },
+  "GRASS<DARKGRASS": {
+   "pieces_in_patch": 16,
+   "variants": 3,
+   "seam": {
+    "NE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.306
+    },
+    "SE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.306
+    },
+    "SW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.307
+    },
+    "NW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.307
+    }
+   }
+  },
+  "GRASS<MUD": {
+   "pieces_in_patch": 16,
+   "variants": 3,
+   "seam": {
+    "NE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.327
+    },
+    "SE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.331
+    },
+    "SW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.331
+    },
+    "NW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.327
+    }
+   }
+  },
+  "PATH<DARKGRASS": {
+   "pieces_in_patch": 16,
+   "variants": 3,
+   "seam": {
+    "NE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.306
+    },
+    "SE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.31
+    },
+    "SW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.309
+    },
+    "NW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.306
+    }
+   }
+  }
+ }
+}
