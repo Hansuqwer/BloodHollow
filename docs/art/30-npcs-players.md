@@ -36,7 +36,7 @@ palette swaps: pale `#d6c6be`, sallow `#b8a48a`, weathered-tan `#8e6e52`) →
 class overlay (robe/armour) → weapon attach → trim colour (faction/party
 ≤ 8 %). All 8 dirs, full set idle 1 / walk 6 / attack 3 / cast 4 / hurt 2 /
 die 4 / gib 3 = **23 cols × 8 rows = 736×384** per (class, sex) at 32×48
-(or 736×448 if the director picks 32×56, see style-tile note 2).
+(D2 ruled 32×48 on 2026-09-08 — 736×384 fixed).
 
 Base body rules (from B0): body 46 px; head 8 px; shoulder widths by class;
 **the right hand is the weapon hand in every direction** (no mirroring);

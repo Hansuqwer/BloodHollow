@@ -36,7 +36,7 @@ Native files: `style_tile_256_day.png`, `_night.png`, `_grey.png`.
 | R-LUMA, rulebook definition (body excl. outline) | ravager **+42.7** · rat **+50.0** (`qa/cell_*_audit.json`) | ≥ 25 | pass — the 23.7 above included the outline ring |
 | Accent hue on terrain/gear | none | reject if present | pass |
 
-## Notes for the director (decisions requested)
+## Notes for the director (answered 2026-09-08 — rulings in `docs/art/B0-GATE-DECISION.md`: D1 corrected definition + selective rim · D2 32×48 · D3 floor +0 · D4 7×11)
 
 1. **Ravager Δ = 23.7 vs gate 25.** Two honest options: (a) accept 23 as the
    *player* gate (players carry name tags + HP bar, mobs don't), or (b) add the

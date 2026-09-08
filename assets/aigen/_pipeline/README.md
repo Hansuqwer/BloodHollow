@@ -27,6 +27,25 @@ the engine. The code lives in `tools/atlaspack/`:
   (`bhpix.edge_masks`, faces NE/SE/SW/NW + points N/E/S/W, iso-correct per
   `iso.cpp`), autotile union (`edge_mask_for`), first-cut composer
   (`blend_edge`); board + masks → `style-tile/export/edges/`.
+- `bh_mob_sheet.py <id> --body-h N --family F [--cell 32x48|40x60|64x64 --anchor-y N] [--anims walk4,attack3,hurt2,cast4,die3,summon4]
+  [--kind ground|fly|spider|boss --hover 12] [--walk-style bob|glide|drag|bell] [--asym-box x0,y0,x1,y1] [--gamma g]
+  [--attack-fx line8|dots5] [--n-hide-face F] [--pin RULE=HEX] [--quiet-band N --quiet-ramp i,j,k]` —
+  B3/B4 chain: native `plates/<slug>_{S,SE,E,N}_4x_raw.png` → colour-matched, family-quantised
+  sprites → 8 dirs (derived ones flagged in `derivation.json`) → walk/attack/hurt/cast/die/summon
+  frames (pixel ops) → `cells/` → `bh_pack_sheet.py` → `sheet.png` + `sheet.json`.
+- `b3_build.sh` — reproducible B3 build + QA of mobs 1001–1005 (exit 0 = all gates pass).
+- `b4_build.sh` — reproducible B4 build + QA of mobs 1006–1010 incl. the elite 40×60 and the boss
+  64×64 × 21 sheets, then `b4_boss_occupancy.py` (real B4 cells in the drowned-crypt font rects: no entity
+  > 50 % hidden, sweep inside the cell, bell lower 16 px ≤ 6 colours / luma σ ≤ 22). Exit 0 = all gates.
+- `bh_terrain.py <zone> [--variants N] [--preview]` — B1/B2 terrain chain: `terrain/<zone>/raw/*_4x_raw.png` →
+  zone ramp ≤ 32 (luma ≥ 24) → 512×256 plates (D3 gain, roll-and-mask wrap-blend, bayer2 quantize, floor clamp ≥ 24)
+  → D12 edge overlay pieces (8 per pair × N variants, bleeder per `BLEED_RANK`, WALL never bleeds → `prism/skirt_*`)
+  → prism skin (top/left/right) → `terrain.json` + plate QA (`bh_qa_sheet.py --kind plate`) + edge seam audit.
+  `--preview` renders `docs/research-notes/qa/b1_<zone>_map_3x.png` via `bh_terrain_preview.py` (offline composite of
+  the real `.tmj` ground layer; **not the engine**).
+- `b1_edge_board.py <zone>` — per-pair edge QA board (8 pieces on the base tile + 5×5 autotile patch, rotating variants).
+- `b1_build.sh` — reproducible B1 build + QA of town + fields (both zones, both boards, mob R-LUMA cross-check on the
+  real plates). Exit 0 = all gates.
 - `map_manifest.py [map]` — read-only `.tmj` → `assets/aigen/terrain/<zone>/MAPS_*`.
 - `make_decision_board.py`, `make_crowd_test.py` — provisional QA boards from
   the B0 plates (director inputs; regenerate with real sheets later).

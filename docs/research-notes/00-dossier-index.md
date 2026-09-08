@@ -16,7 +16,7 @@ frames from the director-linked videos; `-tNNNNs.jpg` = 2× key frames).
 **Style-lock proof** (bible §0 step 2): [`style-tile/README.md`](style-tile/README.md)
 — 256×256 field + Marsh Rat + Ravager + Firebolt, pushed through the real
 cleanup pipeline (`tools/atlaspack/bhpix.py`) at engine scale, rendered day /
-engine-night / greyscale. **Awaiting director approval before any volume work.**
+engine-night / greyscale. **Approved 2026-09-08 (`docs/art/B0-GATE-DECISION.md`); volume work open.**
 
 ## Cross-ancestor findings that changed the spec (read these first)
 

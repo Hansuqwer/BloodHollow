@@ -1,5 +1,9 @@
 # PARALLEL-ROADMAP — what the art lane can produce while the B0 gate is open
 
+> **2026-09-08:** the gate is **open** and §5 D1–D12 are **ruled** — see
+> `docs/art/B0-GATE-DECISION.md` (binding). This document is now the historical
+> plan; production records live in `docs/art/batches/`.
+
 **Brief:** B0.5 evaluation (evaluation only; does not advance the B0 gate).
 **Date:** 2026-09-07 evening · **Repo state read:** `origin/master @ 78aa6c9`
 (fetched live; local branch reset to it — my earlier local commit `f486d21` is

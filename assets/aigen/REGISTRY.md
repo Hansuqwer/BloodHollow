@@ -1,6 +1,6 @@
 # assets/aigen — asset registry (lookup contract for T-ART-05 / 06 / 10)
 
-**Status:** contract draft, 2026-09-07 (B0.5 A17). Nothing listed here exists
+**Status:** contract, consolidated 2026-09-08 to the B0 gate rulings (`docs/art/B0-GATE-DECISION.md`: D2 32×48, D5 40×60, D7 bake ×3, D9 rename). Nothing listed here exists
 as art yet; the table freezes *paths, cells and anchors* so the client's
 `atlasFor(wireKind)` table and the art drops cannot drift apart.
 Sources: `shared/content/mobs.h` (ids/names verbatim), `shared/content/wirekind.h`
@@ -17,9 +17,9 @@ T-ART-10), `docs/art/20-mobs.md`, `30-npcs-players.md`, `40-items-icons.md`.
   offset blocks, rows = 8 dirs E,SE,S,SW,W,NW,N,NE) + `prompt.md` + `palette.png`.
 - `anchorY` (feet row) is written into every anim block **now**; loaders
   that don't read it default to 42 (correct for all 32×48 cells).
-- Skin-tone / class-tint variants: `sheet.png` is the base; `tone_<n>.png`
-  are palette index maps (if the palette-swap shader lands) **or** baked
-  `sheet_<tone>.png` (if not) — decided at B6 (D7).
+- Skin-tone variants: **D7 ruled bake ×3** — `sheet_pale.png`, `sheet_sallow.png`,
+  `sheet_weathered.png` per (class, sex) = 18 sheets; the A3 index maps stay in
+  `palettes/families.json` for a later shader, not a B6 dependency.
 - wireKind → mob id: `wireKind = index_in_kMobs + 1` (1001 → 1 … 1010 → 10).
   Furniture band starts at 64 (`kWireKindFurnitureFloor`); NPC kinds 67–73
   are **reserved here, not shipped** (T-ART-06).
@@ -34,10 +34,10 @@ T-ART-10), `docs/art/20-mobs.md`, `30-npcs-players.md`, `40-items-icons.md`.
 | 4 | 1004 | Plague Bat | `mobs/1004_plague_bat/` | 32×48 | 42 (shadow at 45; body hovers, bottom row ≈30) | 10 | 320×384 | vermin |
 | 5 | 1005 | Bonepicker Gnoll | `mobs/1005_bonepicker_gnoll/` | 32×48 | 42 | 10 | 320×384 | grave-goods |
 | 6 | 1006 | Charnel Widow | `mobs/1006_charnel_widow/` | 32×48 | 42 | 10 | 320×384 | widow |
-| 7 | 1007 | Gravecaller | `mobs/1007_gravecaller/` | 32×48 | 42 | 10 | 320×384 | choir-wax |
+| 7 | 1007 | Gravecaller → **Waxen Celebrant** (D9 ruled; `mobs.h` edit pending, content owner) | `mobs/1007_gravecaller/` (id-keyed, unchanged) | 32×48 | 42 | 10 | 320×384 | choir-wax |
 | 8 | 1008 | Revenant Sexton | `mobs/1008_revenant_sexton/` | 32×48 | 42 | 10 | 320×384 | grave-goods |
 | 9 | 1009 | Gravemother | `mobs/1009_gravemother/` | 64×64 | 58 | walk4 attack3 cast4 hurt2 die4 summon4 (21) | 1344×512 | choir-wax |
-| 10 | 1010 | Sepulcher Elite | `mobs/1010_sepulcher_elite/` | **D5:** 40×60 (spec) / 48×64 (card) | 52 / 56 | walk4 attack3 hurt2 die3 (12) | 480×480 / 576×512 | grave-goods |
+| 10 | 1010 | Sepulcher Elite | `mobs/1010_sepulcher_elite/` | **40×60** (D5 ruled; T-ART-10 card text 48×64 to be amended) | 52 | walk4 attack3 hurt2 die3 (12) | 480×480 | grave-goods |
 
 Sheet-size caps: ≤ 320×384 common · ≤ 480×480 elite · ≤ 1344×512 boss
 (`docs/art/01-FLAGS.md` F5 supersedes the bible's figures).
@@ -61,7 +61,7 @@ Sheet-size caps: ≤ 320×384 common · ≤ 480×480 elite · ≤ 1344×512 boss
 
 | kit (kits.h) | class | folder | cell | anchorY | anims (cols) | sheet px |
 |---|---|---|---|---|---|---|
-| 1 | Ravager | `players/ravager/{m,f}/` | **D2:** 32×48 (body ≤ 43 px, rows 0–42) / 32×56 (body ≤ 50 px) | 42 / 50 | idle1 walk6 attack3 cast4 hurt2 die4 gib3 (23) | 736×384 / 736×448 |
+| 1 | Ravager | `players/ravager/{m,f}/` | **32×48** (D2 ruled; body ≤ 43 px, rows 0–42) | 42 | idle1 walk6 attack3 cast4 hurt2 die4 gib3 (23) | 736×384 |
 | 2 | Gravecaller | `players/gravecaller/{m,f}/` | same | same | 23 | same |
 | 3 | Cultist (Pale Choir) | `players/cultist/{m,f}/` | same | same | 23 | same |
 
@@ -98,7 +98,17 @@ from `docs/art/50-vfx.md` (#1–#31).
 ## Terrain (no renderer yet — D6 / proposed T-ART-12)
 
 `terrain/<zone>/plates/<terrain_id>_<name>.png` (512×256, cut by
-`bhpix.cut_diamond` at world px), `terrain/<zone>/edges/<a>_<b>/{edge_NE,
-edge_SE,edge_SW,edge_NW,corner_N,corner_E,corner_S,corner_W}.png` (64×32),
-`terrain/<zone>/prism/{top,left,right}.png`, `terrain/<zone>/scatter/`,
-`terrain/<zone>/pools/`. Terrain ids per `docs/art/10-terrain.md`.
+`bhpix.cut_diamond` at world px), `terrain/<zone>/edges/<BASE>_<OVERLAY>/v<k>/{edge_NE,
+edge_SE,edge_SW,edge_NW,corner_N,corner_E,corner_S,corner_W}.png` (64×32 overlay pieces
+of the D12 bleeder, drawn on the base tile; k = variant), `terrain/<zone>/prism/{top,left,right,
+skirt_edge_*,skirt_corner_*}.png` (WALL skin + footing skirt — WALL never bleeds),
+`terrain/<zone>/palette_<zone>.png` (≤ 32), `terrain/<zone>/terrain.json` (the T-ART-12
+contract: ids, plates + stats, pairs → bleeder/dir/variants, seam audit), `terrain/<zone>/scatter/`,
+`terrain/<zone>/pools/` (B8). Terrain ids per `docs/art/10-terrain.md`.
+
+| zone | map | plates | edge sets | prism | status |
+|---|---|---|---|---|---|
+| `town` | thornwall | 0 GRASS · 1 DIRT · 3 WATER · 5 PATH · 6 MUD · 7 DARKGRASS (4 WOOD → PATH stand-in until B2) | 10 pairs × 3 variants | plank palisade + skirt | **B1 2026-09-08 · offline QA rc 0 · UNVALIDATED in engine** |
+| `fields` | fields_overflow | 0 GRASS · 5 PATH · 6 MUD · 7 DARKGRASS | 4 pairs × 3 | dead bramble hedge + skirt | **B1 2026-09-08 · offline QA rc 0 · UNVALIDATED in engine** |
+| `mine`, `crypt` (both crypts) | — | B2 | | | brief only |
+| `castle` | — | later | | | brief only |

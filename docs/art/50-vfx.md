@@ -70,8 +70,8 @@ in/out frames by hand from it; AI is bad at coherent 3-frame strips and the
 frames are 8–48 px anyway.
 
 Callout font (§12, R-TEXT): red-caps bitmap, 1 px black outline, glyph set
-A–Z 0–9 ! - ' . : + / (cell 7×11 per rulebook R-TEXT; a 5×7 parity draft
-also exists — decision D4, `docs/art/PARALLEL-ROADMAP.md §5`; drafts in
+A–Z 0–9 ! - ' . : + / (**7×11, D4 ruled 2026-09-08**; the 5×7 draft is retained
+only as the fallback if 11 px proves too loud in the real pile; drafts in
 `docs/research-notes/style-tile/export/font/`, `tools/atlaspack/bhfont.py`),
 exported as `icons/ui/callout_font.png` + `.fnt`; night plate 2 px `#0c0a0a`
 α160. Replaces raylib `DrawText` in `drawFloaters` (proposed T-ART-13; no

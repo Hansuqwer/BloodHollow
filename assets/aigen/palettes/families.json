@@ -438,7 +438,7 @@
     20
    ],
    "accent_allowed": [
-    "choir-gold ink ≤ 8 %"
+    "choir-gold ink \u2264 8 %"
    ]
   },
   "npc-ember": {
@@ -632,6 +632,88 @@
     "choir-gold sigil",
     "candle flames"
    ]
+  },
+  "terrain_town": {
+   "count": 32,
+   "colours": [
+    "#4d4a45",
+    "#3e3e3a",
+    "#3d3a34",
+    "#393937",
+    "#353935",
+    "#393632",
+    "#373632",
+    "#353633",
+    "#2d3630",
+    "#363430",
+    "#35332f",
+    "#34332f",
+    "#31332f",
+    "#2a332f",
+    "#34312c",
+    "#32302c",
+    "#312f2c",
+    "#2f2f2d",
+    "#2f2f29",
+    "#2f2d29",
+    "#2a302c",
+    "#2c2d29",
+    "#27312d",
+    "#27302c",
+    "#27302b",
+    "#25302c",
+    "#272f2c",
+    "#2e2b28",
+    "#2b2b28",
+    "#292927",
+    "#272623",
+    "#201e1b"
+   ],
+   "shared_slots": [],
+   "skin_slots": null,
+   "accent_allowed": [],
+   "note": "B1 zone ramp (median-cut over the zone raws, luma >= 24 filter), source assets/aigen/terrain/town/palette_town.png; ground only, no accent hue; UNVALIDATED in engine"
+  },
+  "terrain_fields": {
+   "count": 32,
+   "colours": [
+    "#4c4d44",
+    "#42423c",
+    "#403d36",
+    "#3a3c37",
+    "#3d3832",
+    "#3c3630",
+    "#393732",
+    "#363733",
+    "#333632",
+    "#38332e",
+    "#35322d",
+    "#333331",
+    "#33312c",
+    "#30332f",
+    "#303130",
+    "#30312c",
+    "#2d312f",
+    "#312e2a",
+    "#2d2e2c",
+    "#302c27",
+    "#2e2b27",
+    "#2c2d2b",
+    "#282c2f",
+    "#2a2b26",
+    "#2b2824",
+    "#292825",
+    "#282825",
+    "#252829",
+    "#262623",
+    "#262421",
+    "#222222",
+    "#1b1a17"
+   ],
+   "shared_slots": [],
+   "skin_slots": null,
+   "accent_allowed": [],
+   "note": "B1 zone ramp (median-cut over the zone raws, luma >= 24 filter), source assets/aigen/terrain/fields/palette_fields.png; ground only, no accent hue; UNVALIDATED in engine"
   }
  },
  "era_violet_swap": {
@@ -639,7 +721,7 @@
   "new_base": "#6b4a8a",
   "new_highlight": "#a884c4",
   "new_shadow": "#3a2a50",
-  "source": "commit 44ad327 (Agent 2 review): design-tool purple fails the 1999–2003 era test",
-  "old_status": "FORBIDDEN — recorded only so the swap is traceable; never reintroduce (director finding, 44ad327)"
+  "source": "commit 44ad327 (Agent 2 review): design-tool purple fails the 1999\u20132003 era test",
+  "old_status": "FORBIDDEN \u2014 recorded only so the swap is traceable; never reintroduce (director finding, 44ad327)"
  }
 }

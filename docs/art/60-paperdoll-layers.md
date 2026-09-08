@@ -1,6 +1,6 @@
 # Paper-doll layer master (bible §9, B6 pre-work — A7, drafted for BOTH cells)
 
-**Status:** draft; final consolidation after D2 (cell) and D7 (palette-swap
+**Status:** consolidated 2026-09-08 — **D2 ruled 32×48, D7 ruled bake ×3** (`B0-GATE-DECISION.md`); the D2b column below is kept as the documented revisit path (trigger: players lost in the first in-client 15-pile). Original note: final consolidation after D2 (cell) and D7 (palette-swap
 shader vs baked tones). Nothing here needs engine changes to *author*; what
 the client composites at runtime vs what we bake is the only open question.
 
