@@ -8,7 +8,7 @@ work only. **Nothing here is shipped art**; `assets/final/` untouched.
 |---|---|---|
 | [`B0-GATE-DECISION.md`](B0-GATE-DECISION.md) | **binding**: gate approval + D1–D12 rulings (director delegate, 2026-09-08) | §0 |
 | [`PARALLEL-ROADMAP.md`](PARALLEL-ROADMAP.md) | B0.5 plan; its §5 decision table is resolved by the decision doc | — |
-| [`batches/`](batches/) | production batch records (summary · QA record · LICENSES · open decisions · hand-off), one file per batch; **B3 first pass (rev 2)**, **B4** and **B1 (terrain town + fields)** landed 2026-09-08 | §15–17 |
+| [`batches/`](batches/) | production batch records (summary · QA record · LICENSES · open decisions · hand-off), one file per batch; **B3 first pass (rev 2)**, **B4**, **B1 (terrain town + fields)**, and **B2 (terrain mine + both crypts)** landed offline 2026-09-08 | §15–17 |
 | [`00-VERIFY.md`](00-VERIFY.md) | 25-row ledger: bible claim vs. code at `a262909`, verdict, implied engine cards T-ART-01…11 | §5 |
 | [`01-FLAGS.md`](01-FLAGS.md) | contradictions between bible / GDD / research / code — decisions requested, nothing silently fixed | §18 |
 | [`10-terrain.md`](10-terrain.md) | tilesets: plate list, **measured** transition pairs per map, furniture, palette anchors, prompts | §6 |
@@ -25,7 +25,8 @@ work only. **Nothing here is shipped art**; `assets/final/` untouched.
 - **B0 style tile: APPROVED 2026-09-08** — [`B0-GATE-DECISION.md`](B0-GATE-DECISION.md)
   (gate sign-off + D1–D12 rulings; carried fix: plate floor clamp ≥ 24 at B1).
 - **B1–B9:** production open; sequencing B3 → B4 → B1 → B2 → B5 → B6 → B7 → B8,
-  offline QA sweep alongside. Batch records under [`batches/`](batches/).
+  offline QA sweep alongside. **B2 closed offline with rc 0 on 2026-09-08; assets remain
+  UNVALIDATED in engine until T-ART-12.** Batch records under [`batches/`](batches/).
 
 ## Batch order after approval (bible §17)
 

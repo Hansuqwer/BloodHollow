@@ -40,12 +40,18 @@ the engine. The code lives in `tools/atlaspack/`:
 - `bh_terrain.py <zone> [--variants N] [--preview]` — B1/B2 terrain chain: `terrain/<zone>/raw/*_4x_raw.png` →
   zone ramp ≤ 32 (luma ≥ 24) → 512×256 plates (D3 gain, roll-and-mask wrap-blend, bayer2 quantize, floor clamp ≥ 24)
   → D12 edge overlay pieces (8 per pair × N variants, bleeder per `BLEED_RANK`, WALL never bleeds → `prism/skirt_*`)
-  → prism skin (top/left/right) → `terrain.json` + plate QA (`bh_qa_sheet.py --kind plate`) + edge seam audit.
-  `--preview` renders `docs/research-notes/qa/b1_<zone>_map_3x.png` via `bh_terrain_preview.py` (offline composite of
-  the real `.tmj` ground layer; **not the engine**).
-- `b1_edge_board.py <zone>` — per-pair edge QA board (8 pieces on the base tile + 5×5 autotile patch, rotating variants).
+  → prism skin (top/left/right; B2 mine and Thornwall crypt rotate 3 face variants) → `terrain.json` + plate QA
+  (`bh_qa_sheet.py --kind plate`) + edge seam audit. B2 zones are `mine`, `crypt_drowned`, and
+  `crypt_thornwall`; both crypt manifests share `terrain/crypt/raw/` and `palette_crypt.png`, while their
+  delivery folders remain separate. `--preview` renders `<qa_prefix>_<zone>_map_3x.png` via
+  `bh_terrain_preview.py` (offline composite of the real `.tmj` ground layer; **not the engine**).
+- `b1_edge_board.py <zone> [--batch b2]` — per-pair edge QA board (8 pieces on the base tile + 5×5 autotile
+  patch, rotating variants); `--batch b2` writes the B2 prefix without moving the established B1 artefacts.
 - `b1_build.sh` — reproducible B1 build + QA of town + fields (both zones, both boards, mob R-LUMA cross-check on the
   real plates). Exit 0 = all gates.
+- `b2_build.sh` — reproducible B2 build + QA of Bonehowl Mine, Drowned Crypt, and Thornwall Crypt: **11 painted
+  edge pairs × 3 variants × 8 pieces = 264 pieces**, mine/crypt prism skins + footing skirts, three map boards,
+  three edge boards, 11 R-LUMA sheet cross-checks (including B4 40×60 / 64×64 cells). Exit 0 = all gates.
 - `map_manifest.py [map]` — read-only `.tmj` → `assets/aigen/terrain/<zone>/MAPS_*`.
 - `make_decision_board.py`, `make_crowd_test.py` — provisional QA boards from
   the B0 plates (director inputs; regenerate with real sheets later).

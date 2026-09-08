@@ -101,14 +101,20 @@ from `docs/art/50-vfx.md` (#1–#31).
 `bhpix.cut_diamond` at world px), `terrain/<zone>/edges/<BASE>_<OVERLAY>/v<k>/{edge_NE,
 edge_SE,edge_SW,edge_NW,corner_N,corner_E,corner_S,corner_W}.png` (64×32 overlay pieces
 of the D12 bleeder, drawn on the base tile; k = variant), `terrain/<zone>/prism/{top,left,right,
-skirt_edge_*,skirt_corner_*}.png` (WALL skin + footing skirt — WALL never bleeds),
-`terrain/<zone>/palette_<zone>.png` (≤ 32), `terrain/<zone>/terrain.json` (the T-ART-12
-contract: ids, plates + stats, pairs → bleeder/dir/variants, seam audit), `terrain/<zone>/scatter/`,
-`terrain/<zone>/pools/` (B8). Terrain ids per `docs/art/10-terrain.md`.
+skirt_edge_*,skirt_corner_*}.png` (WALL skin + footing skirt — WALL never bleeds; B2 face variants
+are under `prism/v<k>/` and share the root skirt set), `terrain/<zone>/palette_<zone>.png` (≤ 32),
+`terrain/<zone>/terrain.json` (the T-ART-12 contract: ids, plates + stats, pairs → bleeder/dir/variants,
+seam audit, and `engine_validated:false`), `terrain/<zone>/scatter/`, `terrain/<zone>/pools/` (B8).
+Terrain ids per `docs/art/10-terrain.md`. The two crypt usage manifests are
+`terrain/crypt/drowned/` and `terrain/crypt/thornwall/`, sharing `terrain/crypt/raw/` and
+`terrain/crypt/palette_crypt.png`.
+
 
 | zone | map | plates | edge sets | prism | status |
 |---|---|---|---|---|---|
-| `town` | thornwall | 0 GRASS · 1 DIRT · 3 WATER · 5 PATH · 6 MUD · 7 DARKGRASS (4 WOOD → PATH stand-in until B2) | 10 pairs × 3 variants | plank palisade + skirt | **B1 2026-09-08 · offline QA rc 0 · UNVALIDATED in engine** |
+| `town` | thornwall | 0 GRASS · 1 DIRT · 3 WATER · 4 WOOD (shared B2 gangway) · 5 PATH · 6 MUD · 7 DARKGRASS | 10 pairs × 3 variants | plank palisade + skirt | **B1 + B2 replacement 2026-09-08 · offline QA rc 0 · UNVALIDATED in engine** |
 | `fields` | fields_overflow | 0 GRASS · 5 PATH · 6 MUD · 7 DARKGRASS | 4 pairs × 3 | dead bramble hedge + skirt | **B1 2026-09-08 · offline QA rc 0 · UNVALIDATED in engine** |
-| `mine`, `crypt` (both crypts) | — | B2 | | | brief only |
+| `mine` | bonehowl_mine | 1 DIRT · 4 WOOD · 6 MUD · 7 DARKGRASS (2 WALL prism) | **3 pairs × 3 variants × 8 + footing skirt** | rock + timber brace, `prism/v0..v2` | **B2 2026-09-08 · offline QA rc 0 · UNVALIDATED in engine (T-ART-12)** |
+| `crypt_drowned` | drowned_crypt | 1 DIRT · 3 WATER · 4 WOOD · 6 MUD · 7 DARKGRASS; no WALL | **5 pairs × 3 variants × 8** | none (no WALL tiles) | **B2 2026-09-08 · offline QA rc 0 · UNVALIDATED in engine (T-ART-12)** |
+| `crypt_thornwall` | thornwall_crypt | 1 FLOOR · 3 SLAB · 4 BONEPIT · 5 CANDLE (2 WALL prism) | **3 pairs × 3 variants × 8 + footing skirt** | catacomb masonry, `prism/v0..v2` | **B2 2026-09-08 · offline QA rc 0 · UNVALIDATED in engine (T-ART-12)** |
 | `castle` | — | later | | | brief only |
