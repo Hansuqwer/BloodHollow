@@ -1,0 +1,304 @@
+{
+ "zone": "crypt_thornwall",
+ "map": "thornwall_crypt",
+ "engine_validated": false,
+ "status": "UNVALIDATED in engine (no textured-ground renderer; T-ART-12 / D6)",
+ "tile": [
+  64,
+  32
+ ],
+ "plate": [
+  512,
+  256
+ ],
+ "cut": "bhpix.cut_diamond(plate, world_px_x, world_px_y) \u2014 plate coords = world px mod plate",
+ "prism_px": 28,
+ "palette": "assets/aigen/terrain/crypt/palette_crypt.png",
+ "palette_colours": 32,
+ "terrain_ids": {
+  "1": "FLOOR",
+  "2": "WALL",
+  "3": "SLAB",
+  "4": "BONEPIT",
+  "5": "CANDLE"
+ },
+ "plates": {
+  "FLOOR": {
+   "file": "assets/aigen/terrain/crypt/thornwall/plates/1_FLOOR.png",
+   "luma_mean": 50.7,
+   "luma_min": 30.6,
+   "colours": 24,
+   "gain": 0.413,
+   "raw": "assets/aigen/terrain/crypt/raw/worn_flag_4x_raw.png"
+  },
+  "SLAB": {
+   "file": "assets/aigen/terrain/crypt/thornwall/plates/3_SLAB.png",
+   "luma_mean": 50.7,
+   "luma_min": 30.6,
+   "colours": 24,
+   "gain": 0.514,
+   "raw": "assets/aigen/terrain/crypt/raw/worn_flag_4x_raw.png",
+   "derivation": {
+    "darken": 0.78
+   }
+  },
+  "BONEPIT": {
+   "file": "assets/aigen/terrain/crypt/thornwall/plates/4_BONEPIT.png",
+   "luma_mean": 47.4,
+   "luma_min": 30.6,
+   "colours": 29,
+   "gain": 0.77,
+   "raw": "assets/aigen/terrain/crypt/raw/bone_pit_4x_raw.png"
+  },
+  "CANDLE": {
+   "file": "assets/aigen/terrain/crypt/thornwall/plates/5_CANDLE.png",
+   "luma_mean": 50.3,
+   "luma_min": 30.6,
+   "colours": 28,
+   "gain": 0.696,
+   "raw": "assets/aigen/terrain/crypt/raw/candle_wax_4x_raw.png"
+  }
+ },
+ "bleed_rule": "D12 organic-over-built: overlay = the bleeder's pieces drawn on the base tile whose 8-neighbour set contains the bleeder (faces first, points only when neither adjoining face bleeds \u2014 bhpix.edge_mask_for); WALL never bleeds: ground tiles touching a WALL draw prism/skirt_* instead",
+ "pairs": [
+  {
+   "a": "FLOOR",
+   "b": "WALL",
+   "boundary_len": 212,
+   "bleeder": null,
+   "pieces": "prism/skirt_* (WALL never bleeds \u2014 footing skirt on the ground tile)"
+  },
+  {
+   "a": "FLOOR",
+   "b": "BONEPIT",
+   "boundary_len": 34,
+   "bleeder": "BONEPIT",
+   "dir": "assets/aigen/terrain/crypt/thornwall/edges/FLOOR_BONEPIT",
+   "variants": 3,
+   "base_tile": "FLOOR",
+   "overlay": "BONEPIT"
+  },
+  {
+   "a": "FLOOR",
+   "b": "CANDLE",
+   "boundary_len": 24,
+   "bleeder": "CANDLE",
+   "dir": "assets/aigen/terrain/crypt/thornwall/edges/FLOOR_CANDLE",
+   "variants": 3,
+   "base_tile": "FLOOR",
+   "overlay": "CANDLE"
+  },
+  {
+   "a": "FLOOR",
+   "b": "SLAB",
+   "boundary_len": 9,
+   "bleeder": "FLOOR",
+   "dir": "assets/aigen/terrain/crypt/thornwall/edges/SLAB_FLOOR",
+   "variants": 3,
+   "base_tile": "SLAB",
+   "overlay": "FLOOR"
+  }
+ ],
+ "edge_seam_audit": {
+  "FLOOR_BONEPIT/v0": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.333
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.331
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.331
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.332
+   }
+  },
+  "FLOOR_BONEPIT/v1": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.333
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.331
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.332
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.333
+   }
+  },
+  "FLOOR_BONEPIT/v2": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.33
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.335
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.336
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.33
+   }
+  },
+  "FLOOR_CANDLE/v0": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.253
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.254
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.254
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.254
+   }
+  },
+  "FLOOR_CANDLE/v1": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.256
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.256
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.257
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.256
+   }
+  },
+  "FLOOR_CANDLE/v2": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.257
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.253
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.254
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.256
+   }
+  },
+  "SLAB_FLOOR/v0": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.303
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.307
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.307
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.304
+   }
+  },
+  "SLAB_FLOOR/v1": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.304
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.311
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.312
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.305
+   }
+  },
+  "SLAB_FLOOR/v2": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.307
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.302
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.303
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.306
+   }
+  }
+ },
+ "qa_prefix": "b2",
+ "prism_variants": 3
+}

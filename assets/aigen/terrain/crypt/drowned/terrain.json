@@ -1,0 +1,464 @@
+{
+ "zone": "crypt_drowned",
+ "map": "drowned_crypt",
+ "engine_validated": false,
+ "status": "UNVALIDATED in engine (no textured-ground renderer; T-ART-12 / D6)",
+ "tile": [
+  64,
+  32
+ ],
+ "plate": [
+  512,
+  256
+ ],
+ "cut": "bhpix.cut_diamond(plate, world_px_x, world_px_y) \u2014 plate coords = world px mod plate",
+ "prism_px": null,
+ "palette": "assets/aigen/terrain/crypt/palette_crypt.png",
+ "palette_colours": 32,
+ "terrain_ids": {
+  "1": "DIRT",
+  "3": "WATER",
+  "4": "WOOD",
+  "6": "MUD",
+  "7": "DARKGRASS"
+ },
+ "plates": {
+  "DIRT": {
+   "file": "assets/aigen/terrain/crypt/drowned/plates/1_DIRT.png",
+   "luma_mean": 49.5,
+   "luma_min": 30.6,
+   "colours": 29,
+   "gain": 0.642,
+   "raw": "assets/aigen/terrain/crypt/raw/causeway_flag_4x_raw.png"
+  },
+  "WATER": {
+   "file": "assets/aigen/terrain/crypt/drowned/plates/3_WATER.png",
+   "luma_mean": 45.8,
+   "luma_min": 30.6,
+   "colours": 15,
+   "gain": 1.102,
+   "raw": "assets/aigen/terrain/crypt/raw/crypt_water_4x_raw.png"
+  },
+  "WOOD": {
+   "file": "assets/aigen/terrain/crypt/drowned/plates/4_WOOD.png",
+   "luma_mean": 51.8,
+   "luma_min": 30.6,
+   "colours": 32,
+   "gain": 0.807,
+   "raw": "assets/aigen/terrain/mine/raw/gangway_4x_raw.png"
+  },
+  "MUD": {
+   "file": "assets/aigen/terrain/crypt/drowned/plates/6_MUD.png",
+   "luma_mean": 48.7,
+   "luma_min": 30.6,
+   "colours": 20,
+   "gain": 0.787,
+   "raw": "assets/aigen/terrain/mine/raw/mine_mud_4x_raw.png",
+   "derivation": {
+    "darken": 0.85,
+    "tint_rgb": [
+     0.92,
+     0.98,
+     1.05
+    ]
+   }
+  },
+  "DARKGRASS": {
+   "file": "assets/aigen/terrain/crypt/drowned/plates/7_DARKGRASS.png",
+   "luma_mean": 46.1,
+   "luma_min": 30.6,
+   "colours": 28,
+   "gain": 1.032,
+   "raw": "assets/aigen/terrain/town/raw/graveyard_turf_4x_raw.png",
+   "derivation": {
+    "darken": 0.82
+   }
+  }
+ },
+ "bleed_rule": "D12 organic-over-built: overlay = the bleeder's pieces drawn on the base tile whose 8-neighbour set contains the bleeder (faces first, points only when neither adjoining face bleeds \u2014 bhpix.edge_mask_for); WALL never bleeds: ground tiles touching a WALL draw prism/skirt_* instead",
+ "pairs": [
+  {
+   "a": "DIRT",
+   "b": "WATER",
+   "boundary_len": 245,
+   "bleeder": "WATER",
+   "dir": "assets/aigen/terrain/crypt/drowned/edges/DIRT_WATER",
+   "variants": 3,
+   "base_tile": "DIRT",
+   "overlay": "WATER"
+  },
+  {
+   "a": "DIRT",
+   "b": "WOOD",
+   "boundary_len": 31,
+   "bleeder": "DIRT",
+   "dir": "assets/aigen/terrain/crypt/drowned/edges/WOOD_DIRT",
+   "variants": 3,
+   "base_tile": "WOOD",
+   "overlay": "DIRT"
+  },
+  {
+   "a": "DIRT",
+   "b": "MUD",
+   "boundary_len": 30,
+   "bleeder": "MUD",
+   "dir": "assets/aigen/terrain/crypt/drowned/edges/DIRT_MUD",
+   "variants": 3,
+   "base_tile": "DIRT",
+   "overlay": "MUD"
+  },
+  {
+   "a": "DIRT",
+   "b": "DARKGRASS",
+   "boundary_len": 22,
+   "bleeder": "DARKGRASS",
+   "dir": "assets/aigen/terrain/crypt/drowned/edges/DIRT_DARKGRASS",
+   "variants": 3,
+   "base_tile": "DIRT",
+   "overlay": "DARKGRASS"
+  },
+  {
+   "a": "WATER",
+   "b": "MUD",
+   "boundary_len": 10,
+   "bleeder": "WATER",
+   "dir": "assets/aigen/terrain/crypt/drowned/edges/MUD_WATER",
+   "variants": 3,
+   "base_tile": "MUD",
+   "overlay": "WATER"
+  }
+ ],
+ "edge_seam_audit": {
+  "DIRT_WATER/v0": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.386
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.386
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.387
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.387
+   }
+  },
+  "DIRT_WATER/v1": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.378
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.377
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.377
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.378
+   }
+  },
+  "DIRT_WATER/v2": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.382
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.38
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.381
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.381
+   }
+  },
+  "WOOD_DIRT/v0": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.282
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.281
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.281
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.282
+   }
+  },
+  "WOOD_DIRT/v1": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.283
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.282
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.281
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.283
+   }
+  },
+  "WOOD_DIRT/v2": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.279
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.286
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.286
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.279
+   }
+  },
+  "DIRT_MUD/v0": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.329
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.329
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.328
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.329
+   }
+  },
+  "DIRT_MUD/v1": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.33
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.332
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.332
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.329
+   }
+  },
+  "DIRT_MUD/v2": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.332
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.33
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.329
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.331
+   }
+  },
+  "DIRT_DARKGRASS/v0": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.303
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.307
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.307
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.304
+   }
+  },
+  "DIRT_DARKGRASS/v1": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.304
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.311
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.312
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.305
+   }
+  },
+  "DIRT_DARKGRASS/v2": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.307
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.302
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.303
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.306
+   }
+  },
+  "MUD_WATER/v0": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.381
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.379
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.379
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.382
+   }
+  },
+  "MUD_WATER/v1": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.378
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.38
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.38
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.378
+   }
+  },
+  "MUD_WATER/v2": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.386
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.384
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.385
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.385
+   }
+  }
+ },
+ "qa_prefix": "b2"
+}

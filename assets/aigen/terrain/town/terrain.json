@@ -50,6 +50,14 @@
    "gain": 1.182,
    "raw": "assets/aigen/terrain/town/raw/river_4x_raw.png"
   },
+  "WOOD": {
+   "file": "assets/aigen/terrain/town/plates/4_WOOD.png",
+   "luma_mean": 51.6,
+   "luma_min": 30.3,
+   "colours": 28,
+   "gain": 0.807,
+   "raw": "assets/aigen/terrain/mine/raw/gangway_4x_raw.png"
+  },
   "PATH": {
    "file": "assets/aigen/terrain/town/plates/5_PATH.png",
    "luma_mean": 48.5,
@@ -73,10 +81,6 @@
    "colours": 28,
    "gain": 0.9,
    "raw": "assets/aigen/terrain/town/raw/graveyard_turf_4x_raw.png"
-  },
-  "WOOD": {
-   "file": null,
-   "note": "id 4 WOOD uses the PATH plate until the B2 crypt gangway plate lands (0.4 % of the town map)"
   }
  },
  "bleed_rule": "D12 organic-over-built: overlay = the bleeder's pieces drawn on the base tile whose 8-neighbour set contains the bleeder (faces first, points only when neither adjoining face bleeds \u2014 bhpix.edge_mask_for); WALL never bleeds: ground tiles touching a WALL draw prism/skirt_* instead",

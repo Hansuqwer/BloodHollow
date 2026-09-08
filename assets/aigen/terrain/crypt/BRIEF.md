@@ -1,15 +1,16 @@
 # Drowned Crypt + Thornwall Crypt tileset
 
-**Status:** design brief only — no art generated (gated on B0 approval).
+**Status:** generation done · offline QA rc 0 · **UNVALIDATED in engine** (T-ART-12 / D6).
 **Spec:** `docs/art/10-terrain.md` (plate list, edge pairs measured from `data/maps-src/*.tmj`, furniture, palette anchors).
-**Contents:** plates: causeway flag, still black water, silt, worn flag · prism skins: catacomb masonry (skull niches) · 8 edge pairs (hero: flag→water) · slabs, bone pit ×4, candle cluster + pool, great cracked bell 128×128, red runner
+**Contents:** shared raw plates: causeway flag, still black-green water, mine silt, worn flag, bone pit, candle wax; derived SLAB and shared gangway WOOD · prism skins: catacomb masonry ×3 (skull niches) for Thornwall Crypt; Drowned Crypt has no WALL prism · D12 sets: 5 for Drowned (hero: flag→water) + 3 painted plus footing for Thornwall · slabs, bone pit ×4, candle cluster + pool, great cracked bell 128×128, red runner
 
 ## Anatomy (amended in B0)
 - Ground = one painted **512×256 plate per terrain id**, cut to 64×32 diamonds at screen position by `bhpix.cut_diamond` (no random tiling).
 - Edge tiles = 8 hand-painted diamonds per adjacency pair listed in the spec; **no alpha-blend overlays**.
 - WALL (id 2) = skinned `iso::drawPrism` (top 64×32 + faces 32×28).
 - Every warm light source ships with a painted ground pool decal (R-NIGHT).
-- One palette strip ≤ 32 colours for the whole tileset (`palette_crypt.png`).
+- One shared palette strip ≤ 32 colours for both usage manifests (`palette_crypt.png`).
+- Binding D3 means the day WATER plate is the darkest legal green-black read (mean 45–70, min ≥24); the requested near-black `#0c0e16` remains a director amendment request, not a silent gate break.
 
 ## Generation prompt
 ```

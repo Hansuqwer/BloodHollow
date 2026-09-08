@@ -1,0 +1,309 @@
+{
+ "zone": "mine",
+ "map": "bonehowl_mine",
+ "engine_validated": false,
+ "status": "UNVALIDATED in engine (no textured-ground renderer; T-ART-12 / D6)",
+ "tile": [
+  64,
+  32
+ ],
+ "plate": [
+  512,
+  256
+ ],
+ "cut": "bhpix.cut_diamond(plate, world_px_x, world_px_y) \u2014 plate coords = world px mod plate",
+ "prism_px": 28,
+ "palette": "assets/aigen/terrain/mine/palette_mine.png",
+ "palette_colours": 32,
+ "terrain_ids": {
+  "1": "DIRT",
+  "2": "WALL",
+  "4": "WOOD",
+  "6": "MUD",
+  "7": "DARKGRASS"
+ },
+ "plates": {
+  "DIRT": {
+   "file": "assets/aigen/terrain/mine/plates/1_DIRT.png",
+   "luma_mean": 48.5,
+   "luma_min": 31.9,
+   "colours": 24,
+   "gain": 0.698,
+   "raw": "assets/aigen/terrain/mine/raw/cave_floor_4x_raw.png"
+  },
+  "WOOD": {
+   "file": "assets/aigen/terrain/mine/plates/4_WOOD.png",
+   "luma_mean": 52.2,
+   "luma_min": 31.9,
+   "colours": 32,
+   "gain": 0.807,
+   "raw": "assets/aigen/terrain/mine/raw/gangway_4x_raw.png"
+  },
+  "MUD": {
+   "file": "assets/aigen/terrain/mine/plates/6_MUD.png",
+   "luma_mean": 48.8,
+   "luma_min": 31.9,
+   "colours": 25,
+   "gain": 0.669,
+   "raw": "assets/aigen/terrain/mine/raw/mine_mud_4x_raw.png"
+  },
+  "DARKGRASS": {
+   "file": "assets/aigen/terrain/mine/plates/7_DARKGRASS.png",
+   "luma_mean": 46.0,
+   "luma_min": 31.9,
+   "colours": 16,
+   "gain": 1.05,
+   "raw": "assets/aigen/terrain/town/raw/graveyard_turf_4x_raw.png",
+   "derivation": {
+    "darken": 0.8,
+    "tint_rgb": [
+     0.92,
+     1.05,
+     0.92
+    ]
+   }
+  }
+ },
+ "bleed_rule": "D12 organic-over-built: overlay = the bleeder's pieces drawn on the base tile whose 8-neighbour set contains the bleeder (faces first, points only when neither adjoining face bleeds \u2014 bhpix.edge_mask_for); WALL never bleeds: ground tiles touching a WALL draw prism/skirt_* instead",
+ "pairs": [
+  {
+   "a": "DIRT",
+   "b": "WALL",
+   "boundary_len": 210,
+   "bleeder": null,
+   "pieces": "prism/skirt_* (WALL never bleeds \u2014 footing skirt on the ground tile)"
+  },
+  {
+   "a": "DIRT",
+   "b": "MUD",
+   "boundary_len": 20,
+   "bleeder": "MUD",
+   "dir": "assets/aigen/terrain/mine/edges/DIRT_MUD",
+   "variants": 3,
+   "base_tile": "DIRT",
+   "overlay": "MUD"
+  },
+  {
+   "a": "DIRT",
+   "b": "DARKGRASS",
+   "boundary_len": 20,
+   "bleeder": "DARKGRASS",
+   "dir": "assets/aigen/terrain/mine/edges/DIRT_DARKGRASS",
+   "variants": 3,
+   "base_tile": "DIRT",
+   "overlay": "DARKGRASS"
+  },
+  {
+   "a": "DIRT",
+   "b": "WOOD",
+   "boundary_len": 6,
+   "bleeder": "DIRT",
+   "dir": "assets/aigen/terrain/mine/edges/WOOD_DIRT",
+   "variants": 3,
+   "base_tile": "WOOD",
+   "overlay": "DIRT"
+  }
+ ],
+ "edge_seam_audit": {
+  "DIRT_MUD/v0": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.333
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.331
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.331
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.332
+   }
+  },
+  "DIRT_MUD/v1": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.333
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.331
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.332
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.333
+   }
+  },
+  "DIRT_MUD/v2": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.33
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.335
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.336
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.33
+   }
+  },
+  "DIRT_DARKGRASS/v0": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.306
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.306
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.307
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.307
+   }
+  },
+  "DIRT_DARKGRASS/v1": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.307
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.309
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.308
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.306
+   }
+  },
+  "DIRT_DARKGRASS/v2": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.309
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.307
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.306
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.309
+   }
+  },
+  "WOOD_DIRT/v0": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.275
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.281
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.281
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.275
+   }
+  },
+  "WOOD_DIRT/v1": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.276
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.283
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.284
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.276
+   }
+  },
+  "WOOD_DIRT/v2": {
+   "NE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.28
+   },
+   "SE": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.276
+   },
+   "SW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.276
+   },
+   "NW": {
+    "face_px": 32,
+    "face_all_B": true,
+    "b_frac": 0.28
+   }
+  }
+ },
+ "qa_prefix": "b2",
+ "prism_variants": 3
+}

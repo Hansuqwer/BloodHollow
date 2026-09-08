@@ -1,8 +1,8 @@
 # Bonehowl Mine tileset
 
-**Status:** design brief only — no art generated (gated on B0 approval).
+**Status:** generation done · offline QA rc 0 · **UNVALIDATED in engine** (T-ART-12 / D6).
 **Spec:** `docs/art/10-terrain.md` (plate list, edge pairs measured from `data/maps-src/*.tmj`, furniture, palette anchors).
-**Contents:** plates: slick cave floor, drip mud, lichen ledge · prism skin: rock + timber brace ×3 · 3 edge pairs · ore nodes ×3 states, lantern hook + pool, cart, Red Widow web set
+**Contents:** plates: slick cave floor, mine mud, shared gangway WOOD, derived lichen ledge · prism skin: rock + timber brace ×3 · 3 painted edge pairs plus WALL footing · ore nodes ×3 states, lantern hook + pool, cart, Red Widow web set
 
 ## Anatomy (amended in B0)
 - Ground = one painted **512×256 plate per terrain id**, cut to 64×32 diamonds at screen position by `bhpix.cut_diamond` (no random tiling).
