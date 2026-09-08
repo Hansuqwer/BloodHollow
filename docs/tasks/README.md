@@ -289,8 +289,33 @@ Devlog 0029; analysis prompt
 |---|---|
 | [Route v5c](devlog/0029-wall-was-the-waypoint.md) | Campaign pack wall: edge-stand waypoint, level-blind pack cap, retreat home, defend-while-fleeing |
 
+## Done — T-068 (2026-09-07): the L8 content gate opens
+
+Closes the "L8 content gate" card. Director picked **Option A — move the L11
+Gravecaller barricade off the bridge approach** (over B "add a crossing" /
+C "re-anchor the gnolls"). `gravecaller_barricade` rect `(6,18)→(1,43)` in
+`tools/mapgen/make_thornwall.py` (+ map regen): placement derived from the
+threat model (worst in-rect anchor + wander 5 + night aggro 8) so every bot
+route tile stays ≥ 8 from mob reach, day and night; the L11 stays as a
+far-marsh hazard. Journal epoch **6 → 7** (content shifts the sim under v6
+journals; stale by contract). Campaign bot opens the L7+ waypoint: gnolls
+north edge `(53,41)`.
+
+val5b (chain DB, chars set L7 in town, 720 s): **`TARGET L8 DONE in 444.3s`**
+— peak **L8** / end L7, deaths **6** (zero L11; killers were road bats and
+the pre-existing hound bridge gauntlet), replay **0 mismatches** (epoch 7,
+`ticks=15601 hashes=157`). Suite 105/105 (327,925 assertions), ctest 2/2.
+val5 diagnostic (DB resumed parked at the perch): the known bad-leg death
+loop (156 deaths, L3 ghouls) — harness must set state via sqlite; recorded
+in devlog 0030.
+
+| Card | Title |
+|---|---|
+| [T-068](done/T-068.md) | L8 content gate: move the gravecaller barricade off the bridge approach (+ L7 waypoint, epoch 7) |
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |
 |---|---|---|
-| L8 content gate | L7→L8 has no reachable step-up on map 1: `gnolls_pits` (L7) and `widow_glade` (L9) sit south of the river behind the bridge that passes the L11 gravecaller barricade `(6,18)` | **content** change (move the barricade / add a crossing / re-anchor the gnolls) — for the director, not a bot-profile fix |
+| L8→L9 step-up | `widow_glade` (L9) shares the south bank with the gnoll camp; no L8+ waypoint opened; pulled widows survivable but untuned | follow-up only if the director wants the ladder pushed past L8 |
+| Bot bad-leg deaths | v5c legs 3/5 (142/134 deaths) and the val5 diagnostic show the perch death-loop mode persists on some starts | levers: pack cap / retreat threshold; reproductions: leg 3/5 logs, val5 |

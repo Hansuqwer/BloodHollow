@@ -159,7 +159,15 @@ def main() -> int:
         spawn("gnolls_pits", 50, 42, 8, 4, MOB_BONEPICKER_GNOLL, 6, 700),
         spawn("hounds_marsh", 10, 40, 10, 6, MOB_HOLLOW_HOUND, 8, 700),
         spawn("widow_glade", 58, 42, 6, 4, MOB_CHARNEL_WIDOW, 5, 850),
-        spawn("gravecaller_barricade", 6, 18, 5, 4, MOB_GRAVECALLER, 3, 1000),
+        # T-068 (director option A): the L11 barricade moved OFF the bridge
+        # approach.  Old rect (6,18) put the gravecaller kill zone (leash 12
+        # around the anchor, aggro 7) over the south road x[14,15] -- the only
+        # crossing to the L7+ content south of the river, which is what walled
+        # campaign progression at L6/L7 (devlog 0029 "scope boundary").  New
+        # rect x=1 y[43,45]: even the worst in-rect anchor leaves mob reach
+        # (wander 5 + aggro 7) >= 8 tiles from every route tile, day and
+        # night.  The L11 stays as a far-marsh hazard, not a roadblock.
+        spawn("gravecaller_barricade", 1, 43, 1, 3, MOB_GRAVECALLER, 3, 1000),
     ]
     portals = [
         portal("east_gate", 63, 14, 1, 2, 2, 2, 14),   # -> fields map (Phase 2)

@@ -399,12 +399,19 @@ int run(int argc, char** argv) {
             case 2:  b.campX = 15; b.campY = 6;  break;  // bats_cryptyard
             default: b.campX = 55; b.campY = 14; break;  // ghouls_east NORTH EDGE
           }
-          // There is no L6+ step-up on map 1: gnolls_pits (50,42) L7 and
-          // widow_glade (58,42) L9 sit south of the river (WATER y[34,37]) and
-          // the only crossing (bridge x[14,16]) runs 3 tiles past the L11
-          // gravecaller_barricade (6,18).  Opening that is a content change, so
-          // L6+ keeps the ghoul perch -- see docs/prompts/
-          // campaign-pack-wall-analysis.md section 4.
+          if (b.level >= 7) {
+            // T-068 opened the L7->L8 step-up: the L11 gravecaller barricade
+            // moved off the bridge approach ((6,18)->(1,43) in
+            // tools/mapgen/make_thornwall.py), so the south road / bridge
+            // crossing is clean and gnolls_pits is reachable.  Camp the
+            // gnolls NORTH edge (rect y[42,45]): gnolls (wander 8, aggro 7)
+            // pull straight onto the camp, road ghouls (L3) are fodder via
+            // the defend branch, and retreat-home now crosses the river
+            // north instead of into worse content.  widow_glade (L9) shares
+            // the bank and may pull -- pack cap + retreat handle it; this
+            // camp is the L8 probe.
+            b.campX = 53; b.campY = 41;  // gnolls_pits NORTH EDGE
+          }
         }
         // S13/14 party formation, race-free: even bot invites ONLY once the
         // sibling is welcomed in-world (bot.name is pre-seeded and useless as

@@ -1,0 +1,8 @@
+[campaign] m2br__01 reached L7 at t=0.1s (map 1)
+[campaign] m2br__00 reached L7 at t=0.1s (map 1)
+[campaign] m2br__00 reached L8 at t=444.3s (map 1)
+[campaign] m2br__00 TARGET L8 DONE in 444.3s
+[bots] SUMMARY welcomed=2/2 moved=2/2 minDeltas=14399 kills=147 pots=84 swings=279 deaths=6 shops=43 anvilTries=0 levelDrops=1 regear=0 maxLevel=7 pkts=11110352 bytes=244401751 gates b/g/p/a/r=0/0/0/0/0 mGold=0 mPelts=0 bless=3 mend=41 noSee=0 hurt=754 choir c6=0 c7=0 c8=0
+[bots] m2br__00     kit=1 lvl=7 hp=116/130 party=2 deaths=4 rxR=733 rxM=1422 lastPid=1 casts c6=0 c7=0 c8=0 lastDeath=(32,16) killerByLvl=L2:2 L5:2
+[bots] m2br__01     kit=3 lvl=7 hp=110/130 party=2 deaths=2 rxR=724 rxM=1380 lastPid=1 casts c6=0 c7=0 c8=0 lastDeath=(32,16) killerByLvl=L2:2
+[bots] OK
