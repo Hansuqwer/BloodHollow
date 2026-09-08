@@ -250,6 +250,7 @@ u32 mp
 u32 mpMax
 u16 blessTicksLeft
 u16 ironskinTicksLeft
+u16 curseTicksLeft
 ```
 
 Inventory sync: InventoryReset wipes the client table (carries gold), then one

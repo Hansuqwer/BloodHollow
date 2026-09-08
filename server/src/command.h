@@ -23,7 +23,8 @@ struct Command {
                              kTradeOpen, kTradeItem, kTradeGold, kTradeCommit,
                              kTradeCancel, kAnvil,
                              kPartyInvite, kPartyAccept, kPartyLeave,
-                             kPartyKick, kKitChoose, kDuel, kForfeit, kRepair, kRefine } kind;
+                             kPartyKick, kKitChoose, kDuel, kForfeit, kRepair, kRefine,
+                             kConfess } kind;
   // T-053: a = kit id; T-056: kDuel a = target id (resolved pre-journal)
   std::int32_t a = 0, b = 0;
   std::uint8_t channel = 0;
@@ -139,6 +140,9 @@ inline void applyWorldCommand(World& w, Entity& e, const Command& c) {
       break;
     case Command::kRefine:
       w.tryRefine(e, static_cast<std::uint8_t>(c.a));  // T-060 anvil upgrade
+      break;
+    case Command::kConfess:
+      w.confess(e);  // T-070 chapel cure
       break;
     case Command::kChat:
     case Command::kPing:

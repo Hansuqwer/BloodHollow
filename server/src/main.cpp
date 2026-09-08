@@ -88,11 +88,11 @@ void sendMsg(ENetPeer* peer, const Msg& m, Server& s) {
 // Journal epoch: bump when the SIM semantics change under old journals
 // (whitening/moral split in S15 = epoch 3; kit sidecars = 2; pre-K = 1;
 // S22 T-034b mob retune = 6; T-068 barricade relocation = 7;
-// T-069 fence + one-Marta spawn fix = 8).
+// T-069 fence + one-Marta spawn fix = 8; T-070 curse + confessor = 9).
 // Replay refuses non-matching epoch journals instead of lying with them.
-constexpr int kJournalEpoch = 8;  // T-069: fence furniture + the one-Marta
-                                  // spawn fix (content/entity shifts the sim
-                                  // under v7 journals; stale by contract)
+constexpr int kJournalEpoch = 9;  // T-070: confessor furniture + curse
+                                  // effect shift the sim under v8 journals;
+                                  // stale by contract (same response as ever)
 
 // ---- world journal record helpers (M2) ------------------------------------
 void journalTickHash(Server& s) {
@@ -435,6 +435,7 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
           }
         } else if (m.text == "/forfeit") { c.kind = Command::kForfeit; }
         else if (m.text == "/repair") { c.kind = Command::kRepair; }
+        else if (m.text == "/confess") { c.kind = Command::kConfess; }
         else if (m.text.rfind("/refine ", 0) == 0) {  // T-060 anvil upgrade
           bool digits = true;
           for (char ch : m.text.substr(8))
@@ -701,6 +702,7 @@ void pushOwnStats(Server& s, Session& sess) {
   };
   m.blessTicksLeft = left(e->blessUntil);
   m.ironskinTicksLeft = left(e->ironskinUntil);
+  m.curseTicksLeft = left(e->curseUntil);  // T-070 thin blood readout
   sendMsg(sess.peer, m, s);
 }
 

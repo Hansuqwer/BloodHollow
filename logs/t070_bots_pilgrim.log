@@ -1,0 +1,5 @@
+[bots] SUMMARY welcomed=3/3 moved=3/3 minDeltas=11600 kills=120 pots=0 swings=230 deaths=48 shops=3 anvilTries=0 levelDrops=2 regear=0 maxLevel=4 pkts=4622676 bytes=101662413 gates b/g/p/a/r=389/289/1758/0/0 mGold=795 mPelts=7 bless=0 mend=0 noSee=0 hurt=0 choir c6=0 c7=0 c8=0
+[bots] t70p_00      kit=1 lvl=4 hp=108/112 party=0 deaths=12 rxR=578 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 lastDeath=(5,22) killerByLvl=L2:2 L3:4 L11:6
+[bots] t70p_01      kit=1 lvl=4 hp=74/94 party=0 deaths=16 rxR=578 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 lastDeath=(11,32) killerByLvl=L9:2 L7:6 L11:4 L5:4
+[bots] t70p_02      kit=1 lvl=4 hp=112/94 party=0 deaths=20 rxR=578 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 lastDeath=(39,39) killerByLvl=L9:2 L7:6 L11:6 L5:4 L3:2
+[bots] OK

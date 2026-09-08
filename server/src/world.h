@@ -107,6 +107,7 @@ struct Entity {
   sim::Tick blessUntil = -1;    // +10% hit&dmg (T-054)
   sim::Tick ironskinUntil = -1; // +20% DR (T-054)
   sim::Tick chorusUntil = -1;   // +5% hit&dmg, party-wide song (T-054b ch6)
+  sim::Tick curseUntil = -1;    // T-070 Blood Curse: heals land at 75%
   sim::Tick hasteUntil = -1;    // -25% swing cadence (T-054b ch8)
   sim::Tick lastMendTick = -1000;
   sim::Tick lastBlessTick = -1000;
@@ -250,6 +251,10 @@ class World {
   void spawnVendor();                        // called from load
   void spawnVendor(Zone& zone);              // zone 1 town only
   void spawnFence(Zone& zone);               // T-069: Sable at the gallows pit
+  // T-070 chapel cure: the confessor in the thornwall chapel rect.
+  bool nearConfessor(const Entity& e) const;
+  bool confess(Entity& e);  // clears curseUntil within 3 tiles, fiction line
+  void spawnConfessor(Zone& zone);  // zone 1 chapel only
   void spawnAnvils();                        // plaza (z1) + bone barrow (z3)
   std::uint8_t anvilTilesAllowed(std::uint16_t zoneId) const;
   // trade window (transactional by construction; see ADR-0011)
@@ -312,6 +317,18 @@ class World {
     f.kind = EntityKind::kMob;  // furniture, non-combat
     f.wireKind = content::kWireKindFence;
     f.name = "Sable the Fence";
+    f.hp = 1;
+    f.hpMax = 1;
+    f.walker.place(at);
+    return insertEntity(std::move(f));
+  }
+  Entity& debugSpawnConfessor(sim::TilePos at) {  // T-070 test seam
+    Entity f;
+    f.id = nextId_++;
+    f.zoneId = 1;
+    f.kind = EntityKind::kMob;  // furniture, non-combat
+    f.wireKind = content::kWireKindConfessor;
+    f.name = "Confessor";
     f.hp = 1;
     f.hpMax = 1;
     f.walker.place(at);

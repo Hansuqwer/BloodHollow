@@ -919,7 +919,9 @@ void Game::drawStatPanel() const {
   const int px = 1024 - 190;
   // kit block grows: mp row always, buff rows only while active (era chrome)
   const bool showBuffs = st.blessTicksLeft > 0 || st.ironskinTicksLeft > 0;
-  const int ph = (st.statPoints > 0 ? 92 : 74) + 40 + (showBuffs ? 12 : 0);
+  const bool showCurse = st.curseTicksLeft > 0;  // T-070: own row, violet
+  const int ph =
+      (st.statPoints > 0 ? 92 : 74) + 40 + (showBuffs ? 12 : 0) + (showCurse ? 12 : 0);
   DrawRectangle(px, 8, 182, ph, Color{0, 0, 0, 170});
   DrawRectangleLinesEx(Rectangle{static_cast<float>(px), 8, 182,
                                  static_cast<float>(ph)},
@@ -964,6 +966,12 @@ void Game::drawStatPanel() const {
                   st.ironskinTicksLeft > 0 ? "IRONSKIN" : "",
                   st.blessTicksLeft / 20u, st.ironskinTicksLeft / 20u);
     DrawText(nb, px + 8, byy, 10, Color{200, 235, 170, 255});
+  }
+  // T-070: the thin blood reads violet — a second row, only while cursed.
+  if (showCurse) {
+    char cb[64];
+    std::snprintf(cb, sizeof cb, "CURSE -25%% heal    %us", st.curseTicksLeft / 20u);
+    DrawText(cb, px + 8, by + (showBuffs ? 50 : 38), 10, Color{190, 110, 235, 255});
   }
 }
 

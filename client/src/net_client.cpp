@@ -323,6 +323,7 @@ void NetClient::poll() {
               ownStats.mpMax = m.mpMax == 0 ? 1 : m.mpMax;
               ownStats.blessTicksLeft = m.blessTicksLeft;
               ownStats.ironskinTicksLeft = m.ironskinTicksLeft;
+              ownStats.curseTicksLeft = m.curseTicksLeft;  // T-070
               break;
             }
             case kIdPartyReset: {

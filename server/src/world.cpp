@@ -27,6 +27,7 @@ constexpr std::uint32_t kPowerSwingMultPct = 140;
 
 // ---- kit skills (T-054, GDD Cultist/Gravecaller v1 numbers) --------------
 constexpr sim::Tick kBlessTicks = 6000;      // buffs last 5 min
+constexpr sim::Tick kCurseTicks = 600;       // T-070 Blood Curse: 30 s of thin blood
 constexpr sim::Tick kMendCdTicks = 25;
 constexpr sim::Tick kBlessCdTicks = 40;
 constexpr sim::Tick kIronskinCdTicks = 40;
@@ -106,6 +107,7 @@ done:
   zones_.emplace(mapId, std::move(z));
   Zone& zone = zones_.at(mapId);
   if (mapId == 1) spawnVendor(zone);
+  if (mapId == 1) spawnConfessor(zone);  // T-070: the chapel cure
   initialMobSpawns(zone, mapId);
   if (mapId == 1 || mapId == 3) spawnAnvils();   // plaza + bone barrow
   return true;
@@ -580,7 +582,8 @@ bool World::useItem(Entity& e, std::uint8_t slot) {
   if (e.hp >= e.hpMax) return false;
   e.lastSipTick = tick_;
   --sl.qty;
-  const std::uint32_t healed = std::min<std::uint32_t>(d->heal, e.hpMax - e.hp);
+  std::uint32_t healed = std::min<std::uint32_t>(d->heal, e.hpMax - e.hp);
+  if (tick_ < e.curseUntil) healed = healed * 75u / 100u;  // T-070 thin blood
   e.hp += healed;
   if (sl.qty == 0) e.inv.erase(e.inv.begin() + slot);
   WorldEvent ev;
@@ -743,7 +746,8 @@ void World::tryMend(Entity& e, std::uint32_t targetId) {
   e.mp -= kMendMpCost;
   const std::uint32_t amount = 30u + 4u * e.level;
   const std::uint32_t room = t->hpMax - t->hp;
-  const std::uint32_t healed = amount < room ? amount : room;
+  std::uint32_t healed = amount < room ? amount : room;
+  if (tick_ < t->curseUntil) healed = healed * 75u / 100u;  // T-070 thin blood
   t->hp += healed;
   // heal floater reuses combat-event path; kind 8 = life given (client: green)
   WorldEvent ev;
@@ -1143,6 +1147,68 @@ std::uint32_t World::fenceSellJunk(Entity& e) {
     events_.push_back(std::move(ev));
   }
   return gained;
+}
+
+// ---- T-070 chapel cure (the confessor) --------------------------------------
+// The Blood Curse answers to the chapel, not to coin: standing within 3 of
+// the confessor and speaking (/confess) clears curseUntil with a fiction
+// line. Karma repentance is out of scope (later card) — this lane touches
+// no karma, only the curse.
+
+bool World::nearConfessor(const Entity& e) const {
+  for (const Entity& other : entities_) {
+    if (other.wireKind == content::kWireKindConfessor &&
+        other.zoneId == e.zoneId &&
+        chebyshev(other.walker.tile(), e.walker.tile()) <= 3) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool World::confess(Entity& e) {
+  if (e.kind != EntityKind::kPlayer || e.dead) return false;
+  if (tick_ >= e.curseUntil) return false;  // nothing to shrive (quiet fail)
+  if (!nearConfessor(e)) return false;
+  e.curseUntil = -1;
+  WorldEvent ev;
+  ev.aboutId = e.id;
+  ev.statsChanged = true;
+  ev.chatCh = 2;
+  ev.chatText = e.name + " kneels, and the chapel takes the thin blood away.";
+  events_.push_back(std::move(ev));
+  return true;
+}
+
+void World::spawnConfessor(Zone& zone) {
+  // The chapel rect (9,9)-(14,13) on thornwall: first walkable tile with no
+  // furniture on it. One confessor, session-seeded like the other furniture.
+  for (int y = 9; y <= 13; ++y) {
+    for (int x = 9; x <= 14; ++x) {
+      if (!zone.map.inBounds(x, y) || zone.map.isBlocked(x, y)) continue;
+      bool occupied = false;
+      for (const Entity& ee : entities_)
+        if (ee.zoneId == 1 && !ee.dead && ee.walker.tile().x == x &&
+            ee.walker.tile().y == y &&
+            ee.wireKind >= content::kWireKindFurnitureFloor) {
+          occupied = true;
+          break;
+        }
+      if (occupied) continue;
+      Entity f;
+      f.id = nextId_++;
+      f.zoneId = 1;
+      f.kind = EntityKind::kMob;  // furniture, non-combat; wire kind 68
+      f.wireKind = content::kWireKindConfessor;
+      f.name = "Confessor";
+      f.hp = 1;
+      f.hpMax = 1;
+      f.dead = false;
+      f.walker.place(sim::TilePos{x, y});
+      insertEntity(std::move(f));
+      return;
+    }
+  }
 }
 
 // ---- anvil & aura spine (T-041/T-042, RFC 0001) ----------------------------
@@ -2368,6 +2434,17 @@ void World::mobThink(Entity& mob) {
       bdmg = bdmg < 1 ? 1 : bdmg;
       target->hp = bdmg >= static_cast<std::uint32_t>(target->hp)
                        ? 0 : target->hp - static_cast<std::int32_t>(bdmg);
+      // T-070 Blood Curse: the bolt leaves thin blood — heals land at 75%
+      // for 30 s. Gravecaller and Gravemother share this cast path.
+      if (target->kind == EntityKind::kPlayer && target->hp > 0) {
+        target->curseUntil = tick_ + kCurseTicks;
+        WorldEvent cev;
+        cev.aboutId = target->id;
+        cev.chatCh = 2;
+        cev.chatText = target->name +
+                       " feels the blood curse take hold (-25% healing).";
+        events_.push_back(std::move(cev));
+      }
       WorldEvent ev;
       ev.attacker = mob.id;
       ev.target = target->id;

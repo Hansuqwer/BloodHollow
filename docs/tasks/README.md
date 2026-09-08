@@ -327,6 +327,22 @@ Suite 112/112 (327,969 assertions). Devlog 0032.
 |---|---|
 | [T-069](done/T-069.md) | Fence at the Smugglers' Cove (+ one-Marta fix, epoch 8) |
 
+## Done — overnight S22a (2026-09-09): Blood Curse + chapel cure
+
+Debuff loop closes: boss Blood Bolt hits curse 30 s (600 ticks); potions
+and Mend land at 75% while cursed; OOC regen untouched; `/confess` at the
+chapel Confessor (wireKind 68, thornwall chapel rect) clears. Premise
+corrections flagged: Gravecaller carries no bolt kit (source = shared
+boss-bolt path, i.e. Gravemother); Bless unscaled (no heal component);
+vfx-14 already HASTE (no new combat kind); OwnStats +1 trailing u16, version
+stays 237 (S16 precedent, stated). Epoch **8 → 9**; fresh 580 s journal
+replays `[replay] OK ticks=13601 sessionCmds=6093 hashes=137
+mismatches=0`. Suite 119/119 (328,008 assertions). Devlog 0033.
+
+| Card | Title |
+|---|---|
+| [T-070](done/T-070.md) | Blood Curse + chapel cure (epoch 9) |
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |

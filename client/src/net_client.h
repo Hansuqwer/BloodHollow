@@ -38,6 +38,7 @@ struct OwnStatsWire {
   std::uint8_t classId = 1;       // kit (kits.h) — stat panel label
   std::uint32_t mp = 0, mpMax = 30;
   std::uint16_t blessTicksLeft = 0, ironskinTicksLeft = 0;
+  std::uint16_t curseTicksLeft = 0;  // T-070 thin blood readout
 };
 
 struct PartyMemberWire {
