@@ -1,6 +1,6 @@
 # prompt.md — Charnel Widow (1006)
 
-**Status:** DRAFT prompt package (B0.5 A1). No plate generated. Final prompts are appended verbatim under *Runs* when generation happens; the model/version goes to `assets/LICENSES.md` (write "undisclosed" if the provider hides it — never omit).
+**Status:** B4 first pass generated 2026-09-08 (see *Runs*); offline QA exit 0; **UNVALIDATED in engine**. Final prompts are appended verbatim under *Runs* when generation happens; the model/version goes to `assets/LICENSES.md` (write "undisclosed" if the provider hides it — never omit).
 
 ## Prompt
 
@@ -30,4 +30,7 @@ Full prompt = PREFIX + ", " + SUBJECT + ", palette: " + PALETTE + " --neg " + NE
 32×48 (legs span 32 px, body 22 px) · 10 cols × 8 rows = 320×384
 
 ## Runs
-_(none yet — one line per generation: date · model or "undisclosed" · seed if known · which dirs · accepted y/n)_
+- S · 2026-09-08 · Arena Agent Mode image generation, model **undisclosed** (provider-abstracted) · seed n/a · prompt.md SUBJECT + "3/4 view from above facing south, legs spread wide" → keyed 1083×671 (w/h 1.61) · accepted **y** (B4 first pass)
+- E · 2026-09-08 · Arena Agent Mode image generation, model **undisclosed** (provider-abstracted) · seed n/a · prompt.md SUBJECT + "strict side profile facing EAST" → keyed 1247×697 (w/h 1.79) · accepted **y** (B4 first pass)
+- SE · not generated — derived from S (see `derivation.json`)
+- Build: `sh tools/atlaspack/b4_build.sh` → `bh_mob_sheet.py 1006 --body-h 22 --family widow --kind spider --walk-style glide --shadow-rx 14 --lunge 3 --attack-fx line8 --gamma 0.65` → 80 cells → `sheet.png` 320×384 → `docs/research-notes/qa/b4_1006_charnel_widow_{qa_3x.png,audit.json}` exit 0. Legs span the full 32 px (width-limited fit, body 20/18 px instead of 22 — the legs are the silhouette). **UNVALIDATED in engine** (T-ART-01/05).

@@ -1,0 +1,34 @@
+{
+ "anims": {
+  "walk": {
+   "frameW": 32,
+   "frameH": 48,
+   "frames": 4,
+   "dirs": 8,
+   "fps": 10.0,
+   "offsetX": 0,
+   "offsetY": 0,
+   "anchorY": 42
+  },
+  "attack": {
+   "frameW": 32,
+   "frameH": 48,
+   "frames": 3,
+   "dirs": 8,
+   "fps": 12.0,
+   "offsetX": 128,
+   "offsetY": 0,
+   "anchorY": 42
+  },
+  "die": {
+   "frameW": 32,
+   "frameH": 48,
+   "frames": 3,
+   "dirs": 8,
+   "fps": 8.0,
+   "offsetX": 224,
+   "offsetY": 0,
+   "anchorY": 42
+  }
+ }
+}

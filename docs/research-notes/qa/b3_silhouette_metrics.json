@@ -1,0 +1,53 @@
+{
+ "provisional": true,
+ "cells": "walk_S_0",
+ "metrics": {
+  "1001_marsh_rat": {
+   "bbox_w": 31,
+   "bbox_h": 20,
+   "aspect_w_over_h": 1.55,
+   "fill": 0.53,
+   "top_row": 23,
+   "bottom_row": 42
+  },
+  "1002_feral_ghoul": {
+   "bbox_w": 19,
+   "bbox_h": 40,
+   "aspect_w_over_h": 0.48,
+   "fill": 0.49,
+   "top_row": 3,
+   "bottom_row": 42
+  },
+  "1003_hollow_hound": {
+   "bbox_w": 28,
+   "bbox_h": 26,
+   "aspect_w_over_h": 1.08,
+   "fill": 0.5,
+   "top_row": 17,
+   "bottom_row": 42
+  },
+  "1004_plague_bat": {
+   "bbox_w": 22,
+   "bbox_h": 17,
+   "aspect_w_over_h": 1.29,
+   "fill": 0.43,
+   "top_row": 13,
+   "bottom_row": 29
+  },
+  "1005_bonepicker_gnoll": {
+   "bbox_w": 32,
+   "bbox_h": 34,
+   "aspect_w_over_h": 0.94,
+   "fill": 0.58,
+   "top_row": 9,
+   "bottom_row": 42
+  }
+ },
+ "read": {
+  "1001": "low horizontal (w/h>1.3), fills the bottom of the cell",
+  "1002": "tall thin (w/h<0.5)",
+  "1003": "wide wedge, full cell width",
+  "1004": "W with drop, body top \u2248 row 12, shadow at 45",
+  "1005": "hunch + club: tall AND wide"
+ }
+}

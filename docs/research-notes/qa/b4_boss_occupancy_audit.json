@@ -1,0 +1,73 @@
+{
+ "engine_validated": false,
+ "status": "UNVALIDATED in engine (offline bhscene composite)",
+ "source_rects": "data/maps-src/drowned_crypt.tmj spawns (numbers copied from B0 boss_occupancy_audit.json, file not re-read)",
+ "cells": {
+  "boss": "1009 walk_S_0 / attack_S_1 (64x64 a58)",
+  "elite": "1010 walk_S_0 (40x60 a52)",
+  "sexton": "1008 walk_S_0",
+  "celebrant": "1007 walk_S_0",
+  "players": "B0 ravager cell stand-ins (B6 not generated)"
+ },
+ "occlusion": {
+  "per_entity": [
+   {
+    "name": "Sepulcher Elite",
+    "hidden_frac": 0.0
+   },
+   {
+    "name": "Ravager L13",
+    "hidden_frac": 0.0
+   },
+   {
+    "name": "Cultist L11",
+    "hidden_frac": 0.0
+   },
+   {
+    "name": "Cultist L14",
+    "hidden_frac": 0.0
+   },
+   {
+    "name": "Waxen Celebrant",
+    "hidden_frac": 0.0
+   },
+   {
+    "name": "Ravager L10",
+    "hidden_frac": 0.23
+   },
+   {
+    "name": "Gravecaller L12",
+    "hidden_frac": 0.27
+   },
+   {
+    "name": "Revenant Sexton",
+    "hidden_frac": 0.0
+   },
+   {
+    "name": "The Gravemother",
+    "hidden_frac": 0.0
+   },
+   {
+    "name": "Sepulcher Elite",
+    "hidden_frac": 0.0
+   }
+  ],
+  "max_hidden": 0.27,
+  "entities_over_50pct_hidden": 0
+ },
+ "bell_lower_16px": {
+  "colours": 4,
+  "luma_std": 7.1,
+  "rows": [
+   43,
+   58
+  ]
+ },
+ "gates": {
+  "no_entity_over_50pct_hidden": true,
+  "boss_max_hidden_le_0_30": true,
+  "attack_sweep_inside_64x64": true,
+  "bell_lower_16px_low_detail": true
+ },
+ "pass": true
+}

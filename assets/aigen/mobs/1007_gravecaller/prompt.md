@@ -1,6 +1,6 @@
 # prompt.md — Gravecaller mob (1007)
 
-**Status:** DRAFT prompt package (B0.5 A1). No plate generated. Final prompts are appended verbatim under *Runs* when generation happens; the model/version goes to `assets/LICENSES.md` (write "undisclosed" if the provider hides it — never omit).
+**Status:** B4 first pass generated 2026-09-08 (see *Runs*); offline QA exit 0; **UNVALIDATED in engine**. Final prompts are appended verbatim under *Runs* when generation happens; the model/version goes to `assets/LICENSES.md` (write "undisclosed" if the provider hides it — never omit).
 
 ## Prompt
 
@@ -29,4 +29,6 @@ Full prompt = PREFIX + ", " + SUBJECT + ", palette: " + PALETTE + " --neg " + NE
 32×48 (body 44 px) · 10 cols × 8 rows = 320×384
 
 ## Runs
-_(none yet — one line per generation: date · model or "undisclosed" · seed if known · which dirs · accepted y/n)_
+- S · 2026-09-08 · Arena Agent Mode image generation, model **undisclosed** (provider-abstracted) · seed n/a · prompt.md SUBJECT (D9: **Waxen Celebrant**, folder name kept `1007_gravecaller` for `shared/content/mobs.h`) + "3/4 facing south, censer in the RIGHT hand" → 1456×720 output, keyed 269×412 (w/h 0.65) · accepted **y** (B4 first pass)
+- E · **not generated — turn generation limit reached** (10/10). E/W/NE/NW/SW are derived from S (`derivation.json`: E = fallback S). ⟨DIRECTOR⟩ one E generation is the first upgrade.
+- Build: `bh_mob_sheet.py 1007 --body-h 44 --family choir-wax --walk-style glide --shadow-rx 7 --lunge 2 --asym-box 0,18,11,44 --attack-fx dots5 --n-hide-face 0.3 --gamma 0.42 --pin ember=c8622a` → 80 cells → 320×384 → `qa/b4_1007_gravecaller_*` exit 0. Gamma 0.42 because the ichor-black robe sat at Δday −7.6 unlifted; the censer ember is pinned to `#c8622a` (3 px) so it survives quantize in all 8 dirs; the wax mask is hidden on N/NE/NW (hood). **UNVALIDATED in engine.**

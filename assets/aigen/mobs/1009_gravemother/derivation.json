@@ -1,0 +1,55 @@
+{
+ "mob_id": 1009,
+ "slug": "gravemother",
+ "family": "choir-wax",
+ "body_h": 58,
+ "cell": [
+  64,
+  64
+ ],
+ "anchor_y": 58,
+ "kind": "boss",
+ "walk_style": "bell",
+ "attack_fx": null,
+ "n_hide_face": 0.0,
+ "quiet_band_rows": 16,
+ "quiet_ramp": "3,17,18,21",
+ "pins": {},
+ "gamma": 0.85,
+ "contrast": 1.0,
+ "hover": 0,
+ "asym_box": null,
+ "colour_matched_to": "S",
+ "native_fit": {
+  "S": {
+   "sprite_px": [
+    42,
+    58
+   ],
+   "width_limited": false
+  },
+  "N": {
+   "sprite_px": [
+    43,
+    58
+   ],
+   "width_limited": false
+  }
+ },
+ "native_plates": [
+  "N",
+  "S"
+ ],
+ "direction_provenance": {
+  "S": "native",
+  "SE": "fallback",
+  "E": "fallback",
+  "N": "native",
+  "NE": "derived: E re-shaded (3/4 back)",
+  "W": "derived: E mirrored (symmetric mob)",
+  "SW": "derived: SE mirrored",
+  "NW": "derived: NE mirrored"
+ },
+ "frame_provenance": "walk/attack/die frames are pixel-op derivations of the per-direction base (bob/shear/lunge/flop) \u2014 first-pass for T-ART-01/05 bring-up; hand-fix list in prompt.md applies",
+ "status": "UNVALIDATED in engine"
+}

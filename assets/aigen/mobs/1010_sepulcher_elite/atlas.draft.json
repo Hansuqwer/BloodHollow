@@ -1,0 +1,59 @@
+{
+ "anims": {
+  "walk": {
+   "frameW": 40,
+   "frameH": 60,
+   "frames": 4,
+   "dirs": 8,
+   "fps": 10,
+   "offsetX": 0,
+   "offsetY": 0,
+   "anchorY": 52
+  },
+  "attack": {
+   "frameW": 40,
+   "frameH": 60,
+   "frames": 3,
+   "dirs": 8,
+   "fps": 12,
+   "offsetX": 160,
+   "offsetY": 0,
+   "anchorY": 52
+  },
+  "hurt": {
+   "frameW": 40,
+   "frameH": 60,
+   "frames": 2,
+   "dirs": 8,
+   "fps": 12,
+   "offsetX": 280,
+   "offsetY": 0,
+   "anchorY": 52
+  },
+  "die": {
+   "frameW": 40,
+   "frameH": 60,
+   "frames": 3,
+   "dirs": 8,
+   "fps": 8,
+   "offsetX": 360,
+   "offsetY": 0,
+   "anchorY": 52
+  }
+ },
+ "_draft": {
+  "status": "UNVALIDATED in engine (loader-rule replica only)",
+  "cell": [
+   40,
+   60
+  ],
+  "anchorY_note": "anchorY is written per anim; engine/assets/atlas.cpp ignores unknown keys until T-ART-10",
+  "note": "D5a: spec cell 40x60",
+  "sheet_px": [
+   480,
+   480
+  ],
+  "loader_rule_replica": "clean",
+  "ruling": "D5 ruled 40x60 / anchorY 52 (B0-GATE-DECISION 2026-09-08); T-ART-10 card text to be amended by sibling"
+ }
+}

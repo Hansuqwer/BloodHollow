@@ -1,6 +1,6 @@
 # prompt.md — Bonepicker Gnoll (1005)
 
-**Status:** DRAFT prompt package (B0.5 A1). No plate generated. Final prompts are appended verbatim under *Runs* when generation happens; the model/version goes to `assets/LICENSES.md` (write "undisclosed" if the provider hides it — never omit).
+**Status:** B3 first-pass GENERATED 2026-09-08 (native S + E plates; SE/SW/W/NW/N/NE derived). Offline QA pass; in-engine UNVALIDATED. Final prompts are appended verbatim under *Runs* when generation happens; the model/version goes to `assets/LICENSES.md` (write "undisclosed" if the provider hides it — never omit).
 
 ## Prompt
 
@@ -30,4 +30,8 @@ Full prompt = PREFIX + ", " + SUBJECT + ", palette: " + PALETTE + " --neg " + NE
 32×48 (body 42 px) · 10 cols × 8 rows = 320×384
 
 ## Runs
-_(none yet — one line per generation: date · model or "undisclosed" · seed if known · which dirs · accepted y/n)_
+- S (rev 1) · 2026-09-08 · Arena Agent Mode image generation, model **undisclosed** (provider-abstracted) · seed n/a · prompt.md, club raised over the RIGHT shoulder — the club above the head ate the 42-px height budget (body fit 34) · accepted **n** → superseded by rev 2 (plate overwritten)
+- S (rev 2) · 2026-09-08 · same provider, model **undisclosed** · seed n/a · prompt.md + pose line "club held **horizontal across the shoulders in the RIGHT hand**, hunched" → keyed 558×641 (w/h 0.87), body fit 37 (width-limited by the club length) · accepted **y** (B3 rev 2)
+- E · 2026-09-08 · Arena Agent Mode image generation, model **undisclosed** (provider-abstracted) · seed n/a · prompt.md, side profile facing EAST, club on near shoulder · accepted **y** (B3 first pass)
+- SE (except 1001) · not generated — derived from S/E by `bh_mob_sheet.py` (see `derivation.json`); a native SE plate is the first upgrade when generation budget allows
+- Build: `sh tools/atlaspack/b3_build.sh` → `cells/` (80) → `sheet.png` + `sheet.json` → `docs/research-notes/qa/b3_<slug>_qa_3x.png` + `_audit.json` (exit 0, 2026-09-08). **UNVALIDATED in engine** (T-ART-01/05).

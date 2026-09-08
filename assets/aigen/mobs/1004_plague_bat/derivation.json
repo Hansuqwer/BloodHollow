@@ -1,0 +1,55 @@
+{
+ "mob_id": 1004,
+ "slug": "plague_bat",
+ "family": "vermin",
+ "body_h": 18,
+ "cell": [
+  32,
+  48
+ ],
+ "anchor_y": 42,
+ "kind": "fly",
+ "walk_style": "bob",
+ "attack_fx": null,
+ "n_hide_face": 0.0,
+ "quiet_band_rows": 0,
+ "quiet_ramp": null,
+ "pins": {},
+ "gamma": 0.62,
+ "contrast": 1.0,
+ "hover": 12,
+ "asym_box": null,
+ "colour_matched_to": "S",
+ "native_fit": {
+  "S": {
+   "sprite_px": [
+    24,
+    18
+   ],
+   "width_limited": false
+  },
+  "E": {
+   "sprite_px": [
+    19,
+    18
+   ],
+   "width_limited": false
+  }
+ },
+ "native_plates": [
+  "E",
+  "S"
+ ],
+ "direction_provenance": {
+  "S": "native",
+  "SE": "fallback",
+  "E": "native",
+  "N": "derived: S re-shaded (back view)",
+  "NE": "derived: E re-shaded (3/4 back)",
+  "W": "derived: E mirrored (symmetric mob)",
+  "SW": "derived: SE mirrored",
+  "NW": "derived: NE mirrored"
+ },
+ "frame_provenance": "walk/attack/die frames are pixel-op derivations of the per-direction base (bob/shear/lunge/flop) \u2014 first-pass for T-ART-01/05 bring-up; hand-fix list in prompt.md applies",
+ "status": "UNVALIDATED in engine"
+}

@@ -1,0 +1,56 @@
+{
+ "frame": "walk_S_0",
+ "note": "bbox of opaque pixels incl. outline; shadow excluded (alpha 70)",
+ "mobs": {
+  "1006_charnel_widow": {
+   "bbox_w": 31,
+   "bbox_h": 20,
+   "w_over_h": 1.55,
+   "fill": 0.3,
+   "cell": [
+    32,
+    48
+   ]
+  },
+  "1007_gravecaller": {
+   "bbox_w": 29,
+   "bbox_h": 43,
+   "w_over_h": 0.67,
+   "fill": 0.52,
+   "cell": [
+    32,
+    48
+   ]
+  },
+  "1008_revenant_sexton": {
+   "bbox_w": 28,
+   "bbox_h": 42,
+   "w_over_h": 0.67,
+   "fill": 0.5,
+   "cell": [
+    32,
+    48
+   ]
+  },
+  "1010_sepulcher_elite": {
+   "bbox_w": 32,
+   "bbox_h": 53,
+   "w_over_h": 0.6,
+   "fill": 0.58,
+   "cell": [
+    40,
+    60
+   ]
+  },
+  "1009_gravemother": {
+   "bbox_w": 42,
+   "bbox_h": 58,
+   "w_over_h": 0.72,
+   "fill": 0.58,
+   "cell": [
+    64,
+    64
+   ]
+  }
+ }
+}

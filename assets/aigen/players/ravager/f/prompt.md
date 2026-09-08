@@ -17,7 +17,7 @@ Full prompt = PREFIX + ", " + SUBJECT + ", palette: " + PALETTE + " --neg " + NE
 - native dirs: S, SE, E for the BASE BODY only (no gear); class overlay generated on the same body plate with the same seed
 - skin tones: generate the pale tone only; sallow/weathered are index swaps of the 4 skin entries in the family strip
 - frames: idle1 walk6 (contact f0/f3) attack3 (f1) cast4 (release f2) hurt2 die4 gib3 — key frames by AI (walk f0, attack f1, cast f2, die f3), the rest hand-inbetweened
-- cell: 32×48 body 46 (D2a) — if D2b, regenerate nothing: re-run fit_to_cell at 52 px from the same plate
+- cell: 32×48, body ≤ 43 px (rows 0–42) — D2 ruled 32×48 (B0-GATE-DECISION); fit_to_cell(43), never 46 (clips)
 
 ## Hand-fix list (check in this order after quantize)
 - outline: close every gap at claws / teeth / tail tip / weapon tip / staff head (AI breaks these first)
@@ -28,7 +28,7 @@ Full prompt = PREFIX + ", " + SUBJECT + ", palette: " + PALETTE + " --neg " + NE
 - shoulder width per class (Ravager 14 / Cultist 11 / Gravecaller 10 px) measured on the S frame after downscale — adjust by hand, not by re-prompt
 
 ## Cell / sheet
-32×48 (body 46 px; 32×56 if director picks the taller cell) · idle1+walk6+attack3+cast4+hurt2+die4+gib3 → 23 cols × 8 rows = 736×384
+32×48 (body ≤ 43 px; D2 ruled) · idle1+walk6+attack3+cast4+hurt2+die4+gib3 → 23 cols × 8 rows = 736×384
 
 ## Runs
 _(none yet — one line per generation: date · model or "undisclosed" · seed if known · which dirs · accepted y/n)_

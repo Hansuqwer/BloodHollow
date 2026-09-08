@@ -1,6 +1,6 @@
 # prompt.md — Revenant Sexton (1008)
 
-**Status:** DRAFT prompt package (B0.5 A1). No plate generated. Final prompts are appended verbatim under *Runs* when generation happens; the model/version goes to `assets/LICENSES.md` (write "undisclosed" if the provider hides it — never omit).
+**Status:** B4 first pass generated 2026-09-08 (see *Runs*); offline QA exit 0; **UNVALIDATED in engine**. Final prompts are appended verbatim under *Runs* when generation happens; the model/version goes to `assets/LICENSES.md` (write "undisclosed" if the provider hides it — never omit).
 
 ## Prompt
 
@@ -29,4 +29,6 @@ Full prompt = PREFIX + ", " + SUBJECT + ", palette: " + PALETTE + " --neg " + NE
 32×48 (body 46 px; halberd may exit top by 2 px) · 10 cols × 8 rows = 320×384
 
 ## Runs
-_(none yet — one line per generation: date · model or "undisclosed" · seed if known · which dirs · accepted y/n)_
+- S · 2026-09-08 · Arena Agent Mode image generation, model **undisclosed** (provider-abstracted) · seed n/a · prompt.md SUBJECT + "3/4 facing south, halberd upright in the RIGHT hand" → keyed 392×653 (w/h 0.60) · accepted **y** (B4 first pass)
+- E · 2026-09-08 · Arena Agent Mode image generation, model **undisclosed** (provider-abstracted) · seed n/a · prompt.md SUBJECT + "strict side profile facing EAST" → keyed 238×542 (w/h 0.44) · accepted **y** (B4 first pass)
+- Build: `bh_mob_sheet.py 1008 --body-h 46 --family grave-goods --walk-style drag --shadow-rx 9 --lunge 3 --asym-box 0,0,10,46 --n-hide-face 0.22` → 80 cells → 320×384 → `qa/b4_1008_revenant_sexton_*` exit 0. Drag-step walk (f2/f3 shear the trailing foot, asymmetric — W-side is mirrored E **with the halberd re-composited behind the body**, never a plain mirror). Halberd head touches row 0 (brief allows 2 px exit). **UNVALIDATED in engine.**

@@ -1,0 +1,60 @@
+{
+ "mob_id": 1005,
+ "slug": "bonepicker_gnoll",
+ "family": "grave-goods",
+ "body_h": 42,
+ "cell": [
+  32,
+  48
+ ],
+ "anchor_y": 42,
+ "kind": "ground",
+ "walk_style": "bob",
+ "attack_fx": null,
+ "n_hide_face": 0.0,
+ "quiet_band_rows": 0,
+ "quiet_ramp": null,
+ "pins": {},
+ "gamma": 0.85,
+ "contrast": 1.0,
+ "hover": 0,
+ "asym_box": [
+  0,
+  0,
+  15,
+  13
+ ],
+ "colour_matched_to": "S",
+ "native_fit": {
+  "S": {
+   "sprite_px": [
+    32,
+    37
+   ],
+   "width_limited": true
+  },
+  "E": {
+   "sprite_px": [
+    32,
+    33
+   ],
+   "width_limited": true
+  }
+ },
+ "native_plates": [
+  "E",
+  "S"
+ ],
+ "direction_provenance": {
+  "S": "native",
+  "SE": "fallback",
+  "E": "native",
+  "N": "derived: S re-shaded (back view)",
+  "NE": "derived: E re-shaded (3/4 back)",
+  "W": "derived: E mirrored, shoulder gear pushed behind the body (far = right shoulder)",
+  "SW": "derived: SE mirrored, gear behind body (asym)",
+  "NW": "derived: NE mirrored, gear behind body (asym)"
+ },
+ "frame_provenance": "walk/attack/die frames are pixel-op derivations of the per-direction base (bob/shear/lunge/flop) \u2014 first-pass for T-ART-01/05 bring-up; hand-fix list in prompt.md applies",
+ "status": "UNVALIDATED in engine"
+}

@@ -1,6 +1,6 @@
 # prompt.md — Sepulcher Elite (1010)
 
-**Status:** DRAFT prompt package (B0.5 A1). No plate generated. Final prompts are appended verbatim under *Runs* when generation happens; the model/version goes to `assets/LICENSES.md` (write "undisclosed" if the provider hides it — never omit).
+**Status:** B4 first pass generated 2026-09-08 (see *Runs*); offline QA exit 0; **UNVALIDATED in engine**. Final prompts are appended verbatim under *Runs* when generation happens; the model/version goes to `assets/LICENSES.md` (write "undisclosed" if the provider hides it — never omit).
 
 ## Prompt
 
@@ -30,4 +30,6 @@ Full prompt = PREFIX + ", " + SUBJECT + ", palette: " + PALETTE + " --neg " + NE
 40×60 (1.25×, anchorY 52) · walk4+attack3+hurt2+die3 → 12 cols × 8 rows = 480×480
 
 ## Runs
-_(none yet — one line per generation: date · model or "undisclosed" · seed if known · which dirs · accepted y/n)_
+- S · 2026-09-08 · Arena Agent Mode image generation, model **undisclosed** (provider-abstracted) · seed n/a · prompt.md SUBJECT + "3/4 facing south" → the generation contained a second, zoomed copy of the figure on the right half; **cropped to the left figure** (`plates/sepulcher_elite_S_raw_uncropped.png` kept as evidence; the crop removed a diagonal beam artefact touching the right pauldron by polygon mask — no pixels were painted) → keyed 338×610 · accepted **y** (B4 first pass)
+- E · **not generated — turn generation limit reached.** E/W derived from S (fallback). ⟨DIRECTOR⟩ one E generation is the first upgrade.
+- Build: `bh_mob_sheet.py 1010 --body-h 58 --family grave-goods --cell 40x60 --anims walk4,attack3,hurt2,die3 --shadow-rx 11 --lunge 3 --asym-box 0,0,12,58 --n-hide-face 0.2 --pin "lum>150=e6e0d4"` → 96 cells (12 cols × 8) → 480×480, anchorY 52 in every block → `qa/b4_1010_sepulcher_elite_*` (`--cell 40x60 --anchor-y 52`) exit 0. Bindings pinned to `#e6e0d4` = 3.8 % of body pixels (gate ≤ 8 %). Hurt = flinch −2 px + hit-flash frame. **UNVALIDATED in engine** (needs T-ART-10 amended to 40×60, T-ART-01/05).

@@ -1,0 +1,44 @@
+{
+ "anims": {
+  "walk": {
+   "frames": 4,
+   "fps": 10.0,
+   "max_colours": 25
+  },
+  "attack": {
+   "frames": 3,
+   "fps": 12.0,
+   "max_colours": 25
+  },
+  "cast": {
+   "frames": 4,
+   "fps": 10.0,
+   "max_colours": 25
+  },
+  "hurt": {
+   "frames": 2,
+   "fps": 12.0,
+   "max_colours": 25
+  },
+  "die": {
+   "frames": 4,
+   "fps": 8.0,
+   "max_colours": 25
+  },
+  "summon": {
+   "frames": 4,
+   "fps": 8.0,
+   "max_colours": 25
+  }
+ },
+ "padded": [],
+ "feet_warnings": [],
+ "errors": [],
+ "loader_rule_replica": "clean",
+ "sheet_px": [
+  1344,
+  512
+ ],
+ "colour_gate": true,
+ "engine_validated": false
+}

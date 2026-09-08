@@ -1,0 +1,59 @@
+{
+ "mob_id": 1010,
+ "slug": "sepulcher_elite",
+ "family": "grave-goods",
+ "body_h": 58,
+ "cell": [
+  40,
+  60
+ ],
+ "anchor_y": 52,
+ "kind": "ground",
+ "walk_style": "bob",
+ "attack_fx": null,
+ "n_hide_face": 0.2,
+ "quiet_band_rows": 0,
+ "quiet_ramp": null,
+ "pins": {
+  "S": {
+   "lum>150=e6e0d4": {
+    "pixels": 64,
+    "pct_of_body": 6.4
+   }
+  }
+ },
+ "gamma": 0.85,
+ "contrast": 1.0,
+ "hover": 0,
+ "asym_box": [
+  0,
+  0,
+  12,
+  58
+ ],
+ "colour_matched_to": "S",
+ "native_fit": {
+  "S": {
+   "sprite_px": [
+    32,
+    58
+   ],
+   "width_limited": false
+  }
+ },
+ "native_plates": [
+  "S"
+ ],
+ "direction_provenance": {
+  "S": "native",
+  "SE": "fallback",
+  "E": "fallback",
+  "N": "derived: S re-shaded (back view) + face hidden (hood)",
+  "NE": "derived: E re-shaded (3/4 back) + face hidden (hood)",
+  "W": "derived: E mirrored, shoulder gear pushed behind the body (far = right shoulder)",
+  "SW": "derived: SE mirrored, gear behind body (asym)",
+  "NW": "derived: NE mirrored, gear behind body (asym)"
+ },
+ "frame_provenance": "walk/attack/die frames are pixel-op derivations of the per-direction base (bob/shear/lunge/flop) \u2014 first-pass for T-ART-01/05 bring-up; hand-fix list in prompt.md applies",
+ "status": "UNVALIDATED in engine"
+}

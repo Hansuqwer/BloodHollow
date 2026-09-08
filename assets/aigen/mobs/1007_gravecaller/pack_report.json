@@ -1,0 +1,29 @@
+{
+ "anims": {
+  "walk": {
+   "frames": 4,
+   "fps": 10.0,
+   "max_colours": 30
+  },
+  "attack": {
+   "frames": 3,
+   "fps": 12.0,
+   "max_colours": 30
+  },
+  "die": {
+   "frames": 3,
+   "fps": 8.0,
+   "max_colours": 30
+  }
+ },
+ "padded": [],
+ "feet_warnings": [],
+ "errors": [],
+ "loader_rule_replica": "clean",
+ "sheet_px": [
+  320,
+  384
+ ],
+ "colour_gate": true,
+ "engine_validated": false
+}

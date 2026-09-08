@@ -1,0 +1,64 @@
+{
+ "anims": {
+  "walk": {
+   "frameW": 64,
+   "frameH": 64,
+   "frames": 4,
+   "dirs": 8,
+   "fps": 10.0,
+   "offsetX": 0,
+   "offsetY": 0,
+   "anchorY": 58
+  },
+  "attack": {
+   "frameW": 64,
+   "frameH": 64,
+   "frames": 3,
+   "dirs": 8,
+   "fps": 12.0,
+   "offsetX": 256,
+   "offsetY": 0,
+   "anchorY": 58
+  },
+  "cast": {
+   "frameW": 64,
+   "frameH": 64,
+   "frames": 4,
+   "dirs": 8,
+   "fps": 10.0,
+   "offsetX": 448,
+   "offsetY": 0,
+   "anchorY": 58
+  },
+  "hurt": {
+   "frameW": 64,
+   "frameH": 64,
+   "frames": 2,
+   "dirs": 8,
+   "fps": 12.0,
+   "offsetX": 704,
+   "offsetY": 0,
+   "anchorY": 58
+  },
+  "die": {
+   "frameW": 64,
+   "frameH": 64,
+   "frames": 4,
+   "dirs": 8,
+   "fps": 8.0,
+   "offsetX": 832,
+   "offsetY": 0,
+   "anchorY": 58
+  },
+  "summon": {
+   "frameW": 64,
+   "frameH": 64,
+   "frames": 4,
+   "dirs": 8,
+   "fps": 8.0,
+   "offsetX": 1088,
+   "offsetY": 0,
+   "anchorY": 58
+  }
+ }
+}

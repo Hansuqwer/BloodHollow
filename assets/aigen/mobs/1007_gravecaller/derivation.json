@@ -1,0 +1,59 @@
+{
+ "mob_id": 1007,
+ "slug": "gravecaller",
+ "family": "choir-wax",
+ "body_h": 44,
+ "cell": [
+  32,
+  48
+ ],
+ "anchor_y": 42,
+ "kind": "ground",
+ "walk_style": "glide",
+ "attack_fx": "dots5",
+ "n_hide_face": 0.3,
+ "quiet_band_rows": 0,
+ "quiet_ramp": null,
+ "pins": {
+  "S": {
+   "ember=c8622a": {
+    "pixels": 6,
+    "pct_of_body": 0.9
+   }
+  }
+ },
+ "gamma": 0.42,
+ "contrast": 1.0,
+ "hover": 0,
+ "asym_box": [
+  0,
+  18,
+  11,
+  44
+ ],
+ "colour_matched_to": "S",
+ "native_fit": {
+  "S": {
+   "sprite_px": [
+    29,
+    44
+   ],
+   "width_limited": false
+  }
+ },
+ "native_plates": [
+  "S"
+ ],
+ "direction_provenance": {
+  "S": "native",
+  "SE": "fallback",
+  "E": "fallback",
+  "N": "derived: S re-shaded (back view) + face hidden (hood)",
+  "NE": "derived: E re-shaded (3/4 back) + face hidden (hood)",
+  "W": "derived: E mirrored, shoulder gear pushed behind the body (far = right shoulder)",
+  "SW": "derived: SE mirrored, gear behind body (asym)",
+  "NW": "derived: NE mirrored, gear behind body (asym)"
+ },
+ "frame_provenance": "walk/attack/die frames are pixel-op derivations of the per-direction base (bob/shear/lunge/flop) \u2014 first-pass for T-ART-01/05 bring-up; hand-fix list in prompt.md applies",
+ "status": "UNVALIDATED in engine"
+}
