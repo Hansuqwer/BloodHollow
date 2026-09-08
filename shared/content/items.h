@@ -27,6 +27,7 @@ inline constexpr ItemDef kItems[] = {
     {2101, "Hide Armor",           1, 0,  6,  0,   120,  1},
     {2102, "Bone Plate",           1, 0,  11, 0,   350,  1},
     {3001, "Blood Vial",           2, 0,  0,  40,  30,   16},
+    {3002, "Smuggled Vial",        2, 0,  0,  55,  45,   16},
     {4001, "Rat Pelt",             3, 0,  0,  0,   10,   32},
     {4002, "Ghoul Finger",         3, 0,  0,  0,   22,   32},
     {4003, "Hound Fang",           3, 0,  0,  0,   35,   32},
@@ -62,5 +63,18 @@ inline const ItemDef* findItem(std::uint32_t itemId) {
 
 // Town vendor stock (Marta). Buy = full value; SellJunk = 40%.
 inline constexpr std::uint32_t kVendorStock[] = {2001, 2002, 2101, 2102, 3001};
+
+// T-069 Smugglers' Cove fence (Sable): the no-questions lane Marta refuses.
+// Secret stock = contraband potion + rare junk, chaotic eyes only, at a 25%
+// markup; junk pawn pays 60% to anyone — better than Marta's 40%, that's the
+// draw. Stock is item-DISJOINT from kVendorStock so the kBuy lane can route
+// by item (fence stock -> Sable, everything else -> Marta) with no ambiguity.
+inline constexpr std::uint32_t kFenceStock[] = {3002, 4004, 4005};
+inline constexpr std::uint32_t kFenceMarkupPct = 125;
+inline constexpr std::uint32_t kFenceSellRatioPct = 60;
+inline bool isFenceStock(std::uint32_t itemId) {
+  for (const std::uint32_t id : kFenceStock) if (id == itemId) return true;
+  return false;
+}
 
 }  // namespace bh::content

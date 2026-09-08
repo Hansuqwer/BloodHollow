@@ -87,12 +87,12 @@ void sendMsg(ENetPeer* peer, const Msg& m, Server& s) {
 
 // Journal epoch: bump when the SIM semantics change under old journals
 // (whitening/moral split in S15 = epoch 3; kit sidecars = 2; pre-K = 1;
-// S22 T-034b mob retune = 6; T-068 barricade relocation = 7).
+// S22 T-034b mob retune = 6; T-068 barricade relocation = 7;
+// T-069 fence + one-Marta spawn fix = 8).
 // Replay refuses non-matching epoch journals instead of lying with them.
-constexpr int kJournalEpoch = 7;  // T-068: gravecaller barricade relocated
-                                  // ((6,18)->(1,43)) — content shifts the sim
-                                  // under v6 journals; stale by contract, not
-                                  // broken (same response as T-030/T-034b)
+constexpr int kJournalEpoch = 8;  // T-069: fence furniture + the one-Marta
+                                  // spawn fix (content/entity shifts the sim
+                                  // under v7 journals; stale by contract)
 
 // ---- world journal record helpers (M2) ------------------------------------
 void journalTickHash(Server& s) {

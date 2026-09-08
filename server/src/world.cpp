@@ -347,10 +347,15 @@ void World::spawnVendor() { spawnVendor(zones_.at(1)); }
 void World::spawnVendor(Zone& zone) {
   if (zone.vendorSeeded) return;
   zone.vendorSeeded = true;
-  // Marta stands near the town spawn, first walkable tile in a tiny spiral
-  for (int r = 1; r < 8; ++r) {
-    for (int dy = -r; dy <= r; ++dy) {
-      for (int dx = -r; dx <= r; ++dx) {
+  // Marta stands near the town spawn: FIRST walkable tile in a tiny spiral.
+  // T-069 fix: the loop lost its break at some point and seeded EVERY
+  // walkable ring tile — boot logs carried ~425 duplicate Martas (entity
+  // bloat, and no free tile left in town for any new furniture). One Marta,
+  // as T-027 documented.
+  bool martaseeded = false;
+  for (int r = 1; r < 8 && !martaseeded; ++r) {
+    for (int dy = -r; dy <= r && !martaseeded; ++dy) {
+      for (int dx = -r; dx <= r && !martaseeded; ++dx) {
         if (std::max(std::abs(dx), std::abs(dy)) != r) continue;
         const int x = zone.spawnPoint.x + dx;
         const int y = zone.spawnPoint.y + dy;
@@ -366,6 +371,7 @@ void World::spawnVendor(Zone& zone) {
         e.dead = false;
         e.walker.place(sim::TilePos{x, y});
         insertEntity(std::move(e));
+        martaseeded = true;  // T-069: one Marta (see comment above)
       }
     }
   }
@@ -397,9 +403,52 @@ void World::spawnVendor(Zone& zone) {
           b.walker.place(sim::TilePos{x, y});
           insertEntity(std::move(b));
         }
+        spawnFence(zone);
         return;
       }
     }
+  }
+  // Board found no tile (town fully built over): the fence still seeds —
+  // her spiral is independent of the board search above.
+  spawnFence(zone);
+}
+
+// T-069: Sable the Fence at the gallows pit (the chaotic bindstone).
+// Own spiral from gallowsTile(1), skipping occupied furniture tiles.
+// Era: Sable works the crowd the temple refuses; Marta stays at the plaza.
+void World::spawnFence(Zone& zone) {
+  const sim::TilePos gp = gallowsTile(1);
+  for (int r = 0; r < 4; ++r) {
+    bool placed = false;
+    for (int dy = -r; dy <= r && !placed; ++dy) {
+      for (int dx = -r; dx <= r && !placed; ++dx) {
+        if (std::max(std::abs(dx), std::abs(dy)) != r) continue;
+        const int fx = gp.x + dx, fy = gp.y + dy;
+        if (!zone.map.inBounds(fx, fy) || zone.map.isBlocked(fx, fy)) continue;
+        bool occupied = false;
+        for (const Entity& ee : entities_)
+          if (ee.zoneId == 1 && !ee.dead && ee.walker.tile().x == fx &&
+              ee.walker.tile().y == fy &&
+              ee.wireKind >= content::kWireKindFurnitureFloor) {
+            occupied = true;
+            break;
+          }
+        if (occupied) continue;
+        Entity f;
+        f.id = nextId_++;
+        f.zoneId = 1;
+        f.kind = EntityKind::kMob;  // furniture, non-combat; wire kind 69
+        f.wireKind = content::kWireKindFence;
+        f.name = "Sable the Fence";
+        f.hp = 1;
+        f.hpMax = 1;
+        f.dead = false;
+        f.walker.place(sim::TilePos{fx, fy});
+        insertEntity(std::move(f));
+        placed = true;
+      }
+    }
+    if (placed) return;
   }
 }
 
@@ -1019,6 +1068,83 @@ std::uint32_t World::vendorSellJunk(Entity& e) {
   return gained;
 }
 
+// ---- T-069 Smugglers' Cove fence (Sable) -----------------------------------
+// The no-questions lane Marta refuses: junk pawn at 60% for anyone (better
+// than Marta's 40% — that's the draw), secret stock sold to chaotic eyes
+// only at a 25% markup. Trading with the fence never moves karma.
+
+bool World::nearFence(const Entity& e) const {
+  for (const Entity& other : entities_) {
+    if (other.wireKind == content::kWireKindFence &&
+        other.zoneId == e.zoneId &&
+        chebyshev(other.walker.tile(), e.walker.tile()) <= 3) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool World::fenceBuy(Entity& e, std::uint32_t itemId, std::uint16_t qty) {
+  if (e.kind != EntityKind::kPlayer || e.dead || qty == 0 || qty > 16) return false;
+  bool stocked = false;
+  for (const std::uint32_t id : content::kFenceStock) {
+    if (id == itemId) stocked = true;
+  }
+  const content::ItemDef* d = content::findItem(itemId);
+  if (!stocked || d == nullptr) return false;  // Sable sells exactly one crate
+  if (!nearFence(e)) return false;
+  if (karmaBandOf(e.karma) != 2) {  // the crate shows itself to red eyes only
+    WorldEvent sneer;
+    sneer.aboutId = e.id;
+    sneer.chatCh = 2;
+    sneer.chatText = "Sable sizes up your clean hands and turns away.";
+    events_.push_back(std::move(sneer));
+    return false;
+  }
+  if (d->stackMax == 1) qty = 1;
+  const std::uint32_t cost =
+      d->value * content::kFenceMarkupPct / 100 * qty;
+  if (e.gold < cost) return false;
+  if (!addItem(e, itemId, qty)) return false;
+  e.gold -= cost;
+  WorldEvent ev;
+  ev.aboutId = e.id;
+  ev.invChanged = true;
+  ev.statsChanged = true;
+  ev.chatCh = 255;
+  ev.chatText = "bought " + std::to_string(qty) + "x " + d->name +
+                " (no questions) for " + std::to_string(cost) + "g.";
+  events_.push_back(std::move(ev));
+  return true;
+}
+
+std::uint32_t World::fenceSellJunk(Entity& e) {
+  if (e.kind != EntityKind::kPlayer || e.dead) return 0;
+  if (!nearFence(e)) return 0;  // no karma gate: Sable asks nothing
+  std::uint32_t gained = 0;
+  for (size_t i = 0; i < e.inv.size();) {
+    const content::ItemDef* d = content::findItem(e.inv[i].itemId);
+    if (d != nullptr && d->slot == 3) {
+      gained += d->value * content::kFenceSellRatioPct / 100 * e.inv[i].qty;
+      e.inv.erase(e.inv.begin() + static_cast<long>(i));
+    } else {
+      ++i;
+    }
+  }
+  if (gained > 0) {
+    e.gold += gained;
+    WorldEvent ev;
+    ev.aboutId = e.id;
+    ev.invChanged = true;
+    ev.statsChanged = true;
+    ev.chatCh = 255;
+    ev.chatText = "fenced junk for " + std::to_string(gained) +
+                  "g (no questions asked).";
+    events_.push_back(std::move(ev));
+  }
+  return gained;
+}
+
 // ---- anvil & aura spine (T-041/T-042, RFC 0001) ----------------------------
 
 void World::spawnAnvils() {
@@ -1468,6 +1594,14 @@ void World::trySwing(Entity& att, Entity& def) {
   WorldEvent ev;
   ev.attacker = att.id;
   ev.target = def.id;
+  // retaliation: passive mobs fight back when struck. Drop any stale
+  // wander path so the next think re-paths toward us instead of away.
+  // Aggro fires on the strike itself (hit or miss) — the miss case no
+  // longer skips retaliation (T-047 fix).
+  if (def.kind == EntityKind::kMob && def.attackTarget == 0 && !def.dead) {
+    def.attackTarget = att.id;
+    def.path.clear();
+  }
   if (!hc.hit) {
     ev.kind = 0;
     events_.push_back(std::move(ev));
@@ -1606,10 +1740,6 @@ void World::trySwing(Entity& att, Entity& def) {
         events_.push_back(std::move(le));
       }
     }
-  }
-  // retaliation: passive mobs fight back when struck
-  if (def.kind == EntityKind::kMob && def.attackTarget == 0 && !def.dead) {
-    def.attackTarget = att.id;
   }
   ev.kind = hc.crit ? 2 : 1;
   ev.amount = static_cast<std::uint16_t>(dmg > 65535 ? 65535 : dmg);
@@ -2212,7 +2342,10 @@ void World::mobThink(Entity& mob) {
     const std::uint8_t effAggro =
         static_cast<std::uint8_t>(std::min(255, mob.aggroRadius + (isNight() ? 1 : 0)));
     std::vector<Entity*> near = playersNear(zoneOf(mob), p.x, p.y, effAggro);
-    if (!near.empty()) mob.attackTarget = near[0]->id;  // deterministic: spatial order
+    if (!near.empty()) {
+      mob.attackTarget = near[0]->id;  // deterministic: spatial order
+      mob.path.clear();
+    }
   }
 
   if (mob.attackTarget != 0) {

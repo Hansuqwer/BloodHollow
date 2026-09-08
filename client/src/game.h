@@ -95,6 +95,7 @@ class Game {
   void drawVendorPanel() const;
   void drawDeathOverlay() const;
   bool vendorNear() const;
+  bool fenceNear() const;  // T-069: Sable's crate section of the panel
   bool anvilNear() const;
   void drawAnvilPanel() const;
   void drawTradeBanner() const;

@@ -1,0 +1,7 @@
+[bots] SUMMARY welcomed=5/5 moved=5/5 minDeltas=11999 kills=0 pots=0 swings=0 deaths=24 shops=0 anvilTries=0 levelDrops=0 regear=0 maxLevel=1 pkts=8290239 bytes=182304686 gates b/g/p/a/r=0/0/0/0/0 mGold=0 mPelts=0 bless=0 mend=0 noSee=0 hurt=0 choir c6=0 c7=0 c8=0
+[bots] t69w_00      kit=1 lvl=1 hp=79/94 party=0 deaths=10 rxR=598 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 lastDeath=(26,2) killerByLvl=L2:2 L11:2 L5:6
+[bots] t69w_01      kit=1 lvl=1 hp=13/94 party=0 deaths=8 rxR=598 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 lastDeath=(23,44) killerByLvl=L5:4 L11:4
+[bots] t69w_02      kit=1 lvl=1 hp=94/94 party=0 deaths=4 rxR=598 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 lastDeath=(11,40) killerByLvl=L11:2 L3:2
+[bots] t69w_03      kit=1 lvl=1 hp=94/94 party=0 deaths=2 rxR=598 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 lastDeath=(52,26) killerByLvl=L3:2
+[bots] t69w_04      kit=1 lvl=1 hp=94/94 party=0 deaths=0 rxR=598 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 lastDeath=(-1,-1) killerByLvl=
+[bots] OK

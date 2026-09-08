@@ -263,6 +263,12 @@ void Game::handleInputOnline() {
         net_->sendBuy(content::kVendorStock[static_cast<size_t>(i)], 1);
       }
     }
+    // T-069: Sable's crate — same BuyRequest path the server routes by item.
+    for (int i = 0; i < 3; ++i) {
+      if (IsKeyPressed(KEY_F6 + i)) {
+        net_->sendBuy(content::kFenceStock[static_cast<size_t>(i)], 1);
+      }
+    }
   }
   // trade mirror hygiene: server-directed lines are the truth
   if (net_->tradeWithId != 0) {
@@ -1018,7 +1024,24 @@ bool Game::vendorNear() const {
   if (own == rents_.end()) return false;
   const Vector2 op = entRenderPos(own->second);
   for (const auto& kv : rents_) {
-    if (kv.second.snap.kind == 64) {
+    // T-069: Marta's stall (64) opens the panel; Sable's fence (69) opens
+    // the same panel with her crate appended (server routes by item).
+    if (kv.second.snap.kind == 64 ||
+        kv.second.snap.kind == content::kWireKindFence) {
+      const Vector2 vp = entRenderPos(kv.second);
+      if (std::fabs(vp.x - op.x) <= 3.0f && std::fabs(vp.y - op.y) <= 3.0f) return true;
+    }
+  }
+  return false;
+}
+
+bool Game::fenceNear() const {
+  if (net_ == nullptr || !net_->welcomed) return false;
+  const auto own = rents_.find(net_->ownId);
+  if (own == rents_.end()) return false;
+  const Vector2 op = entRenderPos(own->second);
+  for (const auto& kv : rents_) {
+    if (kv.second.snap.kind == content::kWireKindFence) {
       const Vector2 vp = entRenderPos(kv.second);
       if (std::fabs(vp.x - op.x) <= 3.0f && std::fabs(vp.y - op.y) <= 3.0f) return true;
     }
@@ -1158,9 +1181,13 @@ void Game::drawAnvilPanel() const {
 
 void Game::drawVendorPanel() const {
   if (net_ == nullptr || !showVendor_) return;
+  // T-069: the crate section appears only at Sable's fence; the panel grows.
+  const bool fence = fenceNear();
+  const int ph = fence ? 214 : 150;
   const int px = 12, py = 150;
-  DrawRectangle(px, py, 250, 150, Color{12, 10, 8, 210});
-  DrawRectangleLinesEx(Rectangle{px, py, 250, 150}, 1.0f, Color{180, 150, 90, 220});
+  DrawRectangle(px, py, 250, ph, Color{12, 10, 8, 210});
+  DrawRectangleLinesEx(Rectangle{(float)px, (float)py, 250.0f, (float)ph}, 1.0f,
+                       Color{180, 150, 90, 220});
   DrawText("MARTA the Quarterwidow  -  stock", px + 8, py + 6, 10,
            Color{235, 220, 200, 255});
   int y = py + 24;
@@ -1175,10 +1202,27 @@ void Game::drawVendorPanel() const {
     ++i;
   }
   char buf[96];
-  std::snprintf(buf, sizeof buf, "G  sell all junk (40%%)");
+  if (fence) {
+    DrawText("SABLE the Fence  -  no questions", px + 8, y + 2, 10,
+             Color{235, 120, 110, 255});
+    y += 16;
+    int j = 0;
+    for (const std::uint32_t id : content::kFenceStock) {
+      const content::ItemDef* d = content::findItem(id);
+      if (d == nullptr) continue;
+      const std::uint32_t price = d->value * content::kFenceMarkupPct / 100;
+      std::snprintf(buf, sizeof buf, "F%d  %-14s %ug", j + 6, d->name, price);
+      DrawText(buf, px + 10, y, 10, Color{220, 170, 160, 255});
+      y += 16;
+      ++j;
+    }
+    std::snprintf(buf, sizeof buf, "G  sell all junk (60%%, no questions)");
+  } else {
+    std::snprintf(buf, sizeof buf, "G  sell all junk (40%%)");
+  }
   DrawText(buf, px + 10, y + 2, 10, Color{190, 170, 150, 255});
   std::snprintf(buf, sizeof buf, "gold %ug", net_->ownStats.gold);
-  DrawText(buf, px + 10, py + 130, 10, Color{255, 215, 120, 255});
+  DrawText(buf, px + 10, py + ph - 20, 10, Color{255, 215, 120, 255});
 }
 
 void Game::drawDeathOverlay() const {

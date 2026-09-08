@@ -1,0 +1,12 @@
+[campaign] t69c_01 reached L1 at t=0.1s (map 1)
+[campaign] t69c_00 reached L1 at t=0.1s (map 1)
+[campaign] t69c_01 reached L2 at t=8.5s (map 1)
+[campaign] t69c_00 reached L2 at t=11.1s (map 1)
+[campaign] t69c_00 reached L3 at t=91.3s (map 1)
+[campaign] t69c_01 reached L3 at t=91.4s (map 1)
+[campaign] t69c_00 reached L4 at t=411.5s (map 1)
+[campaign] t69c_01 reached L4 at t=411.5s (map 1)
+[bots] SUMMARY welcomed=2/2 moved=2/2 minDeltas=12000 kills=71 pots=2 swings=124 deaths=0 shops=5 anvilTries=0 levelDrops=0 regear=4 maxLevel=4 pkts=2311128 bytes=50902403 gates b/g/p/a/r=0/0/0/0/0 mGold=0 mPelts=0 bless=3 mend=7 noSee=0 hurt=68 choir c6=0 c7=0 c8=0
+[bots] t69c_00      kit=1 lvl=4 hp=85/94 party=2 deaths=0 rxR=604 rxM=1194 lastPid=1 casts c6=0 c7=0 c8=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t69c_01      kit=3 lvl=4 hp=112/94 party=2 deaths=0 rxR=601 rxM=1182 lastPid=1 casts c6=0 c7=0 c8=0 lastDeath=(-1,-1) killerByLvl=
+[bots] OK

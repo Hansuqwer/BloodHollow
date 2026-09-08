@@ -242,8 +242,14 @@ class World {
   bool nearAnvil(const Entity& e) const;
   bool tryRefine(Entity& e, std::uint8_t invSlot);  // T-060: anvil upgrade, tier risk
   std::uint32_t vendorSellJunk(Entity& e);  // returns gold gained
+  // T-069 Smugglers' Cove fence: no-questions lane. Buy = secret stock,
+  // chaotic eyes only, 25% markup; junk pawn = 60% for anyone, karma unmoved.
+  bool nearFence(const Entity& e) const;
+  bool fenceBuy(Entity& e, std::uint32_t itemId, std::uint16_t qty);
+  std::uint32_t fenceSellJunk(Entity& e);  // returns gold gained
   void spawnVendor();                        // called from load
   void spawnVendor(Zone& zone);              // zone 1 town only
+  void spawnFence(Zone& zone);               // T-069: Sable at the gallows pit
   void spawnAnvils();                        // plaza (z1) + bone barrow (z3)
   std::uint8_t anvilTilesAllowed(std::uint16_t zoneId) const;
   // trade window (transactional by construction; see ADR-0011)
@@ -298,6 +304,18 @@ class World {
     b.hpMax = 1;
     b.walker.place(at);
     return insertEntity(std::move(b));
+  }
+  Entity& debugSpawnFence(sim::TilePos at) {  // T-069 test seam (spawner shape)
+    Entity f;
+    f.id = nextId_++;
+    f.zoneId = 1;
+    f.kind = EntityKind::kMob;  // furniture, non-combat
+    f.wireKind = content::kWireKindFence;
+    f.name = "Sable the Fence";
+    f.hp = 1;
+    f.hpMax = 1;
+    f.walker.place(at);
+    return insertEntity(std::move(f));
   }
   Entity& debugSpawnMob(const content::MobDef& def, sim::TilePos at,
                         std::uint16_t zoneId = 1) {

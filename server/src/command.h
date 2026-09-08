@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <string>
 
+#include "content/items.h"
 #include "world.h"
 
 namespace bh::server {
@@ -70,12 +71,25 @@ inline void applyWorldCommand(World& w, Entity& e, const Command& c) {
                      : e.attackTarget);
       break;
     case Command::kBuy:
-      if (c.b > 0)
-        w.vendorBuy(e, static_cast<std::uint32_t>(c.a),
-                    static_cast<std::uint16_t>(c.b));
+      // T-069 lane routing: fence stock is item-disjoint from Marta's, so
+      // the route is by item (must still stand at the fence — checked in
+      // fenceBuy). Deterministic -> replay-exact. Marta's T-056 karma
+      // refusal stands for everything that isn't Sable's crate.
+      if (c.b > 0) {
+        const std::uint32_t itemId = static_cast<std::uint32_t>(c.a);
+        if (content::isFenceStock(itemId))
+          w.fenceBuy(e, itemId, static_cast<std::uint16_t>(c.b));
+        else
+          w.vendorBuy(e, itemId, static_cast<std::uint16_t>(c.b));
+      }
       break;
     case Command::kSellJunk:
-      (void)w.vendorSellJunk(e);
+      // T-069: at the gallows end of town the fence pays 60% (no questions);
+      // at the plaza Marta pays 40% (and refuses red coin).
+      if (w.nearFence(e))
+        (void)w.fenceSellJunk(e);
+      else
+        (void)w.vendorSellJunk(e);
       break;
     case Command::kTradeOpen:
       w.tradeOpen(e, static_cast<std::uint32_t>(c.a));

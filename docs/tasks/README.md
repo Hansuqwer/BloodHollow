@@ -313,6 +313,20 @@ in devlog 0030.
 |---|---|
 | [T-068](done/T-068.md) | L8 content gate: move the gravecaller barricade off the bridge approach (+ L7 waypoint, epoch 7) |
 
+## Done — overnight S21 (2026-09-09): Smugglers' fence
+
+T-056's named gap closed: Sable the Fence (wireKind 69) seeds at the gallows
+pit, pawns junk at 60% for any band, sells the 3-item secret stock to chaotic
+eyes at +25%. One-Marta fix (425-duplicate spiral break restored; soak entity
+count 544–584 → ~330, p99 12.9–16.4 → 3.8–5.6 ms). Epoch **7 → 8**; fresh
+600 s grinder-mix journal replays
+`[replay] OK ticks=14001 sessionCmds=5984 hashes=141 mismatches=0`.
+Suite 112/112 (327,969 assertions). Devlog 0032.
+
+| Card | Title |
+|---|---|
+| [T-069](done/T-069.md) | Fence at the Smugglers' Cove (+ one-Marta fix, epoch 8) |
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |

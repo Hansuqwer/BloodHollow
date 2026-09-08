@@ -15,6 +15,7 @@ add_executable(bh_tests
   test_party.cpp
   test_kits.cpp
   test_alignment.cpp
+  test_fence.cpp
   test_gear_churn.cpp
   test_night.cpp
   test_s18_dropzone.cpp
