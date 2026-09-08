@@ -118,13 +118,15 @@ Card `T-069 — Fence at the Smugglers' Cove`. GDD §7; phase3-remainder line:
 "Smugglers' Cove fence arrives with the content drop … refusal now, fence
 later is the intended erasable gap." The gap is now overdue.
 
-- **Fence NPC:** new furniture kind `kWireKindFence = 67` in
-  `shared/content/wirekind.h` (64 vendor, 65 anvil, 66 bounty taken; art
-  HANDOVER reserves 67–73 for NPCs). Place one `fence_hut` object in
-  `tools/mapgen/make_thornwall.py` on a back-alley tile of town (e.g. the
-  graveyard edge x[3..4] y[16..17], near the gallows) — reachable by chaotics
-  without crossing a guard watch. Interact radius ≤ 3 (mirror the vendor,
-  `world.cpp:915/950/993`, `kWireKindVendor`).
+- **Fence NPC:** new furniture kind `kWireKindFence = 69` in
+  `shared/content/wirekind.h`. **CORRECTION (recon during execution):** the
+  art REGISTRY reserves 67 for the Bonesmith twins (anvil-adjacent) and 68
+  for the confessor; `art-backlog.md` assigns **69 = fence, 70/71 = guards**.
+  Place the fence **procedurally** (follow `spawnVendor`/bounty-board
+  precedent — furniture is server-seeded, not a mapgen object; mapgen only
+  authors mob spawners/terrain): third spiral seeded from
+  `gallowsTile(1)` (`world.cpp:2032`), skipping occupied furniture tiles.
+  Interact radius ≤ 3 (mirror the vendor lanes, `world.cpp:915/950/993`).
 - **Semantics:** fence **buys junk/gear from anyone** but pays the fence cut
   (60% of `value` — Marta keeps `kSellRatioPct`); has a **secret 3-item stock**
   (potions + rare junk at a slight markup) visible **only to karma < 0**
@@ -188,29 +190,28 @@ GDD §9, greenfield (no `lightRadius`/`torch`/`nightOnly` exists anywhere).
   new sim field) + fresh leg.
 - Devlog `0034-night-light.md`.
 
-### S23 — Aura tiers III–V (T-072)
+### S23 — Aura tiers III–V (T-072) — AUDIT ONLY (already shipped)
 
-GDD §3 weapon mastery; RFC 0001 pinned tiers at skill **80/120/150** and the
-"3-target multiattack tier"; T-042 shipped only I–II live (client already
-renders +III/+IV/+V marks — `client/src/game.cpp:1058`).
+**CORRECTION (recon during execution):** tiers III–V are ALREADY implemented
+and pinned — `tests/test_combat.cpp:629` (T-047 tier III cleaves into the
+pack), `:667` (tier IV sunder), `:702` (tier V graft). The brief's premise
+("T-042 shipped only I–II") was stale: T-047 landed the top tiers. **Do not
+re-implement.** Instead, audit + document:
 
-- **Effects:** flesh out `shared/content/auras.h` rows III/IV/V. Proposed
-  (era-flavored, numbers are tuning placeholders — validate then flag in the
-  devlog): **III (80)** = 3-target multiattack cleave (the RFC anchor);
-  **IV (120)** = cleave widens + crit channel tick; **V (150)** = lifedrain
-  proc on cleave targets. Reuse the existing aura-proc wire kinds (1xxx
-  cleave / 2xxx sunder / 3xxx graft per `client/src/game.cpp:476`) and the
-  fx callout queue from T-066.
-- **Gates:** find the current server gate (T-042's min-skill check + tier
-  table) and extend to the three new tiers; persistence (auraTier in the item
-  flags, persist v9) and refine-destroy retention (T-060) already exist.
-- **Duel harness:** extend `tools/duel` with a gear/aura knob to prove tier
-  III multiattack resolves 3 targets and stays replay-exact; add the
-  solo-impossibility style gate numbers to the devlog.
-- **Tests + soak:** unit pins per tier + a short fighter soak leg at
-  weapon-skill ≥ 80 showing gain. **Epoch 10 → 11** if any sim semantics
-  change (multiattack does) — else keep 10 and say why on record.
-- Devlog `0035-aura-tiers-iii-v.md`.
+- Verify the tier gates match the pinned 20/50/80/120/150 weapon-skill law
+  (RFC 0001) and the effects match GDD §3 (III = 3-target multiattack cleave;
+  IV = sunder; V = graft/lifedrain).
+- Confirm replay parity still holds for all three (they're covered by
+  T-047's pins — spot-check the [replay] lines on the next fresh leg).
+- Write the audit into devlog `0035-aura-tier-audit.md` with pointers; no
+  code change, no epoch bump (unless the audit finds a gate drift — then it's
+  a fix card with its own bump).
+
+Original (stale) scope kept below for the record — superseded by the audit:
+~~GDD §3 weapon mastery; RFC 0001 pinned tiers at skill 80/120/150; T-042
+shipped only I–II live. Flesh out `shared/content/auras.h` rows III/IV/V
+(III = 3-target multiattack cleave; IV = sunder; V = graft). Extend the duel
+harness with a gear/aura knob. Epoch 10 → 11 if sim semantics change.~~
 
 ### S24 — Gate guards + spawn-camp protection (T-073)
 
