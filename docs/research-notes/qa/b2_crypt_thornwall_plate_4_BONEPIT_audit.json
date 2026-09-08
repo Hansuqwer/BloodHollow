@@ -1,0 +1,31 @@
+{
+ "input": "assets/aigen/terrain/crypt/thornwall/plates/4_BONEPIT.png",
+ "kind": "plate",
+ "cell": [
+  32,
+  48
+ ],
+ "anchor_y": 42,
+ "hour": 2.0,
+ "night_overlay": [
+  18,
+  22,
+  70,
+  145
+ ],
+ "hover": 0,
+ "gates": {
+  "plate_luma_mean_45_70": true,
+  "plate_luma_min_ge_24": true,
+  "colours_le_max": true
+ },
+ "engine_validated": false,
+ "note": "terrain luma defaulted to B0 fields plate (51.0); pass --plate for the real zone",
+ "terrain_luma": 51.0,
+ "plate": {
+  "luma_mean": 47.4,
+  "luma_min": 30.6,
+  "colours": 29
+ },
+ "failures": []
+}

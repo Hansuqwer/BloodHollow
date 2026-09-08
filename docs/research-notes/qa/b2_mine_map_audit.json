@@ -1,0 +1,22 @@
+{
+ "engine_validated": false,
+ "window": [
+  30,
+  10,
+  16,
+  16
+ ],
+ "edge_pieces_drawn": 14,
+ "walls_drawn": 138,
+ "ground_luma_mean_window": 44.7,
+ "night_ground_luma_mean": 34.1,
+ "cells_dropped": [
+  "1003_hollow_hound",
+  "1005_bonepicker_gnoll"
+ ],
+ "scale_witnesses": [
+  "1003_hollow_hound",
+  "1005_bonepicker_gnoll"
+ ],
+ "note": "offline composite of the real map ground layer; proposal for T-ART-12, not the engine"
+}

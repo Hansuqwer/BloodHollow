@@ -1,0 +1,22 @@
+{
+ "engine_validated": false,
+ "window": [
+  24,
+  0,
+  16,
+  16
+ ],
+ "edge_pieces_drawn": 27,
+ "walls_drawn": 164,
+ "ground_luma_mean_window": 62.0,
+ "night_ground_luma_mean": 41.7,
+ "cells_dropped": [
+  "1008_revenant_sexton",
+  "1007_gravecaller"
+ ],
+ "scale_witnesses": [
+  "1008_revenant_sexton",
+  "1007_gravecaller"
+ ],
+ "note": "offline composite of the real map ground layer; proposal for T-ART-12, not the engine"
+}

@@ -1,0 +1,65 @@
+{
+ "input": "assets/aigen/mobs/1010_sepulcher_elite/sheet.png",
+ "kind": "sheet",
+ "cell": [
+  40,
+  60
+ ],
+ "anchor_y": 52,
+ "hour": 2.0,
+ "night_overlay": [
+  18,
+  22,
+  70,
+  145
+ ],
+ "hover": 0,
+ "gates": {
+  "colours_le_max_all_frames": true,
+  "feet_on_anchor_all_frames": true,
+  "r_luma_day_ge_gate": true,
+  "r_luma_night_ge_gate": true
+ },
+ "engine_validated": false,
+ "terrain_luma": 49.5,
+ "loader_rule_replica": "clean",
+ "frames_total": 96,
+ "anims": {
+  "walk": {
+   "frames": 4,
+   "fps": 10.0,
+   "max_colours": 26,
+   "feet_ok_all_dirs": true
+  },
+  "attack": {
+   "frames": 3,
+   "fps": 12.0,
+   "max_colours": 26,
+   "feet_ok_all_dirs": true
+  },
+  "hurt": {
+   "frames": 2,
+   "fps": 12.0,
+   "max_colours": 26,
+   "feet_ok_all_dirs": true
+  },
+  "die": {
+   "frames": 3,
+   "fps": 8.0,
+   "max_colours": 26,
+   "feet_ok_all_dirs": true
+  }
+ },
+ "r_luma": {
+  "body_mean": 92.5,
+  "terrain_mean": 49.5,
+  "delta_day": 43.0,
+  "body_mean_incl_outline": 68.3,
+  "delta_day_incl_outline": 18.9,
+  "definition": "rulebook R-LUMA = opaque body pixels EXCLUDING the #1a1214 outline; the B0 style_tile_audit.json included the outline (hence its lower 23.7)",
+  "body_night": 54.8,
+  "terrain_night": 36.2,
+  "delta_night": 18.6
+ },
+ "failures": []
+}

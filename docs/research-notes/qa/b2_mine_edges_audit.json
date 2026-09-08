@@ -1,0 +1,84 @@
+{
+ "zone": "mine",
+ "engine_validated": false,
+ "pairs": {
+  "DIRT<MUD": {
+   "pieces_in_patch": 16,
+   "variants": 3,
+   "seam": {
+    "NE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.333
+    },
+    "SE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.331
+    },
+    "SW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.331
+    },
+    "NW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.332
+    }
+   }
+  },
+  "DIRT<DARKGRASS": {
+   "pieces_in_patch": 16,
+   "variants": 3,
+   "seam": {
+    "NE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.306
+    },
+    "SE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.306
+    },
+    "SW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.307
+    },
+    "NW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.307
+    }
+   }
+  },
+  "WOOD<DIRT": {
+   "pieces_in_patch": 16,
+   "variants": 3,
+   "seam": {
+    "NE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.275
+    },
+    "SE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.281
+    },
+    "SW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.281
+    },
+    "NW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.275
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,84 @@
+{
+ "zone": "crypt_thornwall",
+ "engine_validated": false,
+ "pairs": {
+  "FLOOR<BONEPIT": {
+   "pieces_in_patch": 16,
+   "variants": 3,
+   "seam": {
+    "NE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.333
+    },
+    "SE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.331
+    },
+    "SW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.331
+    },
+    "NW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.332
+    }
+   }
+  },
+  "FLOOR<CANDLE": {
+   "pieces_in_patch": 16,
+   "variants": 3,
+   "seam": {
+    "NE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.253
+    },
+    "SE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.254
+    },
+    "SW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.254
+    },
+    "NW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.254
+    }
+   }
+  },
+  "SLAB<FLOOR": {
+   "pieces_in_patch": 16,
+   "variants": 3,
+   "seam": {
+    "NE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.303
+    },
+    "SE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.307
+    },
+    "SW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.307
+    },
+    "NW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.304
+    }
+   }
+  }
+ }
+}

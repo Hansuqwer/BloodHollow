@@ -1,0 +1,136 @@
+{
+ "zone": "crypt_drowned",
+ "engine_validated": false,
+ "pairs": {
+  "DIRT<WATER": {
+   "pieces_in_patch": 16,
+   "variants": 3,
+   "seam": {
+    "NE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.386
+    },
+    "SE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.386
+    },
+    "SW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.387
+    },
+    "NW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.387
+    }
+   }
+  },
+  "WOOD<DIRT": {
+   "pieces_in_patch": 16,
+   "variants": 3,
+   "seam": {
+    "NE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.282
+    },
+    "SE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.281
+    },
+    "SW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.281
+    },
+    "NW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.282
+    }
+   }
+  },
+  "DIRT<MUD": {
+   "pieces_in_patch": 16,
+   "variants": 3,
+   "seam": {
+    "NE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.329
+    },
+    "SE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.329
+    },
+    "SW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.328
+    },
+    "NW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.329
+    }
+   }
+  },
+  "DIRT<DARKGRASS": {
+   "pieces_in_patch": 16,
+   "variants": 3,
+   "seam": {
+    "NE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.303
+    },
+    "SE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.307
+    },
+    "SW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.307
+    },
+    "NW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.304
+    }
+   }
+  },
+  "MUD<WATER": {
+   "pieces_in_patch": 16,
+   "variants": 3,
+   "seam": {
+    "NE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.381
+    },
+    "SE": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.379
+    },
+    "SW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.379
+    },
+    "NW": {
+     "face_px": 32,
+     "face_all_B": true,
+     "b_frac": 0.382
+    }
+   }
+  }
+ }
+}
