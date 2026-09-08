@@ -4,7 +4,7 @@ pieces (variant 0) composited on their base tile, then a 5×5 autotile patch (a 
 island inside the base material, variants rotating) at 3×. Writes
 docs/research-notes/qa/b1_<zone>_edges_3x.png + _audit.json (seam re-check per piece)."""
 from __future__ import annotations
-import json, sys
+import argparse, json, sys
 from pathlib import Path
 import numpy as np
 from PIL import Image
@@ -15,9 +15,15 @@ ROOT = Path(__file__).resolve().parents[2]
 TW, TH = 64, 32
 ORDER = ["edge_NE", "edge_SE", "edge_SW", "edge_NW", "corner_N", "corner_E", "corner_S", "corner_W"]
 
-def main(zone: str) -> int:
-    zdir = ROOT / "assets/aigen/terrain" / zone
+
+def terrain_dir(zone: str) -> Path:
+    return ROOT / "assets/aigen/terrain" / {"crypt_drowned": "crypt/drowned", "crypt_thornwall": "crypt/thornwall"}.get(zone, zone)
+
+
+def main(zone: str, batch: str | None = None) -> int:
+    zdir = terrain_dir(zone)
     tj = json.loads((zdir / "terrain.json").read_text())
+    qa_prefix = batch or tj.get("qa_prefix", "b1")
     names = {int(k): v for k, v in tj["terrain_ids"].items()}
     plates = {v: Image.open(ROOT / tj["plates"][v]["file"]).convert("RGBA") for v in tj["plates"] if tj["plates"][v].get("file")}
     pairs = [p for p in tj["pairs"] if "dir" in p]
@@ -60,10 +66,14 @@ def main(zone: str) -> int:
         audit[f"{base}<{over}"] = {"pieces_in_patch": allb, "variants": p["variants"],
                                    "seam": tj["edge_seam_audit"].get(f"{base}_{over}/v0")}
     board = board.resize((board.width * 3, board.height * 3), Image.NEAREST)
-    board.save(ROOT / "docs/research-notes/qa" / f"b1_{zone}_edges_3x.png")
-    (ROOT / "docs/research-notes/qa" / f"b1_{zone}_edges_audit.json").write_text(json.dumps({"zone": zone, "engine_validated": False, "pairs": audit}, indent=1) + "\n")
+    board.save(ROOT / "docs/research-notes/qa" / f"{qa_prefix}_{zone}_edges_3x.png")
+    (ROOT / "docs/research-notes/qa" / f"{qa_prefix}_{zone}_edges_audit.json").write_text(json.dumps({"zone": zone, "engine_validated": False, "pairs": audit}, indent=1) + "\n")
     print(zone, len(pairs), "pairs on board")
     return 0
 
 if __name__ == "__main__":
-    raise SystemExit(main(sys.argv[1]))
+    ap = argparse.ArgumentParser()
+    ap.add_argument("zone")
+    ap.add_argument("--batch", default=None, help="QA prefix, e.g. b2")
+    args = ap.parse_args()
+    raise SystemExit(main(args.zone, args.batch))

@@ -57,11 +57,13 @@ BLEED_RULES = {("GRASS", "PATH"): "GRASS", ("MUD", "GRASS"): "MUD", ("WATER", "D
 ZONES = {
     "town": {
         "manifest": "MAPS_thornwall.json",
-        "plates": {0: ("GRASS", "turf"), 1: ("DIRT", "plaza_dirt"), 3: ("WATER", "river"), 5: ("PATH", "cobble"),
+        "plates": {0: ("GRASS", "turf"), 1: ("DIRT", "plaza_dirt"), 3: ("WATER", "river"), 4: ("WOOD", "gangway"), 5: ("PATH", "cobble"),
                    6: ("MUD", "lane_mud"), 7: ("DARKGRASS", "graveyard_turf")},
         "prism": "palisade_face",
         "prism_top": "face:0.78",      # top of a palisade = the plank ends (face paint, 22 % darker)
-        "wood": None,                   # id 4 WOOD (chapel floor, 0.4 %) — plate shared from the crypt gangway in B2; town uses PATH plate until then
+        "wood": "gangway",              # B2 resolves id 4 WOOD with the shared mine gangway raw/plate
+        "qa_prefix": "b1",
+        "prism_variants": 1,
     },
     "fields": {
         "manifest": "MAPS_fields_overflow.json",
@@ -70,25 +72,99 @@ ZONES = {
         "prism": "hedge_face",
         "prism_top": "face:0.92",       # hedge top = the bramble itself
         "wood": None,
+        "qa_prefix": "b1",
+        "prism_variants": 1,
+    },
+    "mine": {
+        "manifest": "MAPS_bonehowl_mine.json",
+        "plates": {1: ("DIRT", "cave_floor"), 4: ("WOOD", "gangway"), 6: ("MUD", "mine_mud"),
+                   7: ("DARKGRASS", "lichen_ledge")},
+        "prism": "rock_face",
+        "prism_top": "face:0.78",
+        "qa_prefix": "b2",
+        "prism_variants": 3,
+    },
+    # Crypt raw paintings live together under terrain/crypt/raw, while the two maps get
+    # separate usage manifests and derived delivery folders below.
+    "crypt_drowned": {
+        "manifest": "MAPS_drowned_crypt.json",
+        "out_dir": "crypt/drowned",
+        "manifest_dir": "crypt",
+        "raw_dir": "crypt",
+        "plates": {1: ("DIRT", "causeway_flag"), 3: ("WATER", "crypt_water"),
+                   4: ("WOOD", "gangway"), 6: ("MUD", "crypt_silt"), 7: ("DARKGRASS", "graveyard_turf")},
+        "prism": None,
+        "prism_top": None,
+        "qa_prefix": "b2",
+        "palette_name": "palette_crypt.png",
+        "palette_dir": "crypt",
+        "prism_variants": 1,
+    },
+    "crypt_thornwall": {
+        "manifest": "MAPS_thornwall_crypt.json",
+        "out_dir": "crypt/thornwall",
+        "manifest_dir": "crypt",
+        "raw_dir": "crypt",
+        "plates": {1: ("FLOOR", "worn_flag"), 3: ("SLAB", "slab_sarcophagus"),
+                   4: ("BONEPIT", "bone_pit"), 5: ("CANDLE", "candle_wax")},
+        "prism": "masonry_face",
+        "prism_top": "face:0.82",
+        "qa_prefix": "b2",
+        "palette_name": "palette_crypt.png",
+        "palette_dir": "crypt",
+        "prism_variants": 3,
     },
 }
-# raw sources that live in another zone's raw/ folder (shared paint, separate usage manifests)
-SHARED_RAW = {("fields", "furrow_turf"): ROOT / "docs/research-notes/style-tile/plates/fields_ground_4x_raw.png",
-              ("fields", "graveyard_turf"): TER / "town/raw/graveyard_turf_4x_raw.png"}
-DARKEN = {("fields", "graveyard_turf"): 0.82}  # shadow turf: same paint, 18 % darker (still ≥ 24 after clamp)
+# Raw sources that live in another folder (shared paint, separate usage manifests).
+# The crypt maps deliberately share the mine gangway, mine mud, and town graveyard
+# paintings; derived transforms are recorded in DARKEN/TINT and terrain.json.
+SHARED_RAW = {
+    ("fields", "furrow_turf"): ROOT / "docs/research-notes/style-tile/plates/fields_ground_4x_raw.png",
+    ("fields", "graveyard_turf"): TER / "town/raw/graveyard_turf_4x_raw.png",
+    ("town", "gangway"): TER / "mine/raw/gangway_4x_raw.png",
+    ("mine", "lichen_ledge"): TER / "town/raw/graveyard_turf_4x_raw.png",
+    ("crypt_drowned", "gangway"): TER / "mine/raw/gangway_4x_raw.png",
+    ("crypt_drowned", "crypt_silt"): TER / "mine/raw/mine_mud_4x_raw.png",
+    ("crypt_drowned", "graveyard_turf"): TER / "town/raw/graveyard_turf_4x_raw.png",
+    ("crypt_thornwall", "slab_sarcophagus"): TER / "crypt/raw/worn_flag_4x_raw.png",
+}
+DARKEN = {
+    ("fields", "graveyard_turf"): 0.82,
+    ("mine", "lichen_ledge"): 0.80,
+    ("crypt_drowned", "crypt_silt"): 0.85,
+    ("crypt_drowned", "graveyard_turf"): 0.82,
+    ("crypt_thornwall", "slab_sarcophagus"): 0.78,
+}
+# Pixel-op hue shifts for derived raws. Values multiply RGB channels after DARKEN.
+TINT = {
+    ("mine", "lichen_ledge"): (0.92, 1.05, 0.92),       # restrained lichen green
+    ("crypt_drowned", "crypt_silt"): (0.92, 0.98, 1.05), # blue-grey silt
+}
 # D3 mean targets per material (rulebook window 45–70; ≤ 54 keeps the darkest B4 mob at Δnight ≥ 15, see normalise_mean)
 MEAN_TARGET = {"DARKGRASS": 47.5, "WATER": 48.0, "MUD": 49.5}
 MEAN_DEFAULT = 51.0
 
+# B2 keeps the generated crypt raws in one folder but separates the two manifests.
+RAW_ROOTS = {"crypt_drowned": "crypt", "crypt_thornwall": "crypt"}
+
+
+def output_dir(zone: str) -> Path:
+    return TER / ZONES[zone].get("out_dir", zone)
+
+
 
 # ----------------------------------------------------------------------------
 def raw_path(zone: str, name: str) -> Path:
-    return SHARED_RAW.get((zone, name), TER / zone / "raw" / f"{name}_4x_raw.png")
+    if (zone, name) in SHARED_RAW:
+        return SHARED_RAW[(zone, name)]
+    root = TER / RAW_ROOTS.get(zone, zone)
+    return root / "raw" / f"{name}_4x_raw.png"
 
 
-def reduce_plate(src: Image.Image, *, darken: float = 1.0) -> Image.Image:
+def reduce_plate(src: Image.Image, *, darken: float = 1.0, tint: tuple[float, float, float] = (1.0, 1.0, 1.0)) -> Image.Image:
     """4x painterly raw → 512×256 low-frequency plate (B0 make_ground_tiles recipe:
-    box reduce → blur 0.8 → contrast 0.70 → floor lift; D3 keeps the mean ≈ 51)."""
+    box reduce → blur 0.8 → contrast 0.70 → floor lift; D3 keeps the mean ≈ 51).
+    ``tint`` is a restrained pixel-op used only for B2 shared derived paints."""
     im = src.convert("RGB")
     # crop to 2:1 from the centre before reducing so the reduction is isotropic
     w, h = im.size
@@ -100,6 +176,8 @@ def reduce_plate(src: Image.Image, *, darken: float = 1.0) -> Image.Image:
     small = ImageEnhance.Contrast(small).enhance(0.70)
     arr = np.asarray(small).astype(np.float32)
     arr = np.clip(arr * 0.95 * darken + 14.0, 0, 255)
+    arr[..., :3] *= np.asarray(tint, dtype=np.float32)
+    arr[..., :3] = np.clip(arr[..., :3], 0, 255)
     return Image.fromarray(arr.astype(np.uint8), "RGB").convert("RGBA")
 
 
@@ -201,12 +279,14 @@ def seam_audit(pieces: dict[str, Image.Image]) -> dict:
 
 
 # ----------------------------------------------------------------------------
-def prism_skin(face_raw: Image.Image, top_plate: Image.Image, pal: np.ndarray, *, seed: int = 3) -> dict[str, Image.Image]:
+def prism_skin(face_raw: Image.Image, top_plate: Image.Image, pal: np.ndarray, *, seed: int = 3,
+                variant: int = 0) -> dict[str, Image.Image]:
     """Skin for iso::drawPrism(28): top 64×32 diamond (cut from a plate), left/right faces
     32×28 parallelogram-ready strips (the engine draws faces as sheared quads — the strip is
     stored upright, the renderer shears it), plus a 'skirt' = the footing course as an
     alpha-cut overlay for the ground tile in front of the wall (D12: WALL never bleeds,
-    the ground shows a footing skirt instead)."""
+    the ground shows a footing skirt instead). Variant 0 preserves the B1 crop exactly;
+    B2 variants sample other deterministic sections of the same fresh face painting."""
     im = face_raw.convert("RGB")
     w, h = im.size
     # elevation strip: bottom ~22 % is the footing course; reduce the whole face to 28 px tall
@@ -224,7 +304,8 @@ def prism_skin(face_raw: Image.Image, top_plate: Image.Image, pal: np.ndarray, *
     la = np.asarray(left).astype(np.float32); la[..., :3] *= 0.94
     left = Image.fromarray(la.astype(np.uint8), "RGBA")
     left = P.quantize(left, pal, dither="none"); right = P.quantize(right, pal, dither="none")
-    top = P.cut_diamond(top_plate, 128, 96)
+    top_xy = (128, 96) if variant == 0 else ((128 + 79 * variant) % 512, (96 + 43 * variant) % 256)
+    top = P.cut_diamond(top_plate, *top_xy)
     ta = np.asarray(top).astype(np.float32); ta[..., :3] = np.clip(ta[..., :3] * 1.08, 0, 255)
     top = P.quantize(Image.fromarray(ta.astype(np.uint8), "RGBA"), pal, dither="none")
     top.putalpha(P.diamond_mask())
@@ -244,28 +325,68 @@ def prism_skin(face_raw: Image.Image, top_plate: Image.Image, pal: np.ndarray, *
 # ----------------------------------------------------------------------------
 def build(zone: str, variants: int, preview: bool) -> int:
     rec = ZONES[zone]
-    zdir = TER / zone
+    zdir = output_dir(zone)
+    zdir.mkdir(parents=True, exist_ok=True)
     (zdir / "plates").mkdir(parents=True, exist_ok=True)
-    (zdir / "edges").mkdir(exist_ok=True); (zdir / "prism").mkdir(exist_ok=True)
+    (zdir / "edges").mkdir(exist_ok=True)
+    (zdir / "prism").mkdir(exist_ok=True)
     QA.mkdir(parents=True, exist_ok=True)
-    mf = json.loads((zdir / rec["manifest"]).read_text())
+    mfdir = TER / rec.get("manifest_dir", zone)
+    mf = json.loads((mfdir / rec["manifest"]).read_text())
     names = {int(k): v for k, v in mf["terrain_ids"].items()}
+    qa_prefix = rec.get("qa_prefix", "b1")
+    prism_variants = int(rec.get("prism_variants", 1)) if rec.get("prism") else 0
+    palette_name = rec.get("palette_name", f"palette_{zone}.png")
+    palette_dir = TER / rec.get("palette_dir", rec.get("out_dir", zone).split("/")[0])
 
-    # 1) raw → reduced plates (pre-palette), zone palette from the union of all plates + the prism face
+    # 1) raw → reduced plates (pre-palette). B2 crypt maps share one palette built
+    # from both usage manifests so the common raw art remains one visual family.
     reduced: dict[int, Image.Image] = {}
     gains = {}
     for tid, (tname, raw) in rec["plates"].items():
         src = Image.open(raw_path(zone, raw))
-        r = reduce_plate(src, darken=DARKEN.get((zone, raw), 1.0))
+        r = reduce_plate(src, darken=DARKEN.get((zone, raw), 1.0),
+                         tint=TINT.get((zone, raw), (1.0, 1.0, 1.0)))
         r, g = normalise_mean(r, MEAN_TARGET.get(tname, MEAN_DEFAULT))
         gains[tname] = g
         reduced[tid] = make_seamless(r)
-    face_raw = Image.open(raw_path(zone, rec["prism"]))
-    face_small = face_raw.convert("RGB").resize((256, 64), Image.BOX).convert("RGBA")
-    pal = P.build_palette(list(reduced.values()) + [face_small], 32, reserve_outline=False)
+    face_raw = Image.open(raw_path(zone, rec["prism"])) if rec.get("prism") else None
+
+    if zone.startswith("crypt_"):
+        palette_images = []
+        for pzone in ("crypt_drowned", "crypt_thornwall"):
+            prec = ZONES[pzone]
+            for tid, (ptname, praw) in prec["plates"].items():
+                if pzone == zone:
+                    # Keep the already normalised current-zone image, including its exact
+                    # darken/tint recipe. Sorted zone/id order makes the shared ramp identical
+                    # whether drowned or thornwall is built first.
+                    palette_images.append(reduced[tid])
+                    continue
+                src = Image.open(raw_path(pzone, praw))
+                r = reduce_plate(src, darken=DARKEN.get((pzone, praw), 1.0),
+                                 tint=TINT.get((pzone, praw), (1.0, 1.0, 1.0)))
+                r, _ = normalise_mean(r, MEAN_TARGET.get(ptname, MEAN_DEFAULT))
+                palette_images.append(make_seamless(r))
+            if prec.get("prism"):
+                pface = Image.open(raw_path(pzone, prec["prism"]))
+                palette_images.append(pface.convert("RGB").resize((256, 64), Image.BOX).convert("RGBA"))
+    else:
+        # Keep the established B1 town/fields ramps byte-stable. The newly registered
+        # town WOOD plate is quantized onto the existing town ramp; it must not perturb
+        # the already shipped B1 terrain just because the stand-in was retired.
+        if zone == "town" and qa_prefix == "b1":
+            palette_images = [img for tid, img in reduced.items() if tid != 4]
+        else:
+            palette_images = list(reduced.values())
+        if face_raw is not None:
+            palette_images.append(face_raw.convert("RGB").resize((256, 64), Image.BOX).convert("RGBA"))
+    pal = P.build_palette(palette_images, 32, reserve_outline=False)
     # D3 / R-LUMA: the ramp must not contain colours below the floor, or the clamp fights the quantize
     pal = np.array([c for c in pal if (c[0] * .299 + c[1] * .587 + c[2] * .114) >= M.PLATE_MIN_LUMA], np.uint8)
-    P.palette_strip(pal, zdir / f"palette_{zone}.png")
+    palette_dir.mkdir(parents=True, exist_ok=True)
+    P.palette_strip(pal, palette_dir / palette_name)
+    palette_ref = palette_name if qa_prefix == "b1" else str((palette_dir / palette_name).relative_to(ROOT))
 
     plates: dict[int, Image.Image] = {}
     plate_stats = {}
@@ -282,9 +403,18 @@ def build(zone: str, variants: int, preview: bool) -> int:
         q.save(out)
         plates[tid] = q
         a = np.asarray(q).astype(np.float32); lum = a[..., 0] * .299 + a[..., 1] * .587 + a[..., 2] * .114
-        plate_stats[tname] = {"file": str(out.relative_to(ROOT)), "luma_mean": round(float(lum.mean()), 1),
-                              "luma_min": round(float(lum.min()), 1), "colours": P.count_colours(q), "gain": gains[tname],
-                              "raw": str(raw_path(zone, rec["plates"][tid][1]).relative_to(ROOT))}
+        source_raw = raw_path(zone, rec["plates"][tid][1])
+        st = {"file": str(out.relative_to(ROOT)), "luma_mean": round(float(lum.mean()), 1),
+              "luma_min": round(float(lum.min()), 1), "colours": P.count_colours(q), "gain": gains[tname],
+              "raw": str(source_raw.relative_to(ROOT))}
+        deriv = {}
+        if qa_prefix != "b1" and (zone, rec["plates"][tid][1]) in DARKEN:
+            deriv["darken"] = DARKEN[(zone, rec["plates"][tid][1])]
+        if qa_prefix != "b1" and (zone, rec["plates"][tid][1]) in TINT:
+            deriv["tint_rgb"] = list(TINT[(zone, rec["plates"][tid][1])])
+        if deriv:
+            st["derivation"] = deriv
+        plate_stats[tname] = st
     # WOOD (id 4) fallback for the town chapel floor until B2 supplies the gangway plate
     if 4 in names and 4 not in plates and 5 in plates:
         plate_stats["WOOD"] = {"file": None, "note": "id 4 WOOD uses the PATH plate until the B2 crypt gangway plate lands (0.4 % of the town map)"}
@@ -292,7 +422,8 @@ def build(zone: str, variants: int, preview: bool) -> int:
     # 2) edges per manifest pair (D12)
     pairs_out = []
     seams = {}
-    depth_by_bleeder = {"WATER": 0.7, "MUD": 0.6, "GRASS": 0.55, "DARKGRASS": 0.55, "DIRT": 0.5}
+    depth_by_bleeder = {"WATER": 0.7, "MUD": 0.6, "GRASS": 0.55, "DARKGRASS": 0.55,
+                         "DIRT": 0.5, "BONEPIT": 0.6, "CANDLE": 0.45}
     for i, pr in enumerate(mf["adjacency_pairs"]):
         a, b, n = pr["a"], pr["b"], pr["boundary_len"]
         if n < 4:
@@ -323,23 +454,41 @@ def build(zone: str, variants: int, preview: bool) -> int:
             seams[f"{other}_{who}/v{k}"] = seam_audit(pieces)
         pairs_out.append(entry)
 
-    # 3) prism skin
-    if rec["prism_top"].startswith("face:"):   # top cut from the face paint itself (plank ends / bramble), darkened
-        gain = float(rec["prism_top"].split(":")[1])
-        top_src = finish_plate(make_seamless(reduce_plate(face_raw, darken=gain)), pal)
-    else:
-        top_src = plates[next(k for k, (nm, raw) in rec["plates"].items() if raw == rec["prism_top"])]
-    skin = prism_skin(face_raw, top_src, pal)
-    for name, im in skin.items():
-        im.save(zdir / "prism" / f"{name}.png")
+    # 3) prism skin. B2 variants rotate the face paint; the footing skirt remains shared.
+    skin = {}
+    if face_raw is not None and rec.get("prism_top"):
+        if rec["prism_top"].startswith("face:"):
+            gain = float(rec["prism_top"].split(":")[1])
+            top_src = finish_plate(make_seamless(reduce_plate(face_raw, darken=gain)), pal)
+        else:
+            top_src = plates[next(k for k, (nm, raw) in rec["plates"].items() if raw == rec["prism_top"])]
+        skins = [prism_skin(face_raw, top_src, pal, seed=3 + 97 * k, variant=k) for k in range(prism_variants)]
+        if prism_variants > 1:
+            for k, vskin in enumerate(skins):
+                vdir = zdir / "prism" / f"v{k}"; vdir.mkdir(parents=True, exist_ok=True)
+                for name in ("top", "left", "right"):
+                    vskin[name].save(vdir / f"{name}.png")
+                if k == 0:
+                    for name in vskin:
+                        if name.startswith("skirt_"):
+                            vskin[name].save(zdir / "prism" / f"{name}.png")
+            skin = {name: im for name, im in skins[0].items() if name.startswith("skirt_")}
+        else:
+            skin = skins[0]
+            for name, im in skin.items():
+                im.save(zdir / "prism" / f"{name}.png")
 
     # 4) manifest
     tj = {"zone": zone, "map": mf["map"], "engine_validated": False, "status": "UNVALIDATED in engine (no textured-ground renderer; T-ART-12 / D6)",
           "tile": [TW, TH], "plate": [PLATE_W, PLATE_H], "cut": "bhpix.cut_diamond(plate, world_px_x, world_px_y) — plate coords = world px mod plate",
-          "prism_px": PRISM_H, "palette": f"palette_{zone}.png", "palette_colours": int(len(pal)),
+          "prism_px": PRISM_H if face_raw is not None else None, "palette": palette_ref, "palette_colours": int(len(pal)),
           "terrain_ids": names, "plates": plate_stats,
           "bleed_rule": "D12 organic-over-built: overlay = the bleeder's pieces drawn on the base tile whose 8-neighbour set contains the bleeder (faces first, points only when neither adjoining face bleeds — bhpix.edge_mask_for); WALL never bleeds: ground tiles touching a WALL draw prism/skirt_* instead",
           "pairs": pairs_out, "edge_seam_audit": seams}
+    if qa_prefix != "b1":
+        tj["qa_prefix"] = qa_prefix
+    if face_raw is not None and prism_variants > 1:
+        tj["prism_variants"] = prism_variants
     (zdir / "terrain.json").write_text(json.dumps(tj, indent=1) + "\n")
 
     # 5) QA: plate gates via the mandatory tool, one triptych per plate
@@ -347,7 +496,7 @@ def build(zone: str, variants: int, preview: bool) -> int:
     for tid, q in plates.items():
         tname = names[tid]
         r = subprocess.run([sys.executable, str(Path(__file__).parent / "bh_qa_sheet.py"), str(zdir / "plates" / f"{tid}_{tname}.png"),
-                            "--kind", "plate", "--out", str(QA / f"b1_{zone}_plate_{tid}_{tname}")], capture_output=True, text=True)
+                            "--kind", "plate", "--out", str(QA / f"{qa_prefix}_{zone}_plate_{tid}_{tname}")], capture_output=True, text=True)
         if r.returncode != 0:
             rc = 1; print(f"PLATE QA FAIL {zone} {tname}: {r.stdout[-300:]}")
     bad = [k for k, v in seams.items() if not all(f["face_all_B"] for f in v.values())]
@@ -355,7 +504,7 @@ def build(zone: str, variants: int, preview: bool) -> int:
         rc = 1; print("EDGE SEAM FAIL", bad)
     if preview:
         from bh_terrain_preview import render_map_preview  # local helper (same folder)
-        render_map_preview(zone, plates, names, mf, skin, zdir, pal)
+        render_map_preview(zone, plates, names, mf, skin, zdir, pal, prism_variants=prism_variants, qa_prefix=qa_prefix)
     print(json.dumps({"zone": zone, "plates": {k: (v.get("luma_mean"), v.get("luma_min"), v.get("colours")) for k, v in plate_stats.items()},
                       "palette": int(len(pal)), "pairs": len(pairs_out), "edge_dirs": len([p for p in pairs_out if "dir" in p]), "qa_rc": rc}, indent=1))
     return rc

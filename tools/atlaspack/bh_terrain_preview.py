@@ -45,18 +45,23 @@ def shear_face(strip: Image.Image, side: str) -> Image.Image:
 
 
 def render_map_preview(zone: str, plates: dict[int, Image.Image], names: dict[int, str], mf: dict,
-                       skin: dict[str, Image.Image], zdir: Path, pal: np.ndarray) -> dict:
+                       skin: dict[str, Image.Image], zdir: Path, pal: np.ndarray,
+                       *, prism_variants: int = 1, qa_prefix: str = "b1") -> dict:
     m = json.loads((SRC / f"{mf['map']}.tmj").read_text())
     W, H = m["width"], m["height"]
     fg = m["tilesets"][0]["firstgid"]
     ground = [g - fg for g in next(l for l in m["layers"] if l["name"] == "ground")["data"]]
-    # window: 16×16 tiles at the busiest spot (most distinct ids, most walls/water) — chosen automatically
+    # Window scorer: distinct ids plus a small bonus for the material that dominates the
+    # zone's visual read. Thornwall crypts explicitly reward the rare BONEPIT/CANDLE ids.
     n = 16
+    reward_names = {"WALL", "WATER"}
+    if zone == "crypt_thornwall":
+        reward_names.update({"BONEPIT", "CANDLE"})
     best = None
     for yy in range(0, H - n + 1, 2):
         for xx in range(0, W - n + 1, 2):
             ids = [ground[(yy + j) * W + xx + i] for j in range(n) for i in range(n)]
-            score = len(set(ids)) * 100 + sum(1 for v in ids if names.get(v) == "WALL") * 0.5 + sum(1 for v in ids if names.get(v) == "WATER") * 0.3
+            score = len(set(ids)) * 100 + sum(1 for v in ids if names.get(v) in reward_names) * 0.5
             if best is None or score > best[0]:
                 best = (score, xx, yy)
     _, x0, y0 = best
@@ -65,6 +70,8 @@ def render_map_preview(zone: str, plates: dict[int, Image.Image], names: dict[in
     ox, oy = cw / 2 - TW / 2, PRISM_H + 4
     edges_dir = zdir / "edges"
     edge_cache: dict[str, dict[str, Image.Image]] = {}
+    tj = json.loads((zdir / "terrain.json").read_text()) if (zdir / "terrain.json").exists() else {}
+    pair_variants = {(p.get("base_tile"), p.get("overlay")): int(p.get("variants", 1)) for p in tj.get("pairs", []) if "dir" in p}
 
     def tile_id(tx, ty):
         if 0 <= tx < W and 0 <= ty < H:
@@ -77,6 +84,16 @@ def render_map_preview(zone: str, plates: dict[int, Image.Image], names: dict[in
             d = edges_dir / f"{base}_{over}" / f"v{variant}"
             edge_cache[key] = {p.stem: Image.open(p).convert("RGBA") for p in d.glob("*.png")} if d.exists() else {}
         return edge_cache[key]
+
+    def prism_for(v: int):
+        if not skin:
+            return None
+        if prism_variants <= 1:
+            return skin
+        d = zdir / "prism" / f"v{v}"
+        pv = {name: Image.open(d / f"{name}.png").convert("RGBA") for name in ("top", "left", "right")}
+        pv.update({name: im for name, im in skin.items() if name.startswith("skirt_")})
+        return pv
 
     used_edges = 0
     walls = []
@@ -91,7 +108,7 @@ def render_map_preview(zone: str, plates: dict[int, Image.Image], names: dict[in
             px, py = int(x), int(y)
             base_id = t
             if names.get(t) == "WALL":
-                walls.append((tx, ty, px, py))
+                walls.append((tx, ty, px, py, wx, wy))
                 base_id = 0 if 0 in plates else next(iter(plates))
             if base_id not in plates:
                 base_id = 5 if 5 in plates else next(iter(plates))  # WOOD → PATH stand-in
@@ -112,7 +129,8 @@ def render_map_preview(zone: str, plates: dict[int, Image.Image], names: dict[in
                     if d.exists():
                         nb_sets.setdefault(nname, set()).add(side)
                 for over, sides in nb_sets.items():
-                    variant = (wx * 7 + wy * 13) % 3
+                    vcount = pair_variants.get((names[t], over), 1)
+                    variant = (wx * 7 + wy * 13) % max(1, vcount)
                     pieces = load_edge(names[t], over, variant)
                     if not pieces:
                         continue
@@ -124,24 +142,34 @@ def render_map_preview(zone: str, plates: dict[int, Image.Image], names: dict[in
                         scene.alpha_composite(pieces[f"corner_{p}"], (px, py)); used_edges += 1
                 # WALL footing skirt on ground tiles that touch a wall (faces only)
                 for f in [f for f in P.EDGE_FACES if f in skirt_sides]:
-                    sk = skin.get(f"skirt_edge_{f}")
-                    if sk is not None:
-                        scene.alpha_composite(sk, (px, py))
-    # wall pass (after ground, painter order)
-    left = shear_face(skin["left"], "left"); right = shear_face(skin["right"], "right")
-    for tx, ty, px, py in sorted(walls, key=lambda w: w[0] + w[1]):
-        # engine prism: faces from the ground diamond up 28 px, top diamond at y - 28
-        scene.alpha_composite(left, (px, py + TH // 2 - PRISM_H))
-        scene.alpha_composite(right, (px + TW // 2, py + TH // 2 - PRISM_H))
-        scene.alpha_composite(skin["top"], (px, py - PRISM_H))
-    # drop two B3 cells for the R-LUMA read (rat on turf, ghoul near the path)
+                    if skin:
+                        sk = skin.get(f"skirt_edge_{f}")
+                        if sk is not None:
+                            scene.alpha_composite(sk, (px, py))
+    # wall pass (after ground, painter order); crypt_drowned has no WALL/prism.
+    if skin and walls:
+        for tx, ty, px, py, wx, wy in sorted(walls, key=lambda w: w[0] + w[1]):
+            ps = prism_for((wx * 7 + wy * 13) % max(1, prism_variants))
+            left = shear_face(ps["left"], "left"); right = shear_face(ps["right"], "right")
+            scene.alpha_composite(left, (px, py + TH // 2 - PRISM_H))
+            scene.alpha_composite(right, (px + TW // 2, py + TH // 2 - PRISM_H))
+            scene.alpha_composite(ps["top"], (px, py - PRISM_H))
+    # B2 scale witnesses: hound + gnoll for the mine, sexton + celebrant for both crypt maps.
+    if zone == "mine":
+        witnesses = (("1003_hollow_hound", "walk_S_0", (5, 6)), ("1005_bonepicker_gnoll", "walk_S_0", (8, 7)))
+    elif zone.startswith("crypt_"):
+        witnesses = (("1008_revenant_sexton", "walk_S_0", (5, 6)), ("1007_gravecaller", "walk_S_0", (8, 7)))
+    else:
+        # Preserve the established B1 board evidence for town/fields; B2 uses its
+        # own crypt/mine scale witnesses and QA prefix.
+        witnesses = (("1001_marsh_rat", "walk_S_0", (5, 6)), ("1002_feral_ghoul", "walk_S_0", (8, 7)))
     ents = []
-    for mob, cell, (tx, ty) in (("1001_marsh_rat", "walk_S_0", (5, 6)), ("1002_feral_ghoul", "walk_S_0", (8, 7))):
+    for mob, cell, (tx, ty) in witnesses:
         p = MOBS / mob / "cells" / f"{cell}.png"
         if p.exists():
             im = Image.open(p).convert("RGBA")
             x, y = iso(tx, ty, ox, oy)           # tile top-left; feet on the tile centre
-            scene.alpha_composite(im, (int(x) + TW // 2 - 16, int(y) + TH // 2 - 42))
+            scene.alpha_composite(im, (int(x) + TW // 2 - im.width // 2, int(y) + TH // 2 - 42))
             ents.append((mob, im))
     day = scene
     night = P.night_floor(day, 2.0)
@@ -153,15 +181,19 @@ def render_map_preview(zone: str, plates: dict[int, Image.Image], names: dict[in
         board.alpha_composite(im, (i * (cw + 4), lab))
         board.alpha_composite(f7.render(t), (i * (cw + 4) + 2, 2))
     board = board.resize((board.width * 2, board.height * 2), Image.NEAREST)
-    board.save(QA / f"b1_{zone}_map_3x.png")
-    # R-LUMA on the composed ground under each dropped cell
-    lum = {}
+    board.save(QA / f"{qa_prefix}_{zone}_map_3x.png")
+    # R-LUMA on the composed ground window (this remains an offline board, not engine proof).
     ga = np.asarray(day).astype(np.float32)
     gl = ga[..., 0] * .299 + ga[..., 1] * .587 + ga[..., 2] * .114
     audit = {"engine_validated": False, "window": [x0, y0, n, n], "edge_pieces_drawn": used_edges, "walls_drawn": len(walls),
              "ground_luma_mean_window": round(float(gl[oy + 40: oy + (n) * TH // 2 + 40, cw // 4: 3 * cw // 4].mean()), 1),
              "night_ground_luma_mean": round(float((np.asarray(night).astype(np.float32)[..., :3] @ [.299, .587, .114])[oy + 40: oy + n * TH // 2 + 40, cw // 4: 3 * cw // 4].mean()), 1),
              "cells_dropped": [m for m, _ in ents],
+             "scale_witnesses": (["1003_hollow_hound", "1005_bonepicker_gnoll"] if zone == "mine" else
+                                 (["1008_revenant_sexton", "1007_gravecaller"] if zone.startswith("crypt_") else
+                                  ["1001_marsh_rat", "1002_feral_ghoul"])),
              "note": "offline composite of the real map ground layer; proposal for T-ART-12, not the engine"}
-    (QA / f"b1_{zone}_map_audit.json").write_text(json.dumps(audit, indent=1) + "\n")
+    if qa_prefix == "b1":
+        audit.pop("scale_witnesses", None)
+    (QA / f"{qa_prefix}_{zone}_map_audit.json").write_text(json.dumps(audit, indent=1) + "\n")
     return audit
