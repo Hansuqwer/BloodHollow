@@ -184,3 +184,57 @@ TEST_CASE("T-060: refine — proximity law, toll, guaranteed steps, stat delta")
   CHECK(sawSuccess);
   CHECK(sawShatter);  // Soma law: the third coal bites back
 }
+
+// ---- T-079 refine +4..+7 (GDD rates, shipped costs) ----
+TEST_CASE("T-079: refine climbs 3->7, slips back, resets at the top") {
+  // Same strata-walking technique as T-060: fresh petitioners, one attempt
+  // each, observe the transition distribution. Rates 65/50/35/25 both sides
+  // show inside a few hundred rolls on a fixed seed.
+  for (int from = 3; from <= 6; ++from) {
+    server::World w;
+    REQUIRE(w.loadFrom(makeArena()));
+    (void)w.debugSpawnAnvil(sim::TilePos{6, 5});
+    bool sawUp = false, sawDown = false;
+    for (int t = 0; t < 400 && !(sawUp && sawDown); ++t) {
+      auto* q = w.find(w.spawn("coal" + std::to_string(t), 0, sim::TilePos{8, 8}).id);
+      w.debugGive(*q, 2001, 1);
+      w.debugGive(*q, 4001, 1);
+      q->inv[0].refine = static_cast<std::uint8_t>(from);
+      q->gold = 100;
+      q->walker.place(sim::TilePos{6, 5});
+      REQUIRE(w.tryRefine(*q, 0));
+      if (q->inv.empty()) continue;  // only refine-2 shatters; not this band
+      const std::uint8_t got = q->inv[0].refine;
+      if (got == from + 1) sawUp = true;
+      if (from < 6 && got == from - 1) sawDown = true;  // slip a temper
+      if (from == 6 && got == 0) sawDown = true;        // the top forgets all
+    }
+    CHECK(sawUp);
+    CHECK(sawDown);
+  }
+}
+
+TEST_CASE("T-079: nothing shatters above +2, +7 is full") {
+  server::World w;
+  REQUIRE(w.loadFrom(makeArena()));
+  (void)w.debugSpawnAnvil(sim::TilePos{6, 5});
+  for (int t = 0; t < 120; ++t) {
+    auto* q = w.find(w.spawn("iron" + std::to_string(t), 0, sim::TilePos{8, 8}).id);
+    w.debugGive(*q, 2001, 1);
+    w.debugGive(*q, 4001, 1);
+    q->inv[0].refine = 5;
+    q->gold = 100;
+    q->walker.place(sim::TilePos{6, 5});
+    REQUIRE(w.tryRefine(*q, 0));
+    CHECK_FALSE(q->inv.empty());  // slips, never shatters up here
+  }
+  auto* p = w.find(w.spawn("full", 0, sim::TilePos{8, 8}).id);
+  w.debugGive(*p, 2001, 1);
+  w.debugGive(*p, 4001, 1);
+  p->inv[0].refine = 7;
+  p->gold = 100;
+  p->walker.place(sim::TilePos{6, 5});
+  CHECK_FALSE(w.tryRefine(*p, 0));  // no hotter coal
+  CHECK(p->inv[0].refine == 7);
+  CHECK(p->gold == 100u);  // ceiling refuses before the toll
+}

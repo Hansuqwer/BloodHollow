@@ -1344,7 +1344,7 @@ bool World::tryRefine(Entity& e, std::uint8_t invSlot) {
   InvSlot& sl = e.inv[invSlot];
   const content::ItemDef* d = content::findItem(sl.itemId);
   if (d == nullptr || d->slot > 1) return false;  // gear only
-  if (sl.refine >= 3) {
+  if (sl.refine >= 7) {
     WorldEvent ev;
     ev.aboutId = e.id;
     ev.chatCh = 255;
@@ -1380,18 +1380,34 @@ bool World::tryRefine(Entity& e, std::uint8_t invSlot) {
   ev.statsChanged = true;
   ev.invChanged = true;
   ev.chatCh = 255;
-  if (tgt.refine < 2 || rng_.range(1, 100) <= 60) {
+  // T-079: shipped rows frozen (0->1, 1->2 mercy; 2->3 60% + destruction).
+  // New rows take GDD §7 rates; failure slips one temper, except the +7
+  // bid, which forgets every temper on failure (GDD-literal reset to +0).
+  static constexpr std::uint8_t kRefineChance[7] = {100, 100, 60, 65, 50, 35, 25};
+  const std::uint8_t chance = kRefineChance[tgt.refine];
+  if (rng_.range(1, 100) <= chance) {
     ++tgt.refine;
     std::printf("[anvil-refine] %s %u -> %u item=%u\n", e.name.c_str(),
                 static_cast<unsigned>(tgt.refine) - 1,
                 static_cast<unsigned>(tgt.refine), tgt.itemId);
     ev.chatText = std::string("(anvil) the ring answers true: ") + d->name +
                   " +" + std::to_string(tgt.refine) + ".";
-  } else {
+  } else if (tgt.refine == 2) {
     std::printf("[anvil-refine] %s SHATTERED item=%u\n", e.name.c_str(), tgt.itemId);
     ev.chatText = std::string("(anvil) the ") + d->name +
                   " SINGS WRONG and falls apart. The Widow keeps the iron.";
     e.inv.erase(e.inv.begin() + invSlot);
+  } else if (tgt.refine == 6) {
+    tgt.refine = 0;
+    std::printf("[anvil-refine] %s RESET item=%u\n", e.name.c_str(), tgt.itemId);
+    ev.chatText = std::string("(anvil) the ") + d->name +
+                  " forgets every temper: +0. The Widow keeps the coal.";
+  } else {
+    --tgt.refine;
+    std::printf("[anvil-refine] %s slipped %u item=%u\n", e.name.c_str(),
+                static_cast<unsigned>(tgt.refine) + 1, tgt.itemId);
+    ev.chatText = std::string("(anvil) the iron slips a temper: ") + d->name +
+                  " +" + std::to_string(tgt.refine) + ".";
   }
   events_.push_back(std::move(ev));
   return true;

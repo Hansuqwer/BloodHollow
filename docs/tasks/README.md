@@ -442,6 +442,15 @@ exempt; no factions/marks. No epoch bump (stays **11**); fresh 540 s
 journal replays `[replay] OK ticks=12801 sessionCmds=6929 hashes=129
 mismatches=0`. Suite 150/150 (328,177). Devlog 0043.
 
+## Done — extended S32 (2026-09-09): refine +4 to +7
+
+T-079: GDD rates 65/50/35/25 above frozen shipped rows; failure slips one
+temper (+7 bid resets to +0); shatter stays refine-2-only. No wire change;
++5 glow stays T-ART-11's (now unblocked). **Epoch 11 → 12**; fresh 540 s
+journal replays `[replay] OK ticks=12801 sessionCmds=7984 hashes=129
+mismatches=0`. Suite 152/152 (328,447). New watch: wander-death drift
+(24→146 across the shift, shape says roam-RNG, recorded). Devlog 0044.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |

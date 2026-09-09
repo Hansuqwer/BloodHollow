@@ -89,12 +89,12 @@ void sendMsg(ENetPeer* peer, const Msg& m, Server& s) {
 // (whitening/moral split in S15 = epoch 3; kit sidecars = 2; pre-K = 1;
 // S22 T-034b mob retune = 6; T-068 barricade relocation = 7;
 // T-069 fence + one-Marta spawn fix = 8; T-070 curse + confessor = 9;
-// T-071 torch/lantern + nightOnly spawner = 10; T-073 guards + wanted = 11).
-// (S23 was audit-only: no bump. The brief's 11->12 assumed one.)
+// T-071 torch/lantern + nightOnly spawner = 10; T-073 guards + wanted = 11;
+// T-079 refine rows +4..+7 = 12).
 // Replay refuses non-matching epoch journals instead of lying with them.
-constexpr int kJournalEpoch = 11;  // T-073: guard mob + wanted/protect fields
-                                   // shift the sim under v10 journals; stale
-                                   // by contract (same response as ever)
+constexpr int kJournalEpoch = 12;  // T-079: refine rolls consume new strata
+                                   // under v11 journals; stale by contract
+                                   // (same response as ever)
 
 // ---- world journal record helpers (M2) ------------------------------------
 void journalTickHash(Server& s) {
