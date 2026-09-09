@@ -12,6 +12,9 @@ bool loadAtlas(const std::string& pngPath, const std::string& animJsonPath, Atla
     if (!FileExists(pngPath.c_str()) || !FileExists(animJsonPath.c_str())) return false;
     Texture2D tex = LoadTexture(pngPath.c_str());
     if (tex.id == 0) return false;
+    // T-ART-01: era pixel look — real atlas sheets render nearest, same as
+    // the procedural placeholder (placeholder.cpp).
+    SetTextureFilter(tex, TEXTURE_FILTER_POINT);
 
     std::ifstream f(animJsonPath);
     nlohmann::json j;
