@@ -12,8 +12,13 @@ inline constexpr std::uint8_t kWireKindVendor = 64;
 inline constexpr std::uint8_t kWireKindAnvil = 65;
 inline constexpr std::uint8_t kWireKindBounty = 66;  // T-065 wanted board
 // 67 Bonesmith twins: RESERVED (art REGISTRY, T-ART-06).
+inline constexpr std::uint8_t kWireKindBonesmith = 67;  // T-ART-06 twins
 inline constexpr std::uint8_t kWireKindConfessor = 68;  // T-070 chapel cure
 inline constexpr std::uint8_t kWireKindFence = 69;   // T-069 Smugglers' Cove fence
+inline constexpr std::uint8_t kWireKindGuardAshen = 70;  // T-ART-06 town guard
+inline constexpr std::uint8_t kWireKindGuardSynod = 71;  // T-ART-06 town guard
+inline constexpr std::uint8_t kWireKindRegistrar = 72;   // T-ART-06 pledge clerk
+inline constexpr std::uint8_t kWireKindSteward = 73;     // T-ART-06 castle keeper
 
 inline bool wireIsFurniture(std::uint8_t k) { return k >= kWireKindFurnitureFloor; }
 inline bool wireIsMob(std::uint8_t k) { return k < kWireKindFurnitureFloor; }

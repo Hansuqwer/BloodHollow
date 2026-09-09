@@ -792,7 +792,9 @@ void Game::drawRemoteEnt(const RenderEnt& e, bool isOwn) {
   const Vector2 rp = entRenderPos(e);
   const Vector2 w = iso::tileToWorldF(rp, map_.tileW, map_.tileH);
   if (content::wireIsFurniture(e.snap.kind)) {
-    // furniture band (T-047 constants): vendor stall 64, widow anvil 65
+    // furniture band (T-047 constants, T-ART-06: 64 vendor → 73 steward):
+    // widow anvil 65 keeps its teal rig; every other kind shares the
+    // generic stall rect + name label until its sheet/portrait ships.
     if (e.snap.kind == content::kWireKindAnvil) {
       DrawRectangle(static_cast<int>(w.x) - 12, static_cast<int>(w.y) - 22, 24, 18,
                     Color{70, 124, 128, 255});

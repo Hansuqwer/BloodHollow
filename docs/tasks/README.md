@@ -510,6 +510,10 @@ T-086 AUDIT-ONLY: anvilTries=0 is correct — Tier-1 toll (30 pelts/skill 20/120
 
 T-087 DETERMINISM-PROOF: duel table twice-identical, Ghoul row untouched since Sprint 18, soak wobble = regime noise. Re-pinned (9.7 s duel-med / 8–25 s soak band), watch CLOSED. Devlog 0055.
 
+## Done — T-ART-06 remainder (2026-09-09): NPC kinds 67/70–73
+
+T-ART-06 ENGINE SIDE: 5 constants + spawn seams + sweep test (167 total). Client generic branch already renders them. Placement/sheets/portraits parked for art-side. No wire/epoch change. Devlog 0056.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |

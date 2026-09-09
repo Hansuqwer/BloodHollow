@@ -352,6 +352,39 @@ class World {
     f.walker.place(at);
     return insertEntity(std::move(f));
   }
+  Entity& debugSpawnFurniture(std::uint8_t wireKind, const char* name,
+                              sim::TilePos at) {  // T-ART-06 generic NPC seam
+    Entity f;
+    f.id = nextId_++;
+    f.zoneId = 1;
+    f.kind = EntityKind::kMob;  // furniture, non-combat
+    f.wireKind = wireKind;
+    f.name = name;
+    f.hp = 1;
+    f.hpMax = 1;
+    f.walker.place(at);
+    return insertEntity(std::move(f));
+  }
+  Entity& debugSpawnBonesmith(sim::TilePos at) {  // T-ART-06 twins (67)
+    return debugSpawnFurniture(content::kWireKindBonesmith, "Bonesmith Twins",
+                               at);
+  }
+  Entity& debugSpawnGuardAshen(sim::TilePos at) {  // T-ART-06 (70)
+    return debugSpawnFurniture(content::kWireKindGuardAshen, "Ashen Guard",
+                               at);
+  }
+  Entity& debugSpawnGuardSynod(sim::TilePos at) {  // T-ART-06 (71)
+    return debugSpawnFurniture(content::kWireKindGuardSynod, "Synod Guard",
+                               at);
+  }
+  Entity& debugSpawnRegistrar(sim::TilePos at) {  // T-ART-06 (72)
+    return debugSpawnFurniture(content::kWireKindRegistrar, "Pledge Registrar",
+                               at);
+  }
+  Entity& debugSpawnSteward(sim::TilePos at) {  // T-ART-06 (73)
+    return debugSpawnFurniture(content::kWireKindSteward, "Castle Steward",
+                               at);
+  }
   Entity& debugSpawnMob(const content::MobDef& def, sim::TilePos at,
                         std::uint16_t zoneId = 1) {
     return spawnMob(def, at, /*spawnerIdx=*/SIZE_MAX, zoneId);
