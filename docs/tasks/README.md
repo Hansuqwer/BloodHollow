@@ -502,6 +502,10 @@ T-ART-11 RENDER-ONLY: glow law header + inventory glow rows/markers, 2 new tests
 
 T-ART-09 RENDER-ONLY: decal law header + client surface (blood/telegraph/circle), 3 new tests (165 total). Boss cast APIs await callers. No epoch/wire change. Devlog 0053.
 
+## Done — T-086 (2026-09-09): pilgrim anvil probe
+
+T-086 AUDIT-ONLY: anvilTries=0 is correct — Tier-1 toll (30 pelts/skill 20/120g) exceeds single-leg income ~6×. No code, retune flagged for director. Devlog 0054.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |
