@@ -1,0 +1,6 @@
+[campaign] t83bc__01 reached L8 at t=0.1s (map 1)
+[campaign] t83bc__00 reached L8 at t=0.1s (map 1)
+[bots] SUMMARY welcomed=2/2 moved=2/2 minDeltas=10800 kills=156 pots=37 swings=217 deaths=2 shops=30 anvilTries=0 levelDrops=0 regear=3 maxLevel=8 pkts=3501357 bytes=80516973 gates b/g/p/a/r=0/0/0/0/0 mGold=0 mPelts=0 bless=3 mend=36 noSee=0 hurt=270 choir c6=0 c7=0 c8=0
+[bots] t83bc__00    kit=1 lvl=8 hp=92/136 party=2 deaths=0 rxR=544 rxM=1074 lastPid=1 casts c6=0 c7=0 c8=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t83bc__01    kit=3 lvl=8 hp=104/136 party=2 deaths=2 rxR=541 rxM=1062 lastPid=1 casts c6=0 c7=0 c8=0 lastDeath=(21,27) killerByLvl=L5:2
+[bots] OK

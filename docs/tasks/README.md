@@ -522,6 +522,10 @@ T-088 AUDIT-ONLY: 8-leg geography, zero on-route L11, campaign clean 8/8 — era
 
 T-089 VALIDATION-ONLY: repent +20/72000t, lantern 150g, torch 8g re-derived + checked across 8 legs — all hold, zero changed. Trade-pass programmable half green, human slice unblocked. Devlog 0058.
 
+## Done — T-090 (2026-09-09): L8→L9 climb verdict
+
+T-090 BOT-ONLY: 540 s climb from 0 xp — 156 kills / 2 roam deaths, 76%+57% of bar, zero widow/L11. Verdict: ladder OPEN, pace-limited (logistics tax), no wall — #6 tuning NOT triggered. Devlog 0059.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |
