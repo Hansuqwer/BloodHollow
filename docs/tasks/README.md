@@ -468,6 +468,20 @@ destroyed); junk/consumables exempt; drops-then-wear order. No epoch bump
 sessionCmds=7536 hashes=129 mismatches=0` (Ghoul TTK back at the 8.9 pin —
 wobble confirmed noise). Suite 156/156 (328,471). Devlog 0046.
 
+## Done — extended S35 (2026-09-09): Cultist Purify
+
+T-082: channel 9 (gate, kit table ×3, unlock guard), Cultist unlock 6,
+Mend-mirror gates, cleanse-only effect. No client key (6–8 precedent),
+no epoch bump (stays **12**); fresh 540 s journal replays `[replay] OK
+ticks=12801 sessionCmds=7391 hashes=129 mismatches=0`. Suite 160/160
+(328,489). Devlog 0047.
+
+## Done — extended S36 (2026-09-09): base-light director option
+
+T-076 DECISION (no code): GDD §9 base-6 vs shipped 0 priced as A
+(GDD-literal, torch duration-only, epoch bump) vs B (keep 0, one-line GDD
+fix). Non-binding recommendation: B pending playtest evidence. Devlog 0048.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |

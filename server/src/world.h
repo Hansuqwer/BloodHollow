@@ -115,6 +115,7 @@ struct Entity {
   bool lanternLit = false;
   sim::Tick hasteUntil = -1;    // -25% swing cadence (T-054b ch8)
   sim::Tick lastMendTick = -1000;
+  sim::Tick lastPurifyTick = -1000;  // T-082 field cleanse cadence
   sim::Tick lastBlessTick = -1000;
   sim::Tick lastChorusTick = -1000;
   sim::Tick lastMassTick = -1000;
@@ -225,6 +226,7 @@ class World {
   void tryChorus(Entity& e);                    // T-054b (chan 6)
   void tryMassMend(Entity& e);                  // T-054b (chan 7)
   void tryHaste(Entity& e);                     // T-054b (chan 8)
+  void tryPurify(Entity& e, std::uint32_t targetId);  // T-082 (chan 9)
   void tryFirebolt(Entity& e, std::uint32_t targetId);  // T-054 (chan 5)
 
  public:

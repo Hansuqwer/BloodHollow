@@ -693,7 +693,7 @@ std::uint32_t World::effDef(const Entity& e) const {
 
 void World::trySkill(Entity& e, std::uint8_t skill, std::uint32_t targetId) {
   if (e.kind != EntityKind::kPlayer || e.dead) return;
-  if (skill >= 2 && skill <= 8) {
+  if (skill >= 2 && skill <= 9) {
     const std::uint8_t unlock = content::kitSkillUnlock(e.classId, skill);
     if (unlock == 0 || e.level < unlock) return;
     switch (skill) {
@@ -704,6 +704,7 @@ void World::trySkill(Entity& e, std::uint8_t skill, std::uint32_t targetId) {
       case 6: tryChorus(e); return;     // T-054b
       case 7: tryMassMend(e); return;   // T-054b
       case 8: tryHaste(e); return;      // T-054b
+      case 9: tryPurify(e, targetId); return;  // T-082 field cleanse
       default: return;
     }
   }
@@ -810,6 +811,30 @@ void World::tryMend(Entity& e, std::uint32_t targetId) {
                                        std::to_string(healed) + ").";
     events_.push_back(std::move(txt));
   }
+}
+
+// T-082 Purify (chan 9, Cultist): the field cleanse — clears the Blood Curse
+// where no chapel stands. Gates mirror Mend exactly (same CD/MP/range/target
+// law — stated, not designed): reuses kMendCdTicks/kMendMpCost/kMendRange and
+// choirTarget. Cleanses ONLY (no heal, no bless touch); quiet fail when the
+// target runs clean blood.
+void World::tryPurify(Entity& e, std::uint32_t targetId) {
+  if (tick_ - e.lastPurifyTick < kMendCdTicks) return;
+  if (e.mp < kMendMpCost) return;  // out of breath (era: quiet fail)
+  Entity* t = choirTarget(*this, e, targetId);
+  if (t == nullptr) return;
+  if (chebyshev(e.walker.tile(), t->walker.tile()) > kMendRange) return;
+  if (tick_ >= t->curseUntil) return;  // clean blood: nothing to purge
+  e.lastPurifyTick = tick_;
+  e.mp -= kMendMpCost;
+  t->curseUntil = -1;
+  WorldEvent ev;
+  ev.aboutId = t->id;
+  ev.statsChanged = true;
+  ev.chatCh = 2;
+  ev.chatText = e.id == t->id ? e.name + " purges the thin blood from their own veins."
+                              : e.name + " purges the thin blood from " + t->name + ".";
+  events_.push_back(std::move(ev));
 }
 
 void World::tryBless(Entity& e, std::uint32_t targetId) {

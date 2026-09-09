@@ -24,6 +24,7 @@ add_executable(bh_tests
   test_clientlaw.cpp
   test_repent.cpp
   test_tradelog.cpp
+  test_purify.cpp
   test_gear_churn.cpp
   test_night.cpp
   test_s18_dropzone.cpp
