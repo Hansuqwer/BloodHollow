@@ -482,6 +482,10 @@ T-076 DECISION (no code): GDD §9 base-6 vs shipped 0 priced as A
 (GDD-literal, torch duration-only, epoch bump) vs B (keep 0, one-line GDD
 fix). Non-binding recommendation: B pending playtest evidence. Devlog 0048.
 
+## Done — T-083 (2026-09-09): wander-drift investigation
+
+T-083 READ-ONLY: two short-soak legs (240 s bots / 300 s soak, wander 16 + 24 deaths, entities 349/344, replays 0 mismatches). Drift 146→16→24 broken — roam-RNG noise confirmed, no leak, no T-084. Devlog 0049.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |

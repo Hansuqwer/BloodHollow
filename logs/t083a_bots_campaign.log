@@ -1,0 +1,8 @@
+[campaign] t83ac__01 reached L1 at t=0.1s (map 1)
+[campaign] t83ac__00 reached L1 at t=0.1s (map 1)
+[campaign] t83ac__00 reached L2 at t=34.3s (map 1)
+[campaign] t83ac__01 reached L2 at t=46.0s (map 1)
+[bots] SUMMARY welcomed=2/2 moved=2/2 minDeltas=4799 kills=22 pots=0 swings=32 deaths=0 shops=0 anvilTries=0 levelDrops=0 regear=0 maxLevel=2 pkts=1413027 bytes=32489185 gates b/g/p/a/r=0/0/0/0/0 mGold=0 mPelts=0 bless=0 mend=0 noSee=0 hurt=0 choir c6=0 c7=0 c8=0
+[bots] t83ac__00    kit=1 lvl=2 hp=100/94 party=2 deaths=0 rxR=253 rxM=462 lastPid=1 casts c6=0 c7=0 c8=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t83ac__01    kit=3 lvl=2 hp=93/94 party=2 deaths=0 rxR=244 rxM=420 lastPid=1 casts c6=0 c7=0 c8=0 lastDeath=(-1,-1) killerByLvl=
+[bots] OK
