@@ -534,6 +534,10 @@ T-091 CONTENT (epoch 12→13): 60t wind-up + radius-2 slam replaces her instant 
 
 T-092 WIRE (stays 237): trailing `glowTier` on spawn/delta + scan + halo draw. Codec + scan tests (172 total). No epoch bump (t091 replays clean). Devlog 0061.
 
+## Done — T-093 (2026-09-09): Tier-1 toll options
+
+T-093 DECISION (no code): retune A (pelts 30→10, epoch bump, still skill-bound) vs B (keep toll, multi-leg progression, one docs edit). Non-binding recommendation: B. Devlog 0062.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |
