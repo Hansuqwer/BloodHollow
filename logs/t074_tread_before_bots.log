@@ -1,0 +1,10 @@
+[campaign] t74a_00 reached L3 at t=2.8s (map 1)
+[campaign] t74a_01 reached L3 at t=6.7s (map 1)
+[campaign] t74a_00 reached L4 at t=21.3s (map 1)
+[campaign] t74a_01 reached L4 at t=103.5s (map 1)
+[campaign] t74a_00 reached L5 at t=425.4s (map 1)
+[campaign] t74a_01 reached L5 at t=425.5s (map 1)
+[bots] SUMMARY welcomed=2/2 moved=2/2 minDeltas=10801 kills=132 pots=3 swings=238 deaths=24 shops=245 anvilTries=0 levelDrops=6 regear=0 maxLevel=5 pkts=2267160 bytes=52153724 gates b/g/p/a/r=0/0/0/0/0 mGold=0 mPelts=0 bless=3 mend=56 noSee=0 hurt=576 choir c6=0 c7=0 c8=0
+[bots] t74a_00      kit=1 lvl=5 hp=97/106 party=2 deaths=12 rxR=544 rxM=1074 lastPid=1 casts c6=0 c7=0 c8=0 lastDeath=(58,17) killerByLvl=L3:12
+[bots] t74a_01      kit=3 lvl=5 hp=118/106 party=2 deaths=12 rxR=541 rxM=1062 lastPid=1 casts c6=0 c7=0 c8=0 lastDeath=(58,17) killerByLvl=L3:12
+[bots] OK

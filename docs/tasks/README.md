@@ -383,6 +383,19 @@ Devlog 0036.
 |---|---|
 | [T-073](done/T-073.md) | Gate guards + spawn-camp protection (epoch 11) |
 
+## Done — overnight S25 (2026-09-09): bad-leg levers, measured + reverted
+
+Bench pinned (rerun legs 3/5/7: 142/134/116 deaths, ALL L3 ghouls at the
+ghouls_east/orchard edges). One lever moved: pack-cap level gate dropped
+(poverty-trap hypothesis). A/B (L2-parked pair, 540 s): BEFORE 32 deaths /
+L5 → AFTER **104 deaths / L3** — lever rejected and reverted to v5c,
+nothing shipped. Bot-only, epoch stays **11**. Next pit noted (retreat
+5→4, repeats, L1-naked). Devlog 0037.
+
+| Card | Title |
+|---|---|
+| [T-074](done/T-074.md) | Bad-leg death levers: pack-gate drop measured, rejected, reverted |
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |
