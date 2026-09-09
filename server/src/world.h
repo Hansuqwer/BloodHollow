@@ -127,6 +127,10 @@ struct Entity {
   sim::Tick duelUntil = -1;        // kill inside window = no karma/debt/drops
   std::uint32_t duelOfferTo = 0;   // outgoing challenge target
   sim::Tick duelOfferAt = -1;      // offers die 20 s after issue
+  // T-073 gate law: unlawful PK near a guard anchor marks wanted (240 s);
+  // fresh/respawned players carry 5 s of spawn protection (100 ticks).
+  sim::Tick wantedUntil = -1;
+  sim::Tick spawnProtectUntil = -1;
 
   // trade (T-029): intents only until BOTH commit; swap validated at commit.
   std::uint32_t tradeWith = 0;
@@ -372,6 +376,8 @@ class World {
   void mobThink(Entity& mob);
   // T-071: night-bound mobs (nightOnly spawner) do not acquire by day.
   bool mobNightDormant(const Entity& mob) const;
+  // T-073: gate-guard lookup (guard-flagged mob def, furniture excluded).
+  static bool isGuardMob(const Entity& mob);
   void trySwing(Entity& att, Entity& def);
   void killMob(Entity& mob, Entity* killer);
   void killPlayer(Entity& victim, Entity* killer);

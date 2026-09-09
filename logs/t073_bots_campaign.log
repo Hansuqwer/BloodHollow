@@ -1,0 +1,12 @@
+[campaign] t73c_01 reached L1 at t=0.1s (map 1)
+[campaign] t73c_00 reached L1 at t=0.1s (map 1)
+[campaign] t73c_00 reached L2 at t=14.3s (map 1)
+[campaign] t73c_01 reached L2 at t=14.3s (map 1)
+[campaign] t73c_00 reached L3 at t=105.8s (map 1)
+[campaign] t73c_01 reached L3 at t=105.8s (map 1)
+[campaign] t73c_00 reached L4 at t=371.6s (map 1)
+[campaign] t73c_01 reached L4 at t=371.6s (map 1)
+[bots] SUMMARY welcomed=2/2 moved=2/2 minDeltas=10800 kills=59 pots=6 swings=231 deaths=0 shops=5 anvilTries=0 levelDrops=0 regear=3 maxLevel=4 pkts=2515623 bytes=57772267 gates b/g/p/a/r=0/0/0/0/0 mGold=0 mPelts=0 bless=2 mend=15 noSee=0 hurt=110 choir c6=0 c7=0 c8=0
+[bots] t73c_00      kit=1 lvl=4 hp=112/94 party=2 deaths=0 rxR=547 rxM=1076 lastPid=1 casts c6=0 c7=0 c8=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t73c_01      kit=3 lvl=4 hp=110/94 party=2 deaths=0 rxR=542 rxM=1060 lastPid=1 casts c6=0 c7=0 c8=0 lastDeath=(-1,-1) killerByLvl=
+[bots] OK

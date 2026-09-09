@@ -160,6 +160,7 @@ TEST_CASE("T-071: nightOnly aggro gating — seen at night, ignored by day") {
   server::Entity* p = spawnP(w, "nightwalk", den.x + 2, den.y);  // d=2, in aggro
   const std::uint32_t pid = p->id;
   const std::uint32_t mid = mob->id;
+  w.debugSetTick(w.tickCount() + 200);  // T-073: past spawn protection
   for (int i = 0; i < 15; ++i) w.tick();
   CHECK(w.find(mid)->attackTarget == pid);  // night eyes acquire
   // dawn breaks on a fresh world with the same shape: no acquire
@@ -177,9 +178,9 @@ TEST_CASE("T-071: nightOnly aggro gating — seen at night, ignored by day") {
   const sim::TilePos den2 = mob2->walker.tile();
   const std::uint32_t mid2 = mob2->id;
   (void)spawnP(w2, "daywalk", den2.x + 2, den2.y);
-  w2.debugSetTick(tickAtHour(10.0f));  // day: the pack sleeps
+  w2.debugSetTick(tickAtHour(10.0f) + 200);  // day, and past spawn protection
   for (int i = 0; i < 15; ++i) w2.tick();
-  CHECK(w2.find(mid2)->attackTarget == 0u);
+  CHECK(w2.find(mid2)->attackTarget == 0u);  // dormancy, not protection
 }
 
 TEST_CASE("T-071: SpawnDef nightOnly defaults off (day content unchanged)") {

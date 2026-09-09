@@ -22,6 +22,7 @@ ZONE_TOWN, ZONE_FIELDS, ZONE_MARSH = 1, 2, 3
 MOB_MARSH_RAT, MOB_FERAL_GHOUL, MOB_HOLLOW_HOUND = 1001, 1002, 1003
 MOB_PLAGUE_BAT, MOB_BONEPICKER_GNOLL = 1004, 1005
 MOB_CHARNEL_WIDOW, MOB_GRAVECALLER = 1006, 1007
+MOB_GATE_GUARD = 1011  # T-073: east gate + bridge approach posts
 
 
 def rect(g, x0, y0, x1, y1, v):
@@ -174,6 +175,11 @@ def main() -> int:
         # off the east/south roads and the campaign line). By day the rect
         # stands empty; after 21:00 it refills and hunts (maxAlive 4).
         spawn("night_ghouls", 36, 26, 6, 4, MOB_FERAL_GHOUL, 4, 600, 1),
+        # T-073 gate law: two guard posts — the east gate (road tiles) and
+        # the bridge approach north of the river. L15 duty wall, maxAlive 2,
+        # standard refill; wanted-only aggro (see world.cpp isGuardMob).
+        spawn("guards_east_gate", 60, 13, 2, 3, MOB_GATE_GUARD, 2, 1200),
+        spawn("guards_bridge", 13, 31, 3, 2, MOB_GATE_GUARD, 2, 1200),
     ]
     portals = [
         portal("east_gate", 63, 14, 1, 2, 2, 2, 14),   # -> fields map (Phase 2)

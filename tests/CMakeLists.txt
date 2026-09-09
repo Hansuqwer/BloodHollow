@@ -18,6 +18,7 @@ add_executable(bh_tests
   test_fence.cpp
   test_curse.cpp
   test_light.cpp
+  test_guards.cpp
   test_gear_churn.cpp
   test_night.cpp
   test_s18_dropzone.cpp

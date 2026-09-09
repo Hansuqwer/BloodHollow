@@ -367,6 +367,22 @@ gates 20/50/80/120/150 hold, effects match GDD §3, replay parity
 spot-checked on the epoch-10 journal (`mismatches=0`). No code change,
 no epoch bump (stays **10**). Devlog 0035.
 
+## Done — overnight S24 (2026-09-09): gate guards + spawn protection
+
+Gate Guard 1011 (L15 wall, xp 0, guard flag) posts at the east gate and
+bridge approach; unlawful PK ≤8 of an anchor marks wanted 240 s (guards
+acquire in leash 12, vendors refuse, death binds at gallows). Spawn
+protection 100 ticks on spawn + respawn (lookup skips; retaliation still
+fires). Judgment calls flagged: post sizes, no-free-hits, fence open to
+wanted, expiry stand-down. Epoch **10 → 11** (S23 didn't bump — chain
+shifts one, stated). Fresh 540 s journal replays `[replay] OK ticks=12801
+sessionCmds=7321 hashes=129 mismatches=0`. Suite 134/134 (328,092).
+Devlog 0036.
+
+| Card | Title |
+|---|---|
+| [T-073](done/T-073.md) | Gate guards + spawn-camp protection (epoch 11) |
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |

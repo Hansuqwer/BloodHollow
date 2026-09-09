@@ -148,6 +148,8 @@ Entity& World::spawn(const std::string& name, std::int64_t charRowId,
   e.hp = e.hpMax;
   e.mpMax = 30;  // L1 pool; recomputeMpMax at level-up
   e.mp = e.mpMax;
+  // T-073 M4: the newborn walks 5 s unseen by mob lookup (100 ticks).
+  e.spawnProtectUntil = tick_ + 100;
   return insertEntity(std::move(e));
 }
 
@@ -992,6 +994,13 @@ bool World::vendorBuy(Entity& e, std::uint32_t itemId, std::uint16_t qty) {
     events_.push_back(std::move(sneer));
     return false;
   }
+  // T-073: the wanted are refused like the red (gallows-bound coin).
+  if (tick_ < e.wantedUntil) {
+    WorldEvent sneer; sneer.aboutId = e.id; sneer.chatCh = 2;
+    sneer.chatText = "Marta wants no gallows-bound coin.";
+    events_.push_back(std::move(sneer));
+    return false;
+  }
   bool stocked = false;
   for (const std::uint32_t id : content::kVendorStock) {
     if (id == itemId) stocked = true;
@@ -1034,6 +1043,7 @@ bool World::vendorBuy(Entity& e, std::uint32_t itemId, std::uint16_t qty) {
 bool World::repairAll(Entity& e) {
   if (e.kind != EntityKind::kPlayer || e.dead) return false;
   if (karmaBandOf(e.karma) == 2) return false;  // Marta's refusal stands
+  if (tick_ < e.wantedUntil) return false;     // T-073: wanted refused too
   bool nearVendor = false;
   for (const auto& v : entities_) {
     if (v.wireKind == content::kWireKindVendor &&
@@ -1074,6 +1084,13 @@ std::uint32_t World::vendorSellJunk(Entity& e) {
   if (karmaBandOf(e.karma) == 2) {  // T-056 refusal (pawn lane)
     WorldEvent sneer; sneer.aboutId = e.id; sneer.chatCh = 2;
     sneer.chatText = "Marta waves you off. Red hands, red prices: none.";
+    events_.push_back(std::move(sneer));
+    return 0;
+  }
+  // T-073: the wanted get the same wave-off.
+  if (tick_ < e.wantedUntil) {
+    WorldEvent sneer; sneer.aboutId = e.id; sneer.chatCh = 2;
+    sneer.chatText = "Marta waves you off. Gallows-bound hands: none.";
     events_.push_back(std::move(sneer));
     return 0;
   }
@@ -2311,6 +2328,21 @@ void World::killPlayer(Entity& victim, Entity* killer) {
     txt.chatText = killer->name + "'s hands are red with " + victim.name +
                    "'s blood (-" + std::to_string(300 + 20 * deficit) + " karma).";
     events_.push_back(std::move(txt));
+    // T-073 gate law: unlawful PK within 8 tiles of a guard anchor marks the
+    // killer wanted for 240 s (guards aggro, vendors refuse, death binds at
+    // the gallows). Deterministic: anchor scan order, first post that sees.
+    for (const Entity& g : entities_) {
+      if (!isGuardMob(g) || g.zoneId != killer->zoneId) continue;
+      if (chebyshev(killer->walker.tile(), g.anchor) <= 8) {
+        killer->wantedUntil = tick_ + 4800;
+        WorldEvent wtxt;
+        wtxt.aboutId = killer->id;
+        wtxt.chatCh = 2;
+        wtxt.chatText = killer->name + " is WANTED at the gates (240 s).";
+        events_.push_back(std::move(wtxt));
+        break;
+      }
+    }
   }
   // duel partner walks away if the mob kills happen mid-duel (cleanup)
   if (victim.duelWith != 0 && !duel) {
@@ -2426,6 +2458,15 @@ bool World::mobNightDormant(const Entity& mob) const {
   return zit->second.spawners[mob.spawnerIdx].def.nightOnly != 0 && !isNight();
 }
 
+// T-073: gate-guard lookup — a guard-flagged mob def on a real mob body
+// (vendors/boards/fences share kind kMob but carry mobId 0: never guards).
+bool World::isGuardMob(const Entity& mob) {
+  if (mob.kind != EntityKind::kMob) return false;
+  if (content::wireIsFurniture(mob.wireKind)) return false;
+  const content::MobDef* def = content::findMob(mob.mobId);
+  return def != nullptr && def->guard != 0;
+}
+
 void World::mobThink(Entity& mob) {
   if (mob.dead || content::wireIsFurniture(mob.wireKind)) return;  // vendors stand eternally  // leash: too far from anchor -> drop target and path home, no re-aggro
   const sim::TilePos p = mob.walker.tile();
@@ -2448,6 +2489,21 @@ void World::mobThink(Entity& mob) {
   }
 
   // player attacked me? handled in trySwing. Acquire aggro:
+  // T-073 gate guards: wanted-only acquire inside leash reach (aggro 0 by
+  // design — the post ignores the innocent). Spawn protection (M4) skips
+  // every mob lookup; retaliation on being struck still fires (no free hits).
+  if (mob.attackTarget == 0 && isGuardMob(mob) &&
+      mob.id % kAggroThinkPeriod == static_cast<std::uint32_t>(tick_ % kAggroThinkPeriod)) {
+    std::vector<Entity*> near = playersNear(zoneOf(mob), p.x, p.y, mob.leashRadius);
+    for (Entity* c : near) {
+      if (c->kind != EntityKind::kPlayer) continue;
+      if (tick_ < c->wantedUntil && tick_ >= c->spawnProtectUntil) {
+        mob.attackTarget = c->id;  // deterministic: spatial order
+        mob.path.clear();
+        break;
+      }
+    }
+  }
   // T-071: night-bound mobs do not acquire by day.
   if (mob.attackTarget == 0 && mob.aggroRadius > 0 && !mobNightDormant(mob) &&
       mob.id % kAggroThinkPeriod == static_cast<std::uint32_t>(tick_ % kAggroThinkPeriod)) {
@@ -2455,6 +2511,10 @@ void World::mobThink(Entity& mob) {
     const std::uint8_t effAggro =
         static_cast<std::uint8_t>(std::min(255, mob.aggroRadius + (isNight() ? 1 : 0)));
     std::vector<Entity*> near = playersNear(zoneOf(mob), p.x, p.y, effAggro);
+    // T-073 M4: fresh/respawned players are invisible to the lookup for 5 s.
+    near.erase(std::remove_if(near.begin(), near.end(),
+                              [&](Entity* c) { return tick_ < c->spawnProtectUntil; }),
+               near.end());
     if (!near.empty()) {
       mob.attackTarget = near[0]->id;  // deterministic: spatial order
       mob.path.clear();
@@ -2465,6 +2525,13 @@ void World::mobThink(Entity& mob) {
     Entity* target = find(mob.attackTarget);
     if (target == nullptr || target->dead ||
         chebyshev(target->walker.tile(), mob.anchor) > mob.leashRadius) {
+      mob.attackTarget = 0;
+      return;
+    }
+    // T-073: the post stands down when the name clears — guards hold no
+    // grudges past expiry (normal mobs keep their held target).
+    if (isGuardMob(mob) && target->kind == EntityKind::kPlayer &&
+        tick_ >= target->wantedUntil) {
       mob.attackTarget = 0;
       return;
     }
@@ -2565,8 +2632,11 @@ void World::respawnTick() {
       e.hp = e.hpMax;
       // death binds at the town bindstone — unless the name is red: the
       // gallows pit takes the chaotic (T-056, phase-3 bindstone rule).
+      // T-073: the wanted bind at the gallows even with clean karma.
+      const bool gallowsBound =
+          karmaBandOf(e.karma) == 2 || tick_ < e.wantedUntil;
       const sim::TilePos home_ =
-          karmaBandOf(e.karma) == 2 ? gallowsTile(1) : zones_.at(1).spawnPoint;
+          gallowsBound ? gallowsTile(1) : zones_.at(1).spawnPoint;
       if (e.zoneId != 1) {
         Zone& cz = zones_.at(e.zoneId);
         cz.spatial.remove(e.id);
@@ -2590,6 +2660,8 @@ void World::respawnTick() {
       ev.chatCh = 2;
       ev.chatText = e.name + " crawls back from the brink.";
       events_.push_back(std::move(ev));
+      // T-073 M4: the respawned walks 5 s unseen (corpse-camp breaker).
+      e.spawnProtectUntil = tick_ + 100;
     }
   }
 }

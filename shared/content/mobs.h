@@ -30,6 +30,8 @@ struct MobDef {
   std::uint8_t boss;          // 1 = boss crowd markings; blood bolt enabled
   std::uint8_t boltRange;     // Blood Bolt cast range (tiles, chebyshev)
   std::uint16_t boltCdTicks;  // Blood Bolt cooldown @ 20 Hz
+  // T-073 gate guard (default 0: every existing row stays a normal mob)
+  std::uint8_t guard = 0;     // 1 = wanted-only aggro inside leash reach
 };
 
 // Sprint 7 additions: gnoll (L7) anchors mid fields, plague bat swarm (L2 fast,
@@ -50,6 +52,10 @@ inline constexpr MobDef kMobs[] = {
     // 6 tiles on a 1.3s cycle, +25% potency at night (the deferred T-061 pin).
     {1009, "Gravemother",      14, 700, 40,  22,  15, 4000,  8,    24, 4,   14,  4005, 100, 400, 650,  1, 6, 26},
 {1010, "Sepulcher Elite",  12, 380, 36,  18,  14, 3200,  8,    20, 4,   12,  4005, 100, 200, 320,  0, 0, 0},
+    // T-073 gate guard: stands the east gate and the bridge approach. L15
+    // wall of duty (hp 400 / dmg 30 / def 18), xp 0 (duty pays no purse),
+    // aggro 0 + guard flag (wanted-only acquire inside leash 12, wander 0).
+    {1011, "Gate Guard",       15, 400, 30,  18,  10,  0,    0,    20, 0,   12,  0,    0,   0,   0,    0, 0, 0,  1},
 };
 inline constexpr size_t kMobKindCount = sizeof(kMobs) / sizeof(kMobs[0]);
 // T-065 session-scoped bounty board: quarry cycles per 90 min of world time
