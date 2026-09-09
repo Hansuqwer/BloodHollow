@@ -33,6 +33,24 @@ TEST_CASE("T-ART-09: telegraphs run 20/20/40, circles hold") {
   CHECK(decalAlpha(c, 1000000) == 110);
 }
 
+TEST_CASE("T-091: one wind-up stages 1-2-3 by age, visible 80t") {
+  Decal d;
+  d.kind = DecalKind::kTelegraph1;
+  d.bornTick = 100;
+  CHECK(telegraphStage(d, 100) == 1);   // warn
+  CHECK(telegraphStage(d, 119) == 1);
+  CHECK(telegraphStage(d, 120) == 2);   // arm
+  CHECK(telegraphStage(d, 139) == 2);
+  CHECK(telegraphStage(d, 140) == 3);   // strike flash + scorch
+  CHECK(telegraphStage(d, 160) == 3);   // server fuse burns at 60t
+  CHECK(decalVisible(d, 100));
+  CHECK(decalVisible(d, 179));          // scorch lingers past the strike
+  CHECK_FALSE(decalVisible(d, 180));    // 80t window closes
+  CHECK(decalAlpha(d, 100) == 150);
+  CHECK(decalAlpha(d, 179) > 0);
+  CHECK(decalAlpha(d, 180) == 0);
+}
+
 TEST_CASE("T-ART-09: kill-20 leaves 20 countable decals; cap evicts FIFO") {
   std::deque<Decal> surface;
   for (int i = 0; i < 20; ++i) {

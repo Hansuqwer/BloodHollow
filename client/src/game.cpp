@@ -504,6 +504,18 @@ void Game::applyNetState() {
       f.r = 255;
       f.g = 200;
       f.b = 60;
+    } else if (cp.kind == 15) {
+      // T-091: telegraph wind-up — gold warning over the marked victim.
+      f.text = "!";
+      f.r = 220;
+      f.g = 180;
+      f.b = 60;
+    } else if (cp.kind == 16) {
+      // T-091: slam strike lands — red-capped rot damage.
+      f.text = "SLAM " + std::to_string(cp.amount);
+      f.r = 255;
+      f.g = 60;
+      f.b = 30;
     } else {
       f.text = std::to_string(cp.amount);
       if (cp.kind == 2) {
@@ -527,8 +539,9 @@ void Game::applyNetState() {
   for (const CombatPulse& cp : net_->combatIn) {
     const bool swing = cp.kind == 1 || cp.kind == 2;
     const bool cast = cp.kind == 5 || cp.kind == 9 || cp.kind == 10 ||
-                      cp.kind == 13 || cp.kind == 14;
-    const bool hurt = cp.kind == 1 || cp.kind == 2 || cp.kind == 5 || cp.kind == 9;
+                      cp.kind == 13 || cp.kind == 14 || cp.kind == 15;
+    const bool hurt = cp.kind == 1 || cp.kind == 2 || cp.kind == 5 ||
+                      cp.kind == 9 || cp.kind == 16;
     const bool slain = cp.kind == 3;
     if (swing || cast) {
       auto ai = rents_.find(cp.attacker);
@@ -1022,7 +1035,7 @@ void Game::drawFloaters() {
 void Game::noteDecals() {
   if (net_ == nullptr) return;
   for (const CombatPulse& cp : net_->combatIn) {
-    if (cp.kind != 3) continue;  // kills only (slain pin, anim-hook parity)
+    if (cp.kind != 3 && cp.kind != 15) continue;  // slain + slam wind-up
     auto ti = rents_.find(cp.target);
     if (ti == rents_.end()) continue;
     if (content::wireIsFurniture(ti->second.snap.kind)) continue;
@@ -1030,7 +1043,9 @@ void Game::noteDecals() {
     Decal d;
     d.x = p.x;
     d.y = p.y;
-    d.kind = DecalKind::kBlood;
+    // T-091: wind-up stains stage 1 at the victim's tile; the draw path
+    // advances 1-2-3 by age against the server's 60t fuse (shared clock).
+    d.kind = cp.kind == 15 ? DecalKind::kTelegraph1 : DecalKind::kBlood;
     d.bornTick = static_cast<std::int64_t>(tick_);
     decals_.push_back(d);
     while (decals_.size() > kDecalCap) decals_.pop_front();
@@ -1064,13 +1079,15 @@ void Game::addCircle(float x, float y) {
 // Called inside drawGround() before drawEntitiesOnline (under, not over).
 void Game::drawDecals() {
   const std::int64_t now = static_cast<std::int64_t>(tick_);
-  while (!decals_.empty() && !decalAlive(decals_.front(), now) &&
+  // T-091: telegraphs drain on the 80t visible window (staging advances by
+  // age); circles never drain; blood drains on its own TTL.
+  while (!decals_.empty() && !decalVisible(decals_.front(), now) &&
          decals_.front().kind != DecalKind::kCircle)
     decals_.pop_front();
   std::vector<const Decal*> order;
   order.reserve(decals_.size());
   for (const Decal& d : decals_) {
-    if (!decalAlive(d, now)) continue;
+    if (!decalVisible(d, now)) continue;
     order.push_back(&d);
   }
   std::sort(order.begin(), order.end(),
@@ -1079,7 +1096,18 @@ void Game::drawDecals() {
     const auto a = static_cast<unsigned char>(decalAlpha(*d, now));
     const Vector2 w =
         iso::tileToWorldF(Vector2{d->x, d->y}, map_.tileW, map_.tileH);
-    switch (d->kind) {
+    // T-091: wind-up decals draw by effective stage (1-2-3 by age), so one
+    // journaled event animates the full fuse. Hand-placed stages (boss API)
+    // draw as placed.
+    int stage = 0;
+    if (d->kind == DecalKind::kTelegraph1 || d->kind == DecalKind::kTelegraph2 ||
+        d->kind == DecalKind::kTelegraph3)
+      stage = telegraphStage(*d, now);
+    DecalKind drawKind = d->kind;
+    if (stage == 1) drawKind = DecalKind::kTelegraph1;
+    if (stage == 2) drawKind = DecalKind::kTelegraph2;
+    if (stage == 3) drawKind = DecalKind::kTelegraph3;
+    switch (drawKind) {
       case DecalKind::kBlood:
         DrawEllipse(static_cast<int>(w.x), static_cast<int>(w.y), 10, 4,
                     Color{140, 20, 20, a});

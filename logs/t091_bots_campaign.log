@@ -1,0 +1,12 @@
+[campaign] t91c__01 reached L1 at t=0.1s (map 1)
+[campaign] t91c__00 reached L1 at t=0.1s (map 1)
+[campaign] t91c__00 reached L2 at t=14.3s (map 1)
+[campaign] t91c__01 reached L2 at t=19.5s (map 1)
+[campaign] t91c__00 reached L3 at t=155.3s (map 1)
+[campaign] t91c__01 reached L3 at t=162.9s (map 1)
+[campaign] t91c__00 reached L4 at t=437.0s (map 1)
+[campaign] t91c__01 reached L4 at t=465.1s (map 1)
+[bots] SUMMARY welcomed=2/2 moved=2/2 minDeltas=10799 kills=64 pots=2 swings=212 deaths=0 shops=1 anvilTries=0 levelDrops=0 regear=2 maxLevel=4 pkts=2123974 bytes=48739064 gates b/g/p/a/r=0/0/0/0/0 mGold=0 mPelts=0 bless=2 mend=14 noSee=0 hurt=140 choir c6=0 c7=0 c8=0
+[bots] t91c__00     kit=1 lvl=4 hp=100/94 party=2 deaths=0 rxR=547 rxM=1079 lastPid=1 casts c6=0 c7=0 c8=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t91c__01     kit=3 lvl=4 hp=98/94 party=2 deaths=0 rxR=544 rxM=1066 lastPid=1 casts c6=0 c7=0 c8=0 lastDeath=(-1,-1) killerByLvl=
+[bots] OK

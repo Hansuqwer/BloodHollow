@@ -28,6 +28,11 @@ constexpr std::uint32_t kPowerSwingMultPct = 140;
 // ---- kit skills (T-054, GDD Cultist/Gravecaller v1 numbers) --------------
 constexpr sim::Tick kBlessTicks = 6000;      // buffs last 5 min
 constexpr sim::Tick kCurseTicks = 600;       // T-070 Blood Curse: 30 s of thin blood
+// T-091 Gravemother telegraphed slam: 60t wind-up the client stages 1-2-3
+// (decal law), then radius-2 ground rot around the recorded tile. Numbers
+// derive from the bolt path she replaces (same dmg stat, same curse lane).
+constexpr sim::Tick kSlamWindupTicks = 60;
+constexpr int kSlamRadius = 2;
 constexpr sim::Tick kMendCdTicks = 25;
 constexpr sim::Tick kBlessCdTicks = 40;
 constexpr sim::Tick kIronskinCdTicks = 40;
@@ -2422,7 +2427,10 @@ void World::killPlayer(Entity& victim, Entity* killer) {
   victim.hp = 0;
   victim.respawnAt = tick_ + kPlayerRespawnTicks;
   for (auto& e : entities_) {
-    if (e.attackTarget == victim.id) e.attackTarget = 0;
+    if (e.attackTarget == victim.id) {
+      e.attackTarget = 0;
+      e.slamAt = -1;  // T-091: death fizzles the wind-up aimed at the mark
+    }
   }
 
   // T-056 PK law: consensual duels carry no karma/debt/drops; unlawful kills
@@ -2608,8 +2616,50 @@ void World::markWanted(Entity& killer) {
   events_.push_back(std::move(wtxt));
 }
 
+void World::slamStrike(Entity& mob) {
+  // T-091: the fuse burned down — rot blooms on the recorded tile. Whoever
+  // stands there eats it (bolt-mirror numbers: dmg stat, half-plate, night
+  // bite, thin-blood curse on survivors); whoever moved dodges clean.
+  mob.slamAt = -1;
+  const content::MobDef* bd = content::findMob(mob.mobId);
+  if (bd == nullptr) return;
+  std::vector<Entity*> caught =
+      playersNear(zoneOf(mob), mob.slamX, mob.slamY, kSlamRadius);
+  for (Entity* v : caught) {
+    if (v->kind != EntityKind::kPlayer || v->dead) continue;
+    std::uint32_t sdmg =
+        sim::rollDamage(bd->dmg, 0, effDef(*v) / 2u, false);
+    if (isNight()) sdmg = sdmg * 125u / 100u;  // same dark bite as the bolt
+    sdmg = sdmg < 1 ? 1 : sdmg;
+    v->hp = sdmg >= static_cast<std::uint32_t>(v->hp)
+                ? 0
+                : v->hp - static_cast<std::int32_t>(sdmg);
+    if (v->hp > 0) {
+      v->curseUntil = tick_ + kCurseTicks;  // rot gets in the blood (T-070 lane)
+      WorldEvent cev;
+      cev.aboutId = v->id;
+      cev.chatCh = 2;
+      cev.chatText =
+          v->name + " feels the blood curse take hold (-25% healing).";
+      events_.push_back(std::move(cev));
+    }
+    WorldEvent ev;
+    ev.attacker = mob.id;
+    ev.target = v->id;
+    ev.kind = 16;  // T-091: slam strike (client red-caps it)
+    ev.amount = sdmg;
+    ev.statsChanged = true;
+    events_.push_back(std::move(ev));
+    if (v->hp == 0) killPlayer(*v, &mob);
+  }
+}
+
 void World::mobThink(Entity& mob) {
   if (mob.dead || content::wireIsFurniture(mob.wireKind)) return;  // vendors stand eternally  // leash: too far from anchor -> drop target and path home, no re-aggro
+  // T-091: a wind-up with no mark is a dud — leash breaks, logouts, deaths,
+  // and anything else that clears attackTarget must not leave an armed fuse
+  // behind to strike a stale tile.
+  if (mob.attackTarget == 0) mob.slamAt = -1;
   const sim::TilePos p = mob.walker.tile();
   const bool leashed = chebyshev(p, mob.anchor) > mob.leashRadius;
   if (leashed) {
@@ -2663,10 +2713,10 @@ void World::mobThink(Entity& mob) {
   }
 
   if (mob.attackTarget != 0) {
-    Entity* target = find(mob.attackTarget);
-    if (target == nullptr || target->dead ||
+    Entity* target = find(mob.attackTarget);    if (target == nullptr || target->dead ||
         chebyshev(target->walker.tile(), mob.anchor) > mob.leashRadius) {
       mob.attackTarget = 0;
+      mob.slamAt = -1;  // T-091: losing the mark cancels the wind-up
       return;
     }
     // T-073: the post stands down when the name clears — guards hold no
@@ -2677,11 +2727,32 @@ void World::mobThink(Entity& mob) {
       return;
     }
     const int d = chebyshev(p, target->walker.tile());
+    // T-091 Gravemother telegraphed slam: an armed wind-up holds the boss
+    // still (readable) and strikes when the 60t fuse burns down.
+    if (mob.mobId == 1009 && mob.slamAt >= 0) {
+      if (tick_ >= mob.slamAt) slamStrike(mob);
+      return;
+    }
     // T-064 Blood Bolt: boss casts at range instead of padding into melee
     if (const content::MobDef* bd = content::findMob(mob.mobId);
         bd != nullptr && bd->boss && bd->boltRange > 0 && d > 1 &&
         d <= bd->boltRange &&
         tick_ - mob.lastSwingTick >= static_cast<sim::Tick>(bd->boltCdTicks)) {
+      // T-091: the Mother's bolt is a telegraphed slam, not instant rot —
+      // arm the wind-up on the shared cadence and let the client stage it.
+      if (mob.mobId == 1009 && mob.slamAt < 0) {
+        mob.slamAt = tick_ + kSlamWindupTicks;
+        mob.slamX = target->walker.tile().x;
+        mob.slamY = target->walker.tile().y;
+        mob.lastSwingTick = tick_;  // telegraph tax: the fuse eats the cast
+        WorldEvent ev;
+        ev.attacker = mob.id;
+        ev.target = target->id;
+        ev.kind = 15;  // T-091: telegraph wind-up (client stages 1-2-3)
+        ev.amount = static_cast<std::uint32_t>(kSlamRadius);
+        events_.push_back(std::move(ev));
+        return;
+      }
       mob.lastSwingTick = tick_;  // shared cadence, distinct cast
       std::uint32_t bdmg = sim::rollDamage(bd->dmg, 0,
           target->kind == EntityKind::kPlayer ? effDef(*target) / 2u : 0u, false);

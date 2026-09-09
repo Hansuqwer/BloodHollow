@@ -526,6 +526,10 @@ T-089 VALIDATION-ONLY: repent +20/72000t, lantern 150g, torch 8g re-derived + ch
 
 T-090 BOT-ONLY: 540 s climb from 0 xp — 156 kills / 2 roam deaths, 76%+57% of bar, zero widow/L11. Verdict: ladder OPEN, pace-limited (logistics tax), no wall — #6 tuning NOT triggered. Devlog 0059.
 
+## Done — T-091 (2026-09-09): Gravemother telegraphed slam
+
+T-091 CONTENT (epoch 12→13): 60t wind-up + radius-2 slam replaces her instant bolt; movers dodge, mark-loss fizzles. Client stages 1-2-3 + floaters. 4 new tests (171 total). Fresh soak + replay clean, old journals refuse exit 4. Devlog 0060.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |

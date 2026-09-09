@@ -154,6 +154,12 @@ struct Entity {
   std::uint8_t mobLevel = 1;
   std::uint8_t wireKind = 0;  // on the wire: 0 player, 1..63 mob, 64 vendor
   size_t spawnerIdx = SIZE_MAX;
+  // T-091 Gravemother telegraphed slam: transient boss wind-up (never
+  // persisted — mobs respawn fresh; replay reproduces it from cooldown +
+  // positions with zero new RNG draws). slamAt < 0 = no wind-up armed.
+  sim::Tick slamAt = -1;
+  int slamX = 0;
+  int slamY = 0;
 };
 
 // rolling per-mob-kind kill stats for the balancer (T-031)
@@ -416,6 +422,7 @@ class World {
                    std::uint16_t zoneId);
   Entity& insertEntity(Entity e);
   void mobThink(Entity& mob);
+  void slamStrike(Entity& mob);  // T-091: armed wind-up resolves (radius 2)
   // T-071: night-bound mobs (nightOnly spawner) do not acquire by day.
   bool mobNightDormant(const Entity& mob) const;
   // T-073: gate-guard lookup (guard-flagged mob def, furniture excluded).

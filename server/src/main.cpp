@@ -92,9 +92,9 @@ void sendMsg(ENetPeer* peer, const Msg& m, Server& s) {
 // T-071 torch/lantern + nightOnly spawner = 10; T-073 guards + wanted = 11;
 // T-079 refine rows +4..+7 = 12).
 // Replay refuses non-matching epoch journals instead of lying with them.
-constexpr int kJournalEpoch = 12;  // T-079: refine rolls consume new strata
-                                   // under v11 journals; stale by contract
-                                   // (same response as ever)
+constexpr int kJournalEpoch = 13;  // T-091: Gravemother telegraph wind-up
+                                   // shifts boss outcomes under v12 journals;
+                                   // stale by contract (same response as ever)
 
 // ---- world journal record helpers (M2) ------------------------------------
 void journalTickHash(Server& s) {

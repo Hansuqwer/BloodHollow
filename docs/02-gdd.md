@@ -263,7 +263,8 @@ stalls/auction [LATER]. Server-side transaction log for every trade (dupe audits
 Pale Cultist (caster) · Hollow Hound → **Mine:** Mine Wretch · Lantern Spider ·
 Mud Golem → **Crypt:** Crypt Revenant · Grave Banshee (elite) · Bell Ringer
 (summoner elite) → **Boss:** *The Gravemother* (crypt end: 3 phases, bell adds,
-ground rot telegraphs). Each common mob: 8-dir walk(4f)/attack(3f)/die(3f) ≈
+ground rot telegraphs — shipped: bolt replaced by 60t wind-up + radius-2 slam,
+bolt-mirror damage/curse, movers dodge; T-091). Each common mob: 8-dir walk(4f)/attack(3f)/die(3f) ≈
 80 frames ≈ one evening of AI-gen + cleanup, or ~2 days of pixel-artist work —
 **this is the number that governs the schedule** (see 05-mvp risk R2).
 
