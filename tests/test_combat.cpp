@@ -276,6 +276,39 @@ TEST_CASE("death: XP debt scales with level and de-levels at zero XP") {
   CHECK(q.xp < sim::xpNext(2));
 }
 
+TEST_CASE("T-081: death wears gear -5 (GDD literal), floor 0, junk spared") {
+  server::World w;
+  REQUIRE(w.loadFrom(makeArena()));
+  server::Entity& p = w.spawn("rustbelt", 0, std::nullopt);
+  p.karma = 0;  // lawful: no drops to tangle the pins
+  REQUIRE(w.debugGive(p, 2001, 1));  // blade, dura 100
+  REQUIRE(w.debugGive(p, 2101, 1));  // armor, dura 100 -> dent one first
+  p.inv[1].durability = 3;           // floor pin arm
+  REQUIRE(w.debugGive(p, 4001, 2));  // pelts: junk untouched
+  REQUIRE(w.debugGive(p, 3001, 1));  // vial: consumable untouched
+  w.debugKillPlayer(p);
+  CHECK(p.inv[0].durability == 95);
+  CHECK(p.inv[1].durability == 0);  // 3 - 5 floors, never destroys
+  for (const auto& sl : p.inv) {
+    if (sl.itemId == 4001) CHECK(sl.qty == 2u);
+    if (sl.itemId == 3001) CHECK(sl.qty == 1u);
+  }
+}
+
+TEST_CASE("T-081: chaotic order — drops first, wear second") {
+  server::World w;
+  REQUIRE(w.loadFrom(makeArena()));
+  server::Entity& p = w.spawn("redrust", 0, std::nullopt);
+  p.karma = -100;  // chaotic: the crowd picks first
+  for (int i = 0; i < 4; ++i) REQUIRE(w.debugGive(p, 2001, 1));
+  for (auto& sl : p.inv) sl.durability = 100;
+  w.debugKillPlayer(p);
+  // every SURVIVOR lost exactly 5 (whatever the crowd took is gone whole)
+  for (const auto& sl : p.inv) {
+    if (sl.itemId == 2001) CHECK(sl.durability == 95);
+  }
+}
+
 TEST_CASE("skills: Power Swing hits harder with a real cooldown") {
   server::World w;
   REQUIRE(w.loadFrom(makeArena()));

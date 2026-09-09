@@ -2485,6 +2485,15 @@ void World::killPlayer(Entity& victim, Entity* killer) {
                    " item(s) gone.";
     events_.push_back(std::move(txt));
   }
+  // T-081 death wear (GDD §7: -5 durability on death). Drops first (above),
+  // wear second: every surviving gear slot loses 5, floor 0 (dormant per
+  // T-058, never destroyed). Junk/consumables untouched. All victims —
+  // lawful rusts the same as red.
+  for (InvSlot& sl : victim.inv) {
+    const content::ItemDef* dd = content::findItem(sl.itemId);
+    if (dd == nullptr || dd->slot > 1) continue;
+    sl.durability = sl.durability <= 5 ? 0 : static_cast<std::uint8_t>(sl.durability - 5);
+  }
   // GDD: XP debt 10% of bar at L1 rising to 25% at L25; de-level at 0 XP.
   const std::uint32_t bar = sim::xpNext(victim.level);
   if (bar > 0 || victim.level > 1) {

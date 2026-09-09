@@ -460,6 +460,14 @@ No epoch bump (stays **12**); fresh 540 s journal replays `[replay] OK
 ticks=12801 sessionCmds=7389 hashes=129 mismatches=0`. Suite 154/154
 (328,457). Devlog 0045.
 
+## Done — extended S34 (2026-09-09): durability on death
+
+T-081: GDD-literal −5 on all surviving gear (floor 0, dormant never
+destroyed); junk/consumables exempt; drops-then-wear order. No epoch bump
+(stays **12**); fresh 540 s journal replays `[replay] OK ticks=12801
+sessionCmds=7536 hashes=129 mismatches=0` (Ghoul TTK back at the 8.9 pin —
+wobble confirmed noise). Suite 156/156 (328,471). Devlog 0046.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |
