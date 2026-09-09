@@ -558,6 +558,10 @@ T-097 DESIGN (no code): three elites derived from the 1010 pattern (A melee / B 
 
 T-098 READ-ONLY: peak 210 live decals vs 512 cap (2.4× headroom, 0 evictions, 0 telegraph/circle callers) — chunking stays closed. Reopen rule framed. Devlog 0067.
 
+## Done — T-099 (2026-09-09): trade-pass review packet
+
+T-099 ASSEMBLE (no code): one-page human session (trade/repair/anvil checklist + shot list) with programmable evidence pointers. Human performance + T-033 close remain director-scheduled. Devlog 0068.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |
