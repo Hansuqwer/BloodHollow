@@ -506,6 +506,10 @@ T-ART-09 RENDER-ONLY: decal law header + client surface (blood/telegraph/circle)
 
 T-086 AUDIT-ONLY: anvilTries=0 is correct — Tier-1 toll (30 pelts/skill 20/120g) exceeds single-leg income ~6×. No code, retune flagged for director. Devlog 0054.
 
+## Done — T-087 (2026-09-09): TTK wobble closure
+
+T-087 DETERMINISM-PROOF: duel table twice-identical, Ghoul row untouched since Sprint 18, soak wobble = regime noise. Re-pinned (9.7 s duel-med / 8–25 s soak band), watch CLOSED. Devlog 0055.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |
