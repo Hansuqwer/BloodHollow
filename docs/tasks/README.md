@@ -514,6 +514,10 @@ T-087 DETERMINISM-PROOF: duel table twice-identical, Ghoul row untouched since S
 
 T-ART-06 ENGINE SIDE: 5 constants + spawn seams + sweep test (167 total). Client generic branch already renders them. Placement/sheets/portraits parked for art-side. No wire/epoch change. Devlog 0056.
 
+## Done — T-088 (2026-09-09): bank-road graze audit
+
+T-088 AUDIT-ONLY: 8-leg geography, zero on-route L11, campaign clean 8/8 — era-correct wall content, no fix. Rect lever priced-not-taken (marginal math + epoch cost). Devlog 0057.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |
