@@ -498,6 +498,10 @@ T-085 DOCS-ONLY: GDD §9 base-6 → base 0 (T-076/B executed). Zero code, epoch 
 
 T-ART-11 RENDER-ONLY: glow law header + inventory glow rows/markers, 2 new tests (162 total). In-world overlays parked (need wire field). No epoch/wire change. Devlog 0052.
 
+## Done — T-ART-09 (2026-09-09): ground decal layer
+
+T-ART-09 RENDER-ONLY: decal law header + client surface (blood/telegraph/circle), 3 new tests (165 total). Boss cast APIs await callers. No epoch/wire change. Devlog 0053.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |

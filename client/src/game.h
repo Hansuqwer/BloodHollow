@@ -11,6 +11,7 @@
 #include "net_client.h"
 #include "render/animstate.h"  // T-ART-04 combat anim hook
 #include "render/camera_rig.h"
+#include "render/decals.h"  // T-ART-09 ground decal layer (blood/telegraph/circle)
 #include "sim/bhmap.h"
 #include "sim/journal.h"
 #include "synthkit.h"  // T-067 procedural audio kit
@@ -95,6 +96,10 @@ class Game {
   void drawFloaters();
   void noteVestiges();   // T-066: harvest despawnedIds into vestige queue
   void drawVestiges();   // T-066: petrify-fade silhouettes under the world
+  void noteDecals();     // T-ART-09: harvest kill pulses into blood decals
+  void drawDecals();     // T-ART-09: decal surface, under entities, y-sorted
+  void addTelegraph(float x, float y, int stage);  // T-ART-09: boss API (1-3)
+  void addCircle(float x, float y);                // T-ART-09: spell-circle API
   void drawStatPanel() const;
   void drawPartyFrame() const;  // T-052 top-left HB-style party list
   std::uint32_t chanTarget() const;  // T-054: party-frame pick else self
@@ -143,6 +148,7 @@ class Game {
   std::deque<ChatLine> chatLog_{};
   std::deque<Floater> floaters_{};
   std::deque<Vestige> vestiges_{};  // T-066: capped 16
+  std::deque<Decal> decals_{};      // T-ART-09: ground decals, capped kDecalCap
   SynthKit kit_{};  // T-067: bake at boot (no assets)
   void playCallout(std::uint8_t kind);  // T-067: map floater kinds to sounds
   std::uint32_t targetId_ = 0;

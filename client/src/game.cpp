@@ -543,6 +543,7 @@ void Game::applyNetState() {
       }
     }
   }
+  noteDecals();  // T-ART-09: kills bleed onto the decal surface (render-only)
   for (const ChatLine& c : net_->chatIn) {
     chatLog_.push_back(c);
     while (chatLog_.size() > 12) chatLog_.pop_front();
@@ -769,6 +770,7 @@ void Game::drawGround() {
                        Color{74, 74, 82, 255}, Color{92, 92, 100, 255});
       }
     }
+    drawDecals();  // T-ART-09: decal surface sits under entities, never over
     drawEntitiesOnline();
   }
 }
@@ -943,6 +945,7 @@ bool Game::zoneReload(std::uint16_t mapId) {
   loadedMapId = mapId;
   rents_.clear();
   floaters_.clear();
+  decals_.clear();  // T-ART-09: decals are per-zone surface state
   targetId_ = 0;
   cmdMarker_ = sim::TilePos{-1, -1};
   // camera: jump to the arrival point (server Welcome carries it)
@@ -1008,6 +1011,100 @@ void Game::drawFloaters() {
     DrawText(f.text.c_str(), static_cast<int>(w.x) - 8,
              static_cast<int>(w.y) - 56 - static_cast<int>(rise), 10,
              Color{f.r, f.g, f.b, a});
+  }
+}
+
+// T-ART-09: kills bleed onto the decal surface (render-only — the pulse is
+// already authoritative; this only stains the ground). Victims already
+// despawned this frame have no pos to stain and are skipped (stated).
+void Game::noteDecals() {
+  if (net_ == nullptr) return;
+  for (const CombatPulse& cp : net_->combatIn) {
+    if (cp.kind != 3) continue;  // kills only (slain pin, anim-hook parity)
+    auto ti = rents_.find(cp.target);
+    if (ti == rents_.end()) continue;
+    if (content::wireIsFurniture(ti->second.snap.kind)) continue;
+    const Vector2 p = entRenderPos(ti->second);
+    Decal d;
+    d.x = p.x;
+    d.y = p.y;
+    d.kind = DecalKind::kBlood;
+    d.bornTick = static_cast<std::int64_t>(tick_);
+    decals_.push_back(d);
+    while (decals_.size() > kDecalCap) decals_.pop_front();
+  }
+}
+
+void Game::addTelegraph(float x, float y, int stage) {
+  Decal d;
+  d.x = x;
+  d.y = y;
+  d.kind = stage <= 1 ? DecalKind::kTelegraph1
+           : stage == 2 ? DecalKind::kTelegraph2
+                        : DecalKind::kTelegraph3;
+  d.bornTick = static_cast<std::int64_t>(tick_);
+  decals_.push_back(d);
+  while (decals_.size() > kDecalCap) decals_.pop_front();
+}
+
+void Game::addCircle(float x, float y) {
+  Decal d;
+  d.x = x;
+  d.y = y;
+  d.kind = DecalKind::kCircle;
+  d.bornTick = static_cast<std::int64_t>(tick_);
+  decals_.push_back(d);
+  while (decals_.size() > kDecalCap) decals_.pop_front();
+}
+
+// T-ART-09: decal surface — expired decals drained, survivors y-sorted so
+// blood sorts under entities the same way entities sort among themselves.
+// Called inside drawGround() before drawEntitiesOnline (under, not over).
+void Game::drawDecals() {
+  const std::int64_t now = static_cast<std::int64_t>(tick_);
+  while (!decals_.empty() && !decalAlive(decals_.front(), now) &&
+         decals_.front().kind != DecalKind::kCircle)
+    decals_.pop_front();
+  std::vector<const Decal*> order;
+  order.reserve(decals_.size());
+  for (const Decal& d : decals_) {
+    if (!decalAlive(d, now)) continue;
+    order.push_back(&d);
+  }
+  std::sort(order.begin(), order.end(),
+            [](const Decal* a, const Decal* b) { return a->y < b->y; });
+  for (const Decal* d : order) {
+    const auto a = static_cast<unsigned char>(decalAlpha(*d, now));
+    const Vector2 w =
+        iso::tileToWorldF(Vector2{d->x, d->y}, map_.tileW, map_.tileH);
+    switch (d->kind) {
+      case DecalKind::kBlood:
+        DrawEllipse(static_cast<int>(w.x), static_cast<int>(w.y), 10, 4,
+                    Color{140, 20, 20, a});
+        DrawEllipse(static_cast<int>(w.x) + 4, static_cast<int>(w.y) + 1, 5, 2,
+                    Color{110, 15, 15, a});
+        break;
+      case DecalKind::kTelegraph1:
+        DrawEllipseLines(static_cast<int>(w.x), static_cast<int>(w.y), 14, 7,
+                         Color{220, 180, 60, a});
+        break;
+      case DecalKind::kTelegraph2:
+        DrawEllipseLines(static_cast<int>(w.x), static_cast<int>(w.y), 14, 7,
+                         Color{230, 90, 40, a});
+        DrawEllipse(static_cast<int>(w.x), static_cast<int>(w.y), 14, 7,
+                    Color{230, 90, 40, static_cast<unsigned char>(a / 4)});
+        break;
+      case DecalKind::kTelegraph3:
+        DrawEllipse(static_cast<int>(w.x), static_cast<int>(w.y), 14, 7,
+                    Color{255, 60, 30, a});
+        break;
+      case DecalKind::kCircle:
+        DrawEllipseLines(static_cast<int>(w.x), static_cast<int>(w.y), 18, 9,
+                         Color{150, 220, 220, a});
+        DrawEllipseLines(static_cast<int>(w.x), static_cast<int>(w.y), 12, 6,
+                         Color{150, 220, 220, a});
+        break;
+    }
   }
 }
 
