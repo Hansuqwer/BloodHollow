@@ -550,6 +550,10 @@ T-095 GATE-CLOSED (no code): zero widow kills suffered in T-090 + t094 (14 bots)
 
 T-096 DB-DISCIPLINE: 2 natural legs bank 8→18 pelts (same DB+prefix, replays green) + bless-seeded leg proves the lane 3/3 grafts. Finding: skill resets per login (no schema column). Devlog 0065.
 
+## Done — T-097 (2026-09-09): named-elite options
+
+T-097 DESIGN (no code): three elites derived from the 1010 pattern (A melee / B Cantor-caster), fixed timers (determinism), broadcast first-kills. One card per elite when ordered. Devlog 0066.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |
