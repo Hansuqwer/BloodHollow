@@ -381,6 +381,8 @@ class World {
   bool mobNightDormant(const Entity& mob) const;
   // T-073: gate-guard lookup (guard-flagged mob def, furniture excluded).
   static bool isGuardMob(const Entity& mob);
+  // T-073/T-078: stamp + fiction for the wanted mark (one path, two crimes).
+  void markWanted(Entity& killer);
   void trySwing(Entity& att, Entity& def);
   void killMob(Entity& mob, Entity* killer);
   void killPlayer(Entity& victim, Entity* killer);

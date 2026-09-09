@@ -434,6 +434,14 @@ T-077: retreat 5→4 in the L2-park regime — AFTER 92 deaths / L3 vs BEFORE
 flagged). Bot-only, epoch stays **11**. Repeats + L1-naked stay parked.
 Devlog 0042.
 
+## Done — extended S31 (2026-09-09): guard-murder consequences
+
+T-078: player kills 1011 → GDD-§5 stain vs L15 (−580 at L1, −299 net at
+L15 with the blind whitening tick) + shared-path wanted. Mob kills
+exempt; no factions/marks. No epoch bump (stays **11**); fresh 540 s
+journal replays `[replay] OK ticks=12801 sessionCmds=6929 hashes=129
+mismatches=0`. Suite 150/150 (328,177). Devlog 0043.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |

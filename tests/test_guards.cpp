@@ -173,3 +173,46 @@ TEST_CASE("T-073: spawn protection hides the newborn for exactly 100 ticks") {
   for (int i = 0; i < 15; ++i) w.tick();
   CHECK(w.find(mid)->attackTarget == p->id);  // then the wild sees you
 }
+
+TEST_CASE("T-078: guard-murder stains like an unlawful PK against L15") {
+  server::World w;
+  REQUIRE(w.loadFrom(makeArena()));
+  server::Entity& g = w.debugSpawnMob(*guardDef(), sim::TilePos{10, 10});
+  const std::uint32_t gid = g.id;
+  server::Entity* low = spawnP(w, "young", 11, 10);
+  low->level = 1;
+  low->karma = 0;
+  const sim::Tick t0 = w.tickCount();
+  w.debugKillMob(*w.find(gid), low);
+  // deficit 15-1=14 -> -(300+280); wanted stamped on the shared path
+  CHECK(w.find(low->id)->karma == -580);
+  CHECK(w.find(low->id)->wantedUntil == t0 + 4800);
+}
+
+TEST_CASE("T-078: a paragon pays the flat stain (no deficit)") {
+  server::World w;
+  REQUIRE(w.loadFrom(makeArena()));
+  server::Entity& g = w.debugSpawnMob(*guardDef(), sim::TilePos{10, 10});
+  server::Entity* par = spawnP(w, "paragon", 11, 10);
+  par->level = 15;
+  par->karma = 100;
+  w.debugKillMob(g, par);
+  // -300 stain, plus the at-level whitening tick (+1) the XP block grants
+  // blindly — net -299. The whitening law does not exempt guards (stated).
+  CHECK(w.find(par->id)->karma == 100 - 300 + 1);
+  CHECK(w.find(par->id)->wantedUntil == w.tickCount() + 4800);
+}
+
+TEST_CASE("T-078: mob-on-guard violence is not a crime") {
+  server::World w;
+  REQUIRE(w.loadFrom(makeArena()));
+  server::Entity& g = w.debugSpawnMob(*guardDef(), sim::TilePos{10, 10});
+  const content::MobDef* rat = content::findMob(1001);
+  REQUIRE(rat != nullptr);
+  server::Entity& r = w.debugSpawnMob(*rat, sim::TilePos{11, 10});
+  server::Entity* p = spawnP(w, "bystander", 20, 20);
+  p->karma = 0;
+  w.debugKillMob(g, &r);
+  CHECK(w.find(p->id)->karma == 0);  // nobody's hands are red
+  CHECK(w.find(p->id)->wantedUntil == -1);
+}

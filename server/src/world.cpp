@@ -2144,6 +2144,23 @@ void World::killMob(Entity& mob, Entity* killer) {
       }
     }
     const content::MobDef* md = content::findMob(mob.mobId);
+    // T-078 guard-murder (M3 exit): the post is town law, not game. A player
+    // who drops a guard stains like an unlawful PK against level 15 (GDD §5
+    // shape, victim level pinned — no new numbers) and takes the same wanted
+    // mark through the shared path (the victim's own anchor is within 0).
+    // Mob-on-guard violence is not a crime (players only). No faction flags,
+    // no permanent marks, vendor law unchanged beyond wanted refusal.
+    if (md != nullptr && md->guard != 0) {
+      const std::int32_t deficit = killer->level < 15 ? 15 - killer->level : 0;
+      bumpKarma(*killer, -(300 + 20 * deficit));
+      markWanted(*killer);
+      WorldEvent txt;
+      txt.aboutId = killer->id;
+      txt.chatCh = 255;
+      txt.chatText = killer->name + "'s hands are red with a Gate Guard's blood (-" +
+                     std::to_string(300 + 20 * deficit) + " karma).";
+      events_.push_back(std::move(txt));
+    }
     // T-065 bounty treasurer: the held mark matches & still on-cycle -> pay out
     if (md != nullptr && killer->bountyMobId == mob.mobId &&
         killer->bountyCycle ==
@@ -2358,22 +2375,17 @@ void World::killPlayer(Entity& victim, Entity* killer) {
     txt.chatText = killer->name + "'s hands are red with " + victim.name +
                    "'s blood (-" + std::to_string(300 + 20 * deficit) + " karma).";
     events_.push_back(std::move(txt));
-    // T-073 gate law: unlawful PK within 8 tiles of a guard anchor marks the
-    // killer wanted for 240 s (guards aggro, vendors refuse, death binds at
-    // the gallows). Deterministic: anchor scan order, first post that sees.
-    for (const Entity& g : entities_) {
-      if (!isGuardMob(g) || g.zoneId != killer->zoneId) continue;
-      if (chebyshev(killer->walker.tile(), g.anchor) <= 8) {
-        killer->wantedUntil = tick_ + 4800;
-        WorldEvent wtxt;
-        wtxt.aboutId = killer->id;
-        wtxt.chatCh = 2;
-        wtxt.chatText = killer->name + " is WANTED at the gates (240 s).";
-        events_.push_back(std::move(wtxt));
-        break;
-      }
+  // T-073 gate law: unlawful PK within 8 tiles of a guard anchor marks the
+  // killer wanted for 240 s (guards aggro, vendors refuse, death binds at
+  // the gallows). Deterministic: anchor scan order, first post that sees.
+  for (const Entity& g : entities_) {
+    if (!isGuardMob(g) || g.zoneId != killer->zoneId) continue;
+    if (chebyshev(killer->walker.tile(), g.anchor) <= 8) {
+      markWanted(*killer);
+      break;
     }
   }
+}
   // duel partner walks away if the mob kills happen mid-duel (cleanup)
   if (victim.duelWith != 0 && !duel) {
     if (Entity* t = find(victim.duelWith)) { t->duelWith = 0; t->duelUntil = -1; }
@@ -2495,6 +2507,17 @@ bool World::isGuardMob(const Entity& mob) {
   if (content::wireIsFurniture(mob.wireKind)) return false;
   const content::MobDef* def = content::findMob(mob.mobId);
   return def != nullptr && def->guard != 0;
+}
+
+// T-073/T-078: the one wanted-mark path. Stamp + fiction; callers own the
+// condition (anchor scan for PK, victim identity for guard-murder).
+void World::markWanted(Entity& killer) {
+  killer.wantedUntil = tick_ + 4800;
+  WorldEvent wtxt;
+  wtxt.aboutId = killer.id;
+  wtxt.chatCh = 2;
+  wtxt.chatText = killer.name + " is WANTED at the gates (240 s).";
+  events_.push_back(std::move(wtxt));
 }
 
 void World::mobThink(Entity& mob) {
