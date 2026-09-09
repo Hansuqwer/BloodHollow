@@ -451,6 +451,15 @@ journal replays `[replay] OK ticks=12801 sessionCmds=7984 hashes=129
 mismatches=0`. Suite 152/152 (328,447). New watch: wander-death drift
 (24→146 across the shift, shape says roam-RNG, recorded). Devlog 0044.
 
+## Done — extended S33 (2026-09-09): trade transaction log
+
+T-080: one canonical audit line per executed swap (lower-id leads),
+nothing on cancel/oversell; tmp-path test seam; pre-existing swap test
+repointed + `logs/trades.log` git-ignored (suite-hygiene fix found live).
+No epoch bump (stays **12**); fresh 540 s journal replays `[replay] OK
+ticks=12801 sessionCmds=7389 hashes=129 mismatches=0`. Suite 154/154
+(328,457). Devlog 0045.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |

@@ -275,6 +275,10 @@ class World {
   void tradeOfferGold(Entity& e, std::uint32_t gold);
   void tradeCommit(Entity& e);   // executes the swap when both committed
   void tradeCancel(Entity& e, const char* why);
+  // T-080 trade transaction log (dupe-audit trail): file path override for
+  // tests (default logs/trades.log). Outside the journal: replay appends
+  // byte-identical lines (same tick/ids/offers) — ops dedups trivially.
+  static void setTradeLogPath(const std::string& p);
   // test/debug knob (gm tooling later): grant an item without checks
   bool debugGive(Entity& e, std::uint32_t itemId, std::uint16_t qty) {
     return addItem(e, itemId, qty);

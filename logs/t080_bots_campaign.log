@@ -1,0 +1,10 @@
+[campaign] t80c_01 reached L1 at t=0.1s (map 1)
+[campaign] t80c_00 reached L1 at t=0.1s (map 1)
+[campaign] t80c_00 reached L2 at t=50.2s (map 1)
+[campaign] t80c_01 reached L2 at t=65.9s (map 1)
+[campaign] t80c_00 reached L3 at t=289.0s (map 1)
+[campaign] t80c_01 reached L3 at t=315.8s (map 1)
+[bots] SUMMARY welcomed=2/2 moved=2/2 minDeltas=10800 kills=49 pots=2 swings=188 deaths=0 shops=0 anvilTries=0 levelDrops=0 regear=0 maxLevel=3 pkts=2417947 bytes=55542114 gates b/g/p/a/r=0/0/0/0/0 mGold=0 mPelts=0 bless=1 mend=9 noSee=0 hurt=60 choir c6=0 c7=0 c8=0
+[bots] t80c_00      kit=1 lvl=3 hp=106/94 party=2 deaths=0 rxR=544 rxM=1073 lastPid=1 casts c6=0 c7=0 c8=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t80c_01      kit=3 lvl=3 hp=87/94 party=2 deaths=0 rxR=541 rxM=1060 lastPid=1 casts c6=0 c7=0 c8=0 lastDeath=(-1,-1) killerByLvl=
+[bots] OK

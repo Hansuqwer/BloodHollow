@@ -300,6 +300,9 @@ TEST_CASE("skills: Power Swing hits harder with a real cooldown") {
 
 // ---- Sprint 7: trade window (T-029) ----------------------------------------
 TEST_CASE("trade: open/offer/commit swaps atomically") {
+  // T-080 hygiene: executed swaps append to the trade log — keep the suite
+  // off the real logs/trades.log (same tmp seam test_tradelog.cpp uses).
+  server::World::setTradeLogPath("/tmp/t080_suite_trades.log");
   server::World w;
   REQUIRE(w.loadFrom(makeArena()));
   const std::uint32_t aid = w.spawn("trader_a", 0, sim::TilePos{20, 24}).id;
@@ -333,6 +336,7 @@ TEST_CASE("trade: open/offer/commit swaps atomically") {
   CHECK(bpelt == 2);
   CHECK(a->tradeWith == 0);
   CHECK(b->tradeWith == 0);
+  server::World::setTradeLogPath("logs/trades.log");  // restore the default
 }
 
 TEST_CASE("trade: oversell rolls back at commit; distance auto-cancels") {

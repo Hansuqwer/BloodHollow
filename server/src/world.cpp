@@ -53,7 +53,13 @@ constexpr std::uint32_t kSkillLandsPerPoint = 25;  // Soma: skill up by use
 int chebyshev(const sim::TilePos a, const sim::TilePos b) {
   return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y));
 }
+
+// T-080 trade transaction log path (default; tests override per-file).
+static std::string gTradeLogPath = "logs/trades.log";
+const std::string& tradeLogPath() { return gTradeLogPath; }
 }  // namespace
+
+void World::setTradeLogPath(const std::string& p) { gTradeLogPath = p; }
 
 bool World::load(const std::string& mapPath, std::string* err) {
   auto m = sim::loadBhmap(mapPath, err);
@@ -1704,6 +1710,38 @@ void World::tradeCommit(Entity& e) {
   };
   deduce(e, *b);
   deduce(*b, e);
+  // T-080: one audit line per EXECUTED swap (offers still intact here —
+  // the cleanup loop below clears them). Append-only, opened per trade
+  // (trades are rare; no hot-loop fd). Replay re-executes identically.
+  {
+    // Pinned line shape: tick=<t> a=<id:name> b=<id:name>
+    // a_gives=(<iid:qty,...>)+<gold>g b_gives=(...)+<gold>g
+    auto offerStr = [](const Entity& x) {
+      std::string s = "(";
+      bool first = true;
+      for (const auto& [itemId, qty] : x.tradeOfferItems) {
+        if (!first) s += ",";
+        first = false;
+        s += std::to_string(itemId) + ":" + std::to_string(qty);
+      }
+      s += ")+" + std::to_string(x.tradeOfferGold) + "g";
+      return s;
+    };
+    // Canonical order: the lower id leads, so the line is identical no
+    // matter who commits second (replay- and order-stable for audits).
+    const Entity* first = &e;
+    const Entity* second = b;
+    if (first->id > second->id) std::swap(first, second);
+    std::string line = "tick=" + std::to_string(tick_) + " a=" +
+                       std::to_string(first->id) + ":" + first->name +
+                       " b=" + std::to_string(second->id) + ":" + second->name +
+                       " a_gives=" + offerStr(*first) + " b_gives=" + offerStr(*second) +
+                       "\n";
+    if (FILE* f = std::fopen(tradeLogPath().c_str(), "a")) {
+      std::fputs(line.c_str(), f);
+      std::fclose(f);
+    }
+  }
   for (Entity* x : {&e, b}) {
     x->tradeWith = 0;
     x->tradeOfferItems.clear();

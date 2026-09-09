@@ -8,4 +8,5 @@ assets/maps/*.bhmap
 logs/*.dump
 logs/*.bwj
 logs/diag_*
+logs/trades.log
 __pycache__/
