@@ -542,6 +542,10 @@ T-093 DECISION (no code): retune A (pelts 30→10, epoch bump, still skill-bound
 
 T-094 CONTENT (epoch 13→14): twins + post guards placed live (derived positions, flagged); found + fixed 63-anvils-per-zone spawn bug (T-069 class). Sweep test (173 total). Fresh soak + replay. Devlog 0063.
 
+## Done — T-095 (2026-09-09): widow/gnoll tuning gate
+
+T-095 GATE-CLOSED (no code): zero widow kills suffered in T-090 + t094 (14 bots) — no wall, no lever. Reopen rule framed; faster-L9 work belongs to logistics, not mob stats. Devlog 0064.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |
