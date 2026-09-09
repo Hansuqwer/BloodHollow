@@ -121,6 +121,7 @@ done:
   if (mapId == 1) spawnConfessor(zone);  // T-070: the chapel cure
   initialMobSpawns(zone, mapId);
   if (mapId == 1 || mapId == 3) spawnAnvils();   // plaza + bone barrow
+  if (mapId == 1) spawnNpcs();  // T-094: twins + post guards (after anvil)
   return true;
 }
 
@@ -466,6 +467,80 @@ void World::spawnFence(Zone& zone) {
       }
     }
     if (placed) return;
+  }
+}
+
+// T-094 Thornwall NPC posts (derived positions, flagged for art review):
+// the Bonesmith twins flank the Widow Anvil (brief: hammer sister + tongs
+// sister, never desynced — two adjacent tiles), the Ashen guard stands the
+// east-gate post and the Synod guard the bridge post (the T-073 posts they
+// belong to). Spiral scans skipping occupied furniture, deterministic (no
+// RNG — same class as the confessor scan). Registrar (72) and steward (73)
+// stay unplaced: Marrowgate and the Weeping Castle do not exist yet.
+void World::spawnNpcs() {
+  auto zit = zones_.find(1);
+  if (zit == zones_.end()) return;
+  Zone& zone = zit->second;
+  auto freeTile = [&](int x, int y) {
+    if (!zone.map.inBounds(x, y) || zone.map.isBlocked(x, y)) return false;
+    for (const Entity& ee : entities_)
+      if (ee.zoneId == 1 && !ee.dead && ee.walker.tile().x == x &&
+          ee.walker.tile().y == y &&
+          ee.wireKind >= content::kWireKindFurnitureFloor)
+        return false;
+    return true;
+  };
+  auto place = [&](std::uint8_t kind, const char* name, int x, int y) {
+    Entity f;
+    f.id = nextId_++;
+    f.zoneId = 1;
+    f.kind = EntityKind::kMob;  // furniture, non-combat
+    f.wireKind = kind;
+    f.name = name;
+    f.hp = 1;
+    f.hpMax = 1;
+    f.dead = false;
+    f.walker.place(sim::TilePos{x, y});
+    insertEntity(std::move(f));
+  };
+  // twins: first two free tiles spiralling from the anvil's tile
+  sim::TilePos anvilAt{-1, -1};
+  for (const Entity& e : entities_)
+    if (e.wireKind == content::kWireKindAnvil && e.zoneId == 1 && !e.dead) {
+      anvilAt = e.walker.tile();
+      break;
+    }
+  int twins = 0;
+  if (anvilAt.x >= 0) {
+    for (int r = 1; r < 6 && twins < 2; ++r)
+      for (int dy = -r; dy <= r && twins < 2; ++dy)
+        for (int dx = -r; dx <= r && twins < 2; ++dx) {
+          if (std::max(std::abs(dx), std::abs(dy)) != r) continue;
+          if (!freeTile(anvilAt.x + dx, anvilAt.y + dy)) continue;
+          place(content::kWireKindBonesmith, "Bonesmith Twin", anvilAt.x + dx,
+                anvilAt.y + dy);
+          ++twins;
+        }
+  }
+  // post guards: spiral from the T-073 spawner anchors
+  const std::pair<std::uint8_t, const char*> posts[] = {
+      {content::kWireKindGuardAshen, "Ashen Guard"},
+      {content::kWireKindGuardSynod, "Synod Guard"},
+  };
+  const sim::TilePos anchors[] = {sim::TilePos{60, 13}, sim::TilePos{13, 31}};
+  for (size_t i = 0; i < 2; ++i) {
+    for (int r = 0; r < 4; ++r) {
+      bool placed = false;
+      for (int dy = -r; dy <= r && !placed; ++dy)
+        for (int dx = -r; dx <= r && !placed; ++dx) {
+          if (std::max(std::abs(dx), std::abs(dy)) != r) continue;
+          if (!freeTile(anchors[i].x + dx, anchors[i].y + dy)) continue;
+          place(posts[i].first, posts[i].second, anchors[i].x + dx,
+                anchors[i].y + dy);
+          placed = true;
+        }
+      if (placed) break;
+    }
   }
 }
 
@@ -1350,14 +1425,17 @@ void World::spawnConfessor(Zone& zone) {
 
 void World::spawnAnvils() {
   // zone 1 plaza: near Marta (spiral from spawn); zone 3: bone barrow seat.
+  // One anvil per zone (T-069 class fix: the bare `break` below only leaves
+  // the dx loop — without the placed flag this seeds every ring row).
   for (const auto& [zoneId, at] :
        {std::pair<std::uint16_t, sim::TilePos>{1, zones_.at(1).spawnPoint},
         {3, sim::TilePos{44, 6}}}) {
     auto it = zones_.find(zoneId);
     if (it == zones_.end()) continue;
-    for (int r = 0; r < 8; ++r) {
-      for (int dy = -r; dy <= r; ++dy) {
-        for (int dx = -r; dx <= r; ++dx) {
+    bool placed = false;
+    for (int r = 0; r < 8 && !placed; ++r) {
+      for (int dy = -r; dy <= r && !placed; ++dy) {
+        for (int dx = -r; dx <= r && !placed; ++dx) {
           const int x = at.x + dx, y = at.y + dy;
           if (!it->second.map.inBounds(x, y) || it->second.map.isBlocked(x, y)) continue;
           Entity a;
@@ -1370,7 +1448,7 @@ void World::spawnAnvils() {
           a.hpMax = 1;
           a.walker.place(sim::TilePos{x, y});
           insertEntity(std::move(a));
-          break;
+          placed = true;
         }
       }
     }

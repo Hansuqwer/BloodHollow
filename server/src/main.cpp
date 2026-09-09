@@ -90,11 +90,12 @@ void sendMsg(ENetPeer* peer, const Msg& m, Server& s) {
 // S22 T-034b mob retune = 6; T-068 barricade relocation = 7;
 // T-069 fence + one-Marta spawn fix = 8; T-070 curse + confessor = 9;
 // T-071 torch/lantern + nightOnly spawner = 10; T-073 guards + wanted = 11;
-// T-079 refine rows +4..+7 = 12).
+// T-079 refine rows +4..+7 = 12; T-091 Gravemother slam = 13;
+// T-094 Thornwall NPC posts = 14).
 // Replay refuses non-matching epoch journals instead of lying with them.
-constexpr int kJournalEpoch = 13;  // T-091: Gravemother telegraph wind-up
-                                   // shifts boss outcomes under v12 journals;
-                                   // stale by contract (same response as ever)
+constexpr int kJournalEpoch = 14;  // T-094: Thornwall NPC posts add live
+                                   // furniture under v13 journals; stale by
+                                   // contract (same response as ever)
 
 // ---- world journal record helpers (M2) ------------------------------------
 void journalTickHash(Server& s) {

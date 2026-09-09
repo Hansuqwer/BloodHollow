@@ -538,6 +538,10 @@ T-092 WIRE (stays 237): trailing `glowTier` on spawn/delta + scan + halo draw. C
 
 T-093 DECISION (no code): retune A (pelts 30→10, epoch bump, still skill-bound) vs B (keep toll, multi-leg progression, one docs edit). Non-binding recommendation: B. Devlog 0062.
 
+## Done — T-094 (2026-09-09): Thornwall NPC posts + one-anvil fix
+
+T-094 CONTENT (epoch 13→14): twins + post guards placed live (derived positions, flagged); found + fixed 63-anvils-per-zone spawn bug (T-069 class). Sweep test (173 total). Fresh soak + replay. Devlog 0063.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |

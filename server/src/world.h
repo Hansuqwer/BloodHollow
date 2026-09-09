@@ -276,6 +276,7 @@ class World {
   bool repent(Entity& e);   // T-075: +20 karma within 3 tiles, hourly, no curse touch
   void spawnConfessor(Zone& zone);  // zone 1 chapel only
   void spawnAnvils();                        // plaza (z1) + bone barrow (z3)
+  void spawnNpcs();  // T-094: twins flank the anvil, guards stand the posts
   std::uint8_t anvilTilesAllowed(std::uint16_t zoneId) const;
   // trade window (transactional by construction; see ADR-0011)
   bool tradeOpen(Entity& a, std::uint32_t partnerId);

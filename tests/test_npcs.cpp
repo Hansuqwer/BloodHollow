@@ -75,3 +75,24 @@ TEST_CASE("T-ART-06: karma-band vendor refusal untouched by new kinds") {
   REQUIRE(p != nullptr);
   CHECK(p->karma == 0);  // no furniture bestows or moves karma on spawn
 }
+
+TEST_CASE("T-094: Thornwall posts place live (twins + bridge Synod)") {
+  server::World w;
+  REQUIRE(w.loadFrom(makeArena()));
+  int twins = 0, synod = 0, ashen = 0;
+  // Entity ids start at 1 and pack densely in a fresh test world; scan the
+  // low range for the live-placed posts.
+  bool anvil = false;
+  for (int id = 1; id < 64; ++id) {
+    const server::Entity* e = w.find(static_cast<std::uint32_t>(id));
+    if (e == nullptr) continue;
+    if (e->wireKind == content::kWireKindAnvil) anvil = true;
+    if (e->wireKind == content::kWireKindBonesmith) ++twins;
+    if (e->wireKind == content::kWireKindGuardSynod) ++synod;
+    if (e->wireKind == content::kWireKindGuardAshen) ++ashen;
+  }
+  CHECK(anvil);  // anchor existed, twins had something to flank
+  CHECK(twins == 2);
+  CHECK(synod == 1);  // bridge anchor (13,31) fits the 40x40 arena
+  CHECK(ashen == 0);  // east-gate anchor (60,13) is off-arena — stated
+}
