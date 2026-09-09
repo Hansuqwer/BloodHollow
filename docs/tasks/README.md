@@ -518,6 +518,10 @@ T-ART-06 ENGINE SIDE: 5 constants + spawn seams + sweep test (167 total). Client
 
 T-088 AUDIT-ONLY: 8-leg geography, zero on-route L11, campaign clean 8/8 — era-correct wall content, no fix. Rect lever priced-not-taken (marginal math + epoch cost). Devlog 0057.
 
+## Done — T-089 (2026-09-09): tuning validation
+
+T-089 VALIDATION-ONLY: repent +20/72000t, lantern 150g, torch 8g re-derived + checked across 8 legs — all hold, zero changed. Trade-pass programmable half green, human slice unblocked. Devlog 0058.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |
