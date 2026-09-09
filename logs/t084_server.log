@@ -1,0 +1,26 @@
+[boot] zone 2 (assets/maps/fields_overflow.bhmap: 64x48) online
+[boot] zone 3 (assets/maps/thornwall_crypt.bhmap: 48x36) online
+[boot] zone 4 (assets/maps/bonehowl_mine.bhmap: 56x40) online
+[boot] zone 5 (assets/maps/drowned_crypt.bhmap: 48x36) online
+[journal] recording world to logs/t084.bwj (epoch 12)
+[boot] bh_server on 0.0.0.0:7897 | map 'assets/maps/thornwall.bhmap' | db '/tmp/t084.db' | tick 20Hz | aoi 26
+[net] t83bc__00        entered the world (entity 365, online 1)
+[net] t83bc__01        entered the world (entity 366, online 2)
+[soak] tick=600 online=2 entities=359 tickUs p50=801 p99=1548 worldHash=3f8978a0784ea9de pkts=111/179676
+[soak] tick=1200 online=2 entities=358 tickUs p50=837 p99=1490 worldHash=533d518612776d8e pkts=214/372867
+[soak] tick=1800 online=2 entities=359 tickUs p50=877 p99=1603 worldHash=538b6a60b59efe10 pkts=270/581523
+[soak] tick=2400 online=2 entities=359 tickUs p50=895 p99=1531 worldHash=1b8da469c3ff1efa pkts=333/789788
+[soak] tick=3000 online=2 entities=356 tickUs p50=842 p99=1576 worldHash=31771e1ef16b74b3 pkts=418/995801
+[soak] tick=3600 online=2 entities=349 tickUs p50=824 p99=1598 worldHash=359586f9b8a56fb8 pkts=498/1188747
+[soak] tick=4200 online=2 entities=350 tickUs p50=816 p99=1495 worldHash=0980a257cab53981 pkts=608/1379595
+[soak] tick=4800 online=2 entities=346 tickUs p50=754 p99=1409 worldHash=d7597565e00073c9 pkts=710/1533616
+[net] t83bc__00        saved at (33,39)
+[net] t83bc__01        saved at (33,39)
+[soak] tick=5400 online=0 entities=350 tickUs p50=400 p99=1080 worldHash=c0a1264212961743 pkts=720/1545208
+[soak] tick=6000 online=0 entities=357 tickUs p50=401 p99=795 worldHash=0c33a0164295ac14 pkts=720/1545208
+[soak] FINISH ticks=6001 online=0 entities=357 tickUs p50=401 p99=795
+[soak] OK p99=0.80ms budget=10.00ms
+[balance] Marsh Rat        L1  kills=16    TTK(25t hps)=4.3s xp=40
+[balance] Feral Ghoul      L3  kills=10    TTK(25t hps)=74.7s xp=90
+[balance] Hollow Hound     L5  kills=6     TTK(25t hps)=64.6s xp=150
+[balance] Plague Bat       L2  kills=4     TTK(25t hps)=2.7s xp=55

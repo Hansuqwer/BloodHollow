@@ -486,6 +486,10 @@ fix). Non-binding recommendation: B pending playtest evidence. Devlog 0048.
 
 T-083 READ-ONLY: two short-soak legs (240 s bots / 300 s soak, wander 16 + 24 deaths, entities 349/344, replays 0 mismatches). Drift 146→16→24 broken — roam-RNG noise confirmed, no leak, no T-084. Devlog 0049.
 
+## Done — T-084 (2026-09-09): L8→L9 step-up camp
+
+T-084 BOT-ONLY: widow north-edge camp (60,41) for L8+ in `tools/bots/main.cpp`. Val: L8 pair 86 kills / 0 deaths, replay 0 mismatches. L9 climb verdict parked (needs full leg). Devlog 0050.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |

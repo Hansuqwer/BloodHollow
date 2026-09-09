@@ -412,6 +412,17 @@ int run(int argc, char** argv) {
             // camp is the L8 probe.
             b.campX = 53; b.campY = 41;  // gnolls_pits NORTH EDGE
           }
+          if (b.level >= 8) {
+            // T-084 opens the L8->L9 step-up: widow_glade (L9, rect
+            // x[58,63] y[42,45]) shares the south bank with gnolls_pits
+            // (x[50,57]). Camp the widow NORTH edge so widows (wander 6,
+            // aggro 6, leash 10) pull straight onto the camp; gnolls
+            // (wander 8, aggro 7) still reach from the west and read as
+            // fodder via the defend branch. Retreat-home crosses the
+            // river north, same as the L7 camp. Pack cap + swarm
+            // panic-break stay the levers -- no mob numbers moved.
+            b.campX = 60; b.campY = 41;  // widow_glade NORTH EDGE
+          }
         }
         // S13/14 party formation, race-free: even bot invites ONLY once the
         // sibling is welcomed in-world (bot.name is pre-seeded and useless as
