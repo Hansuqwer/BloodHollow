@@ -87,6 +87,7 @@ class Game {
   void drawEntitiesOnline();
   void drawRemoteEnt(const RenderEnt& e, bool isOwn);
   static void setAnimState(RenderEnt& e, EntAnimState st, double now);
+  bool isPartyMember(std::uint32_t id) const;  // T-ART-07 overhead tint
   void drawPathPreview() const;
   void drawCommandMarker() const;
   void drawHud() const;
@@ -116,6 +117,12 @@ class Game {
   sim::CostGrid grid_{};
   CameraRig rig_{};
   Atlas heroAtlas_{};
+  // T-ART-05: per-wireKind atlas table (lazy, cached). Mobs resolve to
+  // assets/aigen/mobs/<id>_<slug>/ sheets; everything without a shipped
+  // sheet (players, 1011 Guard, furniture) falls back to the hero atlas —
+  // furniture never reaches it (placeholder branch draws first).
+  std::unordered_map<std::uint8_t, Atlas> mobAtlases_{};
+  const Atlas& atlasFor(std::uint8_t kind);
 
   // offline sim
   sim::Walker walker_{};

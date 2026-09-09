@@ -7,11 +7,13 @@
 #include "assets/placeholder.h"
 #include "content/items.h"
 #include "content/kits.h"
+#include "content/mobs.h"  // T-ART-05: mobId/slug for the atlas table
 #include "content/auras.h"
 #include "content/wirekind.h"
 #include "render/daynight.h"
 #include "render/iso.h"
 #include "render/lightmask.h"
+#include "render/overhead.h"  // T-ART-07 overhead tint priority
 #include "sim/clock.h"
 #include "sim/tick.h"
 
@@ -560,6 +562,17 @@ void Game::setAnimState(RenderEnt& e, EntAnimState st, double now) {
   e.animStateUntil = ticks < 0 ? now + 3600.0 : now + ticks / 20.0;
 }
 
+// T-ART-07: party-green overhead needs roster membership (own id excluded,
+// which renders in the own-cream color instead).
+bool Game::isPartyMember(std::uint32_t id) const {
+  if (net_ == nullptr || !net_->welcomed || net_->partyId == 0) return false;
+  if (id == net_->ownId) return false;
+  for (const auto& m : net_->party) {
+    if (m.entityId == id) return true;
+  }
+  return false;
+}
+
 Vector2 Game::entRenderPos(const RenderEnt& e) const {
   const double now = GetTime();
   const float tx = static_cast<float>(e.snap.x) / 1024.0f;
@@ -762,14 +775,14 @@ void Game::drawGround() {
 void Game::drawHero() {
   const Vector2 w = iso::tileToWorldF(Vector2{walker_.fx(), walker_.fy()}, map_.tileW,
                                       map_.tileH);
-  const Rectangle src =
-      animFrame(heroAtlas_, walker_.moving ? "walk" : "idle", walker_.dir, animT_);
+  const char* anim = walker_.moving ? "walk" : "idle";
+  const Rectangle src = animFrame(heroAtlas_, anim, walker_.dir, animT_);
   if (src.width <= 0.0f) {
     DrawCircleV(w, 8.0f, RED);
     return;
   }
   DrawTexturePro(heroAtlas_.tex, src, Rectangle{w.x, w.y, src.width, src.height},
-                 Vector2{src.width * 0.5f, 42.0f}, 0.0f, WHITE);
+                 Vector2{src.width * 0.5f, animAnchorY(heroAtlas_, anim)}, 0.0f, WHITE);
 }
 
 void Game::drawRemoteEnt(const RenderEnt& e, bool isOwn) {
@@ -809,16 +822,21 @@ void Game::drawRemoteEnt(const RenderEnt& e, bool isOwn) {
   const char* anim = animNameFor(st, e.snap.moving);
   double animClock = animT_;
   if (st != EntAnimState::kNone) animClock = now - e.animStateAt;
-  Rectangle src = animFrame(heroAtlas_, anim, static_cast<int>(e.snap.dir), animClock);
+  // T-ART-05: per-kind atlas (mob sheets; hero fallback). T-ART-10: feet
+  // anchor rides the used anim (42.0 legacy default inside animAnchorY).
+  const Atlas& at = atlasFor(e.snap.kind);
+  const char* fallback = e.snap.moving ? "walk" : "idle";
+  Rectangle src = animFrame(at, anim, static_cast<int>(e.snap.dir), animClock);
+  const char* used = anim;
   if ((src.width <= 0.0f) && st != EntAnimState::kNone) {
     // atlas predates combat frames: fall back to the locomotion frame.
-    src = animFrame(heroAtlas_, e.snap.moving ? "walk" : "idle",
-                    static_cast<int>(e.snap.dir), animT_);
+    src = animFrame(at, fallback, static_cast<int>(e.snap.dir), animT_);
+    used = fallback;
   }
   const Color tint = isOwn ? Color{255, 255, 255, 255} : Color{190, 190, 200, 255};
   if (src.width > 0.0f) {
-    DrawTexturePro(heroAtlas_.tex, src, Rectangle{w.x, w.y, src.width, src.height},
-                   Vector2{src.width * 0.5f, 42.0f}, 0.0f, tint);
+    DrawTexturePro(at.tex, src, Rectangle{w.x, w.y, src.width, src.height},
+                   Vector2{src.width * 0.5f, animAnchorY(at, used)}, 0.0f, tint);
   } else {
     DrawCircleV(w, 8.0f, MAROON);
   }
@@ -829,10 +847,19 @@ void Game::drawRemoteEnt(const RenderEnt& e, bool isOwn) {
     }
     if (!label.empty()) {
       const int tw = MeasureText(label.c_str(), 10);
-      // T-057: chaotic = era red name (the gamble must read at a glance)
+      // T-057: chaotic = era red name (the gamble must read at a glance).
+      // T-ART-07 overhead priority: chaotic red > party green > lawful blue
+      // > neutral. (Enemy-town rank needs war state, which does not exist —
+      // no wire carries it; the branch is a documented no-op, not a guess.)
       Color nc = isOwn ? Color{230, 210, 190, 255} : Color{190, 190, 200, 255};
-      if (e.snap.karmaBand == 2) nc = Color{235, 60, 50, 255};
-      else if (e.snap.karmaBand == 0) nc = Color{170, 200, 255, 255};
+      if (!isOwn) {
+        switch (resolveNameTint(false, e.snap.karmaBand, isPartyMember(e.snap.id))) {
+          case NameTint::kChaotic: nc = Color{235, 60, 50, 255}; break;
+          case NameTint::kParty: nc = Color{120, 235, 130, 255}; break;
+          case NameTint::kLawful: nc = Color{170, 200, 255, 255}; break;
+          case NameTint::kNeutral: break;
+        }
+      }
       DrawText(label.c_str(), static_cast<int>(w.x) - tw / 2,
                static_cast<int>(w.y) - 52, 10, nc);
     }
@@ -872,6 +899,24 @@ void Game::drawCommandMarker() const {
   const auto a = static_cast<unsigned char>(220 * (1.0 - age / 0.8));
   iso::drawDiamond(c, map_.tileW, map_.tileH, Color{0, 0, 0, 0},
                    Color{230, 70, 70, a});
+}
+
+const Atlas& Game::atlasFor(std::uint8_t kind) {
+  // T-ART-05: sheet-dir law lives headless-testable in mobSheetPaths; here
+  // is the loader + cache. 1011 Guard has no sheet yet and falls back here
+  // (stated, not a bug); furniture never reaches this (placeholder branch).
+  char png[160], js[160];
+  if (!mobSheetPaths(kind, png, sizeof png, js, sizeof js)) return heroAtlas_;
+  auto cached = mobAtlases_.find(kind);
+  if (cached != mobAtlases_.end()) return cached->second;
+  Atlas a;
+  if (loadAtlas(png, js, a) && a.ok) {
+    mobAtlases_.emplace(kind, std::move(a));
+    return mobAtlases_.at(kind);
+  }
+  // No shipped sheet (or headless asset dir): hero fallback. The red-circle
+  // QA marker path is unchanged for frames missing everywhere.
+  return heroAtlas_;
 }
 
 const char* Game::mapFileFor(std::uint16_t mapId) {

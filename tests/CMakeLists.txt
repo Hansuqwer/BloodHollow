@@ -21,6 +21,7 @@ add_executable(bh_tests
   test_guards.cpp
   test_zoom.cpp
   test_animstate.cpp
+  test_clientlaw.cpp
   test_gear_churn.cpp
   test_night.cpp
   test_s18_dropzone.cpp

@@ -411,6 +411,13 @@ T-ART-04: render-side combat anim states (attack/cast/hurt/die) keyed by
 lands. Durations half-cadence derived (8/8/4t, die held). Render-only, no
 epoch impact (stays **11**). Suite 137/137 (328,115). Devlog 0039.
 
+## Done — extended S28 (2026-09-09): client atlas batch
+
+T-ART-05 (`atlasFor`: mob sheets resolve, hero fallback, 1011 noted
+sheetless), T-ART-07 (overhead tint red > party > lawful; enemy-town a
+documented no-op), T-ART-10 (`anchorY` wired end to end). Render-only, no
+epoch impact (stays **11**). Suite 140/140 (328,140). Devlog 0040.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |

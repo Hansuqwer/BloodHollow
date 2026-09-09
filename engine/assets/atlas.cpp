@@ -34,6 +34,7 @@ bool loadAtlas(const std::string& pngPath, const std::string& animJsonPath, Atla
 
       Anim an;
       an.fps = a.value("fps", 8.0f);
+      an.anchorY = a.value("anchorY", 42.0f);  // T-ART-10: feet sit on diamonds
       for (int row = 0; row < 8; ++row) {
         for (int fr = 0; fr < frames; ++fr) {
           an.dirFrames[row].push_back(Rectangle{
