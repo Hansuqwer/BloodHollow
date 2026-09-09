@@ -1233,6 +1233,36 @@ bool World::confess(Entity& e) {
   return true;
 }
 
+// T-075 chapel repentance (deferred from T-070): the chapel's second lane.
+// Grace, not cure — karma moves, the curse does not. Amount (+20) is one
+// whitening-hour at the pinned rate; cooldown (72000 ticks = 1 logged hour)
+// is the same unit. Wanted players are refused with the gallows-bound line:
+// the gate law and chapel grace stay separate lanes.
+bool World::repent(Entity& e) {
+  if (e.kind != EntityKind::kPlayer || e.dead) return false;
+  if (!nearConfessor(e)) return false;
+  if (tick_ < e.wantedUntil) {
+    WorldEvent sneer;
+    sneer.aboutId = e.id;
+    sneer.chatCh = 2;
+    sneer.chatText = "The chapel wants no gallows-bound coin. Serve the post first.";
+    events_.push_back(std::move(sneer));
+    return false;
+  }
+  if (tick_ < e.repentUntil) return false;  // grace cools hourly (quiet fail)
+  e.repentUntil = tick_ + 72000;
+  const std::int32_t before = e.karma;
+  bumpKarma(e, 20);  // clamp ±1000 + band-crossing events inside
+  WorldEvent ev;
+  ev.aboutId = e.id;
+  ev.statsChanged = true;
+  ev.chatCh = 2;
+  ev.chatText = e.name + " repents (" + std::to_string(before) + " -> " +
+                std::to_string(e.karma) + " karma).";
+  events_.push_back(std::move(ev));
+  return true;
+}
+
 void World::spawnConfessor(Zone& zone) {
   // The chapel rect (9,9)-(14,13) on thornwall: first walkable tile with no
   // furniture on it. One confessor, session-seeded like the other furniture.

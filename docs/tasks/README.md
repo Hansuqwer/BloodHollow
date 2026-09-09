@@ -418,6 +418,15 @@ sheetless), T-ART-07 (overhead tint red > party > lawful; enemy-town a
 documented no-op), T-ART-10 (`anchorY` wired end to end). Render-only, no
 epoch impact (stays **11**). Suite 140/140 (328,140). Devlog 0040.
 
+## Done — extended S29 (2026-09-09): karma repentance
+
+T-075: `/repent` (journaled `kRepent`) at the confessor ≤3, 72000t
+cooldown, +20 karma via `bumpKarma`, wanted refused, curse untouched.
+Amount/cooldown derive from whitening pins (flagged). No epoch bump
+(stays **11**); fresh 540 s journal replays `[replay] OK ticks=12801
+sessionCmds=7483 hashes=129 mismatches=0`. Suite 147/147 (328,167).
+Devlog 0041.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |

@@ -131,6 +131,8 @@ struct Entity {
   // fresh/respawned players carry 5 s of spawn protection (100 ticks).
   sim::Tick wantedUntil = -1;
   sim::Tick spawnProtectUntil = -1;
+  // T-075 chapel repentance: one whitening-hour per logged hour at most.
+  sim::Tick repentUntil = -1;
 
   // trade (T-029): intents only until BOTH commit; swap validated at commit.
   std::uint32_t tradeWith = 0;
@@ -263,6 +265,7 @@ class World {
   // T-070 chapel cure: the confessor in the thornwall chapel rect.
   bool nearConfessor(const Entity& e) const;
   bool confess(Entity& e);  // clears curseUntil within 3 tiles, fiction line
+  bool repent(Entity& e);   // T-075: +20 karma within 3 tiles, hourly, no curse touch
   void spawnConfessor(Zone& zone);  // zone 1 chapel only
   void spawnAnvils();                        // plaza (z1) + bone barrow (z3)
   std::uint8_t anvilTilesAllowed(std::uint16_t zoneId) const;

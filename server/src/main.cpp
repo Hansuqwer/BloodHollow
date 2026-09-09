@@ -438,6 +438,7 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
         } else if (m.text == "/forfeit") { c.kind = Command::kForfeit; }
         else if (m.text == "/repair") { c.kind = Command::kRepair; }
         else if (m.text == "/confess") { c.kind = Command::kConfess; }
+        else if (m.text == "/repent") { c.kind = Command::kRepent; }
         else if (m.text.rfind("/refine ", 0) == 0) {  // T-060 anvil upgrade
           bool digits = true;
           for (char ch : m.text.substr(8))
