@@ -427,6 +427,13 @@ Amount/cooldown derive from whitening pins (flagged). No epoch bump
 sessionCmds=7483 hashes=129 mismatches=0`. Suite 147/147 (328,167).
 Devlog 0041.
 
+## Done — extended S30 (2026-09-09): levers round 2, red again
+
+T-077: retreat 5→4 in the L2-park regime — AFTER 92 deaths / L3 vs BEFORE
+32 / L5. Rejected and reverted (3-line comment kept on the restored line,
+flagged). Bot-only, epoch stays **11**. Repeats + L1-naked stay parked.
+Devlog 0042.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |

@@ -792,6 +792,9 @@ int run(int argc, char** argv) {
                                   // Threshold is high on purpose: at 3 the bot
                                   // disengaged from every normal ghoul trade at
                                   // the north edge and never banked XP.
+                                  // T-077 round 2 tried 4: 92 deaths vs 32
+                                  // (stuck L3, never out-levels the pack) —
+                                  // reverted to v5c 5.
           } else if (hurt && !b.retreating && bestId != 0 && bestD <= 2) {
             b.retreating = true;
           } else if (critical && !b.retreating && bestId != 0 && bestD <= 6) {
