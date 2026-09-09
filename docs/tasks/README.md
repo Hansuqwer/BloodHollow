@@ -490,6 +490,10 @@ T-083 READ-ONLY: two short-soak legs (240 s bots / 300 s soak, wander 16 + 24 de
 
 T-084 BOT-ONLY: widow north-edge camp (60,41) for L8+ in `tools/bots/main.cpp`. Val: L8 pair 86 kills / 0 deaths, replay 0 mismatches. L9 climb verdict parked (needs full leg). Devlog 0050.
 
+## Done — T-085 (2026-09-09): base-light verdict B
+
+T-085 DOCS-ONLY: GDD §9 base-6 → base 0 (T-076/B executed). Zero code, epoch stays 12, t082 replay unchanged. Devlog 0051.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |

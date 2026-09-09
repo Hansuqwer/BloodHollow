@@ -229,8 +229,9 @@ stalls/auction [LATER]. Server-side transaction log for every trade (dupe audits
 
 - **Cycle [MVP]:** 4 real hours = 24 game hours: Day 120 min, Dusk 30, Night 90,
   Dawn 30 (clock UI in HUD).
-- **Night [MVP]:** global darkness (light radius: base 6 tiles; torches/lantern/
-  of-the-Vigil extend), night-only spawns (Wraiths, Bloodfiends) worth +50% XP,
+- **Night [MVP]:** global darkness (light radius: base 0; torches 6,
+  lantern 8, of-the-Vigil extend — shipped 0 per T-076/B, torch economy
+  balanced around it), night-only spawns (Wraiths, Bloodfiends) worth +50% XP,
   Blood Bolt-type effects buffed, ambient dread audio.
 - **Blood Moon [v0.2]:** weekly 20-min event — all spawn rates ×2, world boss
   **The Pale Sow** roams, all drops +loot-tier.
