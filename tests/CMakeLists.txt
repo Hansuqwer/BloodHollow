@@ -31,6 +31,7 @@ add_executable(bh_tests
   test_burst_stamp.cpp
   test_kit_v2.cpp
   test_inv_blob.cpp
+  test_refine_glow.cpp
 )
 target_link_libraries(bh_tests PRIVATE bh_shared bh_protocol bh_server_world bh_doctest bh_warnings)
 # T-ART-02: snapZoom lives in raylib-including camera_rig.h — link raylib for

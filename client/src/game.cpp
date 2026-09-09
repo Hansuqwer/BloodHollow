@@ -14,6 +14,7 @@
 #include "render/iso.h"
 #include "render/lightmask.h"
 #include "render/overhead.h"  // T-ART-07 overhead tint priority
+#include "render/refine_glow.h"  // T-ART-11 refine glow tiers (inventory rows)
 #include "sim/clock.h"
 #include "sim/tick.h"
 
@@ -1199,7 +1200,10 @@ void Game::drawInventoryPanel() const {
     }
     char refineMark[8] = "";
     if (kv.second.refine > 0)
-      std::snprintf(refineMark, sizeof refineMark, " +%u",
+      std::snprintf(refineMark, sizeof refineMark,
+                    refineGlowTier(kv.second.refine) == RefineGlow::kMythic ? " +%u**"
+                    : refineGlowTier(kv.second.refine) == RefineGlow::kGlow  ? " +%u*"
+                                                                            : " +%u",
                     static_cast<unsigned>(kv.second.refine));
     const char* affixName =
         kv.second.affix > 0 && kv.second.affix <= content::kAffixCount
@@ -1213,9 +1217,22 @@ void Game::drawInventoryPanel() const {
                   affixName[0] ? (std::string(" ") + affixName).c_str() : "");
     const Rectangle rr{static_cast<float>(px + 6), static_cast<float>(y - 2), 226, 14};
     const bool dormant = gear && kv.second.durability == 0;
+    // T-ART-11: refine glow rides the inventory row (incl. equipped =
+    // in-hand). Dormant wins (a worn-out +5 does not glow); otherwise glow
+    // beats aura/equipped (rarest state reads first). In-world sprite
+    // overlays need per-entity gear on the wire (no snapshot carries
+    // refine) — deliberately out of scope, non-wire card.
+    const RefineGlow glow = refineGlowTier(kv.second.refine);
     if (row == invHover_) DrawRectangleRec(rr, Color{120, 30, 30, 120});
+    if (!dormant && glow != RefineGlow::kNone)
+      DrawRectangleRec(
+          rr, Color{255, 210, 110,
+                    static_cast<unsigned char>(refineGlowAlpha(kv.second.refine))});
     const Color rowCol =
         dormant ? Color{110, 105, 100, 255}  // dormant: dust-grey (T-058)
+        : glow != RefineGlow::kNone
+            ? (glow == RefineGlow::kMythic ? Color{255, 240, 200, 255}
+                                           : Color{255, 225, 150, 255})
         : kv.second.aura > 0 ? Color{120, 235, 235, 255}  // widow-blessed teal
         : kv.second.equipped ? Color{255, 200, 90, 255}
                              : Color{200, 195, 185, 255};

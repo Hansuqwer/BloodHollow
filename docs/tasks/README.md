@@ -494,6 +494,10 @@ T-084 BOT-ONLY: widow north-edge camp (60,41) for L8+ in `tools/bots/main.cpp`. 
 
 T-085 DOCS-ONLY: GDD §9 base-6 → base 0 (T-076/B executed). Zero code, epoch stays 12, t082 replay unchanged. Devlog 0051.
 
+## Done — T-ART-11 (2026-09-09): refine +5 glow
+
+T-ART-11 RENDER-ONLY: glow law header + inventory glow rows/markers, 2 new tests (162 total). In-world overlays parked (need wire field). No epoch/wire change. Devlog 0052.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |
