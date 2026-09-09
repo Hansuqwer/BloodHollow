@@ -28,6 +28,10 @@ inline constexpr ItemDef kItems[] = {
     {2102, "Bone Plate",           1, 0,  11, 0,   350,  1},
     {3001, "Blood Vial",           2, 0,  0,  40,  30,   16},
     {3002, "Smuggled Vial",        2, 0,  0,  55,  45,   16},
+    // T-071 night light: torches burn out (timed), the lantern never does
+    // while held (toggle). heal=0: light, not life — useItem branches by id.
+    {3003, "Torch",                2, 0,  0,  0,   8,    8},
+    {3004, "Blessed Lantern",      2, 0,  0,  0,   150,  1},
     {4001, "Rat Pelt",             3, 0,  0,  0,   10,   32},
     {4002, "Ghoul Finger",         3, 0,  0,  0,   22,   32},
     {4003, "Hound Fang",           3, 0,  0,  0,   35,   32},
@@ -62,7 +66,10 @@ inline const ItemDef* findItem(std::uint32_t itemId) {
 }
 
 // Town vendor stock (Marta). Buy = full value; SellJunk = 40%.
-inline constexpr std::uint32_t kVendorStock[] = {2001, 2002, 2101, 2102, 3001};
+// T-071: Marta stocks the night (torch 8g, lantern 150g — pinned by the
+// overnight shift; director review). Potions/gold numbers otherwise untouched.
+inline constexpr std::uint32_t kVendorStock[] = {2001, 2002, 2101, 2102, 3001,
+                                                 3003, 3004};
 
 // T-069 Smugglers' Cove fence (Sable): the no-questions lane Marta refuses.
 // Secret stock = contraband potion + rare junk, chaotic eyes only, at a 25%

@@ -17,6 +17,7 @@ add_executable(bh_tests
   test_alignment.cpp
   test_fence.cpp
   test_curse.cpp
+  test_light.cpp
   test_gear_churn.cpp
   test_night.cpp
   test_s18_dropzone.cpp
@@ -25,6 +26,8 @@ add_executable(bh_tests
   test_inv_blob.cpp
 )
 target_link_libraries(bh_tests PRIVATE bh_shared bh_protocol bh_server_world bh_doctest bh_warnings)
+# T-071: light-mask law pins live in raylib-free engine/render/lightmask.h.
+target_include_directories(bh_tests PRIVATE ${CMAKE_SOURCE_DIR}/engine)
 add_test(NAME bh_tests COMMAND bh_tests)
 # asset paths in tests are repo-root-relative (e.g. assets/maps/*.bhmap)
 set_tests_properties(bh_tests PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})

@@ -219,6 +219,8 @@ Entity& World::spawnMob(const content::MobDef& def, sim::TilePos at, size_t spaw
 void World::initialMobSpawns(Zone& zone, std::uint16_t zoneId) {
   for (size_t i = 0; i < zone.spawners.size(); ++i) {
     SpawnerLive& sl = zone.spawners[i];
+    // T-071: night-bound spawners stay empty by day (boot is 08:00).
+    if (sl.def.nightOnly != 0 && !isNight()) continue;
     const content::MobDef* def = content::findMob(sl.def.mobId);
     if (def == nullptr) {
       std::fprintf(stderr, "[world] spawner mobId %u has no def, skipped\n", sl.def.mobId);
@@ -579,6 +581,40 @@ bool World::useItem(Entity& e, std::uint8_t slot) {
   InvSlot& sl = e.inv[slot];
   const content::ItemDef* d = content::findItem(sl.itemId);
   if (d == nullptr || d->slot != 2 || sl.qty == 0) return false;
+  // T-071 night light: torches and lanterns branch off before the sip lane.
+  // Premise note: no new kUse command was needed — kUseItem is already
+  // journaled (only chat/ping are excluded) and the client already sends it
+  // for any slot-2 click.
+  if (sl.itemId == 3003) {  // Torch: burns down, one hand, one sip-gate tick
+    e.lastSipTick = tick_;
+    --sl.qty;
+    if (sl.qty == 0) e.inv.erase(e.inv.begin() + slot);
+    e.lightRadius = 6;
+    e.lightUntil = tick_ + 6000;  // 300 s of carried light
+    e.lanternLit = false;         // the torch wins while it burns
+    WorldEvent ev;
+    ev.aboutId = e.id;
+    ev.invChanged = true;
+    ev.statsChanged = true;
+    ev.chatCh = 2;
+    ev.chatText = e.name + " lights a torch (6 tiles, 5 min).";
+    events_.push_back(std::move(ev));
+    return true;
+  }
+  if (sl.itemId == 3004) {  // Blessed Lantern: never consumed, toggles 8
+    e.lastSipTick = tick_;
+    e.lanternLit = !e.lanternLit;
+    e.lightRadius = e.lanternLit ? 8 : 0;
+    e.lightUntil = -1;  // held light never expires; dropping ends it (later)
+    WorldEvent ev;
+    ev.aboutId = e.id;
+    ev.statsChanged = true;
+    ev.chatCh = 2;
+    ev.chatText = e.lanternLit ? e.name + " raises the Blessed Lantern."
+                               : e.name + " shutters the lantern.";
+    events_.push_back(std::move(ev));
+    return true;
+  }
   if (e.hp >= e.hpMax) return false;
   e.lastSipTick = tick_;
   --sl.qty;
@@ -2379,9 +2415,19 @@ void World::awardXp(Entity& player, std::uint32_t amount) {
   events_.push_back(std::move(ev));
 }
 
+// T-071: a night-bound mob (nightOnly spawner) does not acquire targets by
+// day. Held targets are kept (only the acquire act is gated); gm/debug
+// spawns (spawnerIdx SIZE_MAX) are always active.
+bool World::mobNightDormant(const Entity& mob) const {
+  if (mob.spawnerIdx == SIZE_MAX) return false;
+  const auto zit = zones_.find(mob.zoneId);
+  if (zit == zones_.end()) return false;
+  if (mob.spawnerIdx >= zit->second.spawners.size()) return false;
+  return zit->second.spawners[mob.spawnerIdx].def.nightOnly != 0 && !isNight();
+}
+
 void World::mobThink(Entity& mob) {
-  if (mob.dead || content::wireIsFurniture(mob.wireKind)) return;  // vendors stand eternally
-  // leash: too far from anchor -> drop target and path home, no re-aggro
+  if (mob.dead || content::wireIsFurniture(mob.wireKind)) return;  // vendors stand eternally  // leash: too far from anchor -> drop target and path home, no re-aggro
   const sim::TilePos p = mob.walker.tile();
   const bool leashed = chebyshev(p, mob.anchor) > mob.leashRadius;
   if (leashed) {
@@ -2402,7 +2448,8 @@ void World::mobThink(Entity& mob) {
   }
 
   // player attacked me? handled in trySwing. Acquire aggro:
-  if (mob.attackTarget == 0 && mob.aggroRadius > 0 &&
+  // T-071: night-bound mobs do not acquire by day.
+  if (mob.attackTarget == 0 && mob.aggroRadius > 0 && !mobNightDormant(mob) &&
       mob.id % kAggroThinkPeriod == static_cast<std::uint32_t>(tick_ % kAggroThinkPeriod)) {
     // T-061 nightcreep: dark eyes see one tile further
     const std::uint8_t effAggro =
@@ -2491,6 +2538,8 @@ void World::respawnTick() {
     for (size_t i = 0; i < zone.spawners.size(); ++i) {
       SpawnerLive& sl = zone.spawners[i];
       if (tick_ < sl.respawnReadyAt) continue;
+      // T-071: night-bound spawners refill only inside the night window.
+      if (sl.def.nightOnly != 0 && !isNight()) continue;
       std::uint32_t alive = 0;
       for (const auto& e : entities_) {
         if (e.kind == EntityKind::kMob && e.zoneId == zid && e.spawnerIdx == i) ++alive;
@@ -2555,6 +2604,11 @@ void World::tick() {
     const sim::TilePos after = e.walker.tile();
     if (after != before) {
       zones_.at(e.zoneId).spatial.move(e.id, after.x, after.y);
+    }
+    // T-071: torches burn down on the tick edge (lanterns never do).
+    if (e.lightUntil >= 0 && tick_ >= e.lightUntil) {
+      e.lightRadius = 0;
+      e.lightUntil = -1;
     }
     // portal fire: on arrival/settled (not every tick: world-transfer is chunky)
     if (e.kind == EntityKind::kPlayer && !e.dead && !e.walker.moving && e.path.empty()) {

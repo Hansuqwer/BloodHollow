@@ -187,6 +187,8 @@ int main(int argc, char** argv) {
         s.respawnTicks =
             static_cast<std::uint32_t>(propNum(o, "respawnTicks", 1200.0));
         if (s.respawnTicks < 20) s.respawnTicks = 20;
+        s.nightOnly =
+            static_cast<std::uint8_t>(propNum(o, "nightOnly", 0.0) > 0.5 ? 1 : 0);
         m.spawners.push_back(s);
       } else {
         const double target = propNum(o, "targetMapId", 0.0);

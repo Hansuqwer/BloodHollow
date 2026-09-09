@@ -177,6 +177,7 @@ u32 hpMax
 u8 level
 string name
 u8 karmaBand
+u8 light
 ```
 
 ```proto
@@ -187,6 +188,7 @@ i32 y
 u8 dir
 u8 moving
 u32 hp
+u8 light
 ```
 
 ```proto

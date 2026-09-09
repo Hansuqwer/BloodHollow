@@ -88,11 +88,12 @@ void sendMsg(ENetPeer* peer, const Msg& m, Server& s) {
 // Journal epoch: bump when the SIM semantics change under old journals
 // (whitening/moral split in S15 = epoch 3; kit sidecars = 2; pre-K = 1;
 // S22 T-034b mob retune = 6; T-068 barricade relocation = 7;
-// T-069 fence + one-Marta spawn fix = 8; T-070 curse + confessor = 9).
+// T-069 fence + one-Marta spawn fix = 8; T-070 curse + confessor = 9;
+// T-071 torch/lantern + nightOnly spawner = 10).
 // Replay refuses non-matching epoch journals instead of lying with them.
-constexpr int kJournalEpoch = 9;  // T-070: confessor furniture + curse
-                                  // effect shift the sim under v8 journals;
-                                  // stale by contract (same response as ever)
+constexpr int kJournalEpoch = 10;  // T-071: light state + nightOnly refill
+                                   // shift the sim under v9 journals; stale
+                                   // by contract (same response as ever)
 
 // ---- world journal record helpers (M2) ------------------------------------
 void journalTickHash(Server& s) {
@@ -787,6 +788,7 @@ void distributeEvents(Server& s) {
           m.level = e->level;
           m.name = e->name;
           m.karmaBand = World::karmaBandOf(e->karma);
+          m.light = e->lightRadius;  // T-071 night light
           sendMsg(kv.first, m, s);
         }
       }
@@ -885,6 +887,7 @@ void tickServer(Server& s) {
         m.karmaBand = e->kind == EntityKind::kPlayer
                           ? World::karmaBandOf(e->karma)
                           : std::uint8_t(1);  // mobs: neutral band
+        m.light = e->lightRadius;  // T-071 night light
         sendMsg(sess.peer, m, s);
       }
       proto::EntityDelta d;
@@ -894,6 +897,7 @@ void tickServer(Server& s) {
       d.dir = static_cast<std::uint8_t>(e->walker.dir);
       d.moving = e->walker.moving ? 1 : 0;
       d.hp = e->hp;
+      d.light = e->lightRadius;  // T-071 (torch expiry/toggle rides the delta)
       sendMsg(sess.peer, d, s);
     }
     for (const std::uint32_t id : sess.interest) {

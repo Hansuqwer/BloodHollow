@@ -10,13 +10,13 @@
 
 namespace bh::sim {
 
-// .bhmap — BLOODHOLLOW binary map format v1 (ADR-007).
+// .bhmap — BLOODHOLLOW binary map format v2 (ADR-007).
 // Header (little-endian): magic, version, w, h, tileW, tileH, spawnCount,
 // portalCount, FNV-1a-64 checksum of payload.
 // Payload: RLE u16 ground layer, RLE u16 zone layer, blocked bitfield,
 // SpawnDef[], PortalDef[].
 inline constexpr std::uint32_t kBhmapMagic = 0x504d4842u;  // "BHMP"
-inline constexpr std::uint32_t kBhmapVersion = 1;
+inline constexpr std::uint32_t kBhmapVersion = 2;  // v2: SpawnDef nightOnly (T-071)
 inline constexpr int kBhmapMaxDim = 4096;
 
 struct SpawnDef {
@@ -24,6 +24,7 @@ struct SpawnDef {
   std::uint32_t mobId = 0;                  // into shared/data/monsters.json (later)
   std::uint32_t maxAlive = 3;
   std::uint32_t respawnTicks = 1200;        // 60 s @20 Hz
+  std::uint8_t nightOnly = 0;               // T-071: refill + aggro only at night
 };
 
 struct PortalDef {

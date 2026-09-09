@@ -108,6 +108,11 @@ struct Entity {
   sim::Tick ironskinUntil = -1; // +20% DR (T-054)
   sim::Tick chorusUntil = -1;   // +5% hit&dmg, party-wide song (T-054b ch6)
   sim::Tick curseUntil = -1;    // T-070 Blood Curse: heals land at 75%
+  // T-071 night light: carried light radius (0 = dark). Torch = timed,
+  // lantern = toggled, never expires while held (lightUntil -1).
+  std::uint8_t lightRadius = 0;
+  sim::Tick lightUntil = -1;
+  bool lanternLit = false;
   sim::Tick hasteUntil = -1;    // -25% swing cadence (T-054b ch8)
   sim::Tick lastMendTick = -1000;
   sim::Tick lastBlessTick = -1000;
@@ -365,6 +370,8 @@ class World {
                    std::uint16_t zoneId);
   Entity& insertEntity(Entity e);
   void mobThink(Entity& mob);
+  // T-071: night-bound mobs (nightOnly spawner) do not acquire by day.
+  bool mobNightDormant(const Entity& mob) const;
   void trySwing(Entity& att, Entity& def);
   void killMob(Entity& mob, Entity* killer);
   void killPlayer(Entity& victim, Entity* killer);

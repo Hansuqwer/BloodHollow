@@ -145,6 +145,7 @@ bool saveBhmap(const std::string& path, const Map& m, std::string* err) {
     put32(payload, s.mobId);
     put32(payload, s.maxAlive);
     put32(payload, s.respawnTicks);
+    payload.push_back(s.nightOnly);  // T-071 v2 tail byte
   }
   for (const PortalDef& p : m.portals) {
     puti32(payload, p.x);
@@ -260,7 +261,7 @@ std::optional<Map> loadBhmap(const std::string& path, std::string* err) {
   for (std::uint32_t i = 0; i < spawnCount; ++i) {
     SpawnDef s;
     if (!r.i32(s.x) || !r.i32(s.y) || !r.i32(s.w) || !r.i32(s.h) || !r.u32(s.mobId) ||
-        !r.u32(s.maxAlive) || !r.u32(s.respawnTicks)) {
+        !r.u32(s.maxAlive) || !r.u32(s.respawnTicks) || !r.u8(s.nightOnly)) {
       setErr(err, "truncated spawners", path);
       return std::nullopt;
     }

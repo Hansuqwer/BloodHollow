@@ -343,6 +343,30 @@ mismatches=0`. Suite 119/119 (328,008 assertions). Devlog 0033.
 |---|---|
 | [T-070](done/T-070.md) | Blood Curse + chapel cure (epoch 9) |
 
+## Done — overnight S22b (2026-09-09): night light
+
+Torch (3003, 8g) burns 6 tiles / 300 s; Blessed Lantern (3004, 150g)
+toggles 8 forever while held; both ride the journaled `kUseItem` lane (no
+new command). Warm mask at night, floor-safe by construction (peak 90 <
+150 floor). `nightOnly` spawner field + `.bhmap` v2 + mapconv prop;
+`night_ghouls` (36,26, maxAlive 4) hunts 21:00–05:00 only. Build fix:
+`bh_maps` syncs all five maps (zones 2–5 were stale v1). Judgment calls
+flagged: lantern price/placement, Marta F1–F7 / fence F8–F10. Epoch
+**9 → 10**; fresh 560 s journal replays `[replay] OK ticks=13201
+sessionCmds=5633 hashes=133 mismatches=0`. Suite 126/126 (328,054).
+Devlog 0034.
+
+| Card | Title |
+|---|---|
+| [T-071](done/T-071.md) | Night light: torch + lantern + night-only spawns (epoch 10) |
+
+## Done — overnight S23 (2026-09-09): aura tiers III–V audit
+
+Audit-only (brief premise corrected — T-047 already shipped III–V):
+gates 20/50/80/120/150 hold, effects match GDD §3, replay parity
+spot-checked on the epoch-10 journal (`mismatches=0`). No code change,
+no epoch bump (stays **10**). Devlog 0035.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |

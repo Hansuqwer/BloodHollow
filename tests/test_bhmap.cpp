@@ -31,6 +31,7 @@ sim::Map makeSample() {
   s.mobId = 1001;
   s.maxAlive = 6;
   s.respawnTicks = 900;
+  s.nightOnly = 1;  // T-071 v2 tail byte
   m.spawners.push_back(s);
   sim::PortalDef p;
   p.x = 8;
@@ -68,6 +69,7 @@ TEST_CASE("bhmap: write/load round-trips every field") {
   CHECK(loaded->spawners[0].mobId == 1001);
   CHECK(loaded->spawners[0].maxAlive == 6);
   CHECK(loaded->spawners[0].respawnTicks == 900);
+  CHECK(loaded->spawners[0].nightOnly == 1);
   REQUIRE(loaded->portals.size() == 1);
   CHECK(loaded->portals[0].targetMapId == 2);
   CHECK(loaded->portals[0].targetX == 3);

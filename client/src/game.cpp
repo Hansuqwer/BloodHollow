@@ -11,6 +11,7 @@
 #include "content/wirekind.h"
 #include "render/daynight.h"
 #include "render/iso.h"
+#include "render/lightmask.h"
 #include "sim/clock.h"
 #include "sim/tick.h"
 
@@ -258,14 +259,16 @@ void Game::handleInputOnline() {
   }
   if (showVendor_) {
     if (IsKeyPressed(KEY_G)) net_->sendSellJunk();
-    for (int i = 0; i < 5; ++i) {
-      if (IsKeyPressed(KEY_F1 + i)) {
-        net_->sendBuy(content::kVendorStock[static_cast<size_t>(i)], 1);
-      }
+    // T-071: Marta's stock is size-driven (torch + lantern joined in T-071);
+    // Sable's crate follows on F8–F10 so the lanes never share a key.
+    int fi = 0;
+    for (const std::uint32_t id : content::kVendorStock) {
+      if (fi < 12 && IsKeyPressed(KEY_F1 + fi)) net_->sendBuy(id, 1);
+      ++fi;
     }
     // T-069: Sable's crate — same BuyRequest path the server routes by item.
     for (int i = 0; i < 3; ++i) {
-      if (IsKeyPressed(KEY_F6 + i)) {
+      if (IsKeyPressed(KEY_F8 + i)) {
         net_->sendBuy(content::kFenceStock[static_cast<size_t>(i)], 1);
       }
     }
@@ -1190,8 +1193,19 @@ void Game::drawAnvilPanel() const {
 void Game::drawVendorPanel() const {
   if (net_ == nullptr || !showVendor_) return;
   // T-069: the crate section appears only at Sable's fence; the panel grows.
+  // T-071: Marta's rows are stock-driven (7 since the torch + lantern).
   const bool fence = fenceNear();
-  const int ph = fence ? 214 : 150;
+  int rows = 0;
+  for (const std::uint32_t id : content::kVendorStock) {
+    if (content::findItem(id) != nullptr) ++rows;
+  }
+  if (fence) {
+    for (const std::uint32_t id : content::kFenceStock) {
+      if (content::findItem(id) != nullptr) ++rows;
+    }
+    rows += 1;  // crate header
+  }
+  const int ph = 56 + rows * 16 + 22;
   const int px = 12, py = 150;
   DrawRectangle(px, py, 250, ph, Color{12, 10, 8, 210});
   DrawRectangleLinesEx(Rectangle{(float)px, (float)py, 250.0f, (float)ph}, 1.0f,
@@ -1219,7 +1233,7 @@ void Game::drawVendorPanel() const {
       const content::ItemDef* d = content::findItem(id);
       if (d == nullptr) continue;
       const std::uint32_t price = d->value * content::kFenceMarkupPct / 100;
-      std::snprintf(buf, sizeof buf, "F%d  %-14s %ug", j + 6, d->name, price);
+      std::snprintf(buf, sizeof buf, "F%d  %-14s %ug", j + 8, d->name, price);
       DrawText(buf, px + 10, y, 10, Color{220, 170, 160, 255});
       y += 16;
       ++j;
@@ -1351,6 +1365,23 @@ void Game::render(double /*interpAlpha*/) {
 
   const Color ov = nightOverlay(gameHour());
   if (ov.a > 0) DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), ov);
+  // T-071 night light: carried pools are painted back additively-in-effect —
+  // warm gradient circles over lit entities (own player + lit AoI). Normal
+  // alpha blending toward warm can only lighten the overlay beneath, so the
+  // T-062 tint floor (alpha 150) is never pushed darker. Render-only: the
+  // server owns lightRadius; the mask reads snap.light.
+  if (ov.a > 0 && net_ != nullptr) {
+    for (const auto& kv : rents_) {
+      const std::uint8_t lr = kv.second.snap.light;
+      if (lr == 0) continue;
+      const Vector2 w = iso::tileToWorldF(entRenderPos(kv.second), map_.tileW, map_.tileH);
+      const Vector2 sp = GetWorldToScreen2D(w, rig_.cam);
+      const float radius = static_cast<float>(lr) * kLightTilePx;
+      const auto peak = static_cast<unsigned char>(kLightGlowAlpha);
+      DrawCircleGradient(static_cast<int>(sp.x), static_cast<int>(sp.y), radius,
+                         Color{255, 190, 110, peak}, Color{255, 190, 110, 0});
+    }
+  }
   drawChat();
   drawHud();
   drawStatPanel();

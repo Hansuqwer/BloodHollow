@@ -129,13 +129,14 @@ def main() -> int:
         oid += 1
         return oid
 
-    def spawn(name, x, y, w, h, mob, alive, respawn):
+    def spawn(name, x, y, w, h, mob, alive, respawn, nightOnly=0):
         return {
             "id": next_oid(), "name": name, "type": "spawner",
             "x": x * TW, "y": y * TH, "width": w * TW, "height": h * TH,
             "rotation": 0, "visible": True,
             "properties": [prop("mobId", mob), prop("maxAlive", alive),
-                           prop("respawnTicks", respawn)],
+                           prop("respawnTicks", respawn),
+                           prop("nightOnly", nightOnly)],
         }
 
     def portal(name, x, y, w, h, target_map, tx, ty):
@@ -168,6 +169,11 @@ def main() -> int:
         # (wander 5 + aggro 7) >= 8 tiles from every route tile, day and
         # night.  The L11 stays as a far-marsh hazard, not a roadblock.
         spawn("gravecaller_barricade", 1, 43, 1, 3, MOB_GRAVECALLER, 3, 1000),
+        # T-071 night light: one night-bound ghoul pack in the quiet middle
+        # fields (x36-41, y26-29: grass gap between town and the orchard,
+        # off the east/south roads and the campaign line). By day the rect
+        # stands empty; after 21:00 it refills and hunts (maxAlive 4).
+        spawn("night_ghouls", 36, 26, 6, 4, MOB_FERAL_GHOUL, 4, 600, 1),
     ]
     portals = [
         portal("east_gate", 63, 14, 1, 2, 2, 2, 14),   # -> fields map (Phase 2)

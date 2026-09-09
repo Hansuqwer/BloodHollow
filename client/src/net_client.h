@@ -23,6 +23,7 @@ struct NetEntSnapshot {
   std::uint8_t level = 1;
   std::string name{};
   std::uint8_t karmaBand = 1;  // T-057: 0 lawful / 1 neutral / 2 chaotic (red)
+  std::uint8_t light = 0;      // T-071: carried light radius (tiles)
 };
 
 // Server-pushed progression snapshot (OwnStats message).
