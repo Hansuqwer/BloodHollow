@@ -546,6 +546,10 @@ T-094 CONTENT (epoch 13→14): twins + post guards placed live (derived position
 
 T-095 GATE-CLOSED (no code): zero widow kills suffered in T-090 + t094 (14 bots) — no wall, no lever. Reopen rule framed; faster-L9 work belongs to logistics, not mob stats. Devlog 0064.
 
+## Done — T-096 (2026-09-09): multi-leg rite demo
+
+T-096 DB-DISCIPLINE: 2 natural legs bank 8→18 pelts (same DB+prefix, replays green) + bless-seeded leg proves the lane 3/3 grafts. Finding: skill resets per login (no schema column). Devlog 0065.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |

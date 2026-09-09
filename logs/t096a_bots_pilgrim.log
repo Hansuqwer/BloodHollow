@@ -1,0 +1,5 @@
+[bots] SUMMARY welcomed=3/3 moved=3/3 minDeltas=4800 kills=77 pots=0 swings=205 deaths=22 shops=3 anvilTries=0 levelDrops=1 regear=0 maxLevel=3 pkts=344800 bytes=8233546 gates b/g/p/a/r=336/600/919/0/0 mGold=267 mPelts=3 bless=0 mend=0 noSee=0 hurt=0 choir c6=0 c7=0 c8=0
+[bots] t96p__00     kit=1 lvl=3 hp=31/94 party=0 deaths=8 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 lastDeath=(60,13) killerByLvl=L3:8
+[bots] t96p__01     kit=1 lvl=3 hp=89/94 party=0 deaths=8 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 lastDeath=(21,30) killerByLvl=L5:4 L3:4
+[bots] t96p__02     kit=1 lvl=3 hp=79/94 party=0 deaths=6 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 lastDeath=(60,13) killerByLvl=L3:6
+[bots] OK
