@@ -554,6 +554,10 @@ T-096 DB-DISCIPLINE: 2 natural legs bank 8→18 pelts (same DB+prefix, replays g
 
 T-097 DESIGN (no code): three elites derived from the 1010 pattern (A melee / B Cantor-caster), fixed timers (determinism), broadcast first-kills. One card per elite when ordered. Devlog 0066.
 
+## Done — T-098 (2026-09-09): decal pressure probe
+
+T-098 READ-ONLY: peak 210 live decals vs 512 cap (2.4× headroom, 0 evictions, 0 telegraph/circle callers) — chunking stays closed. Reopen rule framed. Devlog 0067.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |
