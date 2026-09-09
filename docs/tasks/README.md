@@ -396,6 +396,14 @@ nothing shipped. Bot-only, epoch stays **11**. Next pit noted (retreat
 |---|---|
 | [T-074](done/T-074.md) | Bad-leg death levers: pack-gate drop measured, rejected, reverted |
 
+## Done — extended S26 (2026-09-09): client quick wins
+
+T-ART-01 (point filter in `loadAtlas`), T-ART-02 (wheel snap {1,1.5,2} +
+`test_zoom.cpp` boundary pins), T-ART-08 (map cases 4/5). Render-only, no
+epoch impact (stays **11**). Ledger: T-ART-03 done-superseded by T-071,
+T-ART-06 partial (68/69 shipped), T-ART-09/11 parked. Suite 135/135
+(328,102). Devlog 0038.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |

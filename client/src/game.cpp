@@ -831,6 +831,8 @@ const char* Game::mapFileFor(std::uint16_t mapId) {
   switch (mapId) {
     case 2: return "assets/maps/fields_overflow.bhmap";
     case 3: return "assets/maps/thornwall_crypt.bhmap";
+    case 4: return "assets/maps/bonehowl_mine.bhmap";   // T-ART-08
+    case 5: return "assets/maps/drowned_crypt.bhmap";   // T-ART-08
     default: return "assets/maps/thornwall.bhmap";
   }
 }
