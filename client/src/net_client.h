@@ -24,6 +24,7 @@ struct NetEntSnapshot {
   std::string name{};
   std::uint8_t karmaBand = 1;  // T-057: 0 lawful / 1 neutral / 2 chaotic (red)
   std::uint8_t light = 0;      // T-071: carried light radius (tiles)
+  std::uint8_t glowTier = 0;   // T-092: equipped-weapon refine glow (0/1/2)
 };
 
 // Server-pushed progression snapshot (OwnStats message).

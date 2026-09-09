@@ -178,6 +178,7 @@ u8 level
 string name
 u8 karmaBand
 u8 light
+u8 glowTier  // T-092: equipped-weapon refine glow (0 none, 1 +5..9, 2 +10+)
 ```
 
 ```proto
@@ -189,6 +190,7 @@ u8 dir
 u8 moving
 u32 hp
 u8 light
+u8 glowTier  // T-092: rides the delta (refine/repair/equip change it live)
 ```
 
 ```proto

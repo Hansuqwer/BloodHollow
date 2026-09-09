@@ -530,6 +530,10 @@ T-090 BOT-ONLY: 540 s climb from 0 xp — 156 kills / 2 roam deaths, 76%+57% of 
 
 T-091 CONTENT (epoch 12→13): 60t wind-up + radius-2 slam replaces her instant bolt; movers dodge, mark-loss fizzles. Client stages 1-2-3 + floaters. 4 new tests (171 total). Fresh soak + replay clean, old journals refuse exit 4. Devlog 0060.
 
+## Done — T-092 (2026-09-09): in-world refine glow
+
+T-092 WIRE (stays 237): trailing `glowTier` on spawn/delta + scan + halo draw. Codec + scan tests (172 total). No epoch bump (t091 replays clean). Devlog 0061.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |

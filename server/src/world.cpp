@@ -574,6 +574,22 @@ std::uint32_t World::equippedWeaponDmg(const Entity& e) const {
   return kFistsBaseDmg;
 }
 
+std::uint8_t World::equippedGlowTier(const Entity& e) const {
+  if (e.kind != EntityKind::kPlayer) return 0;  // mobs carry no gear
+  for (const InvSlot& sl : e.inv) {
+    if (sl.equipped) {
+      const content::ItemDef* d = content::findItem(sl.itemId);
+      if (d != nullptr && d->slot == 0) {
+        if (sl.durability == 0) return 0;  // dormant never glows (T-058)
+        if (sl.refine >= 10) return 2;     // mythic silhouette (T-ART-11)
+        if (sl.refine >= 5) return 1;      // glow (GDD: from +5)
+        return 0;
+      }
+    }
+  }
+  return 0;  // fists: no steel, no glow
+}
+
 std::uint32_t World::equippedArmorDef(const Entity& e) const {
   for (const InvSlot& sl : e.inv) {
     if (sl.equipped) {

@@ -1,0 +1,17 @@
+[boot] zone 2 (assets/maps/fields_overflow.bhmap: 64x48) online
+[boot] zone 3 (assets/maps/thornwall_crypt.bhmap: 48x36) online
+[boot] zone 4 (assets/maps/bonehowl_mine.bhmap: 56x40) online
+[boot] zone 5 (assets/maps/drowned_crypt.bhmap: 48x36) online
+[journal] recording world to logs/t092_smoke.bwj (epoch 13)
+[boot] bh_server on 0.0.0.0:7900 | map 'assets/maps/thornwall.bhmap' | db '/tmp/t092.db' | tick 20Hz | aoi 26
+[net] t92s__00         entered the world (entity 365, online 1)
+[net] t92s__01         entered the world (entity 366, online 2)
+[soak] tick=600 online=2 entities=357 tickUs p50=783 p99=1472 worldHash=0aa6a3af4cf9a720 pkts=113/178031
+[soak] tick=1200 online=2 entities=353 tickUs p50=682 p99=1395 worldHash=95d40590e44bf508 pkts=218/333524
+[net] t92s__00         saved at (32,16)
+[net] t92s__01         saved at (34,15)
+[soak] tick=1800 online=0 entities=354 tickUs p50=433 p99=1088 worldHash=8d8904bd36a8bccb pkts=225/346599
+[soak] FINISH ticks=1801 online=0 entities=355 tickUs p50=433 p99=1088
+[soak] OK p99=1.09ms budget=10.00ms
+[balance] Marsh Rat        L1  kills=9     TTK(25t hps)=6.4s xp=40
+[balance] Feral Ghoul      L3  kills=4     TTK(25t hps)=12.9s xp=90

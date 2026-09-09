@@ -45,7 +45,7 @@ struct InvSlot {
   std::uint8_t aura = 0;   // T-042: applied aura tier (0=none, 1..5 per RFC 0001)
   std::uint8_t durability = 100;  // T-058: 0 = dormant (kept, no stats); weapons/armor
   std::uint8_t affix = 0;         // T-059: 0 none, 1 whet, 2 ward, 3 leech
-  std::uint8_t refine = 0;        // T-060: 0..3 (+2 weapon dmg / +1 armor def per tier)
+  std::uint8_t refine = 0;        // T-060: 0..3, T-079: to +7 (+2 weapon dmg / +1 armor def per tier)
 };
 
 // T-049x (relog-launderer fix): ONE grammar for persisted inventory blobs —
@@ -299,6 +299,10 @@ class World {
 
   // test/gm introspection
   std::uint32_t debugWeaponDmg(const Entity& e) const { return equippedWeaponDmg(e); }
+  // T-092: equipped-weapon refine glow tier for the wire (0 none, 1 +5..9,
+  // 2 +10+). Dormant never glows; mobs always 0 (public: the net layer in
+  // main.cpp packs it, same as karmaBandOf).
+  std::uint8_t equippedGlowTier(const Entity& e) const;
   void debugKillPlayer(Entity& e) { killPlayer(e, nullptr); }
   void debugKillPlayerBy(Entity& e, Entity* killer) { killPlayer(e, killer); }
   void debugAwardXp(Entity& e, std::uint32_t amt) { awardXp(e, amt); }

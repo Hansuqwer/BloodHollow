@@ -52,6 +52,7 @@ TEST_CASE("protogen: generated messages roundtrip") {
     in.dir = 5;
     in.moving = 1;
     in.hp = 30;
+    in.glowTier = 1;  // T-092 trailing field round-trips
     const auto bytes = pack(in);
     const auto pv = view(bytes.data(), bytes.size());
     REQUIRE(pv.ok);
@@ -62,6 +63,23 @@ TEST_CASE("protogen: generated messages roundtrip") {
     CHECK(out.y == -789);
     CHECK(out.moving == 1);
     CHECK(out.hp == 30u);
+    CHECK(out.glowTier == 1u);
+  }
+  SUBCASE("EntitySpawn carries glowTier (T-092)") {
+    EntitySpawn in;
+    in.id = 7;
+    in.kind = 0;
+    in.name = "glowy";
+    in.glowTier = 2;
+    const auto bytes = pack(in);
+    const auto pv = view(bytes.data(), bytes.size());
+    REQUIRE(pv.ok);
+    EntitySpawn out;
+    REQUIRE(out.deserialize(pv.body));
+    CHECK(out.id == 7u);
+    CHECK(out.name == "glowy");
+    CHECK(out.glowTier == 2u);
+    CHECK(out.light == 0u);  // neighbours default, not clobbered
   }
 }
 

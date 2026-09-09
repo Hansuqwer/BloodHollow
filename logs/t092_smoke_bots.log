@@ -1,0 +1,9 @@
+[campaign] t92s__01 reached L1 at t=0.1s (map 1)
+[campaign] t92s__00 reached L1 at t=0.1s (map 1)
+[campaign] t92s__00 reached L2 at t=6.4s (map 1)
+[campaign] t92s__01 reached L2 at t=22.3s (map 1)
+[campaign] t92s__00 reached L3 at t=37.4s (map 1)
+[bots] SUMMARY welcomed=2/2 moved=2/2 minDeltas=1200 kills=29 pots=2 swings=43 deaths=0 shops=0 anvilTries=0 levelDrops=0 regear=0 maxLevel=3 pkts=346278 bytes=8309784 gates b/g/p/a/r=0/0/0/0/0 mGold=0 mPelts=0 bless=0 mend=9 noSee=0 hurt=74 choir c6=0 c7=0 c8=0
+[bots] t92s__00     kit=1 lvl=3 hp=53/94 party=2 deaths=0 rxR=67 rxM=116 lastPid=1 casts c6=0 c7=0 c8=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t92s__01     kit=3 lvl=2 hp=85/94 party=2 deaths=0 rxR=62 rxM=100 lastPid=1 casts c6=0 c7=0 c8=0 lastDeath=(-1,-1) killerByLvl=
+[bots] OK

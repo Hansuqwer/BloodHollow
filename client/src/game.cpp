@@ -852,6 +852,14 @@ void Game::drawRemoteEnt(const RenderEnt& e, bool isOwn) {
     used = fallback;
   }
   const Color tint = isOwn ? Color{255, 255, 255, 255} : Color{190, 190, 200, 255};
+  // T-092: equipped refine glows in-world (tier rides snap.glowTier, alpha
+  // capped by the T-ART-11 law; mythic reads paler + wider, not brighter).
+  if (e.snap.glowTier > 0) {
+    const bool mythic = e.snap.glowTier >= 2;
+    DrawEllipse(static_cast<int>(w.x), static_cast<int>(w.y), mythic ? 16 : 12,
+                mythic ? 7 : 5,
+                mythic ? Color{255, 240, 200, 70} : Color{255, 210, 110, 70});
+  }
   if (src.width > 0.0f) {
     DrawTexturePro(at.tex, src, Rectangle{w.x, w.y, src.width, src.height},
                    Vector2{src.width * 0.5f, animAnchorY(at, used)}, 0.0f, tint);

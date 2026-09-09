@@ -791,6 +791,7 @@ void distributeEvents(Server& s) {
           m.name = e->name;
           m.karmaBand = World::karmaBandOf(e->karma);
           m.light = e->lightRadius;  // T-071 night light
+          m.glowTier = s.world.equippedGlowTier(*e);  // T-092 refine glow
           sendMsg(kv.first, m, s);
         }
       }
@@ -890,6 +891,7 @@ void tickServer(Server& s) {
                           ? World::karmaBandOf(e->karma)
                           : std::uint8_t(1);  // mobs: neutral band
         m.light = e->lightRadius;  // T-071 night light
+        m.glowTier = s.world.equippedGlowTier(*e);  // T-092 refine glow
         sendMsg(sess.peer, m, s);
       }
       proto::EntityDelta d;
@@ -900,6 +902,7 @@ void tickServer(Server& s) {
       d.moving = e->walker.moving ? 1 : 0;
       d.hp = e->hp;
       d.light = e->lightRadius;  // T-071 (torch expiry/toggle rides the delta)
+      d.glowTier = s.world.equippedGlowTier(*e);  // T-092 (refine swaps ride too)
       sendMsg(sess.peer, d, s);
     }
     for (const std::uint32_t id : sess.interest) {
