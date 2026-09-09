@@ -9,6 +9,7 @@
 
 #include "assets/atlas.h"
 #include "net_client.h"
+#include "render/animstate.h"  // T-ART-04 combat anim hook
 #include "render/camera_rig.h"
 #include "sim/bhmap.h"
 #include "sim/journal.h"
@@ -38,6 +39,10 @@ struct RenderEnt {
   float fromX = 0, fromY = 0;  // render-interp origin (tile-space float)
   double stamp = 0;            // GetTime() when the latest delta was applied
   bool hasInterp = false;
+  // T-ART-04 combat anim hook (render-side only, never authoritative).
+  EntAnimState animState = EntAnimState::kNone;
+  double animStateAt = 0.0;    // GetTime() the state started (frame 0)
+  double animStateUntil = 0.0;  // GetTime() a transient state expires
 };
 
 class Game {
@@ -81,6 +86,7 @@ class Game {
   void drawHero();           // offline hero
   void drawEntitiesOnline();
   void drawRemoteEnt(const RenderEnt& e, bool isOwn);
+  static void setAnimState(RenderEnt& e, EntAnimState st, double now);
   void drawPathPreview() const;
   void drawCommandMarker() const;
   void drawHud() const;

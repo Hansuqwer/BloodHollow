@@ -369,6 +369,10 @@ void Game::applyNetState() {
     re.snap.kind = s.kind;
     re.snap.level = s.level;
     re.snap.name = s.name;
+    // T-ART-04: same id, breathing again (respawn) — drop the death pose.
+    if (s.hp > 0 && re.animState == EntAnimState::kDie) {
+      re.animState = EntAnimState::kNone;
+    }
   }
   if (targetId_ != 0) {
     const auto it = net_->ents.find(targetId_);
@@ -514,6 +518,28 @@ void Game::applyNetState() {
     while (floaters_.size() > 24) floaters_.pop_front();
     playCallout(cp.kind);  // T-067
   }
+  // T-ART-04 combat anim hook: attacker snaps (contact frame first — the
+  // pulse IS the resolution tick), victim hurt/dies. Victim-side wins ties.
+  // Furniture never fights. Render-side only; authority untouched.
+  for (const CombatPulse& cp : net_->combatIn) {
+    const bool swing = cp.kind == 1 || cp.kind == 2;
+    const bool cast = cp.kind == 5 || cp.kind == 9 || cp.kind == 10 ||
+                      cp.kind == 13 || cp.kind == 14;
+    const bool hurt = cp.kind == 1 || cp.kind == 2 || cp.kind == 5 || cp.kind == 9;
+    const bool slain = cp.kind == 3;
+    if (swing || cast) {
+      auto ai = rents_.find(cp.attacker);
+      if (ai != rents_.end() && !content::wireIsFurniture(ai->second.snap.kind)) {
+        setAnimState(ai->second, swing ? EntAnimState::kAttack : EntAnimState::kCast, now);
+      }
+    }
+    if (hurt || slain) {
+      auto ti = rents_.find(cp.target);
+      if (ti != rents_.end() && !content::wireIsFurniture(ti->second.snap.kind)) {
+        setAnimState(ti->second, slain ? EntAnimState::kDie : EntAnimState::kHurt, now);
+      }
+    }
+  }
   for (const ChatLine& c : net_->chatIn) {
     chatLog_.push_back(c);
     while (chatLog_.size() > 12) chatLog_.pop_front();
@@ -525,6 +551,13 @@ void Game::applyNetState() {
     chatLog_.push_back(ChatLine{2, "system", "you step into Thornwall. (Enter = chat)"});
   }
   net_->clearPulse();
+}
+
+void Game::setAnimState(RenderEnt& e, EntAnimState st, double now) {
+  e.animState = st;
+  e.animStateAt = now;
+  const int ticks = animStateDurationTicks(st);
+  e.animStateUntil = ticks < 0 ? now + 3600.0 : now + ticks / 20.0;
 }
 
 Vector2 Game::entRenderPos(const RenderEnt& e) const {
@@ -766,8 +799,22 @@ void Game::drawRemoteEnt(const RenderEnt& e, bool isOwn) {
     DrawEllipseLines(static_cast<int>(w.x), static_cast<int>(w.y), 14.0f, 7.0f,
                      Color{220, 40, 40, 230});
   }
-  const Rectangle src = animFrame(heroAtlas_, e.snap.moving ? "walk" : "idle",
-                                  static_cast<int>(e.snap.dir), animT_);
+  const double now = GetTime();
+  // T-ART-04: combat anim wins while its transient runs (die holds until the
+  // corpse leaves); state clock starts at frame 0 on the resolution tick.
+  EntAnimState st = e.animState;
+  if (st != EntAnimState::kDie && st != EntAnimState::kNone && now > e.animStateUntil) {
+    st = EntAnimState::kNone;
+  }
+  const char* anim = animNameFor(st, e.snap.moving);
+  double animClock = animT_;
+  if (st != EntAnimState::kNone) animClock = now - e.animStateAt;
+  Rectangle src = animFrame(heroAtlas_, anim, static_cast<int>(e.snap.dir), animClock);
+  if ((src.width <= 0.0f) && st != EntAnimState::kNone) {
+    // atlas predates combat frames: fall back to the locomotion frame.
+    src = animFrame(heroAtlas_, e.snap.moving ? "walk" : "idle",
+                    static_cast<int>(e.snap.dir), animT_);
+  }
   const Color tint = isOwn ? Color{255, 255, 255, 255} : Color{190, 190, 200, 255};
   if (src.width > 0.0f) {
     DrawTexturePro(heroAtlas_.tex, src, Rectangle{w.x, w.y, src.width, src.height},

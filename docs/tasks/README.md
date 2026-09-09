@@ -404,6 +404,13 @@ epoch impact (stays **11**). Ledger: T-ART-03 done-superseded by T-071,
 T-ART-06 partial (68/69 shipped), T-ART-09/11 parked. Suite 135/135
 (328,102). Devlog 0038.
 
+## Done — extended S27 (2026-09-09): anim-state hook
+
+T-ART-04: render-side combat anim states (attack/cast/hurt/die) keyed by
+`CombatEvent` pulses, contact frame first, walk/idle fallback until B3+
+lands. Durations half-cadence derived (8/8/4t, die held). Render-only, no
+epoch impact (stays **11**). Suite 137/137 (328,115). Devlog 0039.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |
