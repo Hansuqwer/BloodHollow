@@ -4,6 +4,14 @@
 
 namespace bh {
 
+// T-ART-02: zoom snap — art is validated at {1, 1.5, 2}; non-integer zoom
+// shimmers pixel art. Boundaries: <1.25 -> 1, <1.75 -> 1.5, else 2.
+inline float snapZoom(float z) {
+  if (z < 1.25f) return 1.0f;
+  if (z < 1.75f) return 1.5f;
+  return 2.0f;
+}
+
 // Era camera (T-007 polish): follows the hero, MMB/arrow-key free-pan,
 // Space/MMB-release re-lock, stepped Z zoom + wheel fine zoom, always
 // zooming at the cursor, all clamped to the map bounds.
@@ -54,10 +62,7 @@ struct CameraRig {
     }
     const float wheel = GetMouseWheelMove();
     if (wheel != 0.0f) {
-      float z = cam.zoom + wheel * 0.25f;
-      if (z < 1.0f) z = 1.0f;
-      if (z > 2.5f) z = 2.5f;
-      zoomAt(GetMousePosition(), z);
+      zoomAt(GetMousePosition(), snapZoom(cam.zoom + wheel * 0.25f));
     }
     if (IsMouseButtonPressed(MOUSE_BUTTON_MIDDLE)) manualPan = true;
     if (IsMouseButtonDown(MOUSE_BUTTON_MIDDLE) && manualPan) {

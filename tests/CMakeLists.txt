@@ -19,6 +19,7 @@ add_executable(bh_tests
   test_curse.cpp
   test_light.cpp
   test_guards.cpp
+  test_zoom.cpp
   test_gear_churn.cpp
   test_night.cpp
   test_s18_dropzone.cpp
@@ -27,6 +28,9 @@ add_executable(bh_tests
   test_inv_blob.cpp
 )
 target_link_libraries(bh_tests PRIVATE bh_shared bh_protocol bh_server_world bh_doctest bh_warnings)
+# T-ART-02: snapZoom lives in raylib-including camera_rig.h — link raylib for
+# the headers (test TU never opens a display; pure float math under test).
+target_link_libraries(bh_tests PRIVATE raylib)
 # T-071: light-mask law pins live in raylib-free engine/render/lightmask.h.
 target_include_directories(bh_tests PRIVATE ${CMAKE_SOURCE_DIR}/engine)
 add_test(NAME bh_tests COMMAND bh_tests)
