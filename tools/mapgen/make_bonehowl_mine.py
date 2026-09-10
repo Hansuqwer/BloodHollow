@@ -16,6 +16,7 @@ ZONE_MINE = 4
 MOB_HOLLOW_HOUND = 1003
 MOB_PLAGUE_BAT, MOB_BONEPICKER_GNOLL = 1004, 1005
 MOB_CHARNEL_WIDOW = 1006
+MOB_RED_WIDOW = 1013  # T-102 mine elite (Widow base, 45-min rotation)
 
 
 def rect(g, x0, y0, x1, y1, v):
@@ -91,6 +92,9 @@ def main() -> int:
     spawn("gnolls_gallery2", 23, 10, 7, 5, MOB_BONEPICKER_GNOLL, 9, 600)
     spawn("gnolls_gallery3", 42, 14, 7, 5, MOB_BONEPICKER_GNOLL, 9, 600)
     spawn("widow_vein", 44, 14, 5, 4, MOB_CHARNEL_WIDOW, 4, 800)
+    # T-102 Red Widow nest: gallery-3 elbow floor below the gnoll rect,
+    # against the widow-vein darkgrass. maxAlive 1, 45-min rotation (54000t).
+    spawn("red_widow_nest", 44, 19, 4, 3, MOB_RED_WIDOW, 1, 54000)
     spawn("hounds_ore_spur", 41, 33, 6, 3, MOB_HOLLOW_HOUND, 6, 420)
 
     # mine mouth back to Bleak Fields east edge (pair lives on that map)

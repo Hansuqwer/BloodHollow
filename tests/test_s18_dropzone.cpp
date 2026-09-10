@@ -30,8 +30,9 @@ TEST_CASE("T-063: both new zones load, portal graph closes (asset gate)") {
     if (pd.targetMapId == 3) depthsUp = true;
   CHECK(mineOut);
   CHECK(depthsUp);
-  // spawn count: 7 mine camp spawners; 11 crypt spawners incl 8 elites + boss
-  CHECK(mine->spawners.size() == 7);
+  // spawn count: 7 mine camp spawners + Widow nest (T-102); 11 crypt
+  // spawners incl 8 elites + boss
+  CHECK(mine->spawners.size() == 8);
   CHECK(crypt->spawners.size() == 11);
 }
 

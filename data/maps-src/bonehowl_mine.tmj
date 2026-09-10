@@ -4684,6 +4684,34 @@
     },
     {
      "id": 7,
+     "name": "red_widow_nest",
+     "type": "spawner",
+     "x": 2816,
+     "y": 608,
+     "width": 256,
+     "height": 96,
+     "rotation": 0,
+     "visible": true,
+     "properties": [
+      {
+       "name": "mobId",
+       "type": "int",
+       "value": 1013
+      },
+      {
+       "name": "maxAlive",
+       "type": "int",
+       "value": 1
+      },
+      {
+       "name": "respawnTicks",
+       "type": "int",
+       "value": 54000
+      }
+     ]
+    },
+    {
+     "id": 8,
      "name": "hounds_ore_spur",
      "type": "spawner",
      "x": 2624,
@@ -4723,7 +4751,7 @@
    "name": "portals",
    "objects": [
     {
-     "id": 8,
+     "id": 9,
      "name": "mine_mouth_out",
      "type": "portal",
      "x": 128,
@@ -4759,7 +4787,7 @@
   }
  ],
  "nextlayerid": 6,
- "nextobjectid": 9,
+ "nextobjectid": 10,
  "orientation": "isometric",
  "renderorder": "right-down",
  "tiledversion": "1.10.2",

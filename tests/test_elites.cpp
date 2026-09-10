@@ -101,3 +101,51 @@ TEST_CASE("T-101: first blood broadcasts once per reboot") {
   w2.debugKillMob(mm, &rr);
   CHECK_FALSE(sawFirstBlood(w2, "Old Maw"));
 }
+
+TEST_CASE("T-102: Red Widow table law — Widow base through the 1010 pattern") {
+  const content::MobDef* rw = content::findMob(1013);
+  REQUIRE(rw != nullptr);
+  CHECK(std::string(rw->name) == "Red Widow");
+  CHECK(rw->level == 9);
+  CHECK(rw->hp == 200);    // ~0.9x Widow 220
+  CHECK(rw->dmg == 24);    // +2 over Widow 22
+  CHECK(rw->def == 14);    // +2 over Widow 12
+  CHECK(rw->xp == 1680);   // ~4x Widow 420 (1010 pattern)
+  CHECK(rw->boss == 0);    // melee elite, no bolt
+  CHECK(content::namedEliteIdx(1013) == 1);
+}
+
+TEST_CASE("T-102: Widow nest spawns in bonehowl_mine (mapgen truth)") {
+  server::World w;
+  std::string err;
+  REQUIRE(w.loadZone(4, "assets/maps/bonehowl_mine.bhmap", &err));
+  const sim::Map* mine = w.zoneMap(4);
+  REQUIRE(mine != nullptr);
+  CHECK(mine->spawners.size() == 8);  // 7 camps + Widow nest
+  bool nest = false;
+  for (const auto& sd : mine->spawners)
+    if (sd.mobId == 1013) {
+      nest = true;
+      CHECK(sd.maxAlive == 1);
+      CHECK(sd.respawnTicks == 54000);  // 45-min rotation, deterministic
+    }
+  CHECK(nest);
+}
+
+TEST_CASE("T-102: Widow first blood reuses the shared announce") {
+  server::World w;
+  REQUIRE(w.loadFrom(makeArena()));
+  const content::MobDef* rw = content::findMob(1013);
+  REQUIRE(rw != nullptr);
+  server::Entity* p = spawnP(w, "widowbane", 10, 10);
+  server::Entity& m1 = w.debugSpawnMob(*rw, sim::TilePos{11, 10});
+  w.debugKillMob(m1, p);
+  CHECK(sawFirstBlood(w, "Red Widow"));
+  server::Entity& m2 = w.debugSpawnMob(*rw, sim::TilePos{12, 10});
+  w.debugKillMob(m2, p);
+  std::size_t bloods = 0;
+  for (const auto& ev : w.events())
+    if (ev.chatCh == 2 && ev.chatText.find("first blood") != std::string::npos)
+      ++bloods;
+  CHECK(bloods == 1);  // session flag shared with Maw (per-elite slots)
+}
