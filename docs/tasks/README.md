@@ -562,6 +562,10 @@ T-098 READ-ONLY: peak 210 live decals vs 512 cap (2.4× headroom, 0 evictions, 0
 
 T-099 ASSEMBLE (no code): one-page human session (trade/repair/anvil checklist + shot list) with programmable evidence pointers. Human performance + T-033 close remain director-scheduled. Devlog 0068.
 
+## Done — T-100 (2026-09-09): L8→L9 climb repeat
+
+T-100 BOT-ONLY: same-start repeat — 149 kills / 0 deaths, 82%+81% bar, hurt 270 déjà vu. Confirms T-090 (n=2): open ladder, potion economy, no wall. Ladder question closed pending route/gear/bar changes. Devlog 0069.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |
