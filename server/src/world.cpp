@@ -2413,6 +2413,19 @@ void World::killMob(Entity& mob, Entity* killer) {
         killer->kind == EntityKind::kPlayer && md->level <= killer->level) {
       bumpKarma(*killer, 1);  // whitening (T-056): farm at-level, whiten
     }
+    // T-101 named-elite first blood: world-announced once per reboot.
+    if (md != nullptr && killer != nullptr &&
+        killer->kind == EntityKind::kPlayer) {
+      const int ei = content::namedEliteIdx(mob.mobId);
+      if (ei >= 0 && !namedEliteSlain_[ei]) {
+        namedEliteSlain_[ei] = true;
+        WorldEvent fev;
+        fev.chatCh = 2;  // system broadcast (party-share/curse lane)
+        fev.chatText = std::string(md->name) + " has fallen to " +
+                       killer->name + " — first blood.";
+        events_.push_back(std::move(fev));
+      }
+    }
   }
   // schedule the spawner refill (respawn gap = def.respawnTicks)
   Zone& mz = zoneOf(mob);

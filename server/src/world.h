@@ -460,6 +460,9 @@ class World {
   std::vector<std::pair<std::uint32_t, std::pair<sim::Tick, std::uint32_t>>> invites_;
   std::uint32_t nextId_ = 1;
   sim::Rng rng_{0xB100D11A33ULL};
+  // T-101 named-elite first blood (session-scoped: vanishes at reboot like
+  // the bounty sheet — persistent ledgers wait on Marrowgate/EK design).
+  bool namedEliteSlain_[3] = {false, false, false};
   sim::Tick tick_ = 0;
   std::vector<WorldEvent> events_{};
 

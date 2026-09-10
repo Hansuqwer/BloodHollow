@@ -14,6 +14,7 @@ GRASS, DIRT, WALL, WATER, WOOD, PATH, MUD, DARKGRASS = 0, 1, 2, 3, 4, 5, 6, 7
 ZONE_FIELDS = 2
 MOB_PLAGUE_BAT, MOB_BONEPICKER_GNOLL = 1004, 1005
 MOB_CHARNEL_WIDOW, MOB_GRAVECALLER = 1006, 1007
+MOB_OLD_MAW = 1012  # T-101 fields elite (Gnoll base, 30-min rotation)
 
 
 def rect(g, x0, y0, x1, y1, v):
@@ -95,6 +96,9 @@ def main() -> int:
     spawn("gnoll_camp_north", 49, 7, 9, 5, MOB_BONEPICKER_GNOLL, 7, 650)
     spawn("widows_stone_circle", 46, 22, 12, 6, MOB_CHARNEL_WIDOW, 6, 800)
     spawn("gravecaller_hedge", 22, 30, 8, 5, MOB_GRAVECALLER, 3, 1000)
+    # T-101 Old Maw pit: open south-center grass, off the roads and camps.
+    # maxAlive 1, 30-min rotation (36000t — GDD 15-60 band, deterministic).
+    spawn("old_maw_pit", 28, 38, 6, 4, MOB_OLD_MAW, 1, 36000)
     portal("west_gate_back", 0, 14, 1, 2, 1, 61, 14)
     portal("mine_mouth_in", 63, 20, 1, 2, 4, 4, 31)   # Bonehowl Mine mouth (S18)
 

@@ -1,0 +1,6 @@
+[bots] SUMMARY welcomed=4/4 moved=4/4 minDeltas=10800 kills=110 pots=4 swings=648 deaths=54 shops=4 anvilTries=0 levelDrops=2 regear=0 maxLevel=4 pkts=1429802 bytes=34063908 gates b/g/p/a/r=0/0/0/0/0 mGold=0 mPelts=0 bless=0 mend=0 noSee=0 hurt=0 choir c6=0 c7=0 c8=0
+[bots] t101f__00    kit=1 lvl=3 hp=106/94 party=0 deaths=12 rxR=538 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 lastDeath=(44,26) killerByLvl=L3:6 L9:2 L5:4
+[bots] t101f__01    kit=1 lvl=4 hp=112/94 party=0 deaths=10 rxR=538 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 lastDeath=(13,32) killerByLvl=L5:10
+[bots] t101f__02    kit=1 lvl=3 hp=106/94 party=0 deaths=16 rxR=538 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 lastDeath=(44,14) killerByLvl=L7:4 L3:6 L11:2 L5:4
+[bots] t101f__03    kit=1 lvl=4 hp=112/94 party=0 deaths=16 rxR=538 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 lastDeath=(60,13) killerByLvl=L7:4 L9:2 L3:4 L11:2 L5:4
+[bots] OK

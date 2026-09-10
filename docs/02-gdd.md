@@ -235,8 +235,9 @@ stalls/auction [LATER]. Server-side transaction log for every trade (dupe audits
   Blood Bolt-type effects buffed, ambient dread audio.
 - **Blood Moon [v0.2]:** weekly 20-min event — all spawn rates ×2, world boss
   **The Pale Sow** roams, all drops +loot-tier.
-- Named elites on 15–60 min random timers (world-announced first-kill): *Old Maw*
-  (fields), *The Red Widow* (mine), *Cantor Vex* (crypt).
+- Named elites on 15–60 min rotating timers (world-announced first-kill, T-097 reword):
+  *Old Maw* (fields — shipped T-101: Gnoll-base L7, 30-min pit), *The Red Widow*
+  (mine), *Cantor Vex* (crypt).
 
 ## 10. Post-MVP content map
 

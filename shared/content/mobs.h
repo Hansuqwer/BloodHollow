@@ -54,10 +54,22 @@ inline constexpr MobDef kMobs[] = {
 {1010, "Sepulcher Elite",  12, 380, 36,  18,  14, 3200,  8,    20, 4,   12,  4005, 100, 200, 320,  0, 0, 0},
     // T-073 gate guard: stands the east gate and the bridge approach. L15
     // wall of duty (hp 400 / dmg 30 / def 18), xp 0 (duty pays no purse),
-    // aggro 0 + guard flag (wanted-only acquire inside leash 12, wander 0).
+    // aggro 0 + guard flag (wanted-only acquire inside leash reach, wander 0).
     {1011, "Gate Guard",       15, 400, 30,  18,  10,  0,    0,    20, 0,   12,  0,    0,   0,   0,    0, 0, 0,  1},
+    // T-101 Old Maw (fields elite): Gnoll base through the 1010 pattern
+    // (same L, hp ~0.9x, dmg/def +2, xp ~4x, richer gold).
+    {1012, "Old Maw",           7, 145, 19,  12,  12, 1200,  7,    20, 8,   14,  4003, 55,  120, 220,  0, 0, 0},
 };
 inline constexpr size_t kMobKindCount = sizeof(kMobs) / sizeof(kMobs[0]);
+
+// T-101 named elites (GDD §9: world-announced first-kill): index into the
+// trio for session-scoped first-blood flags. -1 = not a named elite.
+inline int namedEliteIdx(std::uint32_t mobId) {
+  if (mobId == 1012) return 0;  // Old Maw (fields)
+  if (mobId == 1013) return 1;  // Red Widow (mine)
+  if (mobId == 1014) return 2;  // Cantor Vex (crypt)
+  return -1;
+}
 // T-065 session-scoped bounty board: quarry cycles per 90 min of world time
 // (era "the board wants..."), payout is the posted toll. No persistence,
 // no in-place strategy churn — queue one chain, ring the bell, done.

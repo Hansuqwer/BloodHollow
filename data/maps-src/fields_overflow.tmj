@@ -6289,6 +6289,34 @@
        "value": 1000
       }
      ]
+    },
+    {
+     "id": 5,
+     "name": "old_maw_pit",
+     "type": "spawner",
+     "x": 1792,
+     "y": 1216,
+     "width": 384,
+     "height": 128,
+     "rotation": 0,
+     "visible": true,
+     "properties": [
+      {
+       "name": "mobId",
+       "type": "int",
+       "value": 1012
+      },
+      {
+       "name": "maxAlive",
+       "type": "int",
+       "value": 1
+      },
+      {
+       "name": "respawnTicks",
+       "type": "int",
+       "value": 36000
+      }
+     ]
     }
    ],
    "opacity": 1,
@@ -6303,7 +6331,7 @@
    "name": "portals",
    "objects": [
     {
-     "id": 5,
+     "id": 6,
      "name": "west_gate_back",
      "type": "portal",
      "x": 0,
@@ -6331,7 +6359,7 @@
      ]
     },
     {
-     "id": 6,
+     "id": 7,
      "name": "mine_mouth_in",
      "type": "portal",
      "x": 4032,
@@ -6367,7 +6395,7 @@
   }
  ],
  "nextlayerid": 6,
- "nextobjectid": 7,
+ "nextobjectid": 8,
  "orientation": "isometric",
  "renderorder": "right-down",
  "tiledversion": "1.10.2",

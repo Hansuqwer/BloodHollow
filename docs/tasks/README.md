@@ -566,6 +566,10 @@ T-099 ASSEMBLE (no code): one-page human session (trade/repair/anvil checklist +
 
 T-100 BOT-ONLY: same-start repeat — 149 kills / 0 deaths, 82%+81% bar, hurt 270 déjà vu. Confirms T-090 (n=2): open ladder, potion economy, no wall. Ladder question closed pending route/gear/bar changes. Devlog 0069.
 
+## Done — T-101 (2026-09-09): Old Maw elite
+
+T-101 CONTENT (epoch 14→15): row 1012 + fields pit + shared first-blood announce (reused by next two). 3 new tests (176 total). Map-1 soak = regression proof (bots never meet it, stated). Devlog 0070.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |
