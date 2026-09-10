@@ -149,3 +149,66 @@ TEST_CASE("T-102: Widow first blood reuses the shared announce") {
       ++bloods;
   CHECK(bloods == 1);  // session flag shared with Maw (per-elite slots)
 }
+
+TEST_CASE("T-103: Cantor Vex table law — Sexton base + boss-lite bolt") {
+  const content::MobDef* cv = content::findMob(1014);
+  REQUIRE(cv != nullptr);
+  CHECK(std::string(cv->name) == "Cantor Vex");
+  CHECK(cv->level == 12);
+  CHECK(cv->hp == 380);
+  CHECK(cv->dmg == 36);
+  CHECK(cv->def == 18);
+  CHECK(cv->xp == 4100);  // 5x Sexton 820 (caster threat premium, T-097 B)
+  CHECK(cv->boss == 1);   // instant-bolt lane only — telegraphs stay 1009's
+  CHECK(cv->boltRange == 6);
+  CHECK(cv->boltCdTicks == 52);  // half the Mother's rate
+  CHECK(content::namedEliteIdx(1014) == 2);
+}
+
+TEST_CASE("T-103: Cantor choir spawns in thornwall_crypt (mapgen truth)") {
+  server::World w;
+  REQUIRE(w.loadFrom(makeArena()));  // zone 1 first (live boot order)
+  std::string err;
+  REQUIRE(w.loadZone(3, "assets/maps/thornwall_crypt.bhmap", &err));
+  const sim::Map* crypt = w.zoneMap(3);
+  REQUIRE(crypt != nullptr);
+  CHECK(crypt->spawners.size() == 5);  // 4 camps + Cantor choir
+  bool choir = false;
+  for (const auto& sd : crypt->spawners)
+    if (sd.mobId == 1014) {
+      choir = true;
+      CHECK(sd.maxAlive == 1);
+      CHECK(sd.respawnTicks == 72000);  // 60-min rotation, deterministic
+    }
+  CHECK(choir);
+}
+
+TEST_CASE("T-103: Cantor bolts instant (no wind-up) with the curse lane") {
+  server::World w;
+  REQUIRE(w.loadFrom(makeArena()));
+  const content::MobDef* cv = content::findMob(1014);
+  REQUIRE(cv != nullptr);
+  server::Entity& m = w.debugSpawnMob(*cv, sim::TilePos{10, 10});
+  server::Entity* p = spawnP(w, "vexed", 13, 10);  // d=3: bolt lane
+  p->hpMax = 400;
+  p->hp = 400;
+  bool cursed = false;
+  for (int i = 0; i < 400 && !cursed; ++i) {
+    w.tick();
+    cursed = w.find(p->id)->curseUntil > w.tickCount();
+  }
+  REQUIRE(cursed);  // shared bolt path (T-070 lane)
+  CHECK(m.slamAt < 0);  // never telegraphs — instant by design (T-097 B)
+  CHECK(p->hp < 400);
+}
+
+TEST_CASE("T-103: Cantor first blood reuses the shared announce") {
+  server::World w;
+  REQUIRE(w.loadFrom(makeArena()));
+  const content::MobDef* cv = content::findMob(1014);
+  REQUIRE(cv != nullptr);
+  server::Entity* pl = spawnP(w, "cantorsbane", 10, 10);
+  server::Entity& m1 = w.debugSpawnMob(*cv, sim::TilePos{11, 10});
+  w.debugKillMob(m1, pl);
+  CHECK(sawFirstBlood(w, "Cantor Vex"));
+}

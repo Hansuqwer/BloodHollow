@@ -1,0 +1,61 @@
+[boot] zone 2 (assets/maps/fields_overflow.bhmap: 64x48) online
+[boot] zone 3 (assets/maps/thornwall_crypt.bhmap: 48x36) online
+[boot] zone 4 (assets/maps/bonehowl_mine.bhmap: 56x40) online
+[boot] zone 5 (assets/maps/drowned_crypt.bhmap: 48x36) online
+[journal] recording world to logs/t103.bwj (epoch 17)
+[boot] bh_server on 0.0.0.0:7908 | map 'assets/maps/thornwall.bhmap' | db '/tmp/t103.db' | tick 20Hz | aoi 26
+[net] t103p__00        entered the world (entity 189, online 1)
+[net] t103p__01        entered the world (entity 190, online 2)
+[net] t103p__02        entered the world (entity 191, online 3)
+[net] t103f__00        entered the world (entity 192, online 4)
+[net] t103f__01        entered the world (entity 193, online 5)
+[net] t103f__02        entered the world (entity 194, online 6)
+[net] t103f__03        entered the world (entity 195, online 7)
+[net] t103c__00        entered the world (entity 196, online 8)
+[net] t103c__01        entered the world (entity 197, online 9)
+[net] t103w__00        entered the world (entity 198, online 10)
+[net] t103w__01        entered the world (entity 199, online 11)
+[net] t103w__02        entered the world (entity 200, online 12)
+[net] t103w__03        entered the world (entity 201, online 13)
+[net] t103w__04        entered the world (entity 202, online 14)
+[soak] tick=600 online=14 entities=188 tickUs p50=959 p99=1998 worldHash=ea8a3d59bdbfb4a2 pkts=493/327902
+[soak] tick=1200 online=14 entities=188 tickUs p50=920 p99=1586 worldHash=28a1bd65662a9a39 pkts=945/637776
+[soak] tick=1800 online=14 entities=186 tickUs p50=858 p99=1512 worldHash=5d967d97dff4c0b7 pkts=1371/942579
+[soak] tick=2400 online=14 entities=185 tickUs p50=943 p99=1501 worldHash=306d3fde24eea869 pkts=1770/1242825
+[soak] tick=3000 online=14 entities=179 tickUs p50=933 p99=1547 worldHash=0659fb182d8088cf pkts=2215/1544438
+[soak] tick=3600 online=14 entities=181 tickUs p50=852 p99=1467 worldHash=68d2abba75f5bc62 pkts=2617/1804122
+[soak] tick=4200 online=14 entities=181 tickUs p50=860 p99=1387 worldHash=aabef4d9719fe7e0 pkts=3031/2068332
+[soak] tick=4800 online=14 entities=182 tickUs p50=832 p99=1520 worldHash=d937f394001db1f3 pkts=3466/2340030
+[soak] tick=5400 online=14 entities=181 tickUs p50=952 p99=1591 worldHash=0f6af6f163bd2cf9 pkts=3931/2640716
+[soak] tick=6000 online=14 entities=181 tickUs p50=948 p99=1572 worldHash=34f1dfaf148d9930 pkts=4363/2960170
+[soak] tick=6600 online=14 entities=184 tickUs p50=924 p99=1524 worldHash=a3470fcd8c62e88b pkts=4769/3250953
+[soak] tick=7200 online=14 entities=187 tickUs p50=982 p99=1654 worldHash=cb4b3170dcff9e11 pkts=5189/3566981
+[soak] tick=7800 online=14 entities=186 tickUs p50=949 p99=1656 worldHash=f7c1270ef48c5405 pkts=5628/3879488
+[soak] tick=8400 online=14 entities=185 tickUs p50=1044 p99=1791 worldHash=953a28b152de267d pkts=6073/4205886
+[soak] tick=9000 online=14 entities=183 tickUs p50=982 p99=1594 worldHash=ef7a5965e18f59f5 pkts=6514/4525183
+[soak] tick=9600 online=14 entities=178 tickUs p50=909 p99=1525 worldHash=db9aa6e24a98a29a pkts=6961/4835043
+[soak] tick=10200 online=14 entities=178 tickUs p50=990 p99=1525 worldHash=03028eadde844c23 pkts=7380/5156065
+[soak] tick=10800 online=14 entities=176 tickUs p50=921 p99=1443 worldHash=3d602f781e5738b6 pkts=7823/5460236
+[net] t103p__00        saved at (60,13)
+[net] t103p__01        saved at (59,12)
+[net] t103p__02        saved at (59,12)
+[net] t103f__00        saved at (59,12)
+[net] t103f__01        saved at (59,13)
+[net] t103c__00        saved at (45,18)
+[net] t103f__02        saved at (59,13)
+[net] t103c__01        saved at (45,19)
+[net] t103f__03        saved at (59,12)
+[net] t103w__00        saved at (37,25)
+[net] t103w__01        saved at (33,28)
+[net] t103w__02        saved at (32,13)
+[net] t103w__03        saved at (22,3)
+[net] t103w__04        saved at (45,20)
+[soak] tick=11400 online=0 entities=170 tickUs p50=229 p99=1286 worldHash=ab4821ff1821b71a pkts=7858/5481486
+[soak] tick=12000 online=0 entities=175 tickUs p50=244 p99=441 worldHash=14d2e6893c810781 pkts=7858/5481486
+[soak] tick=12600 online=0 entities=181 tickUs p50=255 p99=443 worldHash=1e346a6356cebc75 pkts=7858/5481486
+[soak] FINISH ticks=12801 online=0 entities=181 tickUs p50=255 p99=448
+[soak] OK p99=0.45ms budget=10.00ms
+[balance] Marsh Rat        L1  kills=22    TTK(25t hps)=5.2s xp=40
+[balance] Feral Ghoul      L3  kills=28    TTK(25t hps)=15.8s xp=90
+[balance] Hollow Hound     L5  kills=2     TTK(25t hps)=6.9s xp=150
+[balance] Plague Bat       L2  kills=18    TTK(25t hps)=6.6s xp=55

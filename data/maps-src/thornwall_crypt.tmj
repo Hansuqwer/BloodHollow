@@ -3601,6 +3601,34 @@
        "value": 6000
       }
      ]
+    },
+    {
+     "id": 5,
+     "name": "cantor_choir",
+     "type": "spawner",
+     "x": 2176,
+     "y": 192,
+     "width": 256,
+     "height": 96,
+     "rotation": 0,
+     "visible": true,
+     "properties": [
+      {
+       "name": "mobId",
+       "type": "int",
+       "value": 1014
+      },
+      {
+       "name": "maxAlive",
+       "type": "int",
+       "value": 1
+      },
+      {
+       "name": "respawnTicks",
+       "type": "int",
+       "value": 72000
+      }
+     ]
     }
    ],
    "opacity": 1,
@@ -3615,7 +3643,7 @@
    "name": "portals",
    "objects": [
     {
-     "id": 5,
+     "id": 6,
      "name": "stairs_up",
      "type": "portal",
      "x": 0,
@@ -3643,7 +3671,7 @@
      ]
     },
     {
-     "id": 6,
+     "id": 7,
      "name": "depths_stairs_down",
      "type": "portal",
      "x": 2816,
@@ -3679,7 +3707,7 @@
   }
  ],
  "nextlayerid": 6,
- "nextobjectid": 7,
+ "nextobjectid": 8,
  "orientation": "isometric",
  "renderorder": "right-down",
  "tiledversion": "1.10.2",

@@ -18,6 +18,7 @@ MOB_FERAL_GHOUL = 1002
 MOB_CHARNEL_WIDOW = 1006
 MOB_GRAVECALLER = 1007
 MOB_REVENANT_SEXTON = 1008
+MOB_CANTOR_VEX = 1014  # T-103 crypt elite (Sexton base + bolt, 60-min rotation)
 
 
 def rect(g, x0, y0, x1, y1, v):
@@ -110,6 +111,9 @@ def main() -> int:
     spawn("widow_cocoon", 24, 26, 6, 6, MOB_CHARNEL_WIDOW, 6, 850)
     spawn("gravecaller_pulpit", 42, 3, 4, 4, MOB_GRAVECALLER, 3, 1100)
     spawn("sexton_seat", 44, 5, 2, 3, MOB_REVENANT_SEXTON, 1, 6000)
+    # T-103 Cantor choir: bone-barrow west end, opposite the pulpit.
+    # maxAlive 1, 60-min rotation (72000t — staggered past Maw/Widow).
+    spawn("cantor_choir", 34, 6, 4, 3, MOB_CANTOR_VEX, 1, 72000)
     portal("stairs_up", 0, 17, 1, 2, 1, 10, 11)  # back to Thornwall chapel hatch (tiles)
     portal("depths_stairs_down", 44, 6, 2, 1, 5, 3, 30)   # Drowned Crypt (S18)
 

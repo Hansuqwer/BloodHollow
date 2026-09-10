@@ -237,7 +237,8 @@ stalls/auction [LATER]. Server-side transaction log for every trade (dupe audits
   **The Pale Sow** roams, all drops +loot-tier.
 - Named elites on 15–60 min rotating timers (world-announced first-kill, T-097 reword):
   *Old Maw* (fields — shipped T-101: Gnoll-base L7, 30-min pit), *The Red Widow*
-  (mine — shipped T-102: Widow-base L9, 45-min nest), *Cantor Vex* (crypt).
+  (mine — shipped T-102: Widow-base L9, 45-min nest), *Cantor Vex* (crypt —
+  shipped T-103: Sexton-base L12 bolt-caster, 60-min choir).
 
 ## 10. Post-MVP content map
 

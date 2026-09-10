@@ -61,6 +61,10 @@ inline constexpr MobDef kMobs[] = {
     {1012, "Old Maw",           7, 145, 19,  12,  12, 1200,  7,    20, 8,   14,  4003, 55,  120, 220,  0, 0, 0},
     // T-102 Red Widow (mine elite): Widow base through the same pattern.
     {1013, "Red Widow",         9, 200, 24,  14,  14, 1680,  6,    18, 6,   10,  4004, 35,  180, 320,  0, 0, 0},
+    // T-103 Cantor Vex (crypt elite, T-097 option B): Sexton base through
+    // the 1010 pattern, plus boss-lite casting (boltRange 6, half Mother's
+    // rate, instant — telegraphs stay the Mother's). xp 5x for the threat.
+    {1014, "Cantor Vex",       12, 380, 36,  18,  15, 4100,  8,    20, 4,   12,  4005, 100, 200, 320,  1, 6, 52},
 };
 inline constexpr size_t kMobKindCount = sizeof(kMobs) / sizeof(kMobs[0]);
 

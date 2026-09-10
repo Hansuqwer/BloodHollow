@@ -574,6 +574,10 @@ T-101 CONTENT (epoch 14→15): row 1012 + fields pit + shared first-blood announ
 
 T-102 CONTENT (epoch 15→16): row 1013 + mine nest + shared announce reuse. S18 gate moved 7→8 with mapgen truth. 3 new tests (179 total). Devlog 0071.
 
+## Done — T-103 (2026-09-09): Cantor Vex elite
+
+T-103 CONTENT (epoch 16→17): row 1014 (Sexton + half-rate instant bolt, boss-flag audited) + crypt choir. GDD elite line fully shipped. 4 new tests (183 total). Devlog 0072.
+
 ## Open — Phase 3 remaining
 
 | Card | Title | Notes |
