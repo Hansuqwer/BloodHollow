@@ -1,5 +1,14 @@
 # 04 — Roadmap (part-time calibrated)
 
+> **⚠ SUPERSEDED CALENDAR (T-110 truth-up, 2026-09-11).** This plan's dates are
+> ~5 months behind shipped reality and are maintained no more: Phase 0 was slated
+> Sep 7 – Oct 4 2026 and Phase 3 for Jan–Feb **2027**, but Phase-3 content
+> (parties, kits, anvil, trades, PK/karma, zones 2–5, bosses through T-103) had
+> shipped by **2026-09-10**. Actual velocity ≈ 5× the part-time calibration.
+> Treat this document as the historical planning artifact and the *scope*
+> definition (what belongs in which phase); for current status use
+> `docs/tasks/` (board) + `docs/devlog/` (per-card evidence) + README §Status.
+
 **Pace assumptions:** director ~12 h/wk (4h agent direction/review · 4h
 integration/playtest · 4h design/devlog); agent throughput high but human review is
 the bottleneck; roadmap dates use **calendar weeks** at that pace. If pace doubles,
