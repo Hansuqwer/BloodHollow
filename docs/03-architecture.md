@@ -165,7 +165,7 @@ trade-log), `pledges`, `pledge_members`, `castle_state` (owner, tax, next siege)
 5. **Replay (`bh_server --record-world` / `--replay-world`):** the server writes a
    seed+login+command+hash journal (`.bwj`, epoch-stamped); replay re-sims offline
    and re-hashes world state per cadence for bisect/debug. Gate legs: `logs/*.bwj`
-   (current: `t103.bwj`, epoch 17).
+   (current: `t107.bwj`, epoch 18).
 6. **gm-cli:** kick/ban/teleport/spawn/item-create/broadcast/set-clock/siege-now.
 
 ## 8. Testing strategy
