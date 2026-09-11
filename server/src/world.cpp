@@ -3214,13 +3214,139 @@ std::uint64_t World::worldHash() const {
       h *= 1099511628211ULL;
     }
   };
+  // T-107: widen the replay oracle to the FULL authoritative sim state.
+  // The old 5-field mix (id, zoneId, x, y, hp) was blind to the entire
+  // economy/progression layer — the relog launderer (T-049x) corrupted
+  // inventory/equipped flags and the hash gate passed it; only bolt-on
+  // BH_DUMP_ENTS probes caught it. Rules for fields hashed here:
+  //  - must be replay-reproducible (pure sim state, no wall-clock/sockets);
+  //  - charRowId (DB link) and name (label pinned by id) are deliberately
+  //    excluded; the [replay-login] probe fingerprints the row separately;
+  //  - unordered containers are hashed in sorted-key order (zones_);
+  //  - no derived telemetry (killStats EMAs): doubles out, authority in.
+  auto mixStr = [&mix](const std::string& s) {
+    mix(s.size());
+    for (const char c : s) mix(static_cast<std::uint64_t>(static_cast<std::uint8_t>(c)));
+  };
+  mix(entities_.size());
   for (const auto& e : entities_) {
     mix(e.id);
+    mix(static_cast<std::uint64_t>(e.kind));
     mix(e.zoneId);
-    mix(static_cast<std::uint32_t>(e.walker.x));
-    mix(static_cast<std::uint32_t>(e.walker.y));
+    mix(static_cast<std::uint64_t>(static_cast<std::uint32_t>(e.walker.x)));
+    mix(static_cast<std::uint64_t>(static_cast<std::uint32_t>(e.walker.y)));
+    mix(e.walker.moving ? 1ULL : 0ULL);
+    mix(static_cast<std::uint64_t>(static_cast<std::uint32_t>(e.walker.target.x)));
+    mix(static_cast<std::uint64_t>(static_cast<std::uint32_t>(e.walker.target.y)));
+    mix(e.path.size());
+    for (const auto& t : e.path) {
+      mix(static_cast<std::uint64_t>(static_cast<std::uint32_t>(t.x)));
+      mix(static_cast<std::uint64_t>(static_cast<std::uint32_t>(t.y)));
+    }
     mix(e.hp);
+    mix(e.hpMax);
+    mix(e.dead ? 1ULL : 0ULL);
+    mix(static_cast<std::uint64_t>(e.respawnAt));
+    mix(e.level);
+    mix(e.xp);
+    mix(e.str);
+    mix(e.vit);
+    mix(e.dex);
+    mix(e.statPoints);
+    mix(e.attackTarget);
+    mix(static_cast<std::uint64_t>(e.lastSwingTick));
+    mix(static_cast<std::uint64_t>(e.lastHurtTick));
+    mixStr(canonicalInvBlob(e.inv));
+    mix(e.gold);
+    mix(e.swordSkill);
+    mix(e.swingLands);
+    mix(static_cast<std::uint64_t>(e.lastSipTick));
+    mix(static_cast<std::uint64_t>(e.lastPowerTick));
+    mix(static_cast<std::uint64_t>(e.lastChaseTick));
+    mix(static_cast<std::uint64_t>(e.firstHurtTick));
+    mix(e.anvilMercyMask);
+    mix(static_cast<std::uint64_t>(static_cast<std::uint32_t>(e.karma)));
+    mix(static_cast<std::uint64_t>(e.lastPortalTick));
+    mix(e.partyId);
+    mix(e.classId);
+    mix(e.intg);
+    mix(e.mag);
+    mix(e.mp);
+    mix(e.mpMax);
+    mix(static_cast<std::uint64_t>(e.blessUntil));
+    mix(static_cast<std::uint64_t>(e.ironskinUntil));
+    mix(static_cast<std::uint64_t>(e.chorusUntil));
+    mix(static_cast<std::uint64_t>(e.curseUntil));
+    mix(e.lightRadius);
+    mix(static_cast<std::uint64_t>(e.lightUntil));
+    mix(e.lanternLit ? 1ULL : 0ULL);
+    mix(static_cast<std::uint64_t>(e.hasteUntil));
+    mix(static_cast<std::uint64_t>(e.lastMendTick));
+    mix(static_cast<std::uint64_t>(e.lastPurifyTick));
+    mix(static_cast<std::uint64_t>(e.lastBlessTick));
+    mix(static_cast<std::uint64_t>(e.lastChorusTick));
+    mix(static_cast<std::uint64_t>(e.lastMassTick));
+    mix(static_cast<std::uint64_t>(e.lastHasteTick));
+    mix(static_cast<std::uint64_t>(e.lastIronskinTick));
+    mix(static_cast<std::uint64_t>(e.lastFireboltTick));
+    mix(e.duelWith);
+    mix(static_cast<std::uint64_t>(e.duelUntil));
+    mix(e.duelOfferTo);
+    mix(static_cast<std::uint64_t>(e.duelOfferAt));
+    mix(static_cast<std::uint64_t>(e.wantedUntil));
+    mix(static_cast<std::uint64_t>(e.spawnProtectUntil));
+    mix(static_cast<std::uint64_t>(e.repentUntil));
+    mix(e.tradeWith);
+    mix(e.tradeOfferItems.size());
+    for (const auto& [itemId, qty] : e.tradeOfferItems) {
+      mix(itemId);
+      mix(qty);
+    }
+    mix(e.tradeOfferGold);
+    mix(e.tradeCommitted ? 1ULL : 0ULL);
+    mix(e.mobId);
+    mix(e.bountyMobId);
+    mix(e.bountyCycle);
+    mix(static_cast<std::uint64_t>(static_cast<std::uint32_t>(e.anchor.x)));
+    mix(static_cast<std::uint64_t>(static_cast<std::uint32_t>(e.anchor.y)));
+    mix(e.aggroRadius);
+    mix(e.wanderRadius);
+    mix(e.leashRadius);
+    mix(e.atkCdTicks);
+    mix(e.xpValue);
+    mix(e.mobLevel);
+    mix(e.wireKind);
+    mix(static_cast<std::uint64_t>(e.spawnerIdx));
+    mix(static_cast<std::uint64_t>(e.slamAt));
+    mix(static_cast<std::uint64_t>(static_cast<std::uint32_t>(e.slamX)));
+    mix(static_cast<std::uint64_t>(static_cast<std::uint32_t>(e.slamY)));
   }
+  // parties: roster state is authoritative (leader + ordered members)
+  mix(parties_.size());
+  for (const auto& p : parties_) {
+    mix(p.id);
+    mix(p.leaderId);
+    mix(p.members.size());
+    for (const std::uint32_t m : p.members) mix(m);
+  }
+  // spawner clocks per zone — zones_ is an unordered_map: sort keys so the
+  // hash never depends on bucket order.
+  std::vector<std::uint16_t> zoneIds;
+  zoneIds.reserve(zones_.size());
+  for (const auto& [zid, z] : zones_) {
+    (void)z;
+    zoneIds.push_back(zid);
+  }
+  std::sort(zoneIds.begin(), zoneIds.end());
+  for (const std::uint16_t zid : zoneIds) {
+    const Zone& z = zones_.at(zid);
+    mix(zid);
+    mix(z.spawners.size());
+    for (const auto& sl : z.spawners)
+      mix(static_cast<std::uint64_t>(sl.respawnReadyAt));
+  }
+  // world-once flags (T-101 first blood)
+  for (const bool b : namedEliteSlain_) mix(b ? 1ULL : 0ULL);
   return h;
 }
 
