@@ -850,9 +850,13 @@ void World::trySkill(Entity& e, std::uint8_t skill, std::uint32_t targetId) {
     kill.kind = 3;
     kill.amount = ev.amount;
     if (target->kind == EntityKind::kMob) {
+      // T-106: snapshot before killMob() — its despawn() erases mid-deque and
+      // invalidates ALL element references ([deque.modifiers]); the slot behind
+      // `e` can hold a shifted neighbour afterwards (wrong name on the line).
+      const std::string killerName = e.name;
       killMob(*target, &e);
       kill.chatCh = 3;
-      kill.chatText = e.name + " has slain a " + victimName + ".";
+      kill.chatText = killerName + " has slain a " + victimName + ".";
     } else {
       kill.chatCh = 3;
       kill.chatText = victimName + " was slain by " + e.name + ".";
@@ -2096,16 +2100,20 @@ void World::trySwing(Entity& att, Entity& def) {
     }
     const std::string victimName = def.name;  // killMob() despawns (frees) it
     const std::uint32_t victimId = def.id;
+    // T-106: snapshot everything read off `att` across the kill — killMob()'s
+    // despawn() erases mid-deque, invalidating ALL element references
+    // ([deque.modifiers]); `att`'s old slot can hold a shifted neighbour.
+    const bool attIsPlayer = att.kind == EntityKind::kPlayer;
     const std::string killerName =
-        att.kind == EntityKind::kPlayer ? att.name : ("a " + att.name);
+        attIsPlayer ? att.name : ("a " + att.name);
     WorldEvent kill;
     kill.attacker = att.id;
     kill.target = victimId;
     kill.kind = 3;
     kill.amount = ev.amount;
     if (def.kind == EntityKind::kMob) {
-      killMob(def, att.kind == EntityKind::kPlayer ? &att : nullptr);
-      if (att.kind == EntityKind::kPlayer) {
+      killMob(def, attIsPlayer ? &att : nullptr);
+      if (attIsPlayer) {
         kill.chatCh = 3;
         kill.chatText = killerName + " has slain a " + victimName + ".";
       }
@@ -2123,6 +2131,13 @@ void World::trySwing(Entity& att, Entity& def) {
     Entity* cv = find(ck);
     Entity* killer = find(pendingCleaveAttacker_);
     if (cv == nullptr || cv->hp > 0) continue;
+    // T-106: snapshot the killer's identity BEFORE killMob() — its despawn()
+    // erases mid-deque, invalidating ALL element references including *killer
+    // (the slot can hold a shifted neighbour or a moved-from husk afterwards).
+    const bool killerIsPlayer =
+        killer != nullptr && killer->kind == EntityKind::kPlayer;
+    const std::string killerName =
+        killerIsPlayer ? killer->name : std::string{};
     WorldEvent kil;
     kil.attacker = pendingCleaveAttacker_;
     kil.target = ck;
@@ -2130,10 +2145,10 @@ void World::trySwing(Entity& att, Entity& def) {
     kil.amount = pendingCleaveDmg_;
     if (cv->kind == EntityKind::kMob) {
       const std::string vn = cv->name;
-      killMob(*cv, killer != nullptr && killer->kind == EntityKind::kPlayer ? killer : nullptr);
-      if (killer != nullptr && killer->kind == EntityKind::kPlayer) {
+      killMob(*cv, killerIsPlayer ? killer : nullptr);
+      if (killerIsPlayer) {
         kil.chatCh = 3;
-        kil.chatText = killer->name + " has slain a " + vn + ".";
+        kil.chatText = killerName + " has slain a " + vn + ".";
       }
       events_.push_back(std::move(kil));
     }
