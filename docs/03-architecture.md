@@ -45,7 +45,9 @@ bloodhollow/
   data/   (maps-src/*.tmx, sheets-src/)
   tests/  (doctest)
   docs/   (01..05, adr/, tasks/, research-notes/)
-  .github/workflows/ (ci.yml: linux+mac build, tests, soak smoke)
+  .github/workflows/ (ci.yml: linux+mac build, ctest, mapgen determinism diff,
+                      mapconv validation — NO soak/replay/sanitizer legs at HEAD;
+                      those run manually via tools/*_leg.sh + *_smoke.sh)
 ```
 
 **Dependency graph (acyclic):** `shared` ← `engine` ← `client`; `shared` ← `server`.
@@ -58,17 +60,28 @@ Server never links `engine`. Tests link `shared` + `server` core only.
   buffs/DoTs → respawns/spawner → persistence dirty-set → snapshot build → net send.
   This is the canonical server loop ([reference](https://wirepair.org/2023/06/29/so-you-want-to-build-an-mmorpg-server/)).
 - **Grid world:** int tile coordinates, 8-dir movement, 1 tile/step cadence from
-  speed stat (e.g. 3 ticks/tile baseline, Haste −1). Blockers: tile flags +
-  dynamic-entity occupancy (1 entity/tile; soft-push allowed v0.2).
+  speed stat. *Shipped reality (T-110 sync):* walker baseline is **4 ticks/tile**
+  (256 of 1024 Q10 substep units per tick), and there is **no dynamic-entity
+  occupancy** — mobs stack on tiles (the devlogs' "perch" phenomena are downstream
+  of this). Tile-flag blockers only. Occupancy/soft-push remains an open design
+  decision, not a shipped law.
 - **Pathfinding:** A* on a cached cost grid, server-side authoritative; client runs
   the identical `shared/sim` A* purely for the click path-preview (no divergence
   possible — same code, same grid version).
 - **Determinism:** all RNG via `sim/rng.h` streams (world, loot, per-entity); tick
-  N + seed + input-log ⇒ bit-identical replay in `tools/replay`. This is our
+  N + seed + input-log ⇒ bit-identical replay via `bh_server --record-world` /
+  `bh_server --replay-world` (there is no separate `tools/replay` binary — the
+  server *is* the replay harness; gate legs live in `logs/*.bwj`). This is our
   debugging superpower *and* the QA agent's test oracle.
-- **Data structures:** flat `EntityStore` (struct-of-arrays; id = slot+gen), arenas
-  per zone, no per-tick heap allocation. Spatial hash: uniform grid, 16×16-tile
-  cells, per zone.
+- **Data structures:** *design goal:* flat `EntityStore` (struct-of-arrays;
+  id = slot+gen), arenas per zone, no per-tick heap allocation. *Shipped reality
+  (T-110 sync):* AoS `std::deque<Entity>` with linear `find()`/name scans and
+  per-tick `std::vector`/`unordered_set` churn in `tickServer`/`distributeEvents`/
+  `queryAoi`; mid-tick `despawn()` erases invalidate all deque references (the
+  T-047/T-106 cards are scar tissue from this). The slot+gen store remains the
+  prescribed fix — it is a deferred card, not a silent abandonment. Spatial hash:
+  uniform grid, **`SpatialGrid<8>` (8×8-tile cells**, not the originally sketched
+  16×16), per zone.
 
 ## 4. Networking
 
@@ -80,9 +93,12 @@ Server never links `engine`. Tests link `shared` + `server` core only.
   each client receives only entities in its AoI, enter/leave events, and delta fields
   of changed entities. O(n·k) instead of O(n²) — the standard requirement
   ([game-ace](https://game-ace.com/blog/mmorpg-games-and-how-to-develop-them/)).
-- **Channels (ENet):** 0 = control (reliable, ordered: login, chat, inventory,
-  trades); 1 = state (reliable-ordered per-entity deltas, drop-old for movement);
-  2 = unreliable-unsequenced (spammy cosmetics: particles, swing swishes).
+- **Channels (ENet):** *design:* 0 = control (reliable, ordered: login, chat,
+  inventory, trades); 1 = state (reliable-ordered per-entity deltas, drop-old for
+  movement); 2 = unreliable-unsequenced (spammy cosmetics: particles, swing
+  swishes). *Shipped reality (T-110 sync):* **everything runs reliable-ordered on
+  channel 0**, including the 20 Hz EntityDeltas; the host opens 2 channels and
+  uses 1. The 3-channel split is unbuilt — do not cite it as current behavior.
 - **Bandwidth budget** (200 CCU one zone, avg AoI 15 ents): ~24 B/entity-delta ×
   15 × 20 Hz ≈ 7 KB/s per client down — trivially fine; design target ≤ 20 KB/s even
   in sieges (cap AoI entity count; crowd = stutter-frame anim throttling).
@@ -146,8 +162,10 @@ trade-log), `pledges`, `pledge_members`, `castle_state` (owner, tax, next siege)
    Use cases: CI smoke (10 bots, 60 s), load soak (200 bots scenario file), demo
    population, siege rehearsal. **This tool exists before combat does** — it is how
    a part-time solo human tests an MMO.
-5. **Replay (`tools/replay`):** server `--record` writes seed+input journal;
-   replay re-sims and hashes world state per tick for bisect/debug.
+5. **Replay (`bh_server --record-world` / `--replay-world`):** the server writes a
+   seed+login+command+hash journal (`.bwj`, epoch-stamped); replay re-sims offline
+   and re-hashes world state per cadence for bisect/debug. Gate legs: `logs/*.bwj`
+   (current: `t103.bwj`, epoch 17).
 6. **gm-cli:** kick/ban/teleport/spawn/item-create/broadcast/set-clock/siege-now.
 
 ## 8. Testing strategy
