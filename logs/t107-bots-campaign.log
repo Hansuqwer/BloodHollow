@@ -1,0 +1,13 @@
+[campaign] t107c__01 reached L1 at t=0.1s (map 1)
+[campaign] t107c__00 reached L1 at t=0.1s (map 1)
+[campaign] t107c__03 reached L1 at t=0.1s (map 1)
+[campaign] t107c__02 reached L1 at t=0.1s (map 1)
+[campaign] t107c__00 reached L2 at t=25.5s (map 1)
+[campaign] t107c__00 reached L3 at t=41.3s (map 1)
+[campaign] t107c__03 reached L2 at t=59.5s (map 1)
+[bots] SUMMARY welcomed=4/4 moved=4/4 minDeltas=2000 kills=20 pots=3 swings=48 deaths=0 shops=2 anvilTries=0 levelDrops=0 regear=2 maxLevel=3 pkts=283723 bytes=6767941 gates b/g/p/a/r=0/0/0/0/0 mGold=0 mPelts=0 bless=0 mend=0 noSee=0 hurt=0 choir c6=0 c7=0 c8=0
+[bots] t107c__00    kit=1 lvl=3 hp=74/94 party=1 deaths=0 rxR=103 rxM=103 lastPid=1 casts c6=0 c7=0 c8=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t107c__01    kit=3 lvl=1 hp=61/94 party=0 deaths=0 rxR=99 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t107c__02    kit=1 lvl=1 hp=61/94 party=2 deaths=0 rxR=104 rxM=190 lastPid=2 casts c6=0 c7=0 c8=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t107c__03    kit=3 lvl=2 hp=100/94 party=2 deaths=0 rxR=101 rxM=178 lastPid=2 casts c6=0 c7=0 c8=0 lastDeath=(-1,-1) killerByLvl=
+[bots] OK

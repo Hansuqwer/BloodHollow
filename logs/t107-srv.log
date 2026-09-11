@@ -1,0 +1,17 @@
+[boot] zone 2 (assets/maps/fields_overflow.bhmap: 64x48) online
+[boot] zone 3 (assets/maps/thornwall_crypt.bhmap: 48x36) online
+[boot] zone 4 (assets/maps/bonehowl_mine.bhmap: 56x40) online
+[boot] zone 5 (assets/maps/drowned_crypt.bhmap: 48x36) online
+[journal] recording world to logs/t107.bwj (epoch 18)
+[boot] bh_server on 0.0.0.0:7798 | map 'assets/maps/thornwall.bhmap' | db '/tmp/bh_t107_rec.db' | tick 20Hz | aoi 26
+[net] t107f__00        entered the world (entity 189, online 1)
+[net] t107f__01        entered the world (entity 190, online 2)
+[net] t107f__02        entered the world (entity 191, online 3)
+[net] t107f__03        entered the world (entity 192, online 4)
+[net] t107c__00        entered the world (entity 193, online 5)
+[net] t107c__01        entered the world (entity 194, online 6)
+[net] t107c__02        entered the world (entity 195, online 7)
+[net] t107c__03        entered the world (entity 196, online 8)
+[soak] tick=600 online=8 entities=180 tickUs p50=290 p99=730 worldHash=a0d77533b538219c pkts=391/201610
+[soak] tick=1200 online=8 entities=175 tickUs p50=314 p99=982 worldHash=55d50930a24cb10e pkts=713/372852
+[soak] tick=1800 online=8 entities=175 tickUs p50=252 p99=519 worldHash=eb34d19d2ad8e45c pkts=1000/505707
