@@ -1789,11 +1789,16 @@ void World::tradeCommit(Entity& e) {
   e.tradeCommitted = true;
   if (!b->tradeCommitted) return;  // wait for the handshake
   // Validate both offers atomically: ownership, quantities, gold, distance.
+  // T-105: count ONLY unequipped stacks — deduce() below skips equipped slots,
+  // so the pre-fix validator passed offers that the swap could never honor
+  // (offer your one equipped sword, take the partner's gold, sword stays put;
+  // the audit log even recorded a completed swap). One grammar on both sides.
   auto satisfiable = [](const Entity& x) {
     if (x.gold < x.tradeOfferGold) return false;
     for (const auto& [itemId, qty] : x.tradeOfferItems) {
       std::uint32_t owned = 0;
       for (const InvSlot& sl : x.inv) {
+        if (sl.equipped) continue;  // equipped gear is not on the table
         if (sl.itemId == itemId) owned += sl.qty;
       }
       if (owned < qty) return false;
@@ -1827,6 +1832,15 @@ void World::tradeCommit(Entity& e) {
         } else {
           ++i;
         }
+      }
+      if (remaining > 0) {
+        // Unreachable while satisfiable() and this loop share one grammar
+        // (T-105). If it ever fires, the two drifted again: scream in the log
+        // instead of silently short-paying the partner.
+        std::fprintf(stderr,
+                     "[trade] BUG: %s could not deliver %ux item %u (remainder %u)\n",
+                     x.name.c_str(), static_cast<unsigned>(remaining), itemId,
+                     static_cast<unsigned>(remaining));
       }
     }
     x.gold -= x.tradeOfferGold;
