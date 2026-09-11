@@ -10,3 +10,8 @@ logs/*.bwj
 logs/diag_*
 logs/trades.log
 __pycache__/
+
+# T-109: credential stores (accounts tables with salts+hashes) are runtime
+# artifacts, never tracked. Existing var/*.db were untracked in this commit;
+# history retains them (bot-only credentials, see review §3.5).
+var/
