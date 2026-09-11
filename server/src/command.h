@@ -32,6 +32,24 @@ struct Command {
   std::uint32_t token = 0;
 };
 
+// T-104: "/refine <n>" argument parse. NEVER throws — the pre-fix site used
+// std::stoi on client-controlled digits, so any all-digit argument wider than
+// int (e.g. "/refine 99999999999999") escaped handlePacket as
+// std::out_of_range and aborted the whole server (remote DoS, one packet).
+// Domain: inventory slots ride the wire as u8 (Command::channel in
+// applyWorldCommand), so anything >255 is out of domain by construction.
+inline bool parseRefineArg(const std::string& arg, std::int32_t& out) {
+  if (arg.empty() || arg.size() > 3) return false;
+  std::int32_t v = 0;
+  for (const char ch : arg) {
+    if (ch < '0' || ch > '9') return false;
+    v = v * 10 + (ch - '0');
+  }
+  if (v > 255) return false;
+  out = v;
+  return true;
+}
+
 // World-mutating command application.  kChat/kPing have no sim effect and are
 // handled by the server shell only (never journaled); every other kind routes
 // here from BOTH live processing and journal replay.

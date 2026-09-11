@@ -442,13 +442,13 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
         else if (m.text == "/confess") { c.kind = Command::kConfess; }
         else if (m.text == "/repent") { c.kind = Command::kRepent; }
         else if (m.text.rfind("/refine ", 0) == 0) {  // T-060 anvil upgrade
-          bool digits = true;
-          for (char ch : m.text.substr(8))
-            if (ch < '0' || ch > '9') digits = false;
-          okCmd = digits && !m.text.substr(8).empty();
+          // T-104: throw-free parse (was std::stoi on client digits — any
+          // all-digit argument wider than int aborted the server).
+          std::int32_t slot = 0;
+          okCmd = parseRefineArg(m.text.substr(8), slot);
           if (okCmd) {
             c.kind = Command::kRefine;
-            c.a = std::stoi(m.text.substr(8));
+            c.a = slot;
           }
         }
         else if (m.text.rfind("/kit ", 0) == 0) {  // T-053 one-time swear
@@ -1388,7 +1388,25 @@ int run(int argc, char** argv) {
           Session& sess = s.sessions[ev.peer];
           const auto pv = proto::view(static_cast<std::uint8_t*>(ev.packet->data),
                                       ev.packet->dataLength);
-          if (pv.ok) handlePacket(s, sess, pv);
+          if (pv.ok) {
+            // T-104 boundary guard: a hostile payload must never be able to
+            // escape handlePacket as an exception (uncaught => std::terminate
+            // => whole world down). Log, drop the offender, keep serving.
+            try {
+              handlePacket(s, sess, pv);
+            } catch (const std::exception& ex) {
+              std::fprintf(stderr,
+                           "[net] packet exception (%s) — dropping session\n",
+                           ex.what());
+              std::fflush(stderr);
+              dropSession(s, sess);  // erases from s.sessions; sess is dead here
+            } catch (...) {
+              std::fprintf(stderr,
+                           "[net] unknown packet exception — dropping session\n");
+              std::fflush(stderr);
+              dropSession(s, sess);
+            }
+          }
           enet_packet_destroy(ev.packet);
           break;
         }
