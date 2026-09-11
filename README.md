@@ -111,7 +111,7 @@ velocity ran ~5 months ahead of plan. What is in the tree today: full combat law
 Cultist), anvil enhance/refine + durability, vendors + fence economy, trades with
 commit-time validation, karma/alignment + duels + wanted law, day/night + light +
 torch/lantern, 5 zones in one process (town, fields, crypt, mine, drowned crypt) with
-portals, journal **epoch 17** with the gate leg `logs/t103.bwj`
+portals, journal **epoch 18** with the gate leg `logs/t107.bwj`
 (`ticks=12801 cmds=7830 hashes=513 mismatches=0`). Task board and per-card devlogs are
 the authoritative status: [`docs/tasks/`](docs/tasks/) · latest devlog
 [`0072`](docs/devlog/) (T-103).
