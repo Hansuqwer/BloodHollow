@@ -20,6 +20,7 @@
 #include <enet/enet.h>
 
 #include "persist.h"
+#include "loginlimit.h"
 #include "protocol/messages_gen.h"
 #include "sim/combat.h"
 #include "sim/clock.h"
@@ -69,7 +70,20 @@ struct Server {
   std::int64_t soakSecs = 0;
   double p99BudgetMs = 10.0;
   std::uint64_t packetsIn = 0, packetsOut = 0;
+  // T-109: auth hardening (review §3.5) — per-source-IP login/registration
+  // throttle + registration gate (--no-register). Limiter policy lives in
+  // loginlimit.h (pure logic, unit-tested); these are its wiring points.
+  LoginLimiter loginLimiter{};
+  bool allowRegister = true;
 };
+
+// Monotonic milliseconds for the login limiter (never wall-clock: NTP steps
+// must not shrink or stretch a lockout).
+std::int64_t steadyNowMs() {
+  return std::chrono::duration_cast<std::chrono::milliseconds>(
+             std::chrono::steady_clock::now().time_since_epoch())
+      .count();
+}
 
 void pushOwnStats(Server& s, Session& sess);
 void pushInventory(Server& s, Session& sess);
@@ -262,16 +276,48 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
         enet_peer_disconnect_later(sess.peer, 0);
         return;
       }
+      // T-109: throttle + registration gate BEFORE any DB work. Reason codes:
+      // 5 = rate-limited / bad-credentials lockout, 6 = registration disabled.
+      // (1=bad credentials, 2=invalid name, 3=db error, 4=protocol mismatch.)
+      const std::uint32_t ip = sess.peer->address.host;
+      const std::int64_t nowMs = steadyNowMs();
+      if (s.loginLimiter.lockedOut(ip, nowMs) ||
+          !s.loginLimiter.allowLogin(ip, nowMs)) {
+        LoginResult r;
+        r.ok = 0;
+        r.reason = 5;
+        sendMsg(sess.peer, r, s);
+        return;
+      }
+      bool acctExists = false;
+      std::string acctErr;
+      if (!s.db.accountExists(h.username, &acctExists, &acctErr)) {
+        LoginResult r;
+        r.ok = 0;
+        r.reason = 3;  // server/db error
+        sendMsg(sess.peer, r, s);
+        return;
+      }
+      if (!acctExists &&
+          (!s.allowRegister || !s.loginLimiter.allowRegister(ip, nowMs))) {
+        LoginResult r;
+        r.ok = 0;
+        r.reason = s.allowRegister ? 5 : 6;
+        sendMsg(sess.peer, r, s);
+        return;
+      }
       CharacterRow row;
       std::uint8_t reason = 0;
       std::string err;
       if (!s.db.loginOrCreate(h.username, h.password, &row, &reason, &err)) {
+        if (reason == 1) s.loginLimiter.noteFailure(ip, nowMs);  // bad creds
         LoginResult r;
         r.ok = 0;
         r.reason = reason;
         sendMsg(sess.peer, r, s);
         return;
       }
+      s.loginLimiter.noteSuccess(ip, nowMs);
       LoginResult r;
       r.ok = 1;
       r.reason = 0;
@@ -1296,10 +1342,11 @@ int run(int argc, char** argv) {
     }
     else if (a == "--replay-world") s.replayWorldPath = next("");
     else if (a == "--p99-budget-ms") s.p99BudgetMs = std::atof(next("10").c_str());
+    else if (a == "--no-register") s.allowRegister = false;  // T-109 gate
     else {
       std::fprintf(stderr,
                    "usage: bh_server [--map M] [--db D] [--port P] [--soak-secs S] "
-                   "[--p99-budget-ms N]\n");
+                   "[--p99-budget-ms N] [--no-register]\n");
       return 2;
     }
   }
@@ -1329,6 +1376,17 @@ int run(int argc, char** argv) {
     std::fprintf(stderr, "bh_server: %s\n", err.c_str());
     return 1;
   }
+  // T-109: make the auth posture visible in every server log.
+  std::printf("[auth] registration %s; limiter: %d logins + %d new accounts "
+              "per %llds per IP, %d consecutive bad-password fails -> %llds lockout\n",
+              s.allowRegister ? "OPEN (prototype posture; --no-register to gate)"
+                              : "GATED (--no-register)",
+              LoginLimiter::kMaxLoginsPerWindow,
+              LoginLimiter::kMaxRegistersPerWindow,
+              static_cast<long long>(LoginLimiter::kWindowMs / 1000),
+              LoginLimiter::kMaxConsecutiveFails,
+              static_cast<long long>(LoginLimiter::kLockoutMs / 1000));
+  std::fflush(stdout);
   if (!s.replayWorldPath.empty()) {
     return runReplayWorld(s.replayWorldPath, mapPath);  // offline deterministic mode
   }
@@ -1411,6 +1469,7 @@ int run(int argc, char** argv) {
           break;
         }
         case ENET_EVENT_TYPE_DISCONNECT: {
+          s.loginLimiter.prune(steadyNowMs());  // T-109: keep the IP map live-only
           auto it = s.sessions.find(ev.peer);
           if (it != s.sessions.end()) {
             journalDisconnect(s, it->second);

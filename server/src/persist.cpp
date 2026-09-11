@@ -166,6 +166,31 @@ Db::~Db() {
   if (db_ != nullptr) sqlite3_close(db_);
 }
 
+bool Db::accountExists(const std::string& user, bool* outExists,
+                       std::string* err) {
+  if (outExists == nullptr) return false;
+  *outExists = false;
+  sqlite3_stmt* st = nullptr;
+  if (sqlite3_prepare_v2(
+          db_, "SELECT 1 FROM accounts WHERE name=? LIMIT 1;", -1, &st,
+          nullptr) != SQLITE_OK) {
+    if (err) *err = "prepare failed (account exists)";
+    return false;
+  }
+  sqlite3_bind_text(st, 1, user.c_str(), -1, SQLITE_TRANSIENT);
+  const int rc = sqlite3_step(st);
+  sqlite3_finalize(st);
+  if (rc == SQLITE_ROW) {
+    *outExists = true;
+    return true;
+  }
+  if (rc != SQLITE_DONE) {
+    if (err) *err = "step failed (account exists)";
+    return false;
+  }
+  return true;
+}
+
 bool Db::loginOrCreate(const std::string& user, const std::string& pass,
                        CharacterRow* out, std::uint8_t* failReason, std::string* err) {
   if (db_ == nullptr) {

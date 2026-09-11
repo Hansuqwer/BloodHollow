@@ -38,6 +38,10 @@ class Db {
   // failReason: 1=bad credentials, 2=invalid name, 3=server/db error.
   bool loginOrCreate(const std::string& user, const std::string& pass,
                      CharacterRow* out, std::uint8_t* failReason, std::string* err);
+  // T-109: registration-gate pre-check — is there already an account for this
+  // name? The shell routes unknown names through --no-register and the
+  // registration rate limiter BEFORE loginOrCreate can create anything.
+  bool accountExists(const std::string& user, bool* outExists, std::string* err);
   void savePosition(std::int64_t characterId, int mapId, int x, int y);
     void saveProgress(std::int64_t characterId, int level, std::int64_t xp, int str,
                     int vit, int dex, int statPoints, int gold,
