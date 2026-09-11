@@ -31,4 +31,15 @@ Full prompt = PREFIX + ", " + SUBJECT + ", palette: " + PALETTE + " --neg " + NE
 32×48 (body ≤ 43 px; D2 ruled) · idle1+walk6+attack3+cast4+hurt2+die4+gib3 → 23 cols × 8 rows = 736×384
 
 ## Runs
-_(none yet — one line per generation: date · model or "undisclosed" · seed if known · which dirs · accepted y/n)_
+
+- 2026-09-10 · undisclosed · seed_auto · 10-plate batch (walk-f0 S/SE/E, die-f3 S/SE/E, attack-f1 SE/E, cast-f2 SE/E) · REJECTED, acceptance struck: S/SE/E byte-identical copies (8 unique images), 6–9 colors, placeholder grade — false "accepted y" lines removed, files quarantined to /tmp/opencode/rejected-plates/m/ + MANIFEST.txt, superseded by keyed regen below
+- 2026-09-10 · flux (gen.pollinations.ai, keyed, 512x768, hardened pixel/green-screen prompt) · seed 1001 · ravager_m_walk_f0_S_4x_raw.png · accepted y (spot-checked: walk pose, axe right, green bg + painted shadow → hand-fix)
+- 2026-09-10 · flux (gen.pollinations.ai, keyed, 512x768, hardened pixel/green-screen prompt) · seed 1002 · ravager_m_walk_f0_SE_4x_raw.png · accepted y
+- 2026-09-10 · flux (gen.pollinations.ai, keyed, 512x768, hardened pixel/green-screen prompt) · seed 1003 · ravager_m_walk_f0_E_4x_raw.png · accepted y
+- 2026-09-10 · flux (gen.pollinations.ai, keyed, 512x768, hardened pixel/green-screen prompt) · seed 1004 · ravager_m_die_f3_S_4x_raw.png · accepted y (spot-checked: kneeling fallen + dropped axe, green bg)
+- 2026-09-10 · flux (gen.pollinations.ai, keyed, 512x768, hardened pixel/green-screen prompt) · seed 1005 · ravager_m_die_f3_SE_4x_raw.png · accepted y
+- 2026-09-10 · flux (gen.pollinations.ai, keyed, 512x768, hardened pixel/green-screen prompt) · seed 1006 · ravager_m_die_f3_E_4x_raw.png · accepted y
+- 2026-09-10 · flux (gen.pollinations.ai, keyed, 512x768, hardened pixel/green-screen prompt) · seed 1007 · ravager_m_attack_f1_SE_4x_raw.png · accepted y
+- 2026-09-10 · flux (gen.pollinations.ai, keyed, 512x768, hardened pixel/green-screen prompt) · seed 1008 · ravager_m_attack_f1_E_4x_raw.png · accepted y
+- 2026-09-10 · flux (gen.pollinations.ai, keyed, 512x768, hardened pixel/green-screen prompt) · seed 1009 · ravager_m_cast_f2_SE_4x_raw.png · accepted y
+- 2026-09-10 · flux (gen.pollinations.ai, keyed, 512x768, hardened pixel/green-screen prompt) · seed 1010 · ravager_m_cast_f2_E_4x_raw.png · accepted y
