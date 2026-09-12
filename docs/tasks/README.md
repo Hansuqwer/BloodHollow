@@ -705,6 +705,25 @@ Squash-merged `7b2e9b8`, branch deleted. **The Sisyphus ladder is fixed**
 T-122 = pledge-lite (Track B2). Standing prompts amended (epoch 21,
 schema v11, l-line v3 grammar). Devlog 0083 · card `done/T-121.md`.
 
+## Done — T-122 (2026-09-12): pledge-lite (Track B2) — the oath office opens (epoch 22)
+
+T-122: server-only pledge core per the 05-mvp.md cut — **create / emblem
+(placeholder 0–9) / ranks Liege·Bloodsworn·Initiate / pledge chat**;
+vault/tax deferred to B5 holdings, roster UI + emblem-over-head to a
+follow-up wire card. Registrar (72) takes the town-square post
+(Chebyshev ≤ 3, confessor pattern); founding gate **level ≥ 10 +
+10,000g** — flagged **GDD §8 deviation** (CHA ≥ 20 asked, no CHA stat
+exists; switch when the six-stat model lands). Membership by character
+name, schema **v12** (`pledge_id`/`pledge_rank` columns + `pledges`
+table), journal kinds 28–34 + **g-sidecar** login line (k-line pattern);
+pledge state stays outside worldHash by design. **Epoch 21→22** — the
+registrar is world composition (T-112 spawn law; t120 replayed 15/15
+mismatch before the bump, refuses by guard after). Leg of record
+`logs/t122.bwj`: 5 bots found `t122clan`, swear/promote/kick/leave,
+relog → membership restored, replay `ticks=1222 cmds=105 hashes=12
+mm=0`. Suite **218/218 · 329,270**, ctest 2/2, duel pin unchanged.
+Devlog 0084 · card `done/T-122.md`.
+
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
 | Card | Title | Notes |

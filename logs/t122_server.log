@@ -1,0 +1,35 @@
+[boot] zone 2 (assets/maps/fields_overflow.bhmap: 64x48) online
+[boot] zone 3 (assets/maps/thornwall_crypt.bhmap: 48x36) online
+[boot] zone 4 (assets/maps/bonehowl_mine.bhmap: 56x40) online
+[boot] zone 5 (assets/maps/drowned_crypt.bhmap: 48x36) online
+[auth] registration OPEN (prototype posture; --no-register to gate); limiter: 60 logins + 30 new accounts per 60s per IP, 10 consecutive bad-password fails -> 60s lockout
+[journal] recording world to logs/t122.bwj (epoch 22)
+[boot] pledges: 0 registered, 0 sworn members
+[boot] bh_server on 0.0.0.0:7823 | map 'assets/maps/thornwall.bhmap' | db '/tmp/t122.db' | tick 20Hz | aoi 26
+[net] t122__00         entered the world (entity 198, online 1)
+[net] t122__01         entered the world (entity 199, online 2)
+[net] t122__02         entered the world (entity 200, online 3)
+[net] t122__03         entered the world (entity 201, online 4)
+[net] t122__04         entered the world (entity 202, online 5)
+[net] t122__00         saved at (24,29)
+[net] t122__01         saved at (24,14)
+[net] t122__02         saved at (37,13)
+[net] t122__03         saved at (36,13)
+[net] t122__04         saved at (33,3)
+[net] t122__00         entered the world (entity 203, online 1)
+[net] t122__01         entered the world (entity 204, online 2)
+[net] t122__02         entered the world (entity 205, online 3)
+[net] t122__03         entered the world (entity 206, online 4)
+[net] t122__04         entered the world (entity 207, online 5)
+[soak] tick=600 online=5 entities=197 tickUs p50=276 p99=492 worldHash=e00fb0d61868c0cf pkts=81/151280
+[net] t122__00         saved at (31,15)
+[net] t122__01         saved at (31,15)
+[net] t122__02         saved at (31,15)
+[net] t122__03         saved at (31,15)
+[net] t122__04         saved at (31,15)
+[net] t122__00         entered the world (entity 209, online 1)
+[net] t122__01         entered the world (entity 210, online 2)
+[net] t122__02         entered the world (entity 211, online 3)
+[net] t122__03         entered the world (entity 212, online 4)
+[net] t122__04         entered the world (entity 213, online 5)
+[soak] tick=1200 online=5 entities=199 tickUs p50=275 p99=621 worldHash=c91cdec0ee307e9f pkts=124/307438

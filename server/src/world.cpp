@@ -480,8 +480,10 @@ void World::spawnFence(Zone& zone) {
 // sister, never desynced — two adjacent tiles), the Ashen guard stands the
 // east-gate post and the Synod guard the bridge post (the T-073 posts they
 // belong to). Spiral scans skipping occupied furniture, deterministic (no
-// RNG — same class as the confessor scan). Registrar (72) and steward (73)
-// stay unplaced: Marrowgate and the Weeping Castle do not exist yet.
+// RNG — same class as the confessor scan). T-122: the Registrar (72) takes
+// a post at the town square (spiral from the spawn point, one tile past
+// Marta); the steward (73) stays unplaced — the Weeping Castle does not
+// exist yet.
 void World::spawnNpcs() {
   auto zit = zones_.find(1);
   if (zit == zones_.end()) return;
@@ -546,6 +548,21 @@ void World::spawnNpcs() {
         }
       if (placed) break;
     }
+  }
+  // T-122: the pledge registrar — first free tile spiralling from the town
+  // spawn point (Marta took the nearest one; the clerk stands the next).
+  for (int r = 1; r < 8; ++r) {
+    bool placed = false;
+    for (int dy = -r; dy <= r && !placed; ++dy)
+      for (int dx = -r; dx <= r && !placed; ++dx) {
+        if (std::max(std::abs(dx), std::abs(dy)) != r) continue;
+        const int x = zone.spawnPoint.x + dx;
+        const int y = zone.spawnPoint.y + dy;
+        if (!freeTile(x, y)) continue;
+        place(content::kWireKindRegistrar, "Pledge Registrar", x, y);
+        placed = true;
+      }
+    if (placed) break;
   }
 }
 
@@ -2353,6 +2370,282 @@ bool World::partyKick(Entity& leader, std::uint32_t targetId) {
   if (victim == nullptr || victim->partyId != p->id) return false;
   return partyLeave(*victim);  // same path; the msg reads as a leave
 }
+
+// ---- pledge-lite (T-122) ---------------------------------------------------
+// Persistent social registry (GDD §8 MVP cut: create/emblem/ranks/chat; the
+// vault/tax half arrives with the Phase-4 holdings card). Design notes:
+// - Membership by character NAME: entities are session-transient, pledges are
+//   not. e.pledgeId/rank is the entity-side cache, restored at login (DB live,
+//   journal g-sidecar in replay).
+// - Registry lives in World so journaled commands replay identically. It is
+//   deliberately NOT part of worldHash: pledge state is social, not sim, and
+//   pre-T-122 journals must keep replaying bit-exact (party/k-line precedent).
+// - The journal c-line carries no strings: live creation passes the real name
+//   via Command::text; replay synthesizes "pledge-<id>" (chat-only fidelity
+//   loss, hash-neutral by construction).
+// - GDD §8 gates creation on CHA >= 20; the shipped stat model is str/vit/dex
+//   + kit-derived int/mag with no CHA. Lite gate = level >= 10 + 10,000g
+//   (vs 100k for full pledges) — flagged as a deviation; switch when the
+//   six-stat model lands.
+bool World::pledgeCreate(Entity& e, const std::string& name) {
+  if (e.kind != EntityKind::kPlayer || e.dead || e.pledgeId != 0) return false;
+  if (!nearRegistrar(e)) return false;
+  if (e.level < kPledgeMinLevel) return false;
+  if (static_cast<std::int32_t>(e.gold) < kPledgeCreateGold) return false;
+  // name empty = replay path (the c-line journal carries no strings): skip
+  // shape/uniqueness — the pledge names itself "pledge-<id>" below. Live
+  // always passes a validated name (the shell pre-checks shape too).
+  if (!name.empty()) {
+    const int n = static_cast<int>(name.size());
+    if (n < kPledgeNameMin || n > kPledgeNameMax) return false;
+    for (const char ch : name) {
+      const bool ok = (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') ||
+                      (ch >= '0' && ch <= '9') || ch == '_' || ch == '-';
+      if (!ok) return false;
+    }
+    for (const Pledge& q : pledges_)
+      if (q.name == name) return false;  // names are unique forever (lite rule)
+  }
+  Pledge p;
+  p.id = nextPledgeId_++;
+  p.name = name.empty() ? ("pledge-" + std::to_string(p.id)) : name;
+  p.emblem = static_cast<std::uint8_t>(p.id % 10);  // placeholder until T-123
+  p.liege = e.name;
+  p.members.push_back(e.name);
+  pledges_.push_back(std::move(p));
+  e.gold -= kPledgeCreateGold;
+  e.pledgeId = pledges_.back().id;
+  e.pledgeRank = 3;  // Liege
+  pledgesDirty = true;
+  emitPledgeMsg(e.pledgeId, e.id,
+                e.name + " founds " + pledges_.back().name + " at the registrar.");
+  return true;
+}
+
+bool World::pledgeInvite(Entity& inviter, Entity& target) {
+  if (inviter.kind != EntityKind::kPlayer || target.kind != EntityKind::kPlayer ||
+      inviter.dead || target.dead || inviter.id == target.id) return false;
+  if (inviter.pledgeRank < 2) return false;  // Bloodsworn or Liege invite
+  if (target.pledgeId != 0) return false;
+  Pledge* p = const_cast<Pledge*>(pledgeById(inviter.pledgeId));
+  if (p == nullptr) { inviter.pledgeId = 0; inviter.pledgeRank = 0; return false; }
+  if (static_cast<int>(p->members.size()) >= kPledgeMaxMembers) return false;
+  if (target.zoneId != inviter.zoneId ||
+      chebyshev(inviter.walker.tile(), target.walker.tile()) > 12) return false;
+  // one pending pledge invite per invitee: renew/overwrite (party pattern)
+  bool found = false;
+  for (auto& inv : pledgeInvites_)
+    if (inv.first == target.id) {
+      inv.second = {tick_ + 400, inviter.id};  // 20 s to answer
+      found = true;
+    }
+  if (!found) pledgeInvites_.push_back({target.id, {tick_ + 400, inviter.id}});
+  emitPledgeMsg(p->id, target.id,
+                inviter.name + " offers " + target.name + " the oath — /pledge accept.");
+  return true;
+}
+
+bool World::pledgeAccept(Entity& e) {
+  if (e.kind != EntityKind::kPlayer || e.dead || e.pledgeId != 0) return false;
+  for (size_t i = 0; i < pledgeInvites_.size(); ++i) {
+    if (pledgeInvites_[i].first != e.id) continue;
+    if (tick_ > pledgeInvites_[i].second.first) {
+      pledgeInvites_.erase(pledgeInvites_.begin() + static_cast<long>(i));
+      return false;  // expired offers die on consumption, not on a timer
+    }
+    Entity* inviter = find(pledgeInvites_[i].second.second);
+    pledgeInvites_.erase(pledgeInvites_.begin() + static_cast<long>(i));
+    if (inviter == nullptr || inviter->pledgeRank < 2) return false;
+    Pledge* p = const_cast<Pledge*>(pledgeById(inviter->pledgeId));
+    if (p == nullptr || static_cast<int>(p->members.size()) >= kPledgeMaxMembers)
+      return false;
+    e.pledgeId = p->id;
+    e.pledgeRank = 1;  // Initiate
+    p->members.push_back(e.name);
+    pledgesDirty = true;
+    emitPledgeMsg(p->id, e.id, e.name + " swears the oath. Welcome, Initiate.");
+    return true;
+  }
+  return false;
+}
+
+bool World::pledgeLeave(Entity& e) {
+  if (e.kind != EntityKind::kPlayer || e.pledgeId == 0) return false;
+  if (e.pledgeRank == 3) return pledgeDisband(e);  // a liege cannot just walk
+  Pledge* p = const_cast<Pledge*>(pledgeById(e.pledgeId));
+  if (p == nullptr) { e.pledgeId = 0; e.pledgeRank = 0; return false; }
+  for (size_t i = 0; i < p->members.size(); ++i)
+    if (p->members[i] == e.name) {
+      p->members.erase(p->members.begin() + static_cast<long>(i));
+      break;
+    }
+  const std::uint32_t pid = e.pledgeId;
+  e.pledgeId = 0;
+  e.pledgeRank = 0;
+  pledgesDirty = true;
+  emitPledgeMsg(pid, e.id, e.name + " tears the oath.");
+  return true;
+}
+
+bool World::pledgeKick(Entity& liege, std::uint32_t targetId) {
+  if (liege.kind != EntityKind::kPlayer || liege.pledgeRank != 3) return false;
+  Pledge* p = const_cast<Pledge*>(pledgeById(liege.pledgeId));
+  if (p == nullptr || targetId == liege.id) return false;
+  Entity* victim = find(targetId);
+  if (victim == nullptr || victim->pledgeId != p->id) return false;
+  const std::string vname = victim->name;
+  const std::uint32_t pid = p->id;
+  victim->pledgeId = 0;
+  victim->pledgeRank = 0;
+  for (size_t i = 0; i < p->members.size(); ++i)
+    if (p->members[i] == vname) {
+      p->members.erase(p->members.begin() + static_cast<long>(i));
+      break;
+    }
+  pledgesDirty = true;
+  emitPledgeMsg(pid, liege.id, liege.name + " casts " + vname + " out.");
+  return true;
+}
+
+bool World::pledgeSetRank(Entity& actor, std::uint32_t targetId, std::uint8_t rank) {
+  if (actor.kind != EntityKind::kPlayer || actor.pledgeRank != 3) return false;
+  if (rank != 1 && rank != 2) return false;  // Liege transfers are post-lite
+  Pledge* p = const_cast<Pledge*>(pledgeById(actor.pledgeId));
+  if (p == nullptr) return false;
+  Entity* t = find(targetId);
+  if (t == nullptr || t->pledgeId != p->id || t->id == actor.id) return false;
+  t->pledgeRank = rank;
+  pledgesDirty = true;
+  emitPledgeMsg(p->id, t->id,
+                t->name + (rank == 2 ? " rises to Bloodsworn." : " stands as Initiate."));
+  return true;
+}
+
+bool World::pledgeDisband(Entity& e) {
+  if (e.kind != EntityKind::kPlayer || e.pledgeRank != 3) return false;
+  const std::uint32_t pid = e.pledgeId;
+  for (auto it = pledges_.begin(); it != pledges_.end(); ++it) {
+    if (it->id != pid) continue;
+    for (const std::string& m : it->members) {
+      for (Entity& other : entities_)  // clear online members' caches
+        if (other.kind == EntityKind::kPlayer && other.name == m) {
+          other.pledgeId = 0;
+          other.pledgeRank = 0;
+        }
+    }
+    emitPledgeMsg(pid, e.id, it->name + " is struck from the registrar's book.");
+    pledges_.erase(it);
+    pledgesDirty = true;
+    return true;
+  }
+  e.pledgeId = 0;
+  e.pledgeRank = 0;
+  return false;
+}
+
+void World::pledgeChat(const Entity& e, const std::string& text) {
+  if (e.kind != EntityKind::kPlayer || e.pledgeId == 0) return;
+  const Pledge* p = pledgeById(e.pledgeId);
+  if (p == nullptr) return;
+  const std::string line = "[" + p->name + "] " + e.name + ": " + text;
+  for (const Entity& other : entities_) {
+    if (other.kind != EntityKind::kPlayer || other.pledgeId != p->id) continue;
+    WorldEvent ev;
+    ev.chatCh = 255;  // directed system line, one per online member
+    ev.aboutId = other.id;
+    ev.chatText = line;
+    events_.push_back(std::move(ev));
+  }
+}
+
+const World::Pledge* World::pledgeById(std::uint32_t id) const {
+  for (const Pledge& p : pledges_)
+    if (p.id == id) return &p;
+  return nullptr;
+}
+
+bool World::nearRegistrar(const Entity& e) const {
+  for (const Entity& other : entities_) {
+    if (other.wireKind == content::kWireKindRegistrar &&
+        other.zoneId == e.zoneId && !other.dead &&
+        chebyshev(other.walker.tile(), e.walker.tile()) <= 3) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void World::setPledges(std::vector<Pledge> loaded) {
+  pledges_.clear();
+  std::uint32_t maxId = 0;
+  for (Pledge& p : loaded) {
+    maxId = std::max(maxId, p.id);
+    pledges_.push_back(std::move(p));
+  }
+  nextPledgeId_ = maxId + 1;
+}
+
+void World::pledgeWho(const Entity& e) {
+  if (e.kind != EntityKind::kPlayer) return;
+  static const char* rankName[4] = {"", "Initiate", "Bloodsworn", "Liege"};
+  std::string roster = "Unsworn. /pledge create <name> at the registrar.";
+  if (e.pledgeId != 0) {
+    const Pledge* p = pledgeById(e.pledgeId);
+    if (p != nullptr) {
+      roster = p->name + " (emblem " + std::to_string(p->emblem) + "):";
+      for (const std::string& m : p->members) {
+        bool online = false;
+        for (const Entity& o : entities_)
+          if (o.kind == EntityKind::kPlayer && o.name == m) online = true;
+        std::uint8_t r = 0;
+        for (const Entity& o : entities_)
+          if (o.kind == EntityKind::kPlayer && o.name == m && o.pledgeId == p->id)
+            r = o.pledgeRank;
+        if (r == 0) r = (m == p->liege) ? 3 : 1;  // offline: infer from liege
+        roster += "\n  " + m + " — " + rankName[r] + (online ? "" : " (offline)");
+      }
+    }
+  }
+  WorldEvent ev;
+  ev.chatCh = 255;
+  ev.aboutId = e.id;
+  ev.chatText = roster;
+  events_.push_back(std::move(ev));
+}
+
+void World::pledgeReplayRestore(Entity& e, std::uint32_t pledgeId,
+                                std::uint8_t rank) {
+  e.pledgeId = pledgeId;
+  e.pledgeRank = rank;
+  if (pledgeId == 0) return;
+  Pledge* p = const_cast<Pledge*>(pledgeById(pledgeId));
+  if (p == nullptr) {
+    Pledge stub;
+    stub.id = pledgeId;
+    stub.name = "pledge-" + std::to_string(pledgeId);  // DB-of-record name
+    stub.liege = e.name;
+    stub.members.push_back(e.name);
+    pledges_.push_back(std::move(stub));
+    nextPledgeId_ = std::max(nextPledgeId_, pledgeId + 1);
+    return;
+  }
+  for (const std::string& m : p->members)
+    if (m == e.name) return;
+  p->members.push_back(e.name);
+}
+
+void World::emitPledgeMsg(std::uint32_t pledgeId, std::uint32_t aboutId,
+                          const std::string& text) {
+  // Announce on the town channel (chatCh 2), party-msg style: the roster
+  // chrome (T-123) will key off pledge events; for now members read it aloud.
+  WorldEvent ev;
+  ev.chatCh = 2;
+  ev.aboutId = aboutId;
+  ev.chatText = text;
+  (void)pledgeId;
+  events_.push_back(std::move(ev));
+}
+
 
 const content::BountyDef* World::bountyNow() const {
   return content::bountyAt(static_cast<std::uint32_t>(tick_ / content::kBountyCycleTicks));
