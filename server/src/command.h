@@ -24,8 +24,15 @@ struct Command {
                              kTradeCancel, kAnvil,
                              kPartyInvite, kPartyAccept, kPartyLeave,
                              kPartyKick, kKitChoose, kDuel, kForfeit, kRepair, kRefine,
-                             kConfess, kRepent } kind;
-  // T-053: a = kit id; T-056: kDuel a = target id (resolved pre-journal)
+                             kConfess, kRepent,
+                             kPledgeCreate, kPledgeInvite, kPledgeAccept,
+                             kPledgeLeave, kPledgeKick, kPledgeRank,
+                             kPledgeDisband } kind;
+  // T-053: a = kit id; T-056: kDuel a = target id (resolved pre-journal);
+  // T-122: pledge a = target id (invite/kick/rank; resolved pre-journal),
+  // channel = rank for kPledgeRank; kPledgeCreate carries the name in text
+  // live-only (the c-line journal carries no strings — replay synthesizes
+  // "pledge-<id>", hash-neutral: pledge state is not in worldHash).
   std::int32_t a = 0, b = 0;
   std::uint8_t channel = 0;
   std::string text{};
@@ -164,6 +171,29 @@ inline void applyWorldCommand(World& w, Entity& e, const Command& c) {
       break;
     case Command::kRepent:
       w.repent(e);  // T-075 chapel grace
+      break;
+    case Command::kPledgeCreate:
+      w.pledgeCreate(e, c.text);  // T-122: name live-only, replay synthesizes
+      break;
+    case Command::kPledgeInvite: {
+      Entity* t = w.find(static_cast<std::uint32_t>(c.a));  // resolved pre-journal
+      if (t != nullptr) w.pledgeInvite(e, *t);
+      break;
+    }
+    case Command::kPledgeAccept:
+      w.pledgeAccept(e);
+      break;
+    case Command::kPledgeLeave:
+      w.pledgeLeave(e);
+      break;
+    case Command::kPledgeKick:
+      w.pledgeKick(e, static_cast<std::uint32_t>(c.a));
+      break;
+    case Command::kPledgeRank:
+      w.pledgeSetRank(e, static_cast<std::uint32_t>(c.a), c.channel);
+      break;
+    case Command::kPledgeDisband:
+      w.pledgeDisband(e);
       break;
     case Command::kChat:
     case Command::kPing:

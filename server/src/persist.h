@@ -2,6 +2,8 @@
 
 #include <cstdint>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include <sqlite3.h>
 
@@ -25,7 +27,17 @@ struct CharacterRow {
   int classId = 1;  // schema v7 (S14): kKit* in content/kits.h
   int swordSkill = 0;           // schema v11 (T-118): use-based skill
   std::int64_t swingLands = 0;  // schema v11: exact land counter
+  int pledgeId = 0;             // schema v12 (T-122): pledge membership
+  int pledgeRank = 0;           // 0 none / 1 Initiate / 2 Bloodsworn / 3 Liege
   std::string invBlob{};  // "itemId:qty:equipped;..." (schema v3)
+};
+
+// T-122 pledge-lite registry row (members are derived from characters.pledge_id)
+struct PledgeRec {
+  std::uint32_t id = 0;
+  std::string name;
+  int emblem = 0;
+  std::string liege;
 };
 
 // SQLite (WAL) persistence, ADR-0004. Login flow for M1 is intentionally a
@@ -49,7 +61,16 @@ class Db {
                     int vit, int dex, int statPoints, int gold,
                     const std::string& invBlob, std::int64_t anvilMercy,
                     std::int32_t karma, int classId, int swordSkill,
-                    std::int64_t swingLands);
+                    std::int64_t swingLands, int pledgeId, int pledgeRank);
+  // T-122 pledge-lite: registry load/persist (live shell only; replay never
+  // opens a Db). Membership columns ride saveProgress.
+  bool loadPledges(std::vector<PledgeRec>* out, std::string* err);
+  // memberships: (character name, {pledgeId, rank}) for pledge_id != 0
+  bool loadPledgeMembers(
+      std::vector<std::pair<std::string, std::pair<int, int>>>* out,
+      std::string* err);
+  bool upsertPledge(const PledgeRec& p, std::string* err);
+  bool deletePledge(std::uint32_t id, std::string* err);
 
  private:
   sqlite3* db_ = nullptr;

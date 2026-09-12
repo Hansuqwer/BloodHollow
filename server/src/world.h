@@ -100,6 +100,12 @@ struct Entity {
 
   std::uint32_t partyId = 0;  // 0 = unaffiliated (T-050 party core)
 
+  // pledge-lite (T-122): persistent membership. pledgeId caches the registry
+  // entry (restored at login from the DB / from the journal g-sidecar in
+  // replay); rank 0 = none, 1 = Initiate, 2 = Bloodsworn, 3 = Liege.
+  std::uint32_t pledgeId = 0;
+  std::uint8_t pledgeRank = 0;
+
   // class kit (T-053/T-054): kit id (content/kits.h), mana, buff stamps, cast CDs
   std::uint8_t classId = 1;     // kKitRavager default: pre-kit chars unchanged
   std::uint8_t intg = 0, mag = 0;
@@ -254,6 +260,45 @@ class World {
   void emitPartyMsg(std::uint32_t partyId, std::uint32_t aboutId,
                     const std::string& text);
   const std::deque<Party>& parties() const { return parties_; }
+
+  // ---- pledge-lite (T-122): persistent guild core (create/emblem/ranks/chat)
+  // Registry is world-owned so journal commands replay identically; the live
+  // shell mirrors it into SQLite (pledgesDirty). Membership is by character
+  // NAME (entities are transient, pledges are not). Not in worldHash by
+  // design: pledge state is social, not sim — old journals must replay clean.
+  struct Pledge {
+    std::uint32_t id = 0;
+    std::string name;                  // unique, 3..16 of [A-Za-z0-9_-]
+    std::uint8_t emblem = 0;           // 0..9 placeholder (client chrome: T-123)
+    std::string liege;                 // liege's character name
+    std::vector<std::string> members;  // character names, registry of record
+  };
+  static constexpr int kPledgeMaxMembers = 20;              // lite cap (flagged)
+  static constexpr std::int32_t kPledgeCreateGold = 10000;  // lite toll (flagged)
+  static constexpr std::uint8_t kPledgeMinLevel = 10;       // CHA gap flagged
+  static constexpr int kPledgeNameMin = 3, kPledgeNameMax = 16;
+  bool pledgeCreate(Entity& e, const std::string& name);    // name empty => replay synth
+  bool pledgeInvite(Entity& inviter, Entity& target);
+  bool pledgeAccept(Entity& e);                             // consumes pending invite
+  bool pledgeLeave(Entity& e);                              // liege leaving => disband
+  bool pledgeKick(Entity& liege, std::uint32_t targetId);
+  bool pledgeSetRank(Entity& actor, std::uint32_t targetId, std::uint8_t rank);
+  bool pledgeDisband(Entity& e);
+  void pledgeChat(const Entity& e, const std::string& text);  // events only
+  void pledgeWho(const Entity& e);                            // roster reply
+  void emitPledgeMsg(std::uint32_t pledgeId, std::uint32_t aboutId,
+                     const std::string& text);
+  // replay-only: restore membership from the journal g-sidecar, synthesizing
+  // registry stubs for pledges created in prior sessions (names are
+  // DB-of-record; sim effects key off id/rank only)
+  void pledgeReplayRestore(Entity& e, std::uint32_t pledgeId, std::uint8_t rank);
+  const Pledge* pledgeById(std::uint32_t id) const;
+  bool nearRegistrar(const Entity& e) const;
+  // live shell: load at boot / flush when dirty (replay never touches the Db)
+  void setPledges(std::vector<Pledge> loaded);
+  const std::deque<Pledge>& pledges() const { return pledges_; }
+  std::uint32_t nextPledgeId() const { return nextPledgeId_; }  // test seam
+  bool pledgesDirty = false;  // never hashed; shell-only mirror flag
 
   // anvil (T-041/T-042): proximity-gated aura attempts, atomic part+gold tolls
   bool tryAnvil(Entity& e, std::uint8_t tier);
@@ -456,6 +501,11 @@ class World {
   std::deque<Entity> entities_{};
   std::deque<Party> parties_;
   std::uint32_t nextPartyId_ = 1;
+
+  // pledge-lite (T-122): registry + pending invites (target id -> {expiry, inviter id})
+  std::deque<Pledge> pledges_;
+  std::uint32_t nextPledgeId_ = 1;
+  std::vector<std::pair<std::uint32_t, std::pair<sim::Tick, std::uint32_t>>> pledgeInvites_;
   // pending invites: invitee entity id -> (expiryTick, inviter entity id)
   std::vector<std::pair<std::uint32_t, std::pair<sim::Tick, std::uint32_t>>> invites_;
   std::uint32_t nextId_ = 1;

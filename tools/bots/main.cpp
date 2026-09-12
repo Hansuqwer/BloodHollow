@@ -89,6 +89,10 @@ struct Bot {
   std::uint64_t regearTrips = 0;
   std::uint8_t partyTries = 0;    // S13: formation attempts (10 s cadence, cap 4)
   double nextPartyTryAt = 0.0;
+  // T-122 pledge ceremony: fixed-schedule oath script (idx 0 = liege)
+  double pledgeT0 = -1.0;
+  int pledgeStep = 0;
+  int pledgeTries = 0;
   // T-118 crypt gate: boss tracking
   std::uint64_t bossSeen = 0;
   std::uint64_t bossKills = 0;
@@ -149,7 +153,7 @@ int run(int argc, char** argv) {
     else {
       std::fprintf(stderr,
                    "usage: bh_bots [--host H] [--port P] [--count N] [--secs S] [--map M] "
-                   "[--prefix P] [--profile wander|fighter|pilgrim|campaign|crypt] [--target-level N]\n");
+                   "[--prefix P] [--profile wander|fighter|pilgrim|campaign|crypt|pledge] [--target-level N]\n");
       return 2;
     }
   }
@@ -744,6 +748,102 @@ int run(int argc, char** argv) {
         }
         if (b.campaignDone) continue;  // target reached: idle out the clock
       }
+      // T-122 pledge-lite leg: hold the town square (the registrar stands a
+      // few tiles off the spawn point) and run a fixed-schedule oath ceremony:
+      // create -> invite x4 -> accept x4 -> chat/promote/kick/leave. Bots
+      // coordinate by the clock, not the wire (roster UI is a later card).
+      if (profile == "pledge") {
+        if (b.pledgeT0 < 0.0) b.pledgeT0 = t;
+        // camp the town square (Thornwall spawn point) — NOT home: wave-2
+        // bots spawn at their wave-1 saved position, which can be outside
+        // the walls. The registrar stands within 2 tiles of the square.
+        if (std::abs(b.tileX - 32) > 1 || std::abs(b.tileY - 16) > 1) {
+          bh::proto::InputPath ip;
+          ip.goalX = 32;
+          ip.goalY = 16;
+          sendProto(b.peer, bh::proto::pack(ip));
+        }
+        auto say = [&](const std::string& txt) {
+          bh::proto::ChatSend cs;
+          cs.channel = 0;
+          cs.text = txt;
+          sendProto(b.peer, bh::proto::pack(cs));
+        };
+        auto botName = [&](size_t i) {
+          char nm[64];
+          std::snprintf(nm, sizeof nm, "%s_%02zu", prefix.c_str(), i);
+          return std::string(nm);
+        };
+        // the square is not safe: town-edge rats gnaw anyone standing still.
+        // Oath-takers swat back (L12 vs L2-3: short work, era-flavorful).
+        if (t >= b.nextAttackAt) {
+          std::uint32_t bestId = 0;
+          int bestD = 3;
+          for (const auto& kv : b.ents) {
+            if (kv.second.kind == 0 ||
+                bh::content::wireIsFurniture(kv.second.kind)) continue;
+            const int d = std::max(std::abs(kv.second.x - b.tileX),
+                                   std::abs(kv.second.y - b.tileY));
+            if (d < bestD) { bestD = d; bestId = kv.first; }
+          }
+          if (bestId != 0) {
+            bh::proto::AttackRequest ar;
+            ar.targetId = bestId;
+            sendProto(b.peer, bh::proto::pack(ar));
+            b.nextAttackAt = t + 0.9;
+          }
+        }
+        const double lt = t - b.pledgeT0;
+        if (botIdx == 0) {  // the liege
+          if (b.pledgeStep == 0 && lt >= 2.0) {
+            say("/pledge who");
+            b.pledgeStep = 1;
+          } else if (b.pledgeStep == 1 && lt >= 4.0 && t >= b.nextPartyTryAt) {
+            say("/pledge create t122clan");
+            b.nextPartyTryAt = t + 3.0;
+            if (++b.pledgeTries >= 3) {  // retries, then on
+              b.pledgeStep = 2;
+              b.pledgeTries = 0;  // counter reused for the invite sequence
+              b.nextPartyTryAt = t + 2.0;
+            }
+          } else if (b.pledgeStep == 2 && t >= b.nextPartyTryAt &&
+                     b.pledgeTries < static_cast<int>(bots.size()) - 1) {
+            say("/pledge invite " + botName(static_cast<size_t>(b.pledgeTries) + 1));
+            ++b.pledgeTries;
+            b.nextPartyTryAt = t + 1.5;
+            if (b.pledgeTries >= static_cast<int>(bots.size()) - 1) {
+              b.pledgeStep = 3;
+              b.nextPartyTryAt = t + 6.0;  // after the accepts land
+            }
+          } else if (b.pledgeStep == 3 && t >= b.nextPartyTryAt) {
+            say("/pledge who");
+            say("/p the oath holds");
+            b.pledgeStep = 4;
+            b.nextPartyTryAt = t + 2.0;
+          } else if (b.pledgeStep == 4 && t >= b.nextPartyTryAt) {
+            say("/pledge promote " + botName(1));
+            b.pledgeStep = 5;
+            b.nextPartyTryAt = t + 2.0;
+          } else if (b.pledgeStep == 5 && t >= b.nextPartyTryAt) {
+            say("/pledge kick " + botName(2));
+            b.pledgeStep = 6;
+          }
+        } else {  // the oath-takers
+          if (b.pledgeStep == 0 && lt >= 13.0 && t >= b.nextPartyTryAt) {
+            say("/pledge accept");
+            b.nextPartyTryAt = t + 3.0;
+            if (++b.pledgeTries >= 4) b.pledgeStep = 1;  // retries, then on
+          } else if (b.pledgeStep == 1 && lt >= 17.0) {
+            say("/p sworn words");
+            b.pledgeStep = 2;
+          } else if (b.pledgeStep == 2 && botIdx == 3 && lt >= 21.0) {
+            say("/pledge leave");  // one walks; the rest hold the oath
+            b.pledgeStep = 3;
+          }
+        }
+        b.nextMoveAt = t + 0.5;
+        continue;  // ceremony bots never wander
+      }
       if (profile == "fighter" || pilgrimRites || campaign || crypt) {
         // nearest mob within 10 tiles -> chase / attack
         std::uint32_t bestId = 0;
@@ -1113,7 +1213,8 @@ int run(int argc, char** argv) {
           }
           continue;
         }
-      } else if (profile != "wander" && profile != "pilgrim" && profile != "crypt" && profile != "crypt_party") {
+      } else if (profile != "wander" && profile != "pilgrim" && profile != "crypt" &&
+                 profile != "crypt_party" && profile != "pledge") {
         std::fprintf(stderr, "bh_bots: unknown profile '%s'\n", profile.c_str());
         return 2;
       }
