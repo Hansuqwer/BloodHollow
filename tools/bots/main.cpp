@@ -89,6 +89,12 @@ struct Bot {
   std::uint64_t regearTrips = 0;
   std::uint8_t partyTries = 0;    // S13: formation attempts (10 s cadence, cap 4)
   double nextPartyTryAt = 0.0;
+  // T-117 crypt gate: boss tracking
+  std::uint64_t bossSeen = 0;
+  std::uint64_t bossKills = 0;
+  std::uint64_t curseSeen = 0;
+  std::uint64_t slamSeen = 0;
+  std::uint32_t bossId = 0;
   // T-054/55 choir: roster mirror + kit state (classId/mp from OwnStats)
   struct RosterRow { std::string name; std::uint32_t hp = 1, hpMax = 1; int level = 1; std::uint16_t zoneId = 0; };
   std::unordered_map<std::uint32_t, RosterRow> party{};
@@ -143,7 +149,7 @@ int run(int argc, char** argv) {
     else {
       std::fprintf(stderr,
                    "usage: bh_bots [--host H] [--port P] [--count N] [--secs S] [--map M] "
-                   "[--prefix P] [--profile wander|fighter|pilgrim|campaign] [--target-level N]\n");
+                   "[--prefix P] [--profile wander|fighter|pilgrim|campaign|crypt] [--target-level N]\n");
       return 2;
     }
   }
@@ -238,6 +244,10 @@ int run(int argc, char** argv) {
                   b.hp = static_cast<std::int32_t>(m.hp);
                   b.hpMax = static_cast<std::int32_t>(m.hpMax);
                 }
+                if (m.kind == 9 || m.level == 14) {
+                  ++b.bossSeen;
+                  b.bossId = m.id;
+                }
               }
             } else if (pv.id == bh::proto::kIdEntityDelta) {
               bh::proto::EntityDelta d;
@@ -263,16 +273,32 @@ int run(int argc, char** argv) {
               if (b.attackTarget == d.id) b.attackTarget = 0;
             } else if (pv.id == bh::proto::kIdCombatEvent) {
               bh::proto::CombatEvent m;
-              if (m.deserialize(pv.body) && m.kind == 3) {
-                if (m.attackerId == b.ownId) ++b.kills;
-                if (m.targetId == b.ownId) {  // T-040: authoritative source
-                  ++b.deaths;
-                  int kl = 0;
-                  const auto ki = b.ents.find(m.attackerId);
-                  if (ki != b.ents.end()) kl = ki->second.level;
-                  ++b.deathByKillerLevel[kl];
-                  b.lastDeathX = b.tileX;
-                  b.lastDeathY = b.tileY;
+              if (m.deserialize(pv.body)) {
+                if (m.kind == 3) {
+                  if (m.attackerId == b.ownId) {
+                    ++b.kills;
+                    if (b.bossId != 0 && m.targetId == b.bossId) ++b.bossKills;
+                    else {
+                      auto it = b.ents.find(m.targetId);
+                      if (it != b.ents.end() && (it->second.kind == 9 || it->second.level == 14)) ++b.bossKills;
+                    }
+                  }
+                  if (m.targetId == b.ownId) {
+                    ++b.deaths;
+                    int kl = 0;
+                    const auto ki = b.ents.find(m.attackerId);
+                    if (ki != b.ents.end()) kl = ki->second.level;
+                    ++b.deathByKillerLevel[kl];
+                    b.lastDeathX = b.tileX;
+                    b.lastDeathY = b.tileY;
+                  }
+                } else if (m.kind == 9 || m.kind == 16) {
+                  if (m.targetId == b.ownId) {
+                    if (m.kind == 9) ++b.curseSeen;
+                    else ++b.slamSeen;
+                  }
+                } else if (m.kind == 15) {
+                  ++b.slamSeen;
                 }
               }
             } else if (pv.id == bh::proto::kIdOwnStats) {
@@ -364,6 +390,141 @@ int run(int argc, char** argv) {
       }
       const bool pilgrimRites = (profile == "pilgrim");
       const bool campaign = (profile == "campaign");
+      const bool crypt = (profile == "crypt" || profile == "crypt_party");
+      // T-117 crypt gate: 5-person mixed-kit party -> Gravemother
+      if (crypt) {
+        if (b.campaignT0 < 0.0) {
+          b.campaignT0 = t;
+          b.nextRestAt = t + 60.0 + rng.range(0, 30);
+        }
+        if (!b.kitSworn && t >= b.campaignT0 + 2.0 + botIdx * 0.5) {
+          b.kitSworn = true;
+          const char* want = "ravager";
+          if (botIdx == 1 || botIdx == 2) want = "cultist";
+          else if (botIdx == 3) want = "gravecaller";
+          bh::proto::ChatSend cs;
+          cs.channel = 0;
+          cs.text = std::string("/kit ") + want;
+          sendProto(b.peer, bh::proto::pack(cs));
+        }
+        {
+          if (botIdx == 0) {
+            if (b.party.size() < 5 && b.partyTries < 100 && t >= b.nextPartyTryAt) {
+              size_t target = SIZE_MAX;
+              for (size_t si = 1; si < bots.size(); ++si) {
+                if (!bots[si].welcomed) continue;
+                bool already = false;
+                for (const auto& kv : b.party) {
+                  if (kv.second.name == bots[si].name) { already = true; break; }
+                }
+                if (!already) { target = si; break; }
+              }
+              if (target == SIZE_MAX) {
+                // re-invite any welcomed bot not yet confirmed (handles death/leaves)
+                for (size_t si = 1; si < bots.size(); ++si) {
+                  if (bots[si].welcomed) { target = si; break; }
+                }
+              }
+              if (target != SIZE_MAX) {
+                b.nextPartyTryAt = t + 3.0;
+                ++b.partyTries;
+                bh::proto::ChatSend cs;
+                cs.channel = 0;
+                cs.text = "/invite " + bots[target].name;
+                sendProto(b.peer, bh::proto::pack(cs));
+              }
+            }
+          } else {
+            const bool inParty = b.party.size() >= 5;
+            if (!inParty && b.partyTries < 100 && t >= b.nextPartyTryAt) {
+              b.nextPartyTryAt = t + 3.0;
+              ++b.partyTries;
+              bh::proto::ChatSend cs;
+              cs.channel = 0;
+              cs.text = "/accept";
+              sendProto(b.peer, bh::proto::pack(cs));
+            }
+          }
+        }
+        b.campIsPortal = false;
+        // T-117: hold in town until party of 5 forms, then dive
+        if (b.party.size() < 5) {
+          if (b.homeX >= 0) { b.campX = b.homeX; b.campY = b.homeY; }
+          else { b.campX = 32; b.campY = 16; }
+          b.campIsPortal = false;
+        } else if (b.mapId == 1) {
+          b.campX = 10; b.campY = 10; b.campIsPortal = true;
+        } else if (b.mapId == 3) {
+          b.campX = 44; b.campY = 6; b.campIsPortal = true;
+        } else if (b.mapId == 5) {
+          b.campX = 21; b.campY = 2; b.campIsPortal = false;
+        } else {
+          b.campX = 0; b.campY = 14; b.campIsPortal = true;
+        }
+        if (b.kitClass == 3 && !b.party.empty()) {
+          auto cheb = [&](int ax, int ay, int bx, int by) {
+            const int dx = ax > bx ? ax - bx : bx - ax;
+            const int dy = ay > by ? ay - by : by - ay;
+            return dx > dy ? dx : dy;
+          };
+          std::uint32_t hurtId = 0;
+          int hurtDist = 99;
+          int hurtSeen = 0;
+          for (const auto& kv2 : b.party) {
+            if (kv2.second.hp * 5 < kv2.second.hpMax * 3) ++hurtSeen;
+            if (kv2.second.hp * 5 >= kv2.second.hpMax * 3) continue;
+            const auto ei = b.ents.find(kv2.first);
+            if (ei == b.ents.end()) continue;
+            const int d = cheb(b.tileX, b.tileY, ei->second.x, ei->second.y);
+            if (d < hurtDist) { hurtDist = d; hurtId = kv2.first; }
+          }
+          if (hurtSeen > 0 && hurtId == 0) ++b.mendNoSee;
+          b.mendHurtCnt += static_cast<std::uint64_t>(hurtSeen);
+          const auto lead = b.party.find(b.partyLeaderId);
+          const auto leadE = lead != b.party.end() ? b.ents.find(lead->first) : b.ents.end();
+          const int leadDist = leadE != b.ents.end() ? cheb(b.tileX, b.tileY, leadE->second.x, leadE->second.y) : 99;
+          if (b.level >= 3 && leadE != b.ents.end() && leadDist <= 6 && t >= b.nextBlessAt && b.mp >= 15) {
+            bh::proto::SkillUse su; su.skill = 3; su.targetId = b.partyLeaderId;
+            sendProto(b.peer, bh::proto::pack(su));
+            b.nextBlessAt = t + 240.0; ++b.blessCasts;
+          }
+          if (b.level >= bh::content::kitSkillUnlock(b.kitClass, 6) && b.party.size() >= 2 && b.mp >= 14 && t >= b.nextChorusAt) {
+            std::uint32_t voices = 1;
+            for (const auto& kv2 : b.party) {
+              const auto ei = b.ents.find(kv2.first);
+              if (ei != b.ents.end() && cheb(b.tileX, b.tileY, ei->second.x, ei->second.y) <= 6) ++voices;
+            }
+            if (voices >= 2) {
+              bh::proto::SkillUse su; su.skill = 6; su.targetId = b.ownId;
+              sendProto(b.peer, bh::proto::pack(su));
+              b.nextChorusAt = t + 150.0; ++b.chorusCasts;
+            }
+          }
+          bool massMended = false;
+          if (b.level >= bh::content::kitSkillUnlock(b.kitClass, 7) && b.mp >= 18 && hurtSeen >= 2 && t >= b.nextMassMendAt) {
+            bh::proto::SkillUse su; su.skill = 7; su.targetId = b.ownId;
+            sendProto(b.peer, bh::proto::pack(su));
+            b.nextMassMendAt = t + 3.5; ++b.massCasts; massMended = true;
+          }
+          bool mobAdj = false;
+          for (const auto& kv2 : b.ents) {
+            if (kv2.second.kind == 0 || bh::content::wireIsFurniture(kv2.second.kind)) continue;
+            if (cheb(b.tileX, b.tileY, kv2.second.x, kv2.second.y) <= 2) { mobAdj = true; break; }
+          }
+          if (b.level >= bh::content::kitSkillUnlock(b.kitClass, 8) && b.mp >= 10 && mobAdj && t >= b.nextHasteAt) {
+            bh::proto::SkillUse su; su.skill = 8; su.targetId = b.ownId;
+            sendProto(b.peer, bh::proto::pack(su));
+            b.nextHasteAt = t + 70.0; ++b.hasteCasts;
+          }
+          if (hurtId != 0 && !massMended) {
+            if (hurtDist <= 6 && t >= b.nextMendAt && b.mp >= 8) {
+              bh::proto::SkillUse su; su.skill = 2; su.targetId = hurtId;
+              sendProto(b.peer, bh::proto::pack(su));
+              b.nextMendAt = t + 1.5; ++b.swings; ++b.mendCasts;
+            }
+          }
+        }
+      }
       if (campaign) {
         if (b.campaignT0 < 0.0) {
           b.campaignT0 = t;
@@ -583,7 +744,7 @@ int run(int argc, char** argv) {
         }
         if (b.campaignDone) continue;  // target reached: idle out the clock
       }
-      if (profile == "fighter" || pilgrimRites || campaign) {
+      if (profile == "fighter" || pilgrimRites || campaign || crypt) {
         // nearest mob within 10 tiles -> chase / attack
         std::uint32_t bestId = 0;
         int bestD = 100;
@@ -593,18 +754,18 @@ int run(int argc, char** argv) {
           if (kv.second.kind == 0 || bh::content::wireIsFurniture(kv.second.kind)) continue;  // players, furniture
           const int d = std::max(std::abs(kv.second.x - b.tileX),
                                  std::abs(kv.second.y - b.tileY));
-          if (campaign && d <= 2 && entAggressive(kv.second.kind)) ++swarmOnUs;
-          if (campaign && kv.second.level > b.level + 2 && d > 1) continue;  // no walls: strike back only at point-blank
-          if (campaign && t < b.restUntil && d > 1) continue;  // resting: fight back only
-          if (campaign && b.campIsPortal) continue;  // portal leg: hands off the sword —
+          if ((campaign || crypt) && d <= 2 && entAggressive(kv.second.kind)) ++swarmOnUs;
+          if ((campaign || crypt) && kv.second.level > b.level + 2 && d > 1) continue;  // no walls: strike back only at point-blank
+          if ((campaign || crypt) && t < b.restUntil && d > 1) continue;  // resting: fight back only
+          if ((campaign || crypt) && b.campIsPortal) continue;  // portal leg: hands off the sword —
               // any AttackRequest path-clears; bat harassment at the chapel door
               // otherwise livelocks the crossing (observed smoke v2)
           // Route v5c: "no new pulls" means no new pulls -- a fleeing bot must
           // still swing at whatever is already on it (see the defend block in
           // the retreat branch below).  Skipping point-blank here too left
           // bestId == 0 for the whole disengage and zeroed XP gain.
-          if (campaign && b.retreating && d > 1) continue;
-          if (campaign && d > 1) {                     // pull singles: skip packed targets
+          if ((campaign || crypt) && b.retreating && d > 1) continue;
+          if ((campaign || crypt) && d > 1) {                     // pull singles: skip packed targets
             int pack = 0;
             for (const auto& kv2 : b.ents) {
               if (kv2.first == kv.first || kv2.second.kind == 0 ||
@@ -680,7 +841,7 @@ int run(int argc, char** argv) {
         const bool nearTown = b.mapId == 1 && b.homeX >= 0 &&  // town = map 1 only
                               std::abs(b.tileX - b.homeX) < 4 &&
                               std::abs(b.tileY - b.homeY) < 4;
-        if (campaign && nearTown && hasBlade && bladeArmed && t >= b.nextShopAt) {
+        if ((campaign || crypt) && nearTown && hasBlade && bladeArmed && t >= b.nextShopAt) {
           int vials = 0;
           for (const auto& kv : b.inv)
             if (kv.second.itemId == 3001) vials += kv.second.qty;
@@ -749,14 +910,14 @@ int run(int argc, char** argv) {
           aop.tier = static_cast<std::uint8_t>(bladeAura + 1);
           sendProto(b.peer, bh::proto::pack(aop));
           ++b.anvilTries;
-        } else if (campaign && bladeArmed && hasArmor && !armorWorn && t >= b.nextShopAt) {
+        } else if ((campaign || crypt) && bladeArmed && hasArmor && !armorWorn && t >= b.nextShopAt) {
           b.nextShopAt = t + 2.0;
           bh::proto::ToggleEquip te;
           te.slot = armorSlot;
           sendProto(b.peer, bh::proto::pack(te));  // equip anywhere: the re-gear
           // trip buys armor but the bot leaves town before the nearTown-gated
           // branch fires — blade-only bots get shredded by ghoul/hound packs
-        } else if (campaign && nearTown && bladeArmed && !hasArmor && b.gold >= 120 && t >= b.nextShopAt) {
+        } else if ((campaign || crypt) && nearTown && bladeArmed && !hasArmor && b.gold >= 120 && t >= b.nextShopAt) {
           b.nextShopAt = t + 2.0;
           bh::proto::BuyRequest buy;
           buy.itemId = 2101;  // Hide Armor: the 120g life insurance
@@ -777,7 +938,7 @@ int run(int argc, char** argv) {
         // choir-bot v2 potion priority: baseline band <50%, but with a mob in
         // swing range or a live retreat the band raises — flask before fangs.
         const bool threatAdj = bestId != 0 && bestD <= 2;
-        const int sipPct = (campaign && (b.retreating || threatAdj)) ? 65 : 50;
+        const int sipPct = ((campaign || crypt) && (b.retreating || threatAdj)) ? 65 : 50;
         if (!reckless && b.hpMax > 0 && b.hp * 100 < b.hpMax * sipPct) {
           for (const auto& kv : b.inv) {
             if (kv.second.itemId == 3001) {
@@ -804,7 +965,7 @@ int run(int argc, char** argv) {
           b.nextMoveAt = t + 1.2;
           continue;  // walk home for the rite
         }
-        if (campaign) {
+        if (campaign || crypt) {
           const bool hurt = b.hpMax > 0 && b.hp * 100 < b.hpMax * 50;
           const bool critical = b.hpMax > 0 && b.hp * 100 < b.hpMax * 35;
           if (b.level >= 3 && swarmOnUs >= 5 && !b.retreating) {
@@ -898,14 +1059,14 @@ int run(int argc, char** argv) {
           }
           continue;
         }
-        // nothing near: campaign walks the level route instead of milling
-        if (campaign) {
+        // nothing near: campaign/crypt walks the level route instead of milling
+        if (campaign || crypt) {
           // T-034d re-gear trip: walk home when the next gear tier is
           // affordable, instead of hitching shopping to death-respawn. The
           // economy block above does the actual buy/equip once nearTown.
           const bool wantGear = (!hasBlade && b.gold >= 260) ||
                                 (bladeArmed && !hasArmor && b.gold >= 120);
-          if (wantGear && b.mapId == 1 && b.homeX >= 0) {
+          if (wantGear && (b.mapId == 1 || crypt) && b.homeX >= 0) {
             if (!b.regearHome) {
               b.regearHome = true;
               ++b.regearTrips;
@@ -952,7 +1113,7 @@ int run(int argc, char** argv) {
           }
           continue;
         }
-      } else if (profile != "wander" && profile != "pilgrim") {
+      } else if (profile != "wander" && profile != "pilgrim" && profile != "crypt" && profile != "crypt_party") {
         std::fprintf(stderr, "bh_bots: unknown profile '%s'\n", profile.c_str());
         return 2;
       }
@@ -1026,6 +1187,9 @@ int run(int argc, char** argv) {
     if (b.dbgMaxPelts > mxPelts) mxPelts = b.dbgMaxPelts;
     maxLevel = std::max(maxLevel, b.level);
   }
+  std::uint64_t bossSeen = 0, bossKills = 0, curseSeen = 0, slamSeen = 0;
+  for (const Bot& b : bots) { bossSeen += b.bossSeen; bossKills += b.bossKills; curseSeen += b.curseSeen; slamSeen += b.slamSeen; }
+  std::printf("[bots] CRYPT bossSeen=%llu bossKills=%llu curse=%llu slam=%llu\n", (unsigned long long)bossSeen, (unsigned long long)bossKills, (unsigned long long)curseSeen, (unsigned long long)slamSeen);
   std::printf("[bots] SUMMARY welcomed=%d/%d moved=%d/%d minDeltas=%" PRIu64
               " kills=%" PRIu64 " pots=%" PRIu64 " swings=%" PRIu64" deaths=%" PRIu64 " shops=%" PRIu64 " anvilTries=%" PRIu64 " levelDrops=%" PRIu64
               " regear=%" PRIu64 " maxLevel=%d pkts=%" PRIu64 " bytes=%" PRIu64
@@ -1039,7 +1203,7 @@ int run(int argc, char** argv) {
               mendHurtCnt, chorusCasts, massCasts, hasteCasts);
 
   for (Bot& b : bots) {  // T-055 probe: per-bot kit/roster truth
-    std::printf("[bots] %-12s kit=%d lvl=%d hp=%d/%d party=%zu deaths=%llu rxR=%llu rxM=%llu lastPid=%u casts c6=%llu c7=%llu c8=%llu lastDeath=(%d,%d) killerByLvl=",
+    std::printf("[bots] %-12s kit=%d lvl=%d hp=%d/%d party=%zu deaths=%llu rxR=%llu rxM=%llu lastPid=%u casts c6=%llu c7=%llu c8=%llu bossSeen=%llu bossKills=%llu curse=%llu slam=%llu lastDeath=(%d,%d) killerByLvl=",
                 b.name.c_str(), b.kitClass, b.level, static_cast<int>(b.hp),
                 static_cast<int>(b.hpMax), b.party.size(),
                 static_cast<unsigned long long>(b.deaths),
@@ -1048,6 +1212,10 @@ int run(int argc, char** argv) {
                 static_cast<unsigned long long>(b.chorusCasts),
                 static_cast<unsigned long long>(b.massCasts),
                 static_cast<unsigned long long>(b.hasteCasts),
+                static_cast<unsigned long long>(b.bossSeen),
+                static_cast<unsigned long long>(b.bossKills),
+                static_cast<unsigned long long>(b.curseSeen),
+                static_cast<unsigned long long>(b.slamSeen),
                 b.lastDeathX, b.lastDeathY);
     {
       bool first = true;
