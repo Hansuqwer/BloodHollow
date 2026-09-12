@@ -43,6 +43,9 @@ set(BH_TEST_SOURCES
   test_deque_dangling.cpp
   test_loginlimit.cpp
   test_worldhash.cpp
+  test_t104_review_fixes.cpp
+  test_t111_review.cpp
+  test_t112_spawn_epoch.cpp
 )
 if(BH_BUILD_CLIENT)
   # T-ART-02: snapZoom lives in raylib-including camera_rig.h — the test TUs

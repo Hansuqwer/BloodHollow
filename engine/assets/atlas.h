@@ -8,12 +8,13 @@
 #include <vector>
 
 #include "content/mobs.h"
+#include "content/wirekind.h"
 
 namespace bh {
 
 // Uniform-grid animation atlas: every anim is 8 direction rows x N frames,
-// laid out on a regular grid. Format produced by tools/atlaspack (later)
-// and by the procedural placeholder generator (T-004).
+// laid out on a regular grid. Format produced by tools/atlaspack (B3/B4 mobs,
+// B5 NPC sheets) and by the procedural placeholder generator (T-004 hero).
 struct Anim {
   std::vector<Rectangle> dirFrames[8];  // indexed by sim dir index 0..7
   float fps = 8.0f;
@@ -63,6 +64,38 @@ inline bool mobSheetPaths(std::uint8_t kind, char* png, std::size_t pngN, char* 
   std::snprintf(png, pngN, "assets/aigen/mobs/%u_%s/sheet.png", def.mobId, slug.c_str());
   std::snprintf(js, jsN, "assets/aigen/mobs/%u_%s/sheet.json", def.mobId, slug.c_str());
   return true;
+}
+
+// T-ART-B5: furniture / NPC sheet-dir law. Furniture kinds (64+) live under
+// assets/aigen/npcs/<slug>/sheet.png+json. The slug mapping is explicit here
+// (furniture don't have a kMobs-style table we can slugify from); each new
+// NPC reservation in wirekind.h gets a row added below. Returns false when no
+// sheet is shipped for that kind (caller falls back to the existing in-code
+// rectangle placeholder).
+struct NpcSheetRow {
+  std::uint8_t kind;
+  const char* slug;
+};
+inline constexpr NpcSheetRow kNpcSheets[] = {
+    {content::kWireKindBonesmith,   "bonesmith_twins"},
+    {content::kWireKindConfessor,   "confessor"},
+    {content::kWireKindFence,       "cove_fence"},
+    {content::kWireKindGuardAshen,  "guard_ashen"},
+    {content::kWireKindGuardSynod,  "guard_synod"},
+    {content::kWireKindRegistrar,   "pledge_registrar"},
+    {content::kWireKindSteward,     "castle_steward"},
+};
+inline bool furnitureSheetPaths(std::uint8_t kind, char* png, std::size_t pngN,
+                                char* js, std::size_t jsN) {
+  if (!content::wireIsFurniture(kind)) return false;
+  for (const auto& row : kNpcSheets) {
+    if (row.kind == kind) {
+      std::snprintf(png, pngN, "assets/aigen/npcs/%s/sheet.png", row.slug);
+      std::snprintf(js, jsN, "assets/aigen/npcs/%s/sheet.json", row.slug);
+      return true;
+    }
+  }
+  return false;  // 64 Marta / 65 anvil / 66 bounty board still use in-code stubs
 }
 
 }  // namespace bh

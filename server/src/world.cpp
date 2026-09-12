@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <filesystem>
+#include <system_error>
 
 #include "content/auras.h"
 #include "content/wirekind.h"
@@ -240,15 +242,18 @@ void World::initialMobSpawns(Zone& zone, std::uint16_t zoneId) {
       std::fprintf(stderr, "[world] spawner mobId %u has no def, skipped\n", sl.def.mobId);
       continue;
     }
-    for (std::uint32_t n = 0; n < sl.def.maxAlive; ++n) {
-      // scatter inside the spawner rect
+    // Bounded scatter: never decrement the alive counter on a blocked roll
+    // (uint32_t wrap + tight spin on a fully-blocked rect — T-111). Cap
+    // attempts so a bad spawner cannot hang boot.
+    const std::uint32_t want = sl.def.maxAlive;
+    const int maxTries = static_cast<int>(want) * 20 + 20;
+    std::uint32_t placed = 0;
+    for (int tries = 0; tries < maxTries && placed < want; ++tries) {
       const int x = sl.def.x + static_cast<int>(rng_.range(0, sl.def.w - 1));
       const int y = sl.def.y + static_cast<int>(rng_.range(0, sl.def.h - 1));
       if (zone.map.inBounds(x, y) && !zone.map.isBlocked(x, y)) {
         spawnMob(*def, sim::TilePos{x, y}, i, zoneId);
-      } else {
-        --n;  // blocked tile: re-roll (bounded implicitly by walkable map design)
-        if (n > 40) break;
+        ++placed;
       }
     }
   }
@@ -572,11 +577,27 @@ void parseInvBlob(const std::string& blob, std::vector<InvSlot>& out) {
       p = c + 1;
     }
     if (nf < 3) continue;  // need at least iid:qty:equipped
+    // Throw-free decimal parse (T-111). Pre-fix used std::stoul after a
+    // digit-class check: any all-digit string wider than unsigned long still
+    // threw std::out_of_range and aborted login/replay (remote DoS class,
+    // same family as T-104's /refine stoi). Overflow-checked accumulate
+    // (T-115 reconciliation: the T-104 u64 accumulator won; both reject
+    // over-long digit strings — both lineages' tests pass under it).
     auto num = [](const std::string& s, unsigned* out) -> bool {
       if (s.empty()) return false;
-      for (const char c : s)
+      // T-104: manual digit parse to avoid std::stoul throwing
+      // std::out_of_range on absurdly long numeric strings sent by a
+      // hostile/tampered blob (parseInvBlob is reached from live login
+      // BEFORE the T-104 try/catch around handlePacket, so an exception
+      // here would bypass the drop-session path and terminate the server
+      // via std::terminate).
+      std::uint64_t v = 0;
+      for (const char c : s) {
         if (c < '0' || c > '9') return false;
-      *out = static_cast<unsigned>(std::stoul(s));
+        v = v * 10 + static_cast<std::uint64_t>(c - '0');
+        if (v > 0xFFFFFFFFULL) return false;  // refuse u32 overflow
+      }
+      *out = static_cast<unsigned>(v);
       return true;
     };
     InvSlot sl;
@@ -1237,7 +1258,12 @@ std::uint32_t World::vendorSellJunk(Entity& e) {
   for (size_t i = 0; i < e.inv.size();) {
     const content::ItemDef* d = content::findItem(e.inv[i].itemId);
     if (d != nullptr && d->slot == 3) {
-      gained += d->value * content::kSellRatioPct / 100 * e.inv[i].qty;
+      // T-104: multiply-then-divide so qty doesn't multiply a truncated
+      // per-unit price (1g junk × 40% × 20 = 0 with the old order).
+      gained += static_cast<std::uint32_t>(
+          static_cast<std::uint64_t>(d->value) *
+          static_cast<std::uint64_t>(e.inv[i].qty) *
+          static_cast<std::uint64_t>(content::kSellRatioPct) / 100ULL);
       e.inv.erase(e.inv.begin() + static_cast<long>(i));
     } else {
       ++i;
@@ -1290,8 +1316,12 @@ bool World::fenceBuy(Entity& e, std::uint32_t itemId, std::uint16_t qty) {
     return false;
   }
   if (d->stackMax == 1) qty = 1;
-  const std::uint32_t cost =
-      d->value * content::kFenceMarkupPct / 100 * qty;
+  // T-104: widen to 64-bit before multiplying so (value * markup) can't wrap
+  // u32 for high-value stackables.
+  const std::uint32_t cost = static_cast<std::uint32_t>(
+      static_cast<std::uint64_t>(d->value) *
+      static_cast<std::uint64_t>(content::kFenceMarkupPct) / 100ULL *
+      static_cast<std::uint64_t>(qty));
   if (e.gold < cost) return false;
   if (!addItem(e, itemId, qty)) return false;
   e.gold -= cost;
@@ -1313,7 +1343,11 @@ std::uint32_t World::fenceSellJunk(Entity& e) {
   for (size_t i = 0; i < e.inv.size();) {
     const content::ItemDef* d = content::findItem(e.inv[i].itemId);
     if (d != nullptr && d->slot == 3) {
-      gained += d->value * content::kFenceSellRatioPct / 100 * e.inv[i].qty;
+      // T-104: multiply-then-divide, 64-bit (matches Marta's fixed path).
+      gained += static_cast<std::uint32_t>(
+          static_cast<std::uint64_t>(d->value) *
+          static_cast<std::uint64_t>(e.inv[i].qty) *
+          static_cast<std::uint64_t>(content::kFenceSellRatioPct) / 100ULL);
       e.inv.erase(e.inv.begin() + static_cast<long>(i));
     } else {
       ++i;
@@ -1560,14 +1594,20 @@ bool World::tryAnvil(Entity& e, std::uint8_t tier) {
                 static_cast<unsigned>(tier));
     return false;
   }
-  InvSlot* wslot = nullptr;
-  for (InvSlot& sl : e.inv) {
-    if (sl.equipped) {
-      const content::ItemDef* d = content::findItem(sl.itemId);
-      if (d != nullptr && d->slot == 0) wslot = &sl;
+  // T-111: hold the WEAPON SLOT INDEX, never a raw InvSlot*. The toll loop
+  // below erases emptied part stacks from e.inv; any pointer into the vector
+  // taken here would dangle (aura write / destroy would hit freed memory or
+  // a shifted neighbour — UB, wrong steel blessed).
+  int wslotIdx = -1;
+  for (size_t i = 0; i < e.inv.size(); ++i) {
+    if (!e.inv[i].equipped) continue;
+    const content::ItemDef* d = content::findItem(e.inv[i].itemId);
+    if (d != nullptr && d->slot == 0) {
+      wslotIdx = static_cast<int>(i);
+      break;
     }
   }
-  if (wslot == nullptr) {
+  if (wslotIdx < 0) {
     WorldEvent ev;
     ev.aboutId = e.id;
     ev.chatCh = 255;
@@ -1577,23 +1617,24 @@ bool World::tryAnvil(Entity& e, std::uint8_t tier) {
     events_.push_back(ev);
     return false;
   }
-  if (wslot->aura >= tier) {
+  const std::uint8_t curAura = e.inv[static_cast<size_t>(wslotIdx)].aura;
+  if (curAura >= tier) {
     WorldEvent ev;
     ev.aboutId = e.id;
     ev.chatCh = 255;
     ev.chatText = "that blessing already sleeps in the steel.";
     std::printf("[anvil-refuse] %s tier=%u why=already aura=%u\n", e.name.c_str(),
-                static_cast<unsigned>(tier), static_cast<unsigned>(wslot->aura));
+                static_cast<unsigned>(tier), static_cast<unsigned>(curAura));
     events_.push_back(ev);
     return false;
   }
-  if (wslot->aura + 1 != tier) {
+  if (curAura + 1 != tier) {
     WorldEvent ev;
     ev.aboutId = e.id;
     ev.chatCh = 255;
-    ev.chatText = "the Anvil honors order: earn tier " + std::to_string(wslot->aura + 1) + " first.";
+    ev.chatText = "the Anvil honors order: earn tier " + std::to_string(curAura + 1) + " first.";
     std::printf("[anvil-refuse] %s tier=%u why=order aura=%u\n", e.name.c_str(),
-                    static_cast<unsigned>(tier), static_cast<unsigned>(wslot->aura));
+                    static_cast<unsigned>(tier), static_cast<unsigned>(curAura));
     events_.push_back(ev);
     return false;
   }
@@ -1642,7 +1683,8 @@ bool World::tryAnvil(Entity& e, std::uint8_t tier) {
   const bool mercy = (e.anvilMercyMask & mercyBit) == 0;
   e.anvilMercyMask |= mercyBit;
 
-  // consume parts + gold, atomically (all or nothing)
+  // consume parts + gold, atomically (all or nothing).
+  // T-111: keep wslotIdx honest across erases (same discipline as tryRefine).
   std::uint16_t remaining = t->partQty;
   for (size_t i = 0; i < e.inv.size() && remaining > 0;) {
     InvSlot& sl = e.inv[i];
@@ -1650,10 +1692,19 @@ bool World::tryAnvil(Entity& e, std::uint8_t tier) {
     const std::uint16_t take = sl.qty < remaining ? sl.qty : remaining;
     sl.qty = static_cast<std::uint16_t>(sl.qty - take);
     remaining = static_cast<std::uint16_t>(remaining - take);
-    if (sl.qty == 0) e.inv.erase(e.inv.begin() + static_cast<long>(i));
-    else ++i;
+    if (sl.qty == 0) {
+      e.inv.erase(e.inv.begin() + static_cast<long>(i));
+      if (static_cast<int>(i) < wslotIdx) --wslotIdx;
+      // do not ++i: next element slid into i
+    } else {
+      ++i;
+    }
   }
   e.gold -= t->gold;
+
+  // wslotIdx tracked through erases above; parts never equal the weapon
+  // slot so the index always names the same equipped steel post-toll.
+  InvSlot& wslot = e.inv[static_cast<size_t>(wslotIdx)];
 
   const bool success = mercy || rng_.chance(static_cast<double>(100 - t->failPct) / 100.0);
   WorldEvent ev;
@@ -1664,7 +1715,7 @@ bool World::tryAnvil(Entity& e, std::uint8_t tier) {
   ev.amount = tier;
   ev.statsChanged = true;
   if (success) {
-    wslot->aura = tier;
+    wslot.aura = tier;
     bumpKarma(e, kKarmaAnvilOk);  // the guild remembers its tithes (T-046)
     ev.chatCh = 255;
     ev.chatText = "the Anvil speaks. tier " + std::to_string(tier) + " rests in the steel.";
@@ -1672,11 +1723,13 @@ bool World::tryAnvil(Entity& e, std::uint8_t tier) {
                 mercy ? " mercy" : "");
   } else {
     if (t->failLaw == 1) {
-      // destroy: clear the weapon slot + the aura with it (RFC 0001)
-      wslot->itemId = 0;
-      wslot->qty = 0;
-      wslot->equipped = false;
-      wslot->aura = 0;
+      // destroy: erase the weapon slot entirely (RFC 0001). Previously the
+      // code zeroed the slot in-place, leaving an itemId=0 tombstone that
+      // permanently ate an inventory slot until the next chaotic death (the
+      // only compact path). T-115 reconciliation: T-104's erase fix rides
+      // T-111's F2 index — wslotIdx stays honest through the toll erases
+      // above, so it names the steel directly. No pointer, no tombstone.
+      e.inv.erase(e.inv.begin() + wslotIdx);
       bumpKarma(e, kKarmaAnvilDestroy);  // drowned steel stains the soul
       ev.chatCh = 0;  // broadcast-worthy ceremony failure
       ev.chatText = e.name + "'s steel drowned at the Anvil.";
@@ -1749,9 +1802,24 @@ void World::tradeOffer(Entity& e, std::uint32_t itemId, std::uint16_t qty) {
   e.tradeCommitted = false;  // changing the offer resets commitment (both sides re-check)
   Entity* other = find(e.tradeWith);
   if (other != nullptr) other->tradeCommitted = false;
-  for (auto& [id, q] : e.tradeOfferItems) {
-    if (id == itemId) {
-      q = qty;
+  // Replace any existing offer of the same itemId rather than appending a
+  // duplicate entry (T-104 review: the previous linear search `return`ed on
+  // match inside a range-for that declared `auto& [id,q]` over the vector,
+  // so re-offering the same id with a new quantity left BOTH rows in the
+  // vector and the deducer double-counted items when the trade committed).
+  for (auto& entry : e.tradeOfferItems) {
+    if (entry.first == itemId) {
+      entry.second = qty;
+      if (other != nullptr) {
+        const content::ItemDef* d = content::findItem(itemId);
+        WorldEvent ev;
+        ev.aboutId = other->id;
+        ev.chatCh = 255;
+        ev.chatText = e.name + " offers " + std::to_string(qty) + "x " +
+                      std::string(d != nullptr ? d->name : "item") +
+                      ". [P commit / X cancel]";
+        events_.push_back(std::move(ev));
+      }
       return;
     }
   }
@@ -1879,9 +1947,22 @@ void World::tradeCommit(Entity& e) {
                        " b=" + std::to_string(second->id) + ":" + second->name +
                        " a_gives=" + offerStr(*first) + " b_gives=" + offerStr(*second) +
                        "\n";
+    // T-104: ensure the parent directory exists before opening the audit
+    // log. Previously a missing `logs/` dir (fresh checkout, wiped var dir)
+    // caused fopen to return NULL silently; completed swaps executed in
+    // sim but left no audit trail, and the contract in ADR-0011 ("every
+    // executed swap leaves a line") was violated without a peep.
+    {
+      std::error_code ec;
+      const auto parent = std::filesystem::path(tradeLogPath()).parent_path();
+      if (!parent.empty()) std::filesystem::create_directories(parent, ec);
+    }
     if (FILE* f = std::fopen(tradeLogPath().c_str(), "a")) {
       std::fputs(line.c_str(), f);
       std::fclose(f);
+    } else {
+      std::fprintf(stderr, "[trade] WARN: could not append audit log to %s\n",
+                   tradeLogPath().c_str());
     }
   }
   for (Entity* x : {&e, b}) {
@@ -2598,17 +2679,19 @@ void World::killPlayer(Entity& victim, Entity* killer) {
     txt.chatText = killer->name + "'s hands are red with " + victim.name +
                    "'s blood (-" + std::to_string(300 + 20 * deficit) + " karma).";
     events_.push_back(std::move(txt));
-  // T-073 gate law: unlawful PK within 8 tiles of a guard anchor marks the
-  // killer wanted for 240 s (guards aggro, vendors refuse, death binds at
-  // the gallows). Deterministic: anchor scan order, first post that sees.
-  for (const Entity& g : entities_) {
-    if (!isGuardMob(g) || g.zoneId != killer->zoneId) continue;
-    if (chebyshev(killer->walker.tile(), g.anchor) <= 8) {
-      markWanted(*killer);
-      break;
+    // T-073 gate law: unlawful PK within 8 tiles of a guard anchor marks the
+    // killer wanted for 240 s (guards aggro, vendors refuse, death binds at
+    // the gallows). Deterministic: anchor scan order, first post that sees.
+    // (Brace+indent tidied T-111 — logic unchanged; nested under the PK if
+    // so killer is known non-null.)
+    for (const Entity& g : entities_) {
+      if (!isGuardMob(g) || g.zoneId != killer->zoneId) continue;
+      if (chebyshev(killer->walker.tile(), g.anchor) <= 8) {
+        markWanted(*killer);
+        break;
+      }
     }
   }
-}
   // duel partner walks away if the mob kills happen mid-duel (cleanup)
   if (victim.duelWith != 0 && !duel) {
     if (Entity* t = find(victim.duelWith)) { t->duelWith = 0; t->duelUntil = -1; }
@@ -2991,7 +3074,14 @@ void World::respawnTick() {
         e.zoneId = 1;
         Zone& home = zones_.at(1);
         e.walker.place(home_);
-        home.spatial.insert(e.id, home.spawnPoint.x, home.spawnPoint.y);
+        // T-104: register the entity in the new spatial grid at `home_`
+        // (the bindstone / gallows tile), NOT at home.spawnPoint. Cross-zone
+        // chaotic respawns previously landed at the lawful spawnPoint even
+        // though walker.place(home_) moved the walker — the spatial hash
+        // was out of sync until the next step moved them, causing a 1-tick
+        // AoI ghost at spawnPoint. (T-111 F1 found the same defect
+        // independently — deduplicated by T-115.)
+        home.spatial.insert(e.id, home_.x, home_.y);
         e.lastPortalTick = tick_;
         WorldEvent zev;
         zev.aboutId = e.id;

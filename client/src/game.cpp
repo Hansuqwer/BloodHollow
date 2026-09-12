@@ -805,9 +805,28 @@ void Game::drawRemoteEnt(const RenderEnt& e, bool isOwn) {
   const Vector2 rp = entRenderPos(e);
   const Vector2 w = iso::tileToWorldF(rp, map_.tileW, map_.tileH);
   if (content::wireIsFurniture(e.snap.kind)) {
-    // furniture band (T-047 constants, T-ART-06: 64 vendor → 73 steward):
-    // widow anvil 65 keeps its teal rig; every other kind shares the
-    // generic stall rect + name label until its sheet/portrait ships.
+    // T-ART-B5: if a sheet shipped for this furniture kind, draw it the same
+    // way as mobs (atlasFor loads idle anim; feet on anchorY). Otherwise
+    // fall back to the existing in-code rectangle stub (Marta 64, anvil 65,
+    // bounty board 66 still use their hand-coded placeholders).
+    const Atlas& at = atlasFor(e.snap.kind);
+    if (at.ok) {
+      Rectangle src = animFrame(at, "idle", static_cast<int>(e.snap.dir), animT_);
+      if (src.width > 0.0f) {
+        DrawTexturePro(at.tex, src,
+                       Rectangle{w.x, w.y, src.width, src.height},
+                       Vector2{src.width * 0.5f, animAnchorY(at, "idle")},
+                       0.0f, WHITE);
+        if (!e.snap.name.empty()) {
+          const int tw = MeasureText(e.snap.name.c_str(), 10);
+          DrawText(e.snap.name.c_str(), static_cast<int>(w.x) - tw / 2,
+                   static_cast<int>(w.y) - 58, 10, Color{190, 210, 220, 255});
+        }
+        return;
+      }
+    }
+    // furniture band (T-047 constants): widow anvil 65 keeps its teal rig;
+    // every other kind uses the generic stall rect + name label.
     if (e.snap.kind == content::kWireKindAnvil) {
       DrawRectangle(static_cast<int>(w.x) - 12, static_cast<int>(w.y) - 22, 24, 18,
                     Color{70, 124, 128, 255});
@@ -928,11 +947,15 @@ void Game::drawCommandMarker() const {
 }
 
 const Atlas& Game::atlasFor(std::uint8_t kind) {
-  // T-ART-05: sheet-dir law lives headless-testable in mobSheetPaths; here
-  // is the loader + cache. 1011 Guard has no sheet yet and falls back here
-  // (stated, not a bug); furniture never reaches this (placeholder branch).
+  // T-ART-05 + T-ART-B5: per-kind atlas. Mob sheets live under aigen/mobs/<id>_<slug>/;
+  // furniture/NPC sheets (T-ART-B5 procedural placeholders, later B5 AI plates)
+  // live under aigen/npcs/<slug>/. Anything without a shipped sheet falls back
+  // to the hero placeholder; the furniture rectangle stub in drawRemoteEnt is
+  // the final fallback only when no atlas loaded.
   char png[160], js[160];
-  if (!mobSheetPaths(kind, png, sizeof png, js, sizeof js)) return heroAtlas_;
+  bool have_path = mobSheetPaths(kind, png, sizeof png, js, sizeof js) ||
+                   furnitureSheetPaths(kind, png, sizeof png, js, sizeof js);
+  if (!have_path) return heroAtlas_;
   auto cached = mobAtlases_.find(kind);
   if (cached != mobAtlases_.end()) return cached->second;
   Atlas a;
