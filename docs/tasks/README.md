@@ -586,6 +586,19 @@ as margin (~1 hp/hit), not pace. T-114 scoped: bots v3 flask belt + t090/t100
 repeat discipline, no server change/epoch. Economy levers reopen only on
 gold-starved re-run. Devlog 0075.
 
+## Done — T-114 (2026-09-12): bots v3 flask belt — logistics lane closed with data
+
+T-114 BOT-ONLY: belt 4→16 buy-to-depth (240g gate, 90g floor). Template
+bit-exact from t100.bwj; 2×540s legs at epoch 18, replays mm=0. Stops
+24–30 → 8/5 (criterion PASS, 3–5× cut) but bar 73.5%/55% avg (criterion
+FAIL — pace unchanged, hurt rose): the camp's respawn+TTK throughput, not
+vial flow, owns L9 pace. Logistics lane CLOSED; faster L9 = content-pacing
+question (director call, nothing auto-triggers). No epoch bump (bots-only).
+Devlog 0076 · card `done/T-114.md` · supersedes the open-row text landing
+with PR #12 (T-113).
+
+
+
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
 | Card | Title | Notes |

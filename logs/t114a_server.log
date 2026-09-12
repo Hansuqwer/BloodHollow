@@ -1,0 +1,35 @@
+[boot] zone 2 (assets/maps/fields_overflow.bhmap: 64x48) online
+[boot] zone 3 (assets/maps/thornwall_crypt.bhmap: 48x36) online
+[boot] zone 4 (assets/maps/bonehowl_mine.bhmap: 56x40) online
+[boot] zone 5 (assets/maps/drowned_crypt.bhmap: 48x36) online
+[auth] registration OPEN (prototype posture; --no-register to gate); limiter: 60 logins + 30 new accounts per 60s per IP, 10 consecutive bad-password fails -> 60s lockout
+[journal] recording world to logs/t114a.bwj (epoch 18)
+[boot] bh_server on 0.0.0.0:7915 | map 'assets/maps/thornwall.bhmap' | db '/tmp/t114a.db' | tick 20Hz | aoi 26
+[net] t114a_00         entered the world (entity 189, online 1)
+[net] t114a_01         entered the world (entity 190, online 2)
+[soak] tick=600 online=2 entities=180 tickUs p50=180 p99=373 worldHash=6e5d5e2a913e7bf2 pkts=111/43005
+[soak] tick=1200 online=2 entities=172 tickUs p50=156 p99=291 worldHash=6829a771ae5ae442 pkts=223/94238
+[soak] tick=1800 online=2 entities=172 tickUs p50=154 p99=352 worldHash=6c64dc4942e3ce3c pkts=319/135428
+[soak] tick=2400 online=2 entities=168 tickUs p50=141 p99=280 worldHash=54778f2c0ad4e162 pkts=409/175127
+[soak] tick=3000 online=2 entities=169 tickUs p50=143 p99=281 worldHash=ce37f5f2b1430b7d pkts=510/215724
+[soak] tick=3600 online=2 entities=170 tickUs p50=153 p99=307 worldHash=d5440fc98e54e6b2 pkts=564/258957
+[soak] tick=4200 online=2 entities=175 tickUs p50=152 p99=464 worldHash=92621930a37e95ed pkts=643/304997
+[soak] tick=4800 online=2 entities=174 tickUs p50=159 p99=295 worldHash=8aafa43fc73c1732 pkts=725/345464
+[soak] tick=5400 online=2 entities=170 tickUs p50=142 p99=362 worldHash=bf56dea253bef394 pkts=834/389982
+[soak] tick=6000 online=2 entities=176 tickUs p50=145 p99=244 worldHash=807f444b9eb347bf pkts=857/444623
+[soak] tick=6600 online=2 entities=173 tickUs p50=168 p99=297 worldHash=8022b0cefe90be82 pkts=944/500882
+[soak] tick=7200 online=2 entities=169 tickUs p50=157 p99=290 worldHash=41a3f48d1c8c181b pkts=1057/549112
+[soak] tick=7800 online=2 entities=169 tickUs p50=152 p99=434 worldHash=c74f10ae55490618 pkts=1137/591672
+[soak] tick=8400 online=2 entities=173 tickUs p50=149 p99=272 worldHash=dc55eefa83ac0f72 pkts=1177/642577
+[soak] tick=9000 online=2 entities=179 tickUs p50=156 p99=304 worldHash=1792dd166cecaf0d pkts=1188/698700
+[soak] tick=9600 online=2 entities=183 tickUs p50=161 p99=298 worldHash=289119c7701cc936 pkts=1238/759306
+[soak] tick=10200 online=2 entities=184 tickUs p50=173 p99=344 worldHash=af166a632ab8b82c pkts=1311/814143
+[soak] tick=10800 online=2 entities=175 tickUs p50=171 p99=314 worldHash=2147dc9367513edc pkts=1420/870424
+[net] t114a_00         saved at (58,15)
+[net] t114a_01         saved at (59,16)
+[soak] FINISH ticks=10901 online=0 entities=172 tickUs p50=169 p99=310
+[soak] OK p99=0.31ms budget=10.00ms
+[balance] Marsh Rat        L1  kills=21    TTK(25t hps)=6.9s xp=40
+[balance] Feral Ghoul      L3  kills=26    TTK(25t hps)=17.2s xp=90
+[balance] Hollow Hound     L5  kills=3     TTK(25t hps)=152.5s xp=150
+[balance] Plague Bat       L2  kills=15    TTK(25t hps)=4.7s xp=55
