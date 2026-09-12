@@ -663,3 +663,8 @@ T-117 BOT-ONLY: crypt profile (5 bots mixed kits Rav/Cult/Grave), party formatio
 | Bot bad-leg deaths | v5c legs 3/5 perch mode: T-074/T-077 levers measured red + reverted; T-083 closed the drift as roam-RNG (leg totals stable ~130–160, distribution roams) | reopen only on perch-clustered all-L3 legs (T-074 discipline); reproductions: leg 3/5 logs, val5 |
 
 Retired: "L8→L9 step-up, no waypoint" (T-084 opened the (60,41) camp; T-090/T-100 climbed it twice).
+
+## Done — T-118 (2026-09-12): B1 weapon-skill persistence (schema v11, epoch 21)
+
+T-118 PERSIST: `characters` gains `sword_skill` + `swing_lands` (additive-only, defaults 0, user_version 10→11). `CharacterRow` + `saveProgress` + `loginOrCreate` + `journalLogin` l-line v3 `l ... karma swordSkill swingLands inv` + replay parser v3→v2→v1 backward compat. `kJournalEpoch` 20→21 (progression persistence). Gate leg `tools/t118_weapon_skill_leg.sh` (5 bots 60s fighter gains skill 1 lands 29-35, same 5 bots 10s wander relog journal shows skill 1 lands 33, DB max 35). Replay: t115 epoch 20 vs 21 refused exit 4 (expected), t118 epoch 21 OK ticks 1500 cmds 529 hashes 15 mm=0. Suite 209/209 (329052), duel pin unchanged. Devlog 0080 · card `done/T-118.md` · `logs/t118.bwj` force-added.
+

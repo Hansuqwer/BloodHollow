@@ -46,6 +46,7 @@ set(BH_TEST_SOURCES
   test_t104_review_fixes.cpp
   test_t111_review.cpp
   test_t112_spawn_epoch.cpp
+  test_weapon_skill_persist.cpp
 )
 if(BH_BUILD_CLIENT)
   # T-ART-02: snapZoom lives in raylib-including camera_rig.h — the test TUs
@@ -60,7 +61,7 @@ if(BH_BUILD_CLIENT)
 endif()
 
 add_executable(bh_tests ${BH_TEST_SOURCES})
-target_link_libraries(bh_tests PRIVATE bh_shared bh_protocol bh_server_world bh_doctest bh_warnings)
+target_link_libraries(bh_tests PRIVATE bh_shared bh_protocol bh_server_world bh_doctest bh_warnings bh_sqlite)
 if(BH_BUILD_CLIENT)
   target_link_libraries(bh_tests PRIVATE raylib)
 endif()
