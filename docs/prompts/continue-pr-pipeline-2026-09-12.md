@@ -201,6 +201,13 @@ Blood Moon stays a director call (roadmap vs GDD §10 conflict). Human-only
 items (T-033/T-099) are never self-assigned.
 
 ## 5. Counters and pins (verify on the board anyway)
+**Amendment (2026-09-12, post-T-120):** journal epoch **21** · schema
+**v11** · suite **209/209 · 329,052** · leg of record `t120.bwj`
+(`ticks=1500 hashes=15 mismatches=0`) · `t115.bwj`/`t118.bwj` now refuse on
+the epoch guard (correct). Journal l-line is **v3** (+`swordSkill`
+`swingLands` before invBlob; parser takes v1/v2/v3). Duel pin unchanged.
+Next card **T-122** · next devlog **0084**.
+
 
 Next card **T-120** · next devlog **0082** · journal epoch **20** · wire
 **237** · schema **v10** · suite **206/206 · 329,022** · duel pin

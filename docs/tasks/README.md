@@ -688,6 +688,23 @@ Epoch stays 20. Devlog 0081 · card `done/T-119.md`.
 
 T-120 PERSIST: `characters` gains `sword_skill` + `swing_lands` (additive-only, defaults 0, user_version 10→11). `CharacterRow` + `saveProgress` + `loginOrCreate` + `journalLogin` l-line v3 `l ... karma swordSkill swingLands inv` + replay parser v3→v2→v1 backward compat. `kJournalEpoch` 20→21 (progression persistence). Gate leg `tools/t120_weapon_skill_leg.sh` (5 bots 60s fighter gains skill 1 lands 29-35, same 5 bots 10s wander relog journal shows skill 1 lands 33, DB max 35). Replay: t115 epoch 20 vs 21 refused exit 4 (expected), t120 epoch 21 OK ticks 1500 cmds 529 hashes 15 mm=0. Suite 209/209 (329052), duel pin unchanged. Devlog 0082 · card `done/T-120.md` · `logs/t120.bwj` force-added.
 
+## Done — T-121 (2026-09-12): PR #19 merge wave — weapon-skill persistence lands as T-120 (epoch 21)
+
+T-121 WAVE: second counter collision resolved per
+`docs/prompts/merge-pr19-2026-09-12.md` ("Execute.", single-use) — PR #19
+authored as T-118 from `c8d8087`; master had taken T-118 (M3 gate) and
+T-119 (wave evidence). Sync merge `ddad769` renumbered the card to
+**T-120**, incl. the **binary leg collision** (their epoch-21 leg →
+`logs/t120.bwj` byte-identical, master's M3 `t118.bwj` kept; replay
+re-verified mm=0) and a stale pre-renumber M3 row copy dropped from their
+board edit. **Full battery on the synced branch** (sim semantics moved):
+suite 209/209 · 329,052, ctest 2/2, duel pin unchanged, `t120.bwj`
+replay mm=0, epoch guard refuses t115/t118 (20 vs 21) by contract.
+Squash-merged `7b2e9b8`, branch deleted. **The Sisyphus ladder is fixed**
+(T-096): sword skill persists across relog — Track B1 DONE; next card
+T-122 = pledge-lite (Track B2). Standing prompts amended (epoch 21,
+schema v11, l-line v3 grammar). Devlog 0083 · card `done/T-121.md`.
+
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
 | Card | Title | Notes |
