@@ -23,6 +23,8 @@ struct CharacterRow {
   std::int64_t anvilMercy = 0;
   std::int32_t karma = 0;
   int classId = 1;  // schema v7 (S14): kKit* in content/kits.h
+  int swordSkill = 0;           // schema v11 (T-118): use-based skill
+  std::int64_t swingLands = 0;  // schema v11: exact land counter
   std::string invBlob{};  // "itemId:qty:equipped;..." (schema v3)
 };
 
@@ -43,10 +45,11 @@ class Db {
   // registration rate limiter BEFORE loginOrCreate can create anything.
   bool accountExists(const std::string& user, bool* outExists, std::string* err);
   void savePosition(std::int64_t characterId, int mapId, int x, int y);
-    void saveProgress(std::int64_t characterId, int level, std::int64_t xp, int str,
+  void saveProgress(std::int64_t characterId, int level, std::int64_t xp, int str,
                     int vit, int dex, int statPoints, int gold,
                     const std::string& invBlob, std::int64_t anvilMercy,
-                    std::int32_t karma, int classId);
+                    std::int32_t karma, int classId, int swordSkill,
+                    std::int64_t swingLands);
 
  private:
   sqlite3* db_ = nullptr;
