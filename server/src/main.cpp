@@ -108,15 +108,12 @@ void sendMsg(ENetPeer* peer, const Msg& m, Server& s) {
 // T-094 Thornwall NPC posts = 14; T-101 Old Maw = 15; T-102 Red Widow = 16;
 // T-103 Cantor Vex = 17; T-107 worldHash widened to economy/progression = 18;
 // T-104 review fixes + T-111 fixes = 19 (both lineages, independently
-// numbered); T-115 reconciliation re-bumps: 20.
+// numbered); T-115 reconciliation re-bumps: 20; T-118 weapon-skill
+// persistence: 21.
 // Replay refuses non-matching epoch journals instead of lying with them.
-constexpr int kJournalEpoch = 20;  // T-115 lineage reconciliation: epoch 19
-                                   // was claimed twice (T-104 wave in PR #9;
-                                   // T-112 for T-111's F4 spawn fill). This
-                                   // merge carries BOTH semantic shifts —
-                                   // v19 legs from either lineage are stale
-                                   // by contract. Fresh gate leg:
-                                   // logs/t115.bwj
+constexpr int kJournalEpoch = 21;  // T-118: sword_skill + swing_lands persisted,
+                                   // journal l-line now carries skill. Fresh
+                                   // gate leg: logs/t118.bwj
 
 // ---- world journal record helpers (M2) ------------------------------------
 void journalTickHash(Server& s) {
@@ -162,8 +159,9 @@ void journalLogin(Server& s, const Session& sess, const CharacterRow& row,
   s.loginOrder.push_back(row.name);
   const sim::TilePos t = e.walker.tile();
   std::fprintf(s.journal,
-               // v2: zoneId column after (x,y) — cross-zone persistence (T-036) must replay
-               "l %lld %u %s %d %d %u %d %u %u %u %u %u %u %u %d %s\n",
+               // v3 (T-118): zoneId column after (x,y) (T-036) + swordSkill +
+               // swingLands before inv — persisted progression must replay.
+               "l %lld %u %s %d %d %u %d %u %u %u %u %u %u %u %d %u %lld %s\n",
                static_cast<long long>(s.tick + 1), idx, row.name.c_str(), t.x, t.y,
                static_cast<unsigned>(e.zoneId),
                static_cast<unsigned>(row.level), static_cast<unsigned>(row.xp),
@@ -171,6 +169,8 @@ void journalLogin(Server& s, const Session& sess, const CharacterRow& row,
                static_cast<unsigned>(row.dex), static_cast<unsigned>(row.statPoints),
                static_cast<unsigned>(row.gold),
                static_cast<unsigned>(row.anvilMercy), row.karma,
+               static_cast<unsigned>(row.swordSkill),
+               static_cast<long long>(row.swingLands),
                row.invBlob.empty() ? "-" : row.invBlob.c_str());
   // T-053: kit rides as a v2.1 sidecar line so pre-kit journals still parse.
   std::fprintf(s.journal, "k %lld %u %u\n",
@@ -256,7 +256,9 @@ void dropSession(Server& s, Session& sess) {
         const std::string blob = canonicalInvBlob(e->inv);
         s.db.saveProgress(e->charRowId, e->level, e->xp, e->str, e->vit, e->dex,
                           e->statPoints, static_cast<int>(e->gold), blob,
-                          e->anvilMercyMask, e->karma, e->classId);
+                          e->anvilMercyMask, e->karma, e->classId,
+                          static_cast<int>(e->swordSkill),
+                          static_cast<std::int64_t>(e->swingLands));
       }
       std::printf("[net] %-16s saved at (%d,%d)\n", e->name.c_str(), p.x, p.y);
     }
@@ -343,7 +345,7 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
       sess.entityId = e.id;
       journalLogin(s, sess, row, e);
       {
-        // apply persisted progression (schema v2)
+        // apply persisted progression (schema v2..v11)
         Entity* pe = s.world.find(e.id);
         pe->level = static_cast<std::uint8_t>(row.level < 1 ? 1 : (row.level > 25 ? 25 : row.level));
         pe->xp = static_cast<std::uint32_t>(row.xp < 0 ? 0 : row.xp);
@@ -361,6 +363,13 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
         if (!row.invBlob.empty()) parseInvBlob(row.invBlob, pe->inv);
         pe->anvilMercyMask = static_cast<std::uint32_t>(row.anvilMercy);
         pe->karma = row.karma;
+        // T-118: weapon-skill persistence (sword_skill + swing_lands)
+        pe->swordSkill = static_cast<std::uint8_t>(row.swordSkill < 0 ? 0 : (row.swordSkill > 100 ? 100 : row.swordSkill));
+        pe->swingLands = static_cast<std::uint32_t>(row.swingLands < 0 ? 0 : row.swingLands);
+        // if lands present but skill 0 (old row with lands >0), recompute skill
+        if (pe->swingLands > 0 && pe->swordSkill == 0) {
+          pe->swordSkill = static_cast<std::uint8_t>(pe->swingLands / 25u);
+        }
         const auto bit = s.bless.find(row.name);
         if (bit != s.bless.end()) {
           // parse "id:qty,id:qty"
@@ -1075,6 +1084,8 @@ int runReplayWorld(const std::string& path, const std::string& mapPath) {
     unsigned level, xp, st_, vit, dex, sp, gold;
     std::uint32_t mercyMask = 0;
     std::int32_t karma = 0;
+    unsigned swordSkill = 0;       // v3 (T-118)
+    std::int64_t swingLands = 0;   // v3 (T-118)
     std::string inv;
   };
   struct QueuedBless { sim::Tick tick; std::string name; std::string spec; };
@@ -1100,29 +1111,37 @@ int runReplayWorld(const std::string& path, const std::string& mapPath) {
   char line[1024];
   while (std::fgets(line, sizeof line, f) != nullptr) {
     if (line[0] == 'l') {
-      // l tick idx name x y level xp str vit dex sp gold inv
+      // l tick idx name x y zone level xp str vit dex sp gold mercy karma swordSkill swingLands inv (v3 T-118)
       char name[64], inv[768] = "-";
       long long tick;
-      unsigned idx, level, xp, st_, vit, dex, sp, gold, mercy = 0, zone = 1;
+      unsigned idx, level, xp, st_, vit, dex, sp, gold, mercy = 0, zone = 1, swordSkill = 0;
+      long long swingLands = 0;
       int x, y, karma = 0;
-      int n = std::sscanf(line, "l %lld %u %63s %d %d %u %u %u %u %u %u %u %u %u %d %767s",
+      int n = std::sscanf(line, "l %lld %u %63s %d %d %u %u %u %u %u %u %u %u %u %d %u %lld %767s",
                           &tick, &idx, name, &x, &y, &zone, &level, &xp, &st_, &vit,
-                          &dex, &sp, &gold, &mercy, &karma, inv);
-      if (n != 16) {  // legacy v1: no zone column
-        zone = 1;
-        n = std::sscanf(line, "l %lld %u %63s %d %d %u %u %u %u %u %u %u %u %d %767s",
-                        &tick, &idx, name, &x, &y, &level, &xp, &st_, &vit,
+                          &dex, &sp, &gold, &mercy, &karma, &swordSkill, &swingLands, inv);
+      if (n != 18) {
+        // try v2 (zone + mercy+karma, no skill)
+        swordSkill = 0; swingLands = 0;
+        n = std::sscanf(line, "l %lld %u %63s %d %d %u %u %u %u %u %u %u %u %u %d %767s",
+                        &tick, &idx, name, &x, &y, &zone, &level, &xp, &st_, &vit,
                         &dex, &sp, &gold, &mercy, &karma, inv);
-        if (n != 15 && n != 13) {
-          std::fprintf(stderr, "[replay] malformed l-line: %s", line);
-          std::fclose(f);
-          return 2;
+        if (n != 16) {  // legacy v1: no zone column
+          zone = 1;
+          n = std::sscanf(line, "l %lld %u %63s %d %d %u %u %u %u %u %u %u %u %d %767s",
+                          &tick, &idx, name, &x, &y, &level, &xp, &st_, &vit,
+                          &dex, &sp, &gold, &mercy, &karma, inv);
+          if (n != 15 && n != 13) {
+            std::fprintf(stderr, "[replay] malformed l-line: %s", line);
+            std::fclose(f);
+            return 2;
+          }
+          if (n == 13) { mercy = 0; karma = 0; }  // pre-v6 journals
         }
-        if (n == 13) { mercy = 0; karma = 0; }  // pre-v6 journals
       }
       logins.push_back(QueuedLogin{static_cast<sim::Tick>(tick), idx, name, x, y, zone,
                                    level, xp, st_, vit, dex, sp, gold, mercy, karma,
-                                   inv});
+                                   swordSkill, swingLands, inv});
       if (tick > lastTick) lastTick = tick;
     } else if (line[0] == 'k') {  // T-053 kit sidecar: k tick idx kitId
       long long ktick; unsigned kidx, kit;
@@ -1199,6 +1218,12 @@ int runReplayWorld(const std::string& path, const std::string& mapPath) {
     if (L.inv != "-") parseInvBlob(L.inv, pe->inv);
     pe->anvilMercyMask = L.mercyMask;
     pe->karma = L.karma;
+    // T-118: persisted skill (v3 journal)
+    pe->swordSkill = static_cast<std::uint8_t>(L.swordSkill > 100 ? 100 : L.swordSkill);
+    pe->swingLands = static_cast<std::uint32_t>(L.swingLands < 0 ? 0 : L.swingLands);
+    if (pe->swingLands > 0 && pe->swordSkill == 0) {
+      pe->swordSkill = static_cast<std::uint8_t>(pe->swingLands / 25u);
+    }
     // replay bless grants (debug lane recorded as b-lines) — AFTER the
     // persisted blob, exactly like the live login order, so debugGive
     // stacking/appending lands identically on both sides.
