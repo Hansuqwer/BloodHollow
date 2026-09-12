@@ -25,10 +25,15 @@ add_custom_target(bh_maps ALL
           ${CMAKE_SOURCE_DIR}/data/maps-src/drowned_crypt.tmj
           ${CMAKE_SOURCE_DIR}/assets/maps/drowned_crypt.bhmap
           --map-id 5 --validate
+  COMMAND bh_mapconv
+          ${CMAKE_SOURCE_DIR}/data/maps-src/weeping_castle.tmj
+          ${CMAKE_SOURCE_DIR}/assets/maps/weeping_castle.bhmap
+          --map-id 6 --validate
   DEPENDS bh_mapconv
           ${CMAKE_SOURCE_DIR}/data/maps-src/thornwall.tmj
           ${CMAKE_SOURCE_DIR}/data/maps-src/fields_overflow.tmj
           ${CMAKE_SOURCE_DIR}/data/maps-src/thornwall_crypt.tmj
           ${CMAKE_SOURCE_DIR}/data/maps-src/bonehowl_mine.tmj
           ${CMAKE_SOURCE_DIR}/data/maps-src/drowned_crypt.tmj
+          ${CMAKE_SOURCE_DIR}/data/maps-src/weeping_castle.tmj
   COMMENT "mapconv: .tmj -> assets/maps/*.bhmap")

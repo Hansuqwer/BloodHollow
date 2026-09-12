@@ -300,6 +300,18 @@ class World {
   std::uint32_t nextPledgeId() const { return nextPledgeId_; }  // test seam
   bool pledgesDirty = false;  // never hashed; shell-only mirror flag
 
+  // ---- Weeping Castle (T-123 B3): the siege stage --------------------------
+  // Geometry is bespoke (see tools/mapgen/make_weeping_castle.py); pieces are
+  // code-placed at fixed tiles so live + replay agree. Gate/Heartstone HP are
+  // the B3 stand-ins (GDD §8: gates 100k; heartstone unpriced — 150k flagged
+  // as B4-tunable). The siege LAW (damage type, crown channel, ownership
+  // flips) is the B4 card, not this one.
+  static constexpr std::uint32_t kCastleGateHp = 100000;    // GDD §8
+  static constexpr std::uint32_t kCastleHeartHp = 150000;   // B4-tunable
+  struct CastlePiece { std::uint8_t wireKind; const char* name; int x, y;
+                       std::uint32_t hp; };
+  void spawnCastle(Zone& zone);  // mapId == 6 hook in loadZoneFrom
+
   // anvil (T-041/T-042): proximity-gated aura attempts, atomic part+gold tolls
   bool tryAnvil(Entity& e, std::uint8_t tier);
   static constexpr std::int32_t kKarmaAnvilOk = 2;      // craft tithe

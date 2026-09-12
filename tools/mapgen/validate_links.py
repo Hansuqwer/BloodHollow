@@ -14,7 +14,8 @@ import sys
 from pathlib import Path
 
 MAPIDS = {1: "thornwall.tmj", 2: "fields_overflow.tmj", 3: "thornwall_crypt.tmj",
-          4: "bonehowl_mine.tmj", 5: "drowned_crypt.tmj"}
+          4: "bonehowl_mine.tmj", 5: "drowned_crypt.tmj",
+          6: "weeping_castle.tmj"}
 WALL_IDS = {2, 3}  # thornwall terrain constants: WALL=2, WATER=3 blocked
 
 

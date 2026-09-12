@@ -724,6 +724,26 @@ relog → membership restored, replay `ticks=1222 cmds=105 hashes=12
 mm=0`. Suite **218/218 · 329,270**, ctest 2/2, duel pin unchanged.
 Devlog 0084 · card `done/T-122.md`.
 
+## Done — T-123 (2026-09-12): Weeping Castle (Track B3) — the siege stage stands (epoch 23)
+
+T-123: **mapId 6** per the B3 cut — mapgen (`make_weeping_castle.py`,
+56x44: moat + two causeways, curtain wall with **two gate gaps**,
+courtyard crossroads, keep nock) + `.tmj`/`.bhmap` v2 + validators
+(**0 problems across 6 maps**; fields gains the east-rim war road).
+Code-placed pieces (confessor pattern): West/East **Gates** (kind 74,
+100k HP — GDD §8), **Heartstone** (75, 150k — B4-tunable stand-in),
+**Weeping Throne** (76). Garrison: new mob **1015 Oathbroken Sentinel**
+(L14, no boss kit) x4 camps + moor hound pack. **Epoch 22 → 23**
+(T-068 content-shift law). **Branch stacked on PR #22's head** — the
+first open-PR predecessor in pipeline history; epoch is a globally
+unique semantics key, so the chain stays linear (merge #22 first).
+Leg `logs/t123.bwj`: five L25 fighters garrison the courtyard — all
+wave-2 logins zone-6 l-lines, 10 kills/2 deaths (walk of shame, era
+law), **4/5 hold across relog**, replay `ticks=1022 cmds=277 hashes=10
+mm=0`; `t122.bwj` refuses by guard (22 vs 23). Suite **223/223 ·
+329,317**, ctest 2/2, duel pin unchanged; CI += castle determinism +
+link-graph steps. Devlog 0085 · card `done/T-123.md`.
+
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
 | Card | Title | Notes |

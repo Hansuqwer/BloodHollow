@@ -124,6 +124,7 @@ done:
   initialMobSpawns(zone, mapId);
   if (mapId == 1 || mapId == 3) spawnAnvils();   // plaza + bone barrow
   if (mapId == 1) spawnNpcs();  // T-094: twins + post guards (after anvil)
+  if (mapId == 6) spawnCastle(zone);  // T-123: the siege stage
   return true;
 }
 
@@ -563,6 +564,37 @@ void World::spawnNpcs() {
         placed = true;
       }
     if (placed) break;
+  }
+}
+
+// T-123: the Weeping Castle's fixed pieces — two siege gates on their
+// causeway gaps, the courtyard Heartstone at the crossroads, the throne in
+// the keep nook. Fixed tiles (the map is bespoke geometry, not a spiral
+// scan); every piece is a non-combat kMob like the town furniture, but the
+// gates and heart carry the GDD §8 HP pools so B4's damage law has
+// something to chew on. The throne is furniture (the crown channel reads
+// its occupant, not its HP).
+void World::spawnCastle(Zone& zone) {
+  static const CastlePiece pieces[] = {
+      {content::kWireKindCastleGate, "West Gate", 20, 34, kCastleGateHp},
+      {content::kWireKindCastleGate, "East Gate", 36, 34, kCastleGateHp},
+      {content::kWireKindHeartstone, "Heartstone", 28, 20, kCastleHeartHp},
+      {content::kWireKindThrone, "Weeping Throne", 28, 11, 1},
+  };
+  for (const CastlePiece& cp : pieces) {
+    if (!zone.map.inBounds(cp.x, cp.y) || zone.map.isBlocked(cp.x, cp.y))
+      continue;  // asset mismatch: boot stays alive, tests will scream
+    Entity f;
+    f.id = nextId_++;
+    f.zoneId = 6;
+    f.kind = EntityKind::kMob;  // furniture-class, non-combat
+    f.wireKind = cp.wireKind;
+    f.name = cp.name;
+    f.hp = cp.hp;
+    f.hpMax = cp.hp;
+    f.dead = false;
+    f.walker.place(sim::TilePos{cp.x, cp.y});
+    insertEntity(std::move(f));
   }
 }
 

@@ -19,6 +19,7 @@ set(BH_TEST_SOURCES
   test_cmdparity.cpp
   test_party.cpp
   test_pledges.cpp
+  test_castle.cpp
   test_kits.cpp
   test_alignment.cpp
   test_fence.cpp
