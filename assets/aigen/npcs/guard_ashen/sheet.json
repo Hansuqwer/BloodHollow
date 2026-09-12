@@ -1,0 +1,21 @@
+{
+ "anims": {
+  "idle": {
+   "frameW": 32,
+   "frameH": 48,
+   "frames": 4,
+   "dirs": 8,
+   "fps": 4,
+   "offsetX": 0,
+   "offsetY": 0,
+   "anchorY": 42
+  }
+ },
+ "_b5_proxy": {
+  "kind": 70,
+  "name": "Ashen Guard",
+  "note": "Ashen-cape town guard with spear",
+  "generator": "tools/atlaspack/b5_npc_proxy.py (procedural placeholder; final B5 AI plates overwrite these PNGs)",
+  "date": "2026-09-12"
+ }
+}

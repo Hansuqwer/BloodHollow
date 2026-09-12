@@ -31,6 +31,32 @@ TEST_CASE("T-ART-05: sheet dirs resolve for every shipped mob row") {
   CHECK_FALSE(mobSheetPaths(255, png, sizeof png, js, sizeof js));
 }
 
+TEST_CASE("T-ART-B5: furniture sheet dirs resolve for reserved NPC kinds") {
+  char png[160], js[160];
+  // 7 reserved NPCs shipped in B5 resolve under assets/aigen/npcs/<slug>/
+  REQUIRE(furnitureSheetPaths(67, png, sizeof png, js, sizeof js));
+  CHECK(std::string(png) == "assets/aigen/npcs/bonesmith_twins/sheet.png");
+  REQUIRE(furnitureSheetPaths(68, png, sizeof png, js, sizeof js));
+  CHECK(std::string(png) == "assets/aigen/npcs/confessor/sheet.png");
+  REQUIRE(furnitureSheetPaths(69, png, sizeof png, js, sizeof js));
+  CHECK(std::string(png) == "assets/aigen/npcs/cove_fence/sheet.png");
+  REQUIRE(furnitureSheetPaths(70, png, sizeof png, js, sizeof js));
+  CHECK(std::string(png) == "assets/aigen/npcs/guard_ashen/sheet.png");
+  REQUIRE(furnitureSheetPaths(71, png, sizeof png, js, sizeof js));
+  CHECK(std::string(png) == "assets/aigen/npcs/guard_synod/sheet.png");
+  REQUIRE(furnitureSheetPaths(72, png, sizeof png, js, sizeof js));
+  CHECK(std::string(png) == "assets/aigen/npcs/pledge_registrar/sheet.png");
+  REQUIRE(furnitureSheetPaths(73, png, sizeof png, js, sizeof js));
+  CHECK(std::string(png) == "assets/aigen/npcs/castle_steward/sheet.png");
+  // Marta (64), anvil (65), bounty (66) still use in-code stubs (no sheet yet)
+  CHECK_FALSE(furnitureSheetPaths(64, png, sizeof png, js, sizeof js));
+  CHECK_FALSE(furnitureSheetPaths(65, png, sizeof png, js, sizeof js));
+  CHECK_FALSE(furnitureSheetPaths(66, png, sizeof png, js, sizeof js));
+  // players (0) and mobs (<64) are NOT furniture
+  CHECK_FALSE(furnitureSheetPaths(0, png, sizeof png, js, sizeof js));
+  CHECK_FALSE(furnitureSheetPaths(1, png, sizeof png, js, sizeof js));
+}
+
 TEST_CASE("T-ART-07: overhead tint priority (red > party > lawful > gray)") {
   CHECK(resolveNameTint(false, 2, true) == NameTint::kChaotic);  // red wins ties
   CHECK(resolveNameTint(false, 2, false) == NameTint::kChaotic);
