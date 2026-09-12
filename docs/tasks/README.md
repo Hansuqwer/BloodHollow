@@ -593,6 +593,18 @@ index through part erase (F2), parseInvBlob throw-free ints (F3), bounded
 mob-seed retries (F4), killPlayer brace tidy (F5). 4 new tests
 (`test_t111_review.cpp`). No epoch bump. Devlog 0073 · prompt
 `docs/prompts/critical-code-review-2026-09-12.md`.
+**Correction (T-112):** F4 changes boot spawn counts + RNG stream — the
+"no epoch bump" claim failed local replay (t107: 81/81 mismatches);
+epoch 19 + fresh gate leg landed as T-112 below.
+
+## Done — T-112 (2026-09-12): T-111 epoch follow-up
+
+T-112 EPOCH FIX: kJournalEpoch 18→19 for T-111's F4 bounded scatter (probe:
+T-111−F4 replays t107 clean, F4 alone breaks it 81/81). 3 new spawn-law
+pins (`test_t112_spawn_epoch.cpp`, suite 201/328,962). Fresh gate leg
+`logs/t112.bwj` (20 bots × 10 s): replay mismatches=0, p99=1.51 ms.
+F1/F2/F3/F5 replay-neutral. Lineage note: PR #9's epoch-19 collision —
+second merger re-bumps to 20. Devlog 0074.
 
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
