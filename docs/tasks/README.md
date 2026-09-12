@@ -636,6 +636,21 @@ replay mm=0). Suite 206/206 (329,022). Duel pin unchanged. PR includes
 all of #8+#11's content — merge #9 first, then this, and #8/#11 close as
 superseded. Devlog 0077 · card `done/T-115.md`.
 
+## Done — T-116 (2026-09-12): merge wave — review era on master, queue empty
+
+T-116 EXECUTION: director-authorized sequence per prompt
+`docs/prompts/merge-wave-2026-09-12.md` (wave-scoped; no precedent).
+Squash-merged #12 (T-113), #9 (T-104 wave + vendored sqlite), #15
+(replacement for #13, closed by a raw base-branch delete — retarget
+children first, delete last), #10 (B5 art; three-way deduped #9's
+content, tree verified). #14 merged as a TRUE merge commit after board
+sync (T-113/T-114 interleaved between T-112/T-115). #8 auto-closed
+MERGED via ancestry reachability; #11 closed superseded. Master 0355367
+at epoch 20: offline build, 206/206 (329,022), ctest 2/2, duel pin
+`b273be661b54673a`, `t115.bwj` mm=0, epoch guard refuses t107(18) /
+t104(19) / t112(19), CI green ×4 both matrices. Devlog 0078 · card
+`done/T-116.md`.
+
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
 | Card | Title | Notes |
