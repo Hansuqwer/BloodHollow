@@ -159,6 +159,16 @@ bool Db::open(const std::string& path, std::string* err) {
     // v10 (Sprint 16 / T-060): inv blob gains a 7th `refine` field per record.
     if (!exec("PRAGMA user_version=10;", err)) return false;
   }
+  if (uv < 11) {
+    // v11 (T-118): weapon-skill persistence — sword skill + exact swing lands.
+    // Additive-only, defaults 0 for old rows.
+    if (!exec("ALTER TABLE characters ADD COLUMN sword_skill INTEGER NOT NULL DEFAULT 0;"
+              "ALTER TABLE characters ADD COLUMN swing_lands INTEGER NOT NULL DEFAULT 0;",
+              err)) {
+      return false;
+    }
+    if (!exec("PRAGMA user_version=11;", err)) return false;
+  }
   return true;
 }
 
@@ -261,10 +271,12 @@ bool Db::loginOrCreate(const std::string& user, const std::string& pass,
     accountId = sqlite3_last_insert_rowid(db_);
   }
 
-  // v0: exactly one character per account, auto-created with the account name.
+  // v11: include sword_skill + swing_lands (additive, defaults 0 for old DBs
+  // after migration). The SELECT is prepared AFTER open() migrations, so
+  // columns are guaranteed to exist on a migrated file.
   sqlite3_stmt* cs = nullptr;
   if (sqlite3_prepare_v2(db_,
-                         "SELECT id, name, map_id, x, y, level, xp, str, vit, dex, stat_points, gold, inv, anvil_mercy, karma, class_id "
+                         "SELECT id, name, map_id, x, y, level, xp, str, vit, dex, stat_points, gold, inv, anvil_mercy, karma, class_id, sword_skill, swing_lands "
         "FROM characters "
                          "WHERE account_id=? LIMIT 1;",
                          -1, &cs, nullptr) != SQLITE_OK) {
@@ -291,6 +303,8 @@ bool Db::loginOrCreate(const std::string& user, const std::string& pass,
     out->anvilMercy = sqlite3_column_int64(cs, 13);
     out->karma = sqlite3_column_int(cs, 14);
     out->classId = sqlite3_column_int(cs, 15);
+    out->swordSkill = sqlite3_column_int(cs, 16);
+    out->swingLands = sqlite3_column_int64(cs, 17);
     sqlite3_finalize(cs);
     return true;
   }
@@ -318,18 +332,22 @@ bool Db::loginOrCreate(const std::string& user, const std::string& pass,
   out->mapId = 1;
   out->x = 0;
   out->y = 0;  // 0,0 => server spawn point
+  // defaults for new row: skill 0, lands 0 (already in CharacterRow)
+  out->swordSkill = 0;
+  out->swingLands = 0;
   return true;
 }
 
 void Db::saveProgress(std::int64_t characterId, int level, std::int64_t xp, int str,
                       int vit, int dex, int statPoints, int gold,
                       const std::string& invBlob, std::int64_t anvilMercy,
-                      std::int32_t karma, int classId) {
+                      std::int32_t karma, int classId, int swordSkill,
+                      std::int64_t swingLands) {
   if (db_ == nullptr) return;
   sqlite3_stmt* st = nullptr;
   if (sqlite3_prepare_v2(db_,
                          "UPDATE characters SET level=?, xp=?, str=?, vit=?, dex=?, "
-                         "stat_points=?, gold=?, inv=?, anvil_mercy=?, karma=?, class_id=? WHERE id=?;",
+                         "stat_points=?, gold=?, inv=?, anvil_mercy=?, karma=?, class_id=?, sword_skill=?, swing_lands=? WHERE id=?;",
                          -1, &st, nullptr) != SQLITE_OK) {
     return;
   }
@@ -344,7 +362,9 @@ void Db::saveProgress(std::int64_t characterId, int level, std::int64_t xp, int 
   sqlite3_bind_int64(st, 9, anvilMercy);
   sqlite3_bind_int(st, 10, karma);
   sqlite3_bind_int(st, 11, classId);
-  sqlite3_bind_int64(st, 12, characterId);
+  sqlite3_bind_int(st, 12, swordSkill);
+  sqlite3_bind_int64(st, 13, swingLands);
+  sqlite3_bind_int64(st, 14, characterId);
   sqlite3_step(st);
   sqlite3_finalize(st);
 }

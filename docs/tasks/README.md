@@ -683,6 +683,11 @@ next card T-120 = weapon-skill persistence (Track B1). Filed the
 (card→PR loop, merge-wave protocol, collision rule, multi-session rules).
 Epoch stays 20. Devlog 0081 · card `done/T-119.md`.
 
+
+## Done — T-120 (2026-09-12): B1 weapon-skill persistence (schema v11, epoch 21)
+
+T-120 PERSIST: `characters` gains `sword_skill` + `swing_lands` (additive-only, defaults 0, user_version 10→11). `CharacterRow` + `saveProgress` + `loginOrCreate` + `journalLogin` l-line v3 `l ... karma swordSkill swingLands inv` + replay parser v3→v2→v1 backward compat. `kJournalEpoch` 20→21 (progression persistence). Gate leg `tools/t120_weapon_skill_leg.sh` (5 bots 60s fighter gains skill 1 lands 29-35, same 5 bots 10s wander relog journal shows skill 1 lands 33, DB max 35). Replay: t115 epoch 20 vs 21 refused exit 4 (expected), t120 epoch 21 OK ticks 1500 cmds 529 hashes 15 mm=0. Suite 209/209 (329052), duel pin unchanged. Devlog 0082 · card `done/T-120.md` · `logs/t120.bwj` force-added.
+
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
 | Card | Title | Notes |
