@@ -651,6 +651,19 @@ at epoch 20: offline build, 206/206 (329,022), ctest 2/2, duel pin
 t104(19) / t112(19), CI green ×4 both matrices. Devlog 0078 · card
 `done/T-116.md`.
 
+## Done — T-117 (2026-09-12): continuation prompt + session handover (docs-only)
+
+T-117 FILING: standing orders for post-wave build sessions —
+`docs/prompts/continue-building-2026-09-12.md` (state snapshot verified
+against master c8d8087 at authoring time, the law, card→PR workflow,
+verification battery with expected numbers, build queue: Track A M3
+party-crypt gate · Track B Phase-4 spine · Track C debt, cheat sheet,
+traps) + `docs/prompts/session-handoff-postwave-2026-09-12.md` (session
+handover: ground state, wave record, open director decisions, watch
+items). Docs-only: no code/wire/epoch (stays 20); next card T-118, next
+devlog 0080. Squash-merged under `merge-filing-2026-09-12.md` (single-use
+authorization, not precedent). Devlog 0079 · card `done/T-117.md`.
+
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
 | Card | Title | Notes |
