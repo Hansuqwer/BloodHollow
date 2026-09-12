@@ -357,9 +357,18 @@ v0.2. Do not build without the director picking.
 | Devlog / card counters | next devlog **0080** · next card **T-118** (T-117 = this prompt's filing card; verify on the board) |
 
 Journal grammar (login line `l` / kit line `k` — replay depends on these
-exactly; the invBlob is 7 fields):
-`l tick idx name x y zoneId level xp str vit dex statPoints gold anvilMercy karma invBlob`
+exactly; the invBlob is 7 fields; **v3 since T-120** — `swordSkill` and
+`swingLands` ride before `invBlob`; the replay parser accepts v1/v2/v3):
+`l tick idx name x y zoneId level xp str vit dex statPoints gold anvilMercy karma swordSkill swingLands invBlob`
 `k tick idx classId`
+
+**Amendment (2026-09-12, post-T-120 weapon-skill persistence):** pins
+moved — journal epoch **21** (20→21 with T-120), persist schema **v11**,
+suite **209/209 · 329,052 assertions**, leg of record `logs/t120.bwj`
+(`ticks=1500 sessionCmds=529 hashes=15 mismatches=0`); `t115.bwj` and
+`t118.bwj` now REFUSE on the epoch guard (journal 20 vs build 21) — that is
+correct behavior, not a regression. Duel pin unchanged. Where §2/§5 quote
+the older numbers, this amendment wins until the next full revision.
 
 ## 8. Traps & tooling quirks (learned the expensive way)
 
