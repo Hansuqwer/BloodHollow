@@ -578,6 +578,22 @@ T-102 CONTENT (epoch 15→16): row 1013 + mine nest + shared announce reuse. S18
 
 T-103 CONTENT (epoch 16→17): row 1014 (Sexton + half-rate instant bolt, boss-flag audited) + crypt choir. GDD elite line fully shipped. 4 new tests (183 total). Devlog 0072.
 
+## Done — T-104..T-110 (2026-09-11): hardening wave (code in tree)
+
+Shipped under the external-review map (task cards historically unfiled —
+truth-up): T-104 refine parse throw-free · T-105 trade unequipped grammar ·
+T-106 kill-line deque snapshots · T-107 worldHash economy (epoch 18,
+`logs/t107.bwj`) · T-108 headless client-law gate · T-109 login limiter ·
+T-110 docs/AGENTS truth-up. See README §Status.
+
+## Done — T-111 (2026-09-12): critical-review hotfixes
+
+T-111 FIXES: cross-zone respawn spatial==walker (F1), tryAnvil weapon-slot
+index through part erase (F2), parseInvBlob throw-free ints (F3), bounded
+mob-seed retries (F4), killPlayer brace tidy (F5). 4 new tests
+(`test_t111_review.cpp`). No epoch bump. Devlog 0073 · prompt
+`docs/prompts/critical-code-review-2026-09-12.md`.
+
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
 | Card | Title | Notes |

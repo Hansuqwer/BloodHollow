@@ -240,15 +240,18 @@ void World::initialMobSpawns(Zone& zone, std::uint16_t zoneId) {
       std::fprintf(stderr, "[world] spawner mobId %u has no def, skipped\n", sl.def.mobId);
       continue;
     }
-    for (std::uint32_t n = 0; n < sl.def.maxAlive; ++n) {
-      // scatter inside the spawner rect
+    // Bounded scatter: never decrement the alive counter on a blocked roll
+    // (uint32_t wrap + tight spin on a fully-blocked rect — T-111). Cap
+    // attempts so a bad spawner cannot hang boot.
+    const std::uint32_t want = sl.def.maxAlive;
+    const int maxTries = static_cast<int>(want) * 20 + 20;
+    std::uint32_t placed = 0;
+    for (int tries = 0; tries < maxTries && placed < want; ++tries) {
       const int x = sl.def.x + static_cast<int>(rng_.range(0, sl.def.w - 1));
       const int y = sl.def.y + static_cast<int>(rng_.range(0, sl.def.h - 1));
       if (zone.map.inBounds(x, y) && !zone.map.isBlocked(x, y)) {
         spawnMob(*def, sim::TilePos{x, y}, i, zoneId);
-      } else {
-        --n;  // blocked tile: re-roll (bounded implicitly by walkable map design)
-        if (n > 40) break;
+        ++placed;
       }
     }
   }
@@ -572,11 +575,20 @@ void parseInvBlob(const std::string& blob, std::vector<InvSlot>& out) {
       p = c + 1;
     }
     if (nf < 3) continue;  // need at least iid:qty:equipped
+    // Throw-free decimal parse (T-111). Pre-fix used std::stoul after a
+    // digit-class check: any all-digit string wider than unsigned long still
+    // threw std::out_of_range and aborted login/replay (remote DoS class,
+    // same family as T-104's /refine stoi). Cap length + checked multiply.
     auto num = [](const std::string& s, unsigned* out) -> bool {
-      if (s.empty()) return false;
-      for (const char c : s)
+      if (s.empty() || s.size() > 9) return false;  // fits comfortably in 32-bit
+      unsigned v = 0;
+      for (const char c : s) {
         if (c < '0' || c > '9') return false;
-      *out = static_cast<unsigned>(std::stoul(s));
+        const unsigned dig = static_cast<unsigned>(c - '0');
+        if (v > (4294967295u - dig) / 10u) return false;
+        v = v * 10u + dig;
+      }
+      *out = v;
       return true;
     };
     InvSlot sl;
@@ -1560,14 +1572,20 @@ bool World::tryAnvil(Entity& e, std::uint8_t tier) {
                 static_cast<unsigned>(tier));
     return false;
   }
-  InvSlot* wslot = nullptr;
-  for (InvSlot& sl : e.inv) {
-    if (sl.equipped) {
-      const content::ItemDef* d = content::findItem(sl.itemId);
-      if (d != nullptr && d->slot == 0) wslot = &sl;
+  // T-111: hold the WEAPON SLOT INDEX, never a raw InvSlot*. The toll loop
+  // below erases emptied part stacks from e.inv; any pointer into the vector
+  // taken here would dangle (aura write / destroy would hit freed memory or
+  // a shifted neighbour — UB, wrong steel blessed).
+  int wslotIdx = -1;
+  for (size_t i = 0; i < e.inv.size(); ++i) {
+    if (!e.inv[i].equipped) continue;
+    const content::ItemDef* d = content::findItem(e.inv[i].itemId);
+    if (d != nullptr && d->slot == 0) {
+      wslotIdx = static_cast<int>(i);
+      break;
     }
   }
-  if (wslot == nullptr) {
+  if (wslotIdx < 0) {
     WorldEvent ev;
     ev.aboutId = e.id;
     ev.chatCh = 255;
@@ -1577,23 +1595,24 @@ bool World::tryAnvil(Entity& e, std::uint8_t tier) {
     events_.push_back(ev);
     return false;
   }
-  if (wslot->aura >= tier) {
+  const std::uint8_t curAura = e.inv[static_cast<size_t>(wslotIdx)].aura;
+  if (curAura >= tier) {
     WorldEvent ev;
     ev.aboutId = e.id;
     ev.chatCh = 255;
     ev.chatText = "that blessing already sleeps in the steel.";
     std::printf("[anvil-refuse] %s tier=%u why=already aura=%u\n", e.name.c_str(),
-                static_cast<unsigned>(tier), static_cast<unsigned>(wslot->aura));
+                static_cast<unsigned>(tier), static_cast<unsigned>(curAura));
     events_.push_back(ev);
     return false;
   }
-  if (wslot->aura + 1 != tier) {
+  if (curAura + 1 != tier) {
     WorldEvent ev;
     ev.aboutId = e.id;
     ev.chatCh = 255;
-    ev.chatText = "the Anvil honors order: earn tier " + std::to_string(wslot->aura + 1) + " first.";
+    ev.chatText = "the Anvil honors order: earn tier " + std::to_string(curAura + 1) + " first.";
     std::printf("[anvil-refuse] %s tier=%u why=order aura=%u\n", e.name.c_str(),
-                    static_cast<unsigned>(tier), static_cast<unsigned>(wslot->aura));
+                    static_cast<unsigned>(tier), static_cast<unsigned>(curAura));
     events_.push_back(ev);
     return false;
   }
@@ -1642,7 +1661,8 @@ bool World::tryAnvil(Entity& e, std::uint8_t tier) {
   const bool mercy = (e.anvilMercyMask & mercyBit) == 0;
   e.anvilMercyMask |= mercyBit;
 
-  // consume parts + gold, atomically (all or nothing)
+  // consume parts + gold, atomically (all or nothing).
+  // T-111: keep wslotIdx honest across erases (same discipline as tryRefine).
   std::uint16_t remaining = t->partQty;
   for (size_t i = 0; i < e.inv.size() && remaining > 0;) {
     InvSlot& sl = e.inv[i];
@@ -1650,10 +1670,19 @@ bool World::tryAnvil(Entity& e, std::uint8_t tier) {
     const std::uint16_t take = sl.qty < remaining ? sl.qty : remaining;
     sl.qty = static_cast<std::uint16_t>(sl.qty - take);
     remaining = static_cast<std::uint16_t>(remaining - take);
-    if (sl.qty == 0) e.inv.erase(e.inv.begin() + static_cast<long>(i));
-    else ++i;
+    if (sl.qty == 0) {
+      e.inv.erase(e.inv.begin() + static_cast<long>(i));
+      if (static_cast<int>(i) < wslotIdx) --wslotIdx;
+      // do not ++i: next element slid into i
+    } else {
+      ++i;
+    }
   }
   e.gold -= t->gold;
+
+  // wslotIdx tracked through erases above; parts never equal the weapon
+  // slot so the index always names the same equipped steel post-toll.
+  InvSlot& wslot = e.inv[static_cast<size_t>(wslotIdx)];
 
   const bool success = mercy || rng_.chance(static_cast<double>(100 - t->failPct) / 100.0);
   WorldEvent ev;
@@ -1664,7 +1693,7 @@ bool World::tryAnvil(Entity& e, std::uint8_t tier) {
   ev.amount = tier;
   ev.statsChanged = true;
   if (success) {
-    wslot->aura = tier;
+    wslot.aura = tier;
     bumpKarma(e, kKarmaAnvilOk);  // the guild remembers its tithes (T-046)
     ev.chatCh = 255;
     ev.chatText = "the Anvil speaks. tier " + std::to_string(tier) + " rests in the steel.";
@@ -1673,10 +1702,10 @@ bool World::tryAnvil(Entity& e, std::uint8_t tier) {
   } else {
     if (t->failLaw == 1) {
       // destroy: clear the weapon slot + the aura with it (RFC 0001)
-      wslot->itemId = 0;
-      wslot->qty = 0;
-      wslot->equipped = false;
-      wslot->aura = 0;
+      wslot.itemId = 0;
+      wslot.qty = 0;
+      wslot.equipped = false;
+      wslot.aura = 0;
       bumpKarma(e, kKarmaAnvilDestroy);  // drowned steel stains the soul
       ev.chatCh = 0;  // broadcast-worthy ceremony failure
       ev.chatText = e.name + "'s steel drowned at the Anvil.";
@@ -2598,17 +2627,19 @@ void World::killPlayer(Entity& victim, Entity* killer) {
     txt.chatText = killer->name + "'s hands are red with " + victim.name +
                    "'s blood (-" + std::to_string(300 + 20 * deficit) + " karma).";
     events_.push_back(std::move(txt));
-  // T-073 gate law: unlawful PK within 8 tiles of a guard anchor marks the
-  // killer wanted for 240 s (guards aggro, vendors refuse, death binds at
-  // the gallows). Deterministic: anchor scan order, first post that sees.
-  for (const Entity& g : entities_) {
-    if (!isGuardMob(g) || g.zoneId != killer->zoneId) continue;
-    if (chebyshev(killer->walker.tile(), g.anchor) <= 8) {
-      markWanted(*killer);
-      break;
+    // T-073 gate law: unlawful PK within 8 tiles of a guard anchor marks the
+    // killer wanted for 240 s (guards aggro, vendors refuse, death binds at
+    // the gallows). Deterministic: anchor scan order, first post that sees.
+    // (Brace+indent tidied T-111 — logic unchanged; nested under the PK if
+    // so killer is known non-null.)
+    for (const Entity& g : entities_) {
+      if (!isGuardMob(g) || g.zoneId != killer->zoneId) continue;
+      if (chebyshev(killer->walker.tile(), g.anchor) <= 8) {
+        markWanted(*killer);
+        break;
+      }
     }
   }
-}
   // duel partner walks away if the mob kills happen mid-duel (cleanup)
   if (victim.duelWith != 0 && !duel) {
     if (Entity* t = find(victim.duelWith)) { t->duelWith = 0; t->duelUntil = -1; }
@@ -2991,7 +3022,10 @@ void World::respawnTick() {
         e.zoneId = 1;
         Zone& home = zones_.at(1);
         e.walker.place(home_);
-        home.spatial.insert(e.id, home.spawnPoint.x, home.spawnPoint.y);
+        // T-111: spatial must match walker. Pre-fix inserted at spawnPoint
+        // while the body stood at home_ (gallows when red/wanted) — AoI
+        // queries lied until the first step corrected the grid.
+        home.spatial.insert(e.id, home_.x, home_.y);
         e.lastPortalTick = tick_;
         WorldEvent zev;
         zev.aboutId = e.id;
