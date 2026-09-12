@@ -116,6 +116,15 @@ portals, journal **epoch 18** with the gate leg `logs/t107.bwj`
 the authoritative status: [`docs/tasks/`](docs/tasks/) · latest devlog
 [`0072`](docs/devlog/) (T-103).
 
-**Next:** hardening wave from the 2026-09 external review (T-104+: input parsing,
-trade symmetry, deque-lifetime UB, hash-oracle widening, headless preset, auth
-hardening) — see the review's findings→card map.
+**Hardening wave T-104..T-110:** landed in-tree (input parse, trade symmetry,
+deque-lifetime snapshots, hash-oracle widen epoch 18 + `logs/t107.bwj`,
+headless preset test gate, login rate limit, docs truth-up).
+
+**T-111 (2026-09-12):** critical-review residual hotfixes — cross-zone respawn
+spatial/walker agreement, anvil weapon-slot index across part erase, throw-free
+inv-blob ints, bounded mob-seed retries. Prompt
+[`docs/prompts/critical-code-review-2026-09-12.md`](docs/prompts/critical-code-review-2026-09-12.md)
+· devlog [`0073`](docs/devlog/0073-critical-review-t111.md).
+
+**Next:** Phase-4 pledges/siege spine, EntityStore SoA debt, human trade-pass
+slice (T-033/T-099), optional logistics card for L9 pace.

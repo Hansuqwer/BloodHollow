@@ -578,6 +578,45 @@ T-102 CONTENT (epoch 15→16): row 1013 + mine nest + shared announce reuse. S18
 
 T-103 CONTENT (epoch 16→17): row 1014 (Sexton + half-rate instant bolt, boss-flag audited) + crypt choir. GDD elite line fully shipped. 4 new tests (183 total). Devlog 0072.
 
+## Done — T-104..T-110 (2026-09-11): hardening wave (code in tree)
+
+Shipped under the external-review map (task cards historically unfiled —
+truth-up): T-104 refine parse throw-free · T-105 trade unequipped grammar ·
+T-106 kill-line deque snapshots · T-107 worldHash economy (epoch 18,
+`logs/t107.bwj`) · T-108 headless client-law gate · T-109 login limiter ·
+T-110 docs/AGENTS truth-up. See README §Status.
+
+## Done — T-111 (2026-09-12): critical-review hotfixes
+
+T-111 FIXES: cross-zone respawn spatial==walker (F1), tryAnvil weapon-slot
+index through part erase (F2), parseInvBlob throw-free ints (F3), bounded
+mob-seed retries (F4), killPlayer brace tidy (F5). 4 new tests
+(`test_t111_review.cpp`). No epoch bump. Devlog 0073 · prompt
+`docs/prompts/critical-code-review-2026-09-12.md`.
+**Correction (T-112):** F4 changes boot spawn counts + RNG stream — the
+"no epoch bump" claim failed local replay (t107: 81/81 mismatches);
+epoch 19 + fresh gate leg landed as T-112 below.
+
+## Done — T-112 (2026-09-12): T-111 epoch follow-up
+
+T-112 EPOCH FIX: kJournalEpoch 18→19 for T-111's F4 bounded scatter (probe:
+T-111−F4 replays t107 clean, F4 alone breaks it 81/81). 3 new spawn-law
+pins (`test_t112_spawn_epoch.cpp`, suite 201/328,962). Fresh gate leg
+`logs/t112.bwj` (20 bots × 10 s): replay mismatches=0, p99=1.51 ms.
+F1/F2/F3/F5 replay-neutral. Lineage note: PR #9's epoch-19 collision —
+second merger re-bumps to 20. Devlog 0074.
+
+## Done — T-115 (2026-09-12): lineage reconciliation (epoch 20)
+
+T-115 MERGE: task/T-112-t111-epoch-followup into task/T-104-review-fixes.
+Duplicate fixes deduped (respawn home_ T-104#5≈F1; throw-free blob parse
+T-104#6≈F3 — both parents' tests pass under survivors); tryAnvil union
+(destroy-erase on F2's wslotIdx). kJournalEpoch 19→20 (double-19
+resolved); fresh gate leg `logs/t115.bwj` (20 bots × 10 s, p99=1.27 ms,
+replay mm=0). Suite 206/206 (329,022). Duel pin unchanged. PR includes
+all of #8+#11's content — merge #9 first, then this, and #8/#11 close as
+superseded. Devlog 0077 · card `done/T-115.md`.
+
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
 | Card | Title | Notes |
