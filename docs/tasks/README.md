@@ -578,11 +578,19 @@ T-102 CONTENT (epoch 15→16): row 1013 + mine nest + shared announce reuse. S18
 
 T-103 CONTENT (epoch 16→17): row 1014 (Sexton + half-rate instant bolt, boss-flag audited) + crypt choir. GDD elite line fully shipped. 4 new tests (183 total). Devlog 0072.
 
+## Done — T-113 (2026-09-12): L9 logistics scoping (design, no code)
+
+T-113 DESIGN: 30-trip tax is bot belt policy (4-deep, buys 2/visit) — server
+already permits 16-deep stockpiling (no depletion, stack 16). Armor quantified
+as margin (~1 hp/hit), not pace. T-114 scoped: bots v3 flask belt + t090/t100
+repeat discipline, no server change/epoch. Economy levers reopen only on
+gold-starved re-run. Devlog 0075.
+
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
 | Card | Title | Notes |
 |---|---|---|
-| L9 pace logistics | Ladder open per T-090/T-100 (n=2, ~80% bar/leg, zero widow/L11); binding constraint is vial flow + bridge travel (30 shop trips/leg), not mob stats | needs a scoped logistics card (vial stockpiling? armor path?) if faster L9 wanted — T-095 gate stays shut for stat tuning |
+| L9 pace logistics → **T-114** | Ladder open per T-090/T-100 (n=2, ~80% bar/leg, zero widow/L11); binding constraint is vial flow + bridge travel (30 shop trips/leg), not mob stats | **scoped by T-113 (devlog 0075)**: the 30-trip tax is bot belt policy (4-deep, buys 2) — server already allows 16-deep stockpiling. T-114 = bots v3 flask belt (tools/bots only, no epoch), then t090/t100-discipline re-run ×2; economy/content levers reopen only on gold-starved re-run — T-095 stays shut |
 | Bot bad-leg deaths | v5c legs 3/5 perch mode: T-074/T-077 levers measured red + reverted; T-083 closed the drift as roam-RNG (leg totals stable ~130–160, distribution roams) | reopen only on perch-clustered all-L3 legs (T-074 discipline); reproductions: leg 3/5 logs, val5 |
 
 Retired: "L8→L9 step-up, no waypoint" (T-084 opened the (60,41) camp; T-090/T-100 climbed it twice).
