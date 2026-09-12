@@ -684,13 +684,23 @@ int run(int argc, char** argv) {
           int vials = 0;
           for (const auto& kv : b.inv)
             if (kv.second.itemId == 3001) vials += kv.second.qty;
-          if (vials < 4 && b.gold >= 90) {  // keep a 3-deep flask belt for packs
-            b.nextShopAt = t + 2.0;
-            bh::proto::BuyRequest buy;
-            buy.itemId = 3001;
-            buy.qty = 2;
-            sendProto(b.peer, bh::proto::pack(buy));
-            ++b.shops;
+          // T-114 (bots v3 flask belt): the 4-deep belt refilled 2-at-a-visit
+          // was the L9 pace tax — T-090/T-100 measured ~30 town stops/leg for
+          // the pair (T-113 finding 2: the empty belt forces the hp-dip ->
+          // retreat-home -> refill cycle; the server never capped depth).
+          // Buy to a 16-deep belt in one stop, gated at 240g and never
+          // spending below the 90g gear/rite floor.
+          if (vials < 16 && b.gold >= 240) {
+            const int afford = static_cast<int>((b.gold - 90) / 30);
+            const int qty = std::min(16 - vials, afford);
+            if (qty > 0) {
+              b.nextShopAt = t + 2.0;
+              bh::proto::BuyRequest buy;
+              buy.itemId = 3001;
+              buy.qty = static_cast<std::uint32_t>(qty);
+              sendProto(b.peer, bh::proto::pack(buy));
+              ++b.shops;
+            }
           }
         }
         // tier-table driven rite math (T-047): parts+gold for the NEXT tier
