@@ -667,6 +667,22 @@ authorization, not precedent). Devlog 0079 · card `done/T-117.md`.
 
 T-118 BOT-ONLY: crypt profile (5 bots mixed kits Rav/Cult/Grave), party formation 100 tries/3 s, hold-in-town until 5, route 1:10,10→3:24,30, 3:44,6→5:3,30, boss camp 21,2. Pre-seed L12 via sqlite (Pit Blade/Hide Armor/16 vials). Legs: 300 s party 4 + 2 boss kills (killable proof), 300 s party 5 + bossSeen 22 curse 32 slam 56, 600 s party 5 + bossSeen 38 curse 50 slam 86, replay mm=0 epoch 20. Verdict: M3 exit met, TTK <15 s focused, no tuning. Suite 206/206, duel pin `b273be661b54673a`, t115 mm=0, t118 mm=0 (ticks 12042). Devlog 0080 · card `done/T-118.md` · `logs/t118.bwj` force-added.
 
+## Done — T-119 (2026-09-12): PR #18 merge wave — M3 gate lands as T-118 + PR pipeline filed
+
+T-119 WAVE: first cross-session counter collision resolved per
+`docs/prompts/merge-pr18-2026-09-12.md` — PR #18 (another session's M3
+party-crypt gate, CI-green, bots-only) was authored as T-117 from
+`c8d8087`; PR #17 consumed T-117 on master in between. Sync merge
+`e1a66da` renumbered the card to **T-118** (card/devlog/leg/script/board
+row; `logs/t118.bwj` byte-identical rename, replay re-verified mm=0;
+script paths made repo-relative — only deviation). Squash-merged `cca3f94`,
+branch deleted. **Verdict on record: M3 exit MET** (party of 5 mixed kits
+clears to Gravemother, 2 kills, TTK <15 s, no tuning) — Track A closed;
+next card T-120 = weapon-skill persistence (Track B1). Filed the
+**Continue prompt** `docs/prompts/continue-pr-pipeline-2026-09-12.md`
+(card→PR loop, merge-wave protocol, collision rule, multi-session rules).
+Epoch stays 20. Devlog 0081 · card `done/T-119.md`.
+
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
 | Card | Title | Notes |
