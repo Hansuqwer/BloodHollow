@@ -107,12 +107,16 @@ void sendMsg(ENetPeer* peer, const Msg& m, Server& s) {
 // T-079 refine rows +4..+7 = 12; T-091 Gravemother slam = 13;
 // T-094 Thornwall NPC posts = 14; T-101 Old Maw = 15; T-102 Red Widow = 16;
 // T-103 Cantor Vex = 17; T-107 worldHash widened to economy/progression = 18;
-// T-104 review fixes: anvil-destroy now erases (not zeroes) the weapon slot,
-// trade-offer duplication bug fixed, sell math widening, spatial-home fix on
-// cross-zone respawn — v18 journals that contain an anvil T3 destroy or a
-// revised trade offer will diverge. Bump epoch.
+// T-104 review fixes + T-111 fixes = 19 (both lineages, independently
+// numbered); T-115 reconciliation re-bumps: 20.
 // Replay refuses non-matching epoch journals instead of lying with them.
-constexpr int kJournalEpoch = 19;  // T-104 review hardening wave.
+constexpr int kJournalEpoch = 20;  // T-115 lineage reconciliation: epoch 19
+                                   // was claimed twice (T-104 wave in PR #9;
+                                   // T-112 for T-111's F4 spawn fill). This
+                                   // merge carries BOTH semantic shifts —
+                                   // v19 legs from either lineage are stale
+                                   // by contract. Fresh gate leg:
+                                   // logs/t115.bwj
 
 // ---- world journal record helpers (M2) ------------------------------------
 void journalTickHash(Server& s) {
