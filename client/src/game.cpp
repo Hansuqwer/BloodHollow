@@ -825,8 +825,9 @@ void Game::drawRemoteEnt(const RenderEnt& e, bool isOwn) {
         return;
       }
     }
-    // furniture band (T-047 constants): widow anvil 65 keeps its teal rig;
-    // every other kind uses the generic stall rect + name label.
+    // furniture band (T-047 constants, T-ART-06 through 73 steward, T-123
+    // through 76 throne): widow anvil 65 keeps its teal rig; every other
+    // kind uses the generic stall rect + name label.
     if (e.snap.kind == content::kWireKindAnvil) {
       DrawRectangle(static_cast<int>(w.x) - 12, static_cast<int>(w.y) - 22, 24, 18,
                     Color{70, 124, 128, 255});

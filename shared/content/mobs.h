@@ -64,7 +64,11 @@ inline constexpr MobDef kMobs[] = {
     // T-103 Cantor Vex (crypt elite, T-097 option B): Sexton base through
     // the 1010 pattern, plus boss-lite casting (boltRange 6, half Mother's
     // rate, instant — telegraphs stay the Mother's). xp 5x for the threat.
-    {1014, "Cantor Vex",       12, 380, 36,  18,  15, 4100,  8,    20, 4,   12,  4005, 100, 200, 320,  1, 6, 52},
+    {1014, "Cantor Vex",       12, 380, 36,  18,  15, 4100, 8,    20, 4,   12,  4005, 100, 200, 320,  1, 6, 52},
+    // T-123 Oathbroken Sentinel (Weeping Castle garrison): Sexton base
+    // +2 levels — the dead garrison that never learned the siege ended.
+    // No boss kit, no guard flag: it aggroes anyone who walks the moor.
+    {1015, "Oathbroken Sentinel", 14, 520, 36, 18, 15, 950, 7, 20, 4, 12, 4005, 60, 200, 320, 0, 0, 0},
 };
 inline constexpr size_t kMobKindCount = sizeof(kMobs) / sizeof(kMobs[0]);
 

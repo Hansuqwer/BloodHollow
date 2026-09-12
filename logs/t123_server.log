@@ -1,0 +1,27 @@
+[boot] zone 2 (assets/maps/fields_overflow.bhmap: 64x48) online
+[boot] zone 3 (assets/maps/thornwall_crypt.bhmap: 48x36) online
+[boot] zone 4 (assets/maps/bonehowl_mine.bhmap: 56x40) online
+[boot] zone 5 (assets/maps/drowned_crypt.bhmap: 48x36) online
+[boot] zone 6 (assets/maps/weeping_castle.bhmap: 56x44) online
+[auth] registration OPEN (prototype posture; --no-register to gate); limiter: 60 logins + 30 new accounts per 60s per IP, 10 consecutive bad-password fails -> 60s lockout
+[journal] recording world to logs/t123.bwj (epoch 23)
+[boot] pledges: 0 registered, 0 sworn members
+[boot] bh_server on 0.0.0.0:7825 | map 'assets/maps/thornwall.bhmap' | db '/tmp/t123.db' | tick 20Hz | aoi 26
+[net] t123__00         entered the world (entity 208, online 1)
+[net] t123__01         entered the world (entity 209, online 2)
+[net] t123__02         entered the world (entity 210, online 3)
+[net] t123__03         entered the world (entity 211, online 4)
+[net] t123__04         entered the world (entity 212, online 5)
+[net] t123__00         saved at (24,29)
+[net] t123__01         saved at (24,14)
+[net] t123__02         saved at (37,13)
+[net] t123__03         saved at (36,13)
+[net] t123__04         saved at (33,3)
+[net] t123__00         entered the world (entity 213, online 1)
+[net] t123__01         entered the world (entity 214, online 2)
+[net] t123__02         entered the world (entity 215, online 3)
+[net] t123__03         entered the world (entity 216, online 4)
+[net] t123__04         entered the world (entity 217, online 5)
+[zone] t123__04 -> map 1 at (32,16)
+[zone] t123__04 -> map 1 at (32,16)
+[soak] tick=600 online=5 entities=211 tickUs p50=273 p99=631 worldHash=06ddb500298efb54 pkts=141/86696

@@ -2,8 +2,9 @@
 """Bleak Fields East (mapId 2) - overflow hunting map reached via east_gate.
 
 64x48 open grassland with a hedge maze, a standing-stone circle, and two
-harder camps westward; single west portal returns to thornwall.
-Deterministic (fixed LCG) like the other gens.
+harder camps westward; west portal returns to thornwall, east edge carries
+the mine mouth (S18) and the Weeping Castle road (T-123). Deterministic
+(fixed LCG) like the other gens.
 """
 import json
 from pathlib import Path
@@ -68,6 +69,8 @@ def main() -> int:
     ground[15][0] = PATH
     ground[20][W - 1] = PATH   # east mouth: Bonehowl Mine steps (S18)
     ground[21][W - 1] = PATH
+    ground[10][W - 1] = PATH   # east mouth: Weeping Castle road (T-123)
+    ground[11][W - 1] = PATH
 
     blocked = [[1 if ground[y][x] in (WALL, WATER) else 0 for x in range(W)] for y in range(H)]
     zones = [[ZONE_FIELDS] * W for _ in range(H)]
@@ -101,6 +104,7 @@ def main() -> int:
     spawn("old_maw_pit", 28, 38, 6, 4, MOB_OLD_MAW, 1, 36000)
     portal("west_gate_back", 0, 14, 1, 2, 1, 61, 14)
     portal("mine_mouth_in", 63, 20, 1, 2, 4, 4, 31)   # Bonehowl Mine mouth (S18)
+    portal("castle_road_in", 63, 10, 1, 2, 6, 2, 40)  # Weeping Castle moor (T-123)
 
     ground_data = [v + 1 for row in ground for v in row]
 

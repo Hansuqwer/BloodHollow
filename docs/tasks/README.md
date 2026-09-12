@@ -705,6 +705,45 @@ Squash-merged `7b2e9b8`, branch deleted. **The Sisyphus ladder is fixed**
 T-122 = pledge-lite (Track B2). Standing prompts amended (epoch 21,
 schema v11, l-line v3 grammar). Devlog 0083 · card `done/T-121.md`.
 
+## Done — T-122 (2026-09-12): pledge-lite (Track B2) — the oath office opens (epoch 22)
+
+T-122: server-only pledge core per the 05-mvp.md cut — **create / emblem
+(placeholder 0–9) / ranks Liege·Bloodsworn·Initiate / pledge chat**;
+vault/tax deferred to B5 holdings, roster UI + emblem-over-head to a
+follow-up wire card. Registrar (72) takes the town-square post
+(Chebyshev ≤ 3, confessor pattern); founding gate **level ≥ 10 +
+10,000g** — flagged **GDD §8 deviation** (CHA ≥ 20 asked, no CHA stat
+exists; switch when the six-stat model lands). Membership by character
+name, schema **v12** (`pledge_id`/`pledge_rank` columns + `pledges`
+table), journal kinds 28–34 + **g-sidecar** login line (k-line pattern);
+pledge state stays outside worldHash by design. **Epoch 21→22** — the
+registrar is world composition (T-112 spawn law; t120 replayed 15/15
+mismatch before the bump, refuses by guard after). Leg of record
+`logs/t122.bwj`: 5 bots found `t122clan`, swear/promote/kick/leave,
+relog → membership restored, replay `ticks=1222 cmds=105 hashes=12
+mm=0`. Suite **218/218 · 329,270**, ctest 2/2, duel pin unchanged.
+Devlog 0084 · card `done/T-122.md`.
+
+## Done — T-123 (2026-09-12): Weeping Castle (Track B3) — the siege stage stands (epoch 23)
+
+T-123: **mapId 6** per the B3 cut — mapgen (`make_weeping_castle.py`,
+56x44: moat + two causeways, curtain wall with **two gate gaps**,
+courtyard crossroads, keep nock) + `.tmj`/`.bhmap` v2 + validators
+(**0 problems across 6 maps**; fields gains the east-rim war road).
+Code-placed pieces (confessor pattern): West/East **Gates** (kind 74,
+100k HP — GDD §8), **Heartstone** (75, 150k — B4-tunable stand-in),
+**Weeping Throne** (76). Garrison: new mob **1015 Oathbroken Sentinel**
+(L14, no boss kit) x4 camps + moor hound pack. **Epoch 22 → 23**
+(T-068 content-shift law). **Branch stacked on PR #22's head** — the
+first open-PR predecessor in pipeline history; epoch is a globally
+unique semantics key, so the chain stays linear (merge #22 first).
+Leg `logs/t123.bwj`: five L25 fighters garrison the courtyard — all
+wave-2 logins zone-6 l-lines, 10 kills/2 deaths (walk of shame, era
+law), **4/5 hold across relog**, replay `ticks=1022 cmds=277 hashes=10
+mm=0`; `t122.bwj` refuses by guard (22 vs 23). Suite **223/223 ·
+329,317**, ctest 2/2, duel pin unchanged; CI += castle determinism +
+link-graph steps. Devlog 0085 · card `done/T-123.md`.
+
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
 | Card | Title | Notes |
