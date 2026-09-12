@@ -14,10 +14,17 @@ if(BH_BUILD_SERVER)
   set(_enet_tgz ${_deps}/enet-1.3.18.tar.gz)
   set(_enet_dir ${_deps}/enet-1.3.18)
   if(NOT EXISTS ${_enet_dir}/callbacks.c)
-    file(DOWNLOAD https://github.com/lsalzman/enet/archive/refs/tags/v1.3.18.tar.gz
-         ${_enet_tgz}
-         EXPECTED_HASH SHA256=28603c895f9ed24a846478180ee72c7376b39b4bb1287b73877e5eae7d96b0dd
-         SHOW_PROGRESS)
+    # Prefer a mirror tarball shipped in-tree if the network is unavailable
+    # (sandbox CI / offline build); otherwise fetch from upstream.
+    set(_enet_local ${CMAKE_CURRENT_SOURCE_DIR}/enet-1.3.18.tar.gz)
+    if(EXISTS ${_enet_local})
+      file(COPY ${_enet_local} DESTINATION ${_deps})
+    else()
+      file(DOWNLOAD https://github.com/lsalzman/enet/archive/refs/tags/v1.3.18.tar.gz
+           ${_enet_tgz}
+           EXPECTED_HASH SHA256=28603c895f9ed24a846478180ee72c7376b39b4bb1287b73877e5eae7d96b0dd
+           SHOW_PROGRESS)
+    endif()
     file(ARCHIVE_EXTRACT INPUT ${_enet_tgz} DESTINATION ${_deps})
   endif()
   add_library(bh_enet STATIC
@@ -36,10 +43,19 @@ if(BH_BUILD_SERVER)
     HAS_INET_PTON=1 HAS_INET_NTOP=1)
   set_property(TARGET bh_enet PROPERTY C_STANDARD 99)
 
-  # ---- SQLite 3.43.2 amalgamation (ADR-0004) ----
-  set(_sq_zip ${_deps}/sqlite-amalgamation-3430200.zip)
+  # ---- SQLite amalgamation (ADR-0004) ----
+  # A locally-vendored amalgamation lives at third_party/sqlite-amalgamation/
+  # (committed only when the download-from-sqlite.org path is unavailable in
+  # CI/sandbox environments). When that directory exists we build directly
+  # from it; otherwise we download the pinned 3.43.2 zip from sqlite.org.
+  # Operators who wish to pin a specific SQLite can drop sqlite3.c/.h into
+  # the vendored directory.
   set(_sq_dir ${_deps}/sqlite-amalgamation-3430200)
-  if(NOT EXISTS ${_sq_dir}/sqlite3.c)
+  set(_sq_local_dir ${CMAKE_CURRENT_SOURCE_DIR}/sqlite-amalgamation)
+  if(EXISTS ${_sq_local_dir}/sqlite3.c)
+    set(_sq_dir ${_sq_local_dir})
+  elseif(NOT EXISTS ${_sq_dir}/sqlite3.c)
+    set(_sq_zip ${_deps}/sqlite-amalgamation-3430200.zip)
     file(DOWNLOAD https://sqlite.org/2023/sqlite-amalgamation-3430200.zip
          ${_sq_zip}
          EXPECTED_HASH SHA256=a17ac8792f57266847d57651c5259001d1e4e4b46be96ec0d985c953925b2a1c

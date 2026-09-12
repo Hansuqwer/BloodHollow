@@ -106,13 +106,13 @@ void sendMsg(ENetPeer* peer, const Msg& m, Server& s) {
 // T-071 torch/lantern + nightOnly spawner = 10; T-073 guards + wanted = 11;
 // T-079 refine rows +4..+7 = 12; T-091 Gravemother slam = 13;
 // T-094 Thornwall NPC posts = 14; T-101 Old Maw = 15; T-102 Red Widow = 16;
-// T-103 Cantor Vex = 17; T-107 worldHash widened to economy/progression = 18).
+// T-103 Cantor Vex = 17; T-107 worldHash widened to economy/progression = 18;
+// T-104 review fixes: anvil-destroy now erases (not zeroes) the weapon slot,
+// trade-offer duplication bug fixed, sell math widening, spatial-home fix on
+// cross-zone respawn — v18 journals that contain an anvil T3 destroy or a
+// revised trade offer will diverge. Bump epoch.
 // Replay refuses non-matching epoch journals instead of lying with them.
-constexpr int kJournalEpoch = 18;  // T-107: hash-oracle widening invalidates
-                                   // v17 journals (hash VALUES change, sim
-                                   // does not); stale by contract (same
-                                   // response as ever). Fresh gate leg:
-                                   // logs/t107.bwj
+constexpr int kJournalEpoch = 19;  // T-104 review hardening wave.
 
 // ---- world journal record helpers (M2) ------------------------------------
 void journalTickHash(Server& s) {
