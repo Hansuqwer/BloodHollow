@@ -108,12 +108,12 @@ void sendMsg(ENetPeer* peer, const Msg& m, Server& s) {
 // T-094 Thornwall NPC posts = 14; T-101 Old Maw = 15; T-102 Red Widow = 16;
 // T-103 Cantor Vex = 17; T-107 worldHash widened to economy/progression = 18;
 // T-104 review fixes + T-111 fixes = 19 (both lineages, independently
-// numbered); T-115 reconciliation re-bumps: 20; T-118 weapon-skill
+// numbered); T-115 reconciliation re-bumps: 20; T-120 weapon-skill
 // persistence: 21.
 // Replay refuses non-matching epoch journals instead of lying with them.
-constexpr int kJournalEpoch = 21;  // T-118: sword_skill + swing_lands persisted,
+constexpr int kJournalEpoch = 21;  // T-120: sword_skill + swing_lands persisted,
                                    // journal l-line now carries skill. Fresh
-                                   // gate leg: logs/t118.bwj
+                                   // gate leg: logs/t120.bwj
 
 // ---- world journal record helpers (M2) ------------------------------------
 void journalTickHash(Server& s) {
@@ -159,7 +159,7 @@ void journalLogin(Server& s, const Session& sess, const CharacterRow& row,
   s.loginOrder.push_back(row.name);
   const sim::TilePos t = e.walker.tile();
   std::fprintf(s.journal,
-               // v3 (T-118): zoneId column after (x,y) (T-036) + swordSkill +
+               // v3 (T-120): zoneId column after (x,y) (T-036) + swordSkill +
                // swingLands before inv — persisted progression must replay.
                "l %lld %u %s %d %d %u %d %u %u %u %u %u %u %u %d %u %lld %s\n",
                static_cast<long long>(s.tick + 1), idx, row.name.c_str(), t.x, t.y,
@@ -363,7 +363,7 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
         if (!row.invBlob.empty()) parseInvBlob(row.invBlob, pe->inv);
         pe->anvilMercyMask = static_cast<std::uint32_t>(row.anvilMercy);
         pe->karma = row.karma;
-        // T-118: weapon-skill persistence (sword_skill + swing_lands)
+        // T-120: weapon-skill persistence (sword_skill + swing_lands)
         pe->swordSkill = static_cast<std::uint8_t>(row.swordSkill < 0 ? 0 : (row.swordSkill > 100 ? 100 : row.swordSkill));
         pe->swingLands = static_cast<std::uint32_t>(row.swingLands < 0 ? 0 : row.swingLands);
         // if lands present but skill 0 (old row with lands >0), recompute skill
@@ -1084,8 +1084,8 @@ int runReplayWorld(const std::string& path, const std::string& mapPath) {
     unsigned level, xp, st_, vit, dex, sp, gold;
     std::uint32_t mercyMask = 0;
     std::int32_t karma = 0;
-    unsigned swordSkill = 0;       // v3 (T-118)
-    std::int64_t swingLands = 0;   // v3 (T-118)
+    unsigned swordSkill = 0;       // v3 (T-120)
+    std::int64_t swingLands = 0;   // v3 (T-120)
     std::string inv;
   };
   struct QueuedBless { sim::Tick tick; std::string name; std::string spec; };
@@ -1111,7 +1111,7 @@ int runReplayWorld(const std::string& path, const std::string& mapPath) {
   char line[1024];
   while (std::fgets(line, sizeof line, f) != nullptr) {
     if (line[0] == 'l') {
-      // l tick idx name x y zone level xp str vit dex sp gold mercy karma swordSkill swingLands inv (v3 T-118)
+      // l tick idx name x y zone level xp str vit dex sp gold mercy karma swordSkill swingLands inv (v3 T-120)
       char name[64], inv[768] = "-";
       long long tick;
       unsigned idx, level, xp, st_, vit, dex, sp, gold, mercy = 0, zone = 1, swordSkill = 0;
@@ -1218,7 +1218,7 @@ int runReplayWorld(const std::string& path, const std::string& mapPath) {
     if (L.inv != "-") parseInvBlob(L.inv, pe->inv);
     pe->anvilMercyMask = L.mercyMask;
     pe->karma = L.karma;
-    // T-118: persisted skill (v3 journal)
+    // T-120: persisted skill (v3 journal)
     pe->swordSkill = static_cast<std::uint8_t>(L.swordSkill > 100 ? 100 : L.swordSkill);
     pe->swingLands = static_cast<std::uint32_t>(L.swingLands < 0 ? 0 : L.swingLands);
     if (pe->swingLands > 0 && pe->swordSkill == 0) {
