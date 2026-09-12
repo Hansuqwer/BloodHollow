@@ -663,6 +663,9 @@ handover: ground state, wave record, open director decisions, watch
 items). Docs-only: no code/wire/epoch (stays 20); next card T-118, next
 devlog 0080. Squash-merged under `merge-filing-2026-09-12.md` (single-use
 authorization, not precedent). Devlog 0079 · card `done/T-117.md`.
+## Done — T-118 (2026-09-12): M3 party-crypt gate leg
+
+T-118 BOT-ONLY: crypt profile (5 bots mixed kits Rav/Cult/Grave), party formation 100 tries/3 s, hold-in-town until 5, route 1:10,10→3:24,30, 3:44,6→5:3,30, boss camp 21,2. Pre-seed L12 via sqlite (Pit Blade/Hide Armor/16 vials). Legs: 300 s party 4 + 2 boss kills (killable proof), 300 s party 5 + bossSeen 22 curse 32 slam 56, 600 s party 5 + bossSeen 38 curse 50 slam 86, replay mm=0 epoch 20. Verdict: M3 exit met, TTK <15 s focused, no tuning. Suite 206/206, duel pin `b273be661b54673a`, t115 mm=0, t118 mm=0 (ticks 12042). Devlog 0080 · card `done/T-118.md` · `logs/t118.bwj` force-added.
 
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
