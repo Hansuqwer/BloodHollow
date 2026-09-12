@@ -89,7 +89,7 @@ struct Bot {
   std::uint64_t regearTrips = 0;
   std::uint8_t partyTries = 0;    // S13: formation attempts (10 s cadence, cap 4)
   double nextPartyTryAt = 0.0;
-  // T-117 crypt gate: boss tracking
+  // T-118 crypt gate: boss tracking
   std::uint64_t bossSeen = 0;
   std::uint64_t bossKills = 0;
   std::uint64_t curseSeen = 0;
@@ -391,7 +391,7 @@ int run(int argc, char** argv) {
       const bool pilgrimRites = (profile == "pilgrim");
       const bool campaign = (profile == "campaign");
       const bool crypt = (profile == "crypt" || profile == "crypt_party");
-      // T-117 crypt gate: 5-person mixed-kit party -> Gravemother
+      // T-118 crypt gate: 5-person mixed-kit party -> Gravemother
       if (crypt) {
         if (b.campaignT0 < 0.0) {
           b.campaignT0 = t;
@@ -447,7 +447,7 @@ int run(int argc, char** argv) {
           }
         }
         b.campIsPortal = false;
-        // T-117: hold in town until party of 5 forms, then dive
+        // T-118: hold in town until party of 5 forms, then dive
         if (b.party.size() < 5) {
           if (b.homeX >= 0) { b.campX = b.homeX; b.campY = b.homeY; }
           else { b.campX = 32; b.campY = 16; }

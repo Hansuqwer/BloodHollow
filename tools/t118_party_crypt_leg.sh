@@ -1,33 +1,32 @@
 #!/bin/bash
-# T-117 M3 party-crypt gate leg: 5-person mixed-kit party clears Crypt to Gravemother
-# Usage: t117_party_crypt_leg.sh [port] [secs]
+# T-118 M3 party-crypt gate leg: 5-person mixed-kit party clears Crypt to Gravemother
+# Usage: t118_party_crypt_leg.sh [port] [secs]
 set -e
 PORT=${1:-7817}
 SECS=${2:-300}
-ROOT=/home/user/BloodHollow/build/wt/117
-cd $ROOT
+cd "$(dirname "$0")/.." || exit 1
 pkill -x bh_server 2>/dev/null || true
 sleep 1
-DB=/tmp/t117.db
+DB=/tmp/t118.db
 rm -f $DB
-rm -f logs/t117.bwj
+rm -f logs/t118.bwj
 mkdir -p logs
 
 # Phase 1: create accounts by short wander leg (10s, 5 bots)
-echo "[t117] Phase 1: creating 5 accounts in fresh DB..."
-./build/manual/bh_server --db $DB --port $PORT --soak-secs 30 > logs/t117_phase1_server.log 2>&1 &
+echo "[t118] Phase 1: creating 5 accounts in fresh DB..."
+./build/server/bh_server --db $DB --port $PORT --soak-secs 30 > logs/t118_phase1_server.log 2>&1 &
 SRV=$!
 sleep 2
-./build/manual/bh_bots --port $PORT --count 5 --secs 10 --profile wander --prefix t117_ > logs/t117_phase1_bots.log 2>&1 || true
+./build/tools/bots/bh_bots --port $PORT --count 5 --secs 10 --profile wander --prefix t118_ > logs/t118_phase1_bots.log 2>&1 || true
 kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true
-echo "[t117] Phase 1 done, DB should have 5 chars"
+echo "[t118] Phase 1 done, DB should have 5 chars"
 
 # Phase 2: pre-level DB to L12 with gear and kits
-echo "[t117] Phase 2: pre-seeding DB to L12..."
+echo "[t118] Phase 2: pre-seeding DB to L12..."
 python3 <<'PY'
 import sqlite3
 import os
-db_path = "/tmp/t117.db"
+db_path = "/tmp/t118.db"
 conn = sqlite3.connect(db_path)
 cur = conn.cursor()
 # Show existing chars
@@ -39,7 +38,7 @@ for r in rows:
 
 # Desired kits: idx 0 Ravager(1), 1 Cultist(3), 2 Cultist(3), 3 Gravecaller(2), 4 Ravager(1)
 kits = [1,3,3,2,1]
-# Sort rows by name to match prefix order t117_00..04
+# Sort rows by name to match prefix order t118_00..04
 rows_sorted = sorted(rows, key=lambda x: x[1])
 for idx, (char_id, name, lvl, class_id) in enumerate(rows_sorted):
     if idx >= len(kits):
@@ -80,15 +79,15 @@ conn.close()
 PY
 
 # Phase 3: crypt leg with recording
-echo "[t117] Phase 3: running crypt party leg ${SECS}s with recording..."
-./build/manual/bh_server --db $DB --port $PORT --soak-secs $((SECS + 60)) --record-world logs/t117.bwj > logs/t117_server.log 2>&1 &
+echo "[t118] Phase 3: running crypt party leg ${SECS}s with recording..."
+./build/server/bh_server --db $DB --port $PORT --soak-secs $((SECS + 60)) --record-world logs/t118.bwj > logs/t118_server.log 2>&1 &
 SRV=$!
 sleep 2
-./build/manual/bh_bots --port $PORT --count 5 --secs $SECS --profile crypt --prefix t117_ > logs/t117_bots.log 2>&1
+./build/tools/bots/bh_bots --port $PORT --count 5 --secs $SECS --profile crypt --prefix t118_ > logs/t118_bots.log 2>&1
 RC=$?
 kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true
-echo "[t117] Bots RC=$RC"
-echo "[t117] Replay check:"
-./build/manual/bh_server --replay-world logs/t117.bwj 2>&1 | tail -5
-echo "[t117] Bot summary:"
-cat logs/t117_bots.log | grep -E "SUMMARY|CRYPT|boss|campaign" | tail -20
+echo "[t118] Bots RC=$RC"
+echo "[t118] Replay check:"
+./build/server/bh_server --replay-world logs/t118.bwj 2>&1 | tail -5
+echo "[t118] Bot summary:"
+cat logs/t118_bots.log | grep -E "SUMMARY|CRYPT|boss|campaign" | tail -20
