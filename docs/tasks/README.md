@@ -606,6 +606,25 @@ pins (`test_t112_spawn_epoch.cpp`, suite 201/328,962). Fresh gate leg
 F1/F2/F3/F5 replay-neutral. Lineage note: PR #9's epoch-19 collision —
 second merger re-bumps to 20. Devlog 0074.
 
+## Done — T-113 (2026-09-12): L9 logistics scoping (design, no code)
+
+T-113 DESIGN: 30-trip tax is bot belt policy (4-deep, buys 2/visit) — server
+already permits 16-deep stockpiling (no depletion, stack 16). Armor quantified
+as margin (~1 hp/hit), not pace. T-114 scoped: bots v3 flask belt + t090/t100
+repeat discipline, no server change/epoch. Economy levers reopen only on
+gold-starved re-run. Devlog 0075.
+
+## Done — T-114 (2026-09-12): bots v3 flask belt — logistics lane closed with data
+
+T-114 BOT-ONLY: belt 4→16 buy-to-depth (240g gate, 90g floor). Template
+bit-exact from t100.bwj; 2×540s legs at epoch 18, replays mm=0. Stops
+24–30 → 8/5 (criterion PASS, 3–5× cut) but bar 73.5%/55% avg (criterion
+FAIL — pace unchanged, hurt rose): the camp's respawn+TTK throughput, not
+vial flow, owns L9 pace. Logistics lane CLOSED; faster L9 = content-pacing
+question (director call, nothing auto-triggers). No epoch bump (bots-only).
+Devlog 0076 · card `done/T-114.md` · supersedes the open-row text landing
+with PR #12 (T-113).
+
 ## Done — T-115 (2026-09-12): lineage reconciliation (epoch 20)
 
 T-115 MERGE: task/T-112-t111-epoch-followup into task/T-104-review-fixes.
@@ -621,7 +640,7 @@ superseded. Devlog 0077 · card `done/T-115.md`.
 
 | Card | Title | Notes |
 |---|---|---|
-| L9 pace logistics | Ladder open per T-090/T-100 (n=2, ~80% bar/leg, zero widow/L11); binding constraint is vial flow + bridge travel (30 shop trips/leg), not mob stats | needs a scoped logistics card (vial stockpiling? armor path?) if faster L9 wanted — T-095 gate stays shut for stat tuning |
+| L9 pace logistics → **T-114** | Ladder open per T-090/T-100 (n=2, ~80% bar/leg, zero widow/L11); binding constraint is vial flow + bridge travel (30 shop trips/leg), not mob stats | **scoped by T-113 (devlog 0075)**: the 30-trip tax is bot belt policy (4-deep, buys 2) — server already allows 16-deep stockpiling. T-114 = bots v3 flask belt (tools/bots only, no epoch), then t090/t100-discipline re-run ×2; economy/content levers reopen only on gold-starved re-run — T-095 stays shut |
 | Bot bad-leg deaths | v5c legs 3/5 perch mode: T-074/T-077 levers measured red + reverted; T-083 closed the drift as roam-RNG (leg totals stable ~130–160, distribution roams) | reopen only on perch-clustered all-L3 legs (T-074 discipline); reproductions: leg 3/5 logs, val5 |
 
 Retired: "L8→L9 step-up, no waypoint" (T-084 opened the (60,41) camp; T-090/T-100 climbed it twice).

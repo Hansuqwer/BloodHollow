@@ -1,0 +1,47 @@
+{
+ "input": "assets/aigen/npcs/confessor/sheet.png",
+ "kind": "sheet",
+ "cell": [
+  32,
+  48
+ ],
+ "anchor_y": 42,
+ "hour": 2.0,
+ "night_overlay": [
+  18,
+  22,
+  70,
+  145
+ ],
+ "hover": 0,
+ "gates": {
+  "colours_le_max_all_frames": true,
+  "feet_on_anchor_all_frames": true,
+  "r_luma_day_ge_gate": true,
+  "r_luma_night_ge_gate": true
+ },
+ "engine_validated": false,
+ "terrain_luma": 51.0,
+ "loader_rule_replica": "clean",
+ "frames_total": 32,
+ "anims": {
+  "idle": {
+   "frames": 4,
+   "fps": 4,
+   "max_colours": 10,
+   "feet_ok_all_dirs": true
+  }
+ },
+ "r_luma": {
+  "body_mean": 86.5,
+  "terrain_mean": 51.0,
+  "delta_day": 35.5,
+  "body_mean_incl_outline": 75.6,
+  "delta_day_incl_outline": 24.6,
+  "definition": "rulebook R-LUMA = opaque body pixels EXCLUDING the #1a1214 outline; the B0 style_tile_audit.json included the outline (hence its lower 23.7)",
+  "body_night": 52.3,
+  "terrain_night": 37.2,
+  "delta_night": 15.2
+ },
+ "failures": []
+}
