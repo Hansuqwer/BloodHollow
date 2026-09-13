@@ -206,7 +206,14 @@ FrontRunner frontRunnerOf(const Bot& b) {
     if (cands[i].x > maxX) maxX = cands[i].x;
   FrontRunner fr;
   for (int i = 0; i < nc; ++i) {
-    if (cands[i].x >= maxX - 1 && (fr.id == 0 || cands[i].id < fr.id)) {
+    // T-118 r14b: dead-band 2 (was 1). The r13 return-march traces showed
+    // five ids trading the runner role while the band sat tight: the
+    // 1-tile staleness in peer positions jittered the max-x window by
+    // ±2 and the election flip-flopped every tick (journal: paths to
+    // (14,14) and (30,14) alternating every few seconds, 900 s burned
+    // within sight of town). A 2-tile band keeps the brain put while
+    // the column is bunched; a real breakaway (>2 ahead) still takes it.
+    if (cands[i].x >= maxX - 2 && (fr.id == 0 || cands[i].id < fr.id)) {
       fr.id = cands[i].id;
       fr.x = cands[i].x;
       fr.y = cands[i].y;
