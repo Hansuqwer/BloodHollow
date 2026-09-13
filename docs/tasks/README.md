@@ -705,6 +705,51 @@ Squash-merged `7b2e9b8`, branch deleted. **The Sisyphus ladder is fixed**
 T-122 = pledge-lite (Track B2). Standing prompts amended (epoch 21,
 schema v11, l-line v3 grammar). Devlog 0083 · card `done/T-121.md`.
 
+## Done — T-118 series (2026-09-13): M3 gate, r8→r17 raider series (bot-side measurement)
+
+T-118 BOT-ONLY (raider profile): ten gate legs (r9–r17) at the Thornwall
+Crypt → Drowned Crypt Depths gate, five-bot mixed-kit party `m3g__00..04`,
+every journal replayed bit-exact. Machinery: one-brain column,
+direction-aware runner election (min-x on the west map-1 march) + dead-band
+2, pile-node wait-immunity, swing-and-ride point-blank, guarded desync
+re-adoption (stand-on-node ≤2, never node k−1); TEMP `[dbg]`/`fr/q/qT0`
+trace scaffolding stripped at close-out. **Verdict: hard gate (reach the
+font) PASSED once** — leg r9, 3/5 bots into map 5 (692.9/692.5/617.1 s),
+boss_sight, clock expired before engagement. **Boss verdict NOT
+established** — no leg engaged the Gravemother; r14 restored r9's posture
+and did not reproduce the reach, so r9 is luck-dependent. Blocker is
+content-side: the map-3 respawn-swarm attrition wall (racks' 30 s respawn +
+cocoon widows + barrow-ring convergence); r17 at 1800 s budget = deaths
+26/22/16/4/16, zero map-5 entries. Disclosed staging: `tools/m3_topup.sh`
+seeds `class_id` (the in-game kit oath rejects L13) + inv/stat rows,
+server-down only. Epoch stays 21 (bots/docs/logs only). Devlog 0084 · card
+`done/T-118-m3-gate-raider-series.md` · handover `docs/handover/T-118-r17.md`
+(§4 do-not-retry, §5 untried content-side fixes) · `logs/m3_gate.bwj`
+force-added. *Row added by the T-124 wave — PR #25 shipped the card without
+a board row.*
+
+## Done — T-124 (2026-09-13): PR #25 merge wave — the gate series lands; #24 closed superseded
+
+T-124 WAVE: director-directed merge (overriding never-self-merge for this
+wave). PR #25 (`arena/01a09acb-bloodhollow`, `9163617`, 14 commits) verified
+MERGEABLE/CLEAN + 4 green checks with master unmoved at `818d661`, then
+squash-merged as **`2a813ec`** with the PR title as subject. PR #24 (r8
+lineage, CONFLICTING) **closed unmerged** as superseded — its four r8
+commits are cherry-picked into the merged series. Post-merge battery on
+master: 209/209 · 329,052, ctest 2/2, duel pin `b273be661b54673a`,
+`m3_gate.bwj` replay `ticks=36042 sessionCmds=5933 hashes=360 mismatches=0
+entities=189` (epoch 21 = build 21, guard did not refuse), `t120.bwj` mm=0,
+guard refuses `t118.bwj` (20 vs 21) exit 4. Epoch 21 / wire 237 / schema v11
+untouched (diff is tools/docs/logs only). Sandbox taxes recorded: shallow
+clone → `--unshallow`; no cmake/ninja → pip `--break-system-packages`; apt
+blocked → headless preset (3 client-law TUs left to CI); `bh_maps` ALL-target
+must be built or 4 `loadZone` tests fail and replay cannot open the maps;
+replay is `bh_server --replay-world` (there is no `bh_replay`). **Queue
+flags:** PRs #22/#23 (T-122/T-123) now CONFLICT in `tools/bots/main.cpp`
+(merge-tree verified on both heads) and carry devlog 0084/0085, which master
+has taken — they renumber on merge. Devlog 0085 · card `done/T-124.md` ·
+next card **T-125**, next devlog **0086**.
+
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
 | Card | Title | Notes |
