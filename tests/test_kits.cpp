@@ -107,6 +107,27 @@ TEST_CASE("T-053: kit-dispatch gating (wrong kit/channel = silent no-op)") {
   w.trySkill(*w.find(gid), 5, rat->id);
   CHECK(w.find(gid)->mp == 24);           // 30 - 6
   CHECK(w.find(rat->id)->hp < mobHp0);    // bolt landed
+
+  // T-125: and the Cultist may NOT channel Firebolt — kits.h gives ch5 to
+  // the Gravecaller (unlock L1) and leaves the Cultist's at 0 ("kit may not
+  // channel it"), so trySkill drops the cast at the unlock gate before
+  // tryFirebolt: no MP paid, no damage. The T-118 raider harness spent its
+  // whole r8->r17 series gating its Firebolt/kiter role on kitClass 3 on the
+  // strength of a code comment that had the two kits backwards, so every
+  // bolt the "kiter" sent was silently dropped here and the party fought the
+  // gauntlet and the Gravemother melee-only. Pinning both directions so the
+  // channel owner is never inferred from a comment again.
+  CHECK(content::kitSkillUnlock(content::kKitCultist, 5) == 0);
+  CHECK(content::kitSkillUnlock(content::kKitGravecaller, 5) == 1);
+  CHECK(content::kitSkillUnlock(content::kKitCultist, 6) == 9);   // Chorus is hers
+  CHECK(content::kitSkillUnlock(content::kKitGravecaller, 6) == 0);
+  auto* c = spawnP(w, "choir", 4, 5, content::kKitCultist);
+  const std::uint32_t cid2 = c->id;
+  w.find(cid2)->mp = 30;
+  const std::uint32_t mobHp1 = w.find(rat->id)->hp;
+  w.trySkill(*w.find(cid2), 5, rat->id);
+  CHECK(w.find(cid2)->mp == 30);          // no payment: rejected at the gate
+  CHECK(w.find(rat->id)->hp == mobHp1);   // no damage: bolt never happened
 }
 
 TEST_CASE("T-054: Mend — math, gates, targeting, CD, MP") {

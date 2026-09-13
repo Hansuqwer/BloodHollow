@@ -750,6 +750,37 @@ flags:** PRs #22/#23 (T-122/T-123) now CONFLICT in `tools/bots/main.cpp`
 has taken — they renumber on merge. Devlog 0085 · card `done/T-124.md` ·
 next card **T-125**, next devlog **0086**.
 
+## Done — T-125 (2026-09-13): M3 gate follow-on r18→r20 — the reach stops being luck
+
+T-125 BOT-ONLY (raider profile; no server/sim change, epoch stays 21). Three
+900 s legs, every journal replayed bit-exact. **r18** restored r9's map-1
+posture (individual return march + cap-cross q>=2, keeping r16b's
+election/re-adoption): 0 map-5 entries, deaths 12/4/6/2/8, but **all five
+reached map-3 x=38-39** (barrow corridor) vs r17's x=24. **r19** added
+handover 5 fix #2 — **distance-aligned marks** (nearest-first; per-peer
+last-seen hp is stale, distance is the only field a 3-tile-tight column
+agrees on): **3/5 map-5 entries at 147.1/147.8/196.4 s** — ~4x faster than
+r9's 617-693 s, `bossSeen=12 curse=2 slam=4 kills=0`. **r20** fixed a bug the
+r19 forensics exposed: the Firebolt cast and kiter band were gated on
+`kitClass == 3` (Cultist), but kits.h gives ch5 to the **Gravecaller** (L1)
+and leaves the Cultist's ch5 at 0, so `World::trySkill` dropped every such
+cast — **the whole r8->r19 series fought melee-only with a no-op "kiter"**.
+Gates moved to `kitClass == 2` and the channel table pinned in
+`tests/test_kits.cpp` (runtime-proven via `World::trySkill`): **4/5 map-5
+entries at 268.4/268.6/269.4/272.1 s**, `bossSeen=20 curse=2 slam=0`, first
+elite kills at this gate. **Boss verdict STILL NOT ESTABLISHED** — the party
+arrives on map 5 at 84-100% hp and dies crossing (3,30)->(22,3), deepest
+x=12; map 5 has a single route node and the kiter band is off there. Next:
+r21 map-5 route nodes, r22 kiter band on map 5. Also corrected:
+`m3_topup.sh` never seeded the gear/stats its own handover claimed (added,
+idempotent) — without it a cold-sandbox top-up stages a fists-and-rags L13.
+Suite **209/209 · 329,058** (+6), ctest 2/2, duel pin `b273be661b54673a`,
+r17 journal preserved byte-identical (md5 `b4c0cf3f…`). Devlog 0086 · card
+`done/T-125.md` · handover `docs/handover/T-125-r18-r20.md` · journals
+`logs/m3_gate_r{18,19,20}.bwj` force-added. Next card **T-126**, next devlog
+**0087**.
+
+
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
 | Card | Title | Notes |
