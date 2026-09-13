@@ -60,3 +60,41 @@ Scope notes (director-visible):
   rules are as-landed; if the gate reveals a sim bug, that is a new card).
 - Client rendering of the raid.
 - Any journal-epoch / wire / schema bump (see Context).
+
+## Verdict (close-out, 2026-09-13, branch arena/01a09acb-bloodhollow)
+
+**Hard gate (reach the font): PASSED once.** Leg **r9** (900 s, port 7904):
+three of five bots entered map 5 and sighted the Gravemother; the clock
+expired before any engagement. Replay clean.
+
+```
+[raid] m3g__00 kit=1 deaths=12 lvl=12 xp=5356 map5=692.9 boss_sight=693.2 boss_kill=n/a TTK=n/a
+[raid] m3g__01 kit=1 deaths=6  lvl=12 xp=8340 map5=n/a
+[raid] m3g__02 kit=1 deaths=8  lvl=12 xp=7426 map5=n/a
+[raid] m3g__03 kit=1 deaths=10 lvl=12 xp=6919 map5=692.5 boss_sight=692.5
+[raid] m3g__04 kit=1 deaths=10 lvl=12 xp=7000 map5=617.1 boss_sight=617.1
+[replay] OK ticks=18042 sessionCmds=3659 hashes=180 mismatches=0 entities=185
+```
+
+**Boss verdict: NOT ESTABLISHED.** Ten follow-up legs (r10-r17, incl. a
+30-min r17) never reached map 5 again; none ever engaged the boss.
+Final measurement leg **r17** (1800 s, r16b binary): deaths
+26/22/16/4/16 (84), map5=n/a all five, `[replay] OK ticks=36042
+sessionCmds=5933 hashes=360 mismatches=0`. Journal of record:
+`logs/m3_gate.bwj` (r17, force-added). r9's font-reach journal was
+overwritten by later legs before archiving; its [raid] evidence is
+`logs/m3_gate_bots_r9.log`.
+
+**Finding.** The font is reachable (r9; also r10 entered map 5 at 131 s
+before a death spiral), but the reach is timing/luck-dependent: r14
+restored r9's exact combat posture and did not reproduce it. The
+sustainable blocker is the map-3 respawn-swarm attrition wall (racks'
+30 s respawn + cocoon widows + barrow-ring convergence): every wave pays
+2-3 of 5 before the depths stairs, and the respawn cycle compounds slower
+than any budget tried (15 min and 30 min both failed). Bot-side iteration
+converged (march/combat stable since r14, 10-18 deaths per 15-min leg);
+the remaining wall is content-side. Full series history, failure modes and
+next moves: `docs/handover/T-118-r17.md`.
+
+Evidence: `logs/m3_gate_bots_r{9..17}.log` (verdicts),
+`docs/devlog/0084-*.md`, PR #24 lineage.

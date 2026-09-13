@@ -764,14 +764,10 @@ int run(int argc, char** argv) {
       // journal shows WHAT was sent but not WHICH state sent it.
       if (raider && b.welcomed && t - b.lastTraceAt >= 5.0) {
         b.lastTraceAt = t;
-        // TEMP r8d debug (remove before merge): fr election + quorum.
-        const FrontRunner dfr = frontRunnerOf(b);
-        const int dq =
-            (b.campX >= 0) ? quorumNear(b, b.campX, b.campY, 6) : 0;
         std::fprintf(stderr,
                      "[trace] %-9s t=%.0f (%d,%d) map=%u ret=%d rest=%.0f "
                      "route=%d camp=(%d,%d) nd=%d hp=%d%% bestD=%d "
-                     "swarm=%d nearTown=%d fr=%u@(%d,%d) q=%d qT0=%.0f\n",
+                     "swarm=%d nearTown=%d\n",
                      b.name.c_str(), t, b.tileX, b.tileY, b.mapId,
                      (int)b.retreating, b.routeRest, b.routeIdx, b.campX,
                      b.campY,
@@ -783,14 +779,7 @@ int run(int argc, char** argv) {
                      b.swarmDebug,
                      (int)(b.mapId == 1 && b.homeX >= 0 &&
                            std::abs(b.tileX - b.homeX) < 4 &&
-                           std::abs(b.tileY - b.homeY) < 4),
-                     dfr.id, dfr.x, dfr.y, dq, b.quorumWaitT0);
-        std::fprintf(stderr,
-                     "[dbg] %-9s own=%u welcomed=%d peer=%d rru=%.1f nm=%.1f "
-                     "wr=%d kit=%d\n",
-                     b.name.c_str(), b.ownId, (int)b.welcomed,
-                     (int)(b.peer != nullptr), b.routeRestUntil, b.nextMoveAt,
-                     (int)b.wasRunner, (int)b.kitClass);
+                           std::abs(b.tileY - b.homeY) < 4));
       }
       if (campaign || raider) {
         if (b.campaignT0 < 0.0) {
