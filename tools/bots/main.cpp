@@ -201,19 +201,24 @@ FrontRunner frontRunnerOf(const Bot& b) {
     cands[nc++] = {mid, ei->second.x, ei->second.y};
   }
   if (nc == 0) return FrontRunner{};
-  int maxX = -1;
-  for (int i = 0; i < nc; ++i)
-    if (cands[i].x > maxX) maxX = cands[i].x;
+  // T-118 r16: direction-aware extremum. Maps 3/5 march east — the front
+  // is max-x. Map 1 (the town -> hatch return march) marches WEST: max-x
+  // elected the REARMOST bot, so the column anchored on its own tail and
+  // ping-ponged (every r13/r14/r15 leg burned its budget in sight of
+  // town). Forward-most along the route = min-x on map 1.
+  const bool west = (b.mapId == 1);
+  int refX = west ? 100000 : -1;
+  for (int i = 0; i < nc; ++i) {
+    if (west ? (cands[i].x < refX) : (cands[i].x > refX)) refX = cands[i].x;
+  }
   FrontRunner fr;
   for (int i = 0; i < nc; ++i) {
-    // T-118 r14b: dead-band 2 (was 1). The r13 return-march traces showed
-    // five ids trading the runner role while the band sat tight: the
-    // 1-tile staleness in peer positions jittered the max-x window by
-    // ±2 and the election flip-flopped every tick (journal: paths to
-    // (14,14) and (30,14) alternating every few seconds, 900 s burned
-    // within sight of town). A 2-tile band keeps the brain put while
-    // the column is bunched; a real breakaway (>2 ahead) still takes it.
-    if (cands[i].x >= maxX - 2 && (fr.id == 0 || cands[i].id < fr.id)) {
+    // T-118 r14b: dead-band 2. The 1-tile staleness in peer positions
+    // jitters the extremum by ±2; a 2-tile band keeps the brain put
+    // while the column is bunched, a real breakaway (>2 ahead) takes it.
+    const bool inBand =
+        west ? (cands[i].x <= refX + 2) : (cands[i].x >= refX - 2);
+    if (inBand && (fr.id == 0 || cands[i].id < fr.id)) {
       fr.id = cands[i].id;
       fr.x = cands[i].x;
       fr.y = cands[i].y;
@@ -820,6 +825,33 @@ int run(int argc, char** argv) {
             b.campY = ry;
             b.campIsPortal = rportal;
             b.routeRest = rrest;
+          }
+          // T-118 r16: desync re-adoption. Retreat drops the walker at the
+          // safe node but routeIdx survives intact: the r15 leg's 03
+          // resumed at route=2 from camp (1,22) and set off across the
+          // whole gauntlet solo (31 tiles of racks, cocoon and ring). If
+          // the current node is far (>8), re-adopt the nearest node —
+          // same scan the runner transition uses.
+          if (b.campX >= 0 &&
+              std::max(std::abs(b.tileX - b.campX),
+                       std::abs(b.tileY - b.campY)) > 8) {
+            int best = 100000, bi = b.routeIdx;
+            for (int i = 0; i < raiderRoute(b.mapId, 0, &rx, &ry, &rrest, &rportal);
+                 ++i) {
+              raiderRoute(b.mapId, i, &rx, &ry, &rrest, &rportal);
+              const int d = std::max(std::abs(rx - b.tileX),
+                                     std::abs(ry - b.tileY));
+              if (d <= best) { best = d; bi = i; }
+            }
+            if (bi != b.routeIdx) {
+              b.routeIdx = bi;
+              if (raiderRoute(b.mapId, b.routeIdx, &rx, &ry, &rrest, &rportal)) {
+                b.campX = rx;
+                b.campY = ry;
+                b.campIsPortal = rportal;
+                b.routeRest = rrest;
+              }
+            }
           }
           // retreat target: town on map 1; on map 3 the entry hall's far
           // corner (1,22) — T-118 r8 moved it from (6,17): the racks'
