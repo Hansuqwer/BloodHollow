@@ -785,6 +785,12 @@ int run(int argc, char** argv) {
                            std::abs(b.tileX - b.homeX) < 4 &&
                            std::abs(b.tileY - b.homeY) < 4),
                      dfr.id, dfr.x, dfr.y, dq, b.quorumWaitT0);
+        std::fprintf(stderr,
+                     "[dbg] %-9s own=%u welcomed=%d peer=%d rru=%.1f nm=%.1f "
+                     "wr=%d kit=%d\n",
+                     b.name.c_str(), b.ownId, (int)b.welcomed,
+                     (int)(b.peer != nullptr), b.routeRestUntil, b.nextMoveAt,
+                     (int)b.wasRunner, (int)b.kitClass);
       }
       if (campaign || raider) {
         if (b.campaignT0 < 0.0) {
@@ -832,18 +838,40 @@ int run(int argc, char** argv) {
           // whole gauntlet solo (31 tiles of racks, cocoon and ring). If
           // the current node is far (>8), re-adopt the nearest node —
           // same scan the runner transition uses.
+          // r16b: the probe leg froze for 900 s on the naive version: the
+          // machine advances routeIdx k -> k+1 while the walker still
+          // stands on node k, so cd to the NEW camp is huge and this
+          // block snapped routeIdx straight back to k — an infinite
+          // loop, zero paths sent (journal was empty). Skip the snap
+          // when the bot stands on the node it just left (dist <= 2):
+          // that is a fresh advance, not a desync.
           if (b.campX >= 0 &&
               std::max(std::abs(b.tileX - b.campX),
                        std::abs(b.tileY - b.campY)) > 8) {
-            int best = 100000, bi = b.routeIdx;
-            for (int i = 0; i < raiderRoute(b.mapId, 0, &rx, &ry, &rrest, &rportal);
-                 ++i) {
+            // Snap only when the walker STANDS ON a route node (d <= 2) —
+            // the retreat-drop signature. Mid-walk the bot is never within
+            // 2 of any node (the nodes sit >= 6 apart), so a walking
+            // column can never be rewound. And never snap onto the node
+            // just left (routeIdx-1): right after the machine advances
+            // k -> k+1 the walker still stands on node k, and snapping
+            // there is exactly the r16 probe-leg infinite loop (900 s
+            // frozen at staging, journal empty).
+            int px = -1000, py = -1000;
+            double prest = 0.0;
+            bool pportal = false;
+            if (b.routeIdx > 0)
+              raiderRoute(b.mapId, b.routeIdx - 1, &px, &py, &prest, &pportal);
+            int bi = -1;
+            const int nn = raiderRoute(b.mapId, 0, &rx, &ry, &rrest, &rportal);
+            for (int i = 0; i < nn; ++i) {
               raiderRoute(b.mapId, i, &rx, &ry, &rrest, &rportal);
-              const int d = std::max(std::abs(rx - b.tileX),
-                                     std::abs(ry - b.tileY));
-              if (d <= best) { best = d; bi = i; }
+              if (std::max(std::abs(rx - b.tileX), std::abs(ry - b.tileY)) > 2)
+                continue;
+              if (i == b.routeIdx - 1) continue;  // the node just left
+              bi = i;
+              break;
             }
-            if (bi != b.routeIdx) {
+            if (bi >= 0 && bi != b.routeIdx) {
               b.routeIdx = bi;
               if (raiderRoute(b.mapId, b.routeIdx, &rx, &ry, &rrest, &rportal)) {
                 b.campX = rx;
