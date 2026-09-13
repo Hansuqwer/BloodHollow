@@ -1665,8 +1665,15 @@ int run(int argc, char** argv) {
           // machine so the runner's routeIdx never advanced — the column
           // ground in circles around (22,21) until the leg clock died.
           // March-first: the route walk IS the movement, the swing rides it.
-          if (!(raider && bestD > 1 &&
-                (b.mapId == 1 || b.mapId == 3 || b.mapId == 5)))
+          // T-118 r12: on the gauntlet maps the POINT-BLANK swing rides it
+          // too. r11 pinned the millers at the node pile: the fall-through
+          // demanded bestD > 1, so a bot engaged at d==1 stood and traded
+          // with the swarm-9 overlap pile (never re-entering the route
+          // machine / column glue) until it died. Swing + keep walking:
+          // the AttackRequest above never cancels a path.
+          if (!(raider &&
+                ((b.mapId == 1 && bestD > 1) || b.mapId == 3 ||
+                 b.mapId == 5)))
             continue;
         }
         // nothing near: campaign/crypt/raider walks the route instead of milling
@@ -1922,17 +1929,27 @@ int run(int argc, char** argv) {
                 // together (election + holdStack + stack retreat).
                 const bool pileNode =
                     b.mapId == 3 && b.campX == 22 && b.campY == 21;
-                if ((b.mapId == 3 || b.mapId == 5) && !pileNode &&
-                    b.quorumWaitT0 == 0.0) {
-                  if (quorumNear(b, b.campX, b.campY, 6) < 3)
-                    b.quorumWaitT0 = t;
-                }
-                if (b.quorumWaitT0 != 0.0) {
-                  if (t - b.quorumWaitT0 < 45.0) {
-                    b.nextMoveAt = t + 0.8;  // mill in place: column forms
-                    continue;
+                if (pileNode) {
+                  // T-118 r12: the pile node is wait-IMMUNE. r11 died
+                  // exactly here: a wait started at the previous waypoint
+                  // (route-table confusion just past the hatch) bled into
+                  // the (22,21) arrival — the honor branch milled the
+                  // stack on the double-leash overlap under swarm 9 and
+                  // it was eaten alive. Drop any residual wait and go.
+                  b.quorumWaitT0 = 0.0;
+                } else {
+                  if ((b.mapId == 3 || b.mapId == 5) &&
+                      b.quorumWaitT0 == 0.0) {
+                    if (quorumNear(b, b.campX, b.campY, 6) < 3)
+                      b.quorumWaitT0 = t;
                   }
-                  b.quorumWaitT0 = 0.0;  // cap: advance anyway
+                  if (b.quorumWaitT0 != 0.0) {
+                    if (t - b.quorumWaitT0 < 45.0) {
+                      b.nextMoveAt = t + 0.8;  // mill in place: column forms
+                      continue;
+                    }
+                    b.quorumWaitT0 = 0.0;  // cap: advance anyway
+                  }
                 }
                 ++b.routeIdx;
               }
