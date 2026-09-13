@@ -1900,7 +1900,19 @@ int run(int argc, char** argv) {
                 // are within 6 tiles of the node; capped at 45 s (the
                 // laggards DO arrive, just slowly — progress over
                 // perfection).
-                if ((b.mapId == 3 || b.mapId == 5) && b.quorumWaitT0 == 0.0) {
+                // T-118 r9: the unbroken pass. The (22,21) node sits inside
+                // BOTH leash fields (racks leash 14 + cocoon leash 10):
+                // every quorum hold there turned into the double-leash pile
+                // that cost 2-3 of 5 in every full r8 leg (r8e4/r8f/r8g).
+                // No wait at the pile node — the runner advances on arrival
+                // and the stack crosses the overlap rect in ~10-15 s, before
+                // the 30 s respawn can reform the swarm. The r4 design
+                // intent, restored now that the column actually holds
+                // together (election + holdStack + stack retreat).
+                const bool pileNode =
+                    b.mapId == 3 && b.campX == 22 && b.campY == 21;
+                if ((b.mapId == 3 || b.mapId == 5) && !pileNode &&
+                    b.quorumWaitT0 == 0.0) {
                   if (quorumNear(b, b.campX, b.campY, 6) < 3)
                     b.quorumWaitT0 = t;
                 }

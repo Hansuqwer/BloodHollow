@@ -26,6 +26,21 @@ if len(names) != 5:
 # meant the party arrived with empty belts).
 marks = ",".join("?" * len(names))
 cur.execute(f"UPDATE characters SET level=13, xp=0, stat_points=0, gold=600 WHERE name IN ({marks})", names)
+# T-118 r10: disclosed kit seeding. world.cpp kitChoose() only accepts the
+# in-game /kit oath when unsworn (class_id 0) or sworn at L1 — a character
+# staged at L13 with the creation default class_id=1 (Ravager) has the oath
+# window CLOSED, which is why every r9 bot stayed kit=1 (no choir, no mend —
+# the [raid] lines proved it). Same remedy as master's crypt-profile pre-seed:
+# class_id per bot (00/04 ravager, 01/03 cultist menders, 02 gravecaller
+# kiter), per the card's mixed-kit line. Stats stay as staged (7/11/6);
+# kit stat-bases are not re-applied by direct seeding — disclosed.
+for nm in names:
+    want = 1                                    # ravager (default)
+    if nm.endswith("_01") or nm.endswith("_03"):
+        want = 3                                # cultist
+    elif nm.endswith("_02"):
+        want = 2                                # gravecaller
+    cur.execute("UPDATE characters SET class_id=? WHERE name=?", (want, nm))
 # Staging: the party regroups at the crypt entry-hall camp (1,22) — the r8
 # safe node, outside every leash. A leg whose bots persist mid-ossuary
 # (17,18) would otherwise run the ghoul racks WEST first (the route's node
