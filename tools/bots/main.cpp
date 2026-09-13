@@ -29,6 +29,7 @@ struct SeenEnt {
   int x = 0, y = 0;
   std::uint8_t kind = 0;  // 0 = player
   int level = 0;          // mob level (EntitySpawn); 0 = unknown
+  std::uint32_t hp = 0;   // T-118 r7: last seen hp (focus-fire targeting)
 };
 
 // Route v5: whether a mob can pile onto us at all.  wireKind is the 1-based
@@ -103,7 +104,88 @@ struct Bot {
   std::uint64_t chorusCasts = 0, massCasts = 0, hasteCasts = 0;
   std::uint64_t blessCasts = 0, mendCasts = 0, mendNoSee = 0, mendHurtCnt = 0;
   std::uint64_t rcvReset = 0, rcvMember = 0; std::uint32_t lastResetPid = 0;
+  // T-118 M3 gate: raider profile state (march/telegraph-dodge/boss telemetry)
+  std::uint8_t statPoints = 0;   // from OwnStats; VIT-assign while banked
+  std::uint32_t xp = 0;          // from OwnStats (summary line)
+  double tMap5Entry = -1.0;      // seconds into the leg, first map-5 Welcome
+  std::uint32_t bossId = 0;      // Gravemother entity id (wire kind 9, L14)
+  double tBossSight = -1.0;      // first EntitySpawn of her
+  double tBossKilled = -1.0;     // CombatEvent kill on her (party TTK source)
+  double slamDodgeUntil = 0.0;   // kind-15 telegraph on me: move until this t
+  double nextDodgePathAt = 0.0, nextStatAt = 0.0;
+  double nextFireboltAt = 0.0, nextIronAt = 0.0;
+  std::uint64_t eliteKills = 0, trashKills = 0;  // wire kinds 10 / 7,8
+  std::uint64_t dodges = 0;                      // slam-dodge windows entered
+  // T-118 r3: staged-push route (the crypt is a single-corridor gauntlet —
+  // legs 1-2 died to straight-through pulls; nodes + rests chew it down)
+  int routeIdx = 0;
+  double routeRest = 0.0;         // current node's rest seconds
+  double routeRestUntil = 0.0;    // resting at the node until this t
+  int safeX = -1, safeY = -1;     // retreat target for the raider (town/ossuary)
+  double retreatT0 = 0.0;         // retreat time-cap (soft-lock guard)
+  double lastTraceAt = 0.0;       // 5 s state-trace pace
+  int bestDDebug = 100;           // last targeting pass (trace only)
+  int swarmDebug = 0;
 };
+
+// T-118 r4 route table: node x/y, rest seconds on arrival, portal flag.
+// rest==0 = waypoint (advance on arrival; the push never stops mid-gauntlet).
+// Map 1: spawn -> town (resupply) -> chapel edge (regroup) -> the hatch.
+// Map 3 (the crypt is four rooms, verified against mapgen): entry hall
+// (0-12,12-24, stairs_up at (0,17)) / ossuary gallery (16-46,14-22, ghoul
+// racks 18-25,15-20) / candle crypt (16-30,24-34, widow cocoon 24-29,26-31,
+// entry (24,30)) / bone barrow (34-46,2-10, cantor 34-37,6-8 + pulpit
+// 42-45,3-6 + sexton 44-45,5-7, depths stairs at (44,6)). The r3 node
+// (40,18) died leg 3: it sat on the racks' leash edge (14 from the (25,15)
+// corner) AND the cocoon's, so two chased packs met the resting party
+// (swarm 10, three deaths). r4: the party pushes the corridor spine —
+// through the racks (L3: 7x64hp, a 6 s cull) and the cantor's aggro (8)
+// in one unbroken pass; the only regroup is the entry hall (6,17), a
+// separate room 12+ tiles from every anchor. The party never rests in the
+// ossuary or the barrow — there is no safe floor there.
+struct RaiderNode { int x, y; double rest; bool portal; };
+static int raiderRoute(int mapId, int idx, int* x, int* y, double* rest,
+                       bool* portal) {
+  const RaiderNode* r = nullptr;
+  int n = 0;
+  switch (mapId) {
+    case 1: {
+      static const RaiderNode r1[] = {{32, 16, 6.0, false},
+                                      {14, 14, 15.0, false},
+                                      {10, 10, 0.0, true}};
+      r = r1; n = 3; break;
+    }
+    case 3: {
+      // Node floors verified against mapgen: hall (0-12,12-24), ossuary
+      // (16-46,14-22), candle crypt (16-30,24-34), barrow (34-46,2-10);
+      // corridors hall->ossuary (12-16,17-18), ossuary->crypt (22-23,22-24),
+      // ossuary->barrow (38-39,10-14). (40,12) is a WALL — the r6 party
+      // stalled at (20,20) on an unreachable goal; (39,12) is the corridor.
+      static const RaiderNode r3[] = {{12, 17, 10.0, false},  // entry hall: regroup
+                                      {22, 21, 0.0, false},   // into the ossuary (racks)
+                                      {32, 18, 0.0, false},   // across (cantor pulls)
+                                      {39, 12, 0.0, false},   // barrow corridor
+                                      {44, 6, 0.0, true}};    // depths stairs: settle
+      r = r3; n = 5; break;
+    }
+    case 5: {
+      static const RaiderNode r5[] = {{22, 3, 0.0, false}};
+      r = r5; n = 1; break;
+    }
+    case 2: {
+      static const RaiderNode r2[] = {{0, 14, 0.0, true}};
+      r = r2; n = 1; break;
+    }
+    default: return 0;
+  }
+  if (idx < 0) idx = 0;
+  if (idx >= n) idx = n - 1;  // hold at the last node until the map changes
+  *x = r[idx].x;
+  *y = r[idx].y;
+  *rest = r[idx].rest;
+  *portal = r[idx].portal;
+  return n;
+}
 
 double nowSec() {
   using namespace std::chrono;
@@ -125,6 +207,7 @@ int run(int argc, char** argv) {
   std::string profile = "wander";
   bool reckless = false;  // M2 gate hires: no flasks, no shopping
   int targetLevel = 8;  // campaign profile: stop condition (OwnStats level)
+  int partySize = 0;    // T-118: N-party formation (>=3 replaces S13 pair-up)
   std::string visitGoal = "";
 
   for (int i = 1; i < argc; ++i) {
@@ -140,10 +223,12 @@ int run(int argc, char** argv) {
     else if (a == "--reckless") reckless = true;
     else if (a == "--visit") visitGoal = next("");  // "x,y" anchor: path into reach
     else if (a == "--target-level") targetLevel = std::atoi(next("8"));
+    else if (a == "--party-size") partySize = std::atoi(next("0"));
     else {
       std::fprintf(stderr,
                    "usage: bh_bots [--host H] [--port P] [--count N] [--secs S] [--map M] "
-                   "[--prefix P] [--profile wander|fighter|pilgrim|campaign] [--target-level N]\n");
+                   "[--prefix P] [--profile wander|fighter|pilgrim|campaign|raider] "
+                   "[--target-level N] [--party-size N]\n");
       return 2;
     }
   }
@@ -214,10 +299,15 @@ int run(int argc, char** argv) {
             if (pv.id == bh::proto::kIdWelcome) {
               bh::proto::Welcome w;
               if (w.deserialize(pv.body)) {
+                if (b.welcomed && w.mapId == 5 && b.tMap5Entry < 0.0 &&
+                    b.campaignT0 >= 0.0)  // T-118: gate entry stamp
+                  b.tMap5Entry = nowSec() - b.campaignT0;
                 b.mapId = w.mapId;
                 if (b.welcomed) {  // repeated Welcome = zone transfer (T-036)
                   b.ents.clear();
                   b.attackTarget = 0;
+                  b.routeIdx = 0;        // T-118 r3: new map, new route
+                  b.routeRestUntil = 0.0;
                 }
                 b.welcomed = true;
                 b.ownId = w.entityId;
@@ -233,10 +323,17 @@ int run(int argc, char** argv) {
                 se.y = m.y / bh::sim::Walker::kUnitsPerTile;
                 se.kind = m.kind;
                 se.level = m.level;
+                se.hp = m.hp;
                 b.ents[m.id] = se;
                 if (m.id == b.ownId) {
                   b.hp = static_cast<std::int32_t>(m.hp);
                   b.hpMax = static_cast<std::int32_t>(m.hpMax);
+                }
+                // T-118: Gravemother = wire kind 9 (mob 1009) at L14
+                if (m.kind == 9 && m.level == 14) {
+                  b.bossId = m.id;
+                  if (b.tBossSight < 0.0 && b.campaignT0 >= 0.0)
+                    b.tBossSight = nowSec() - b.campaignT0;
                 }
               }
             } else if (pv.id == bh::proto::kIdEntityDelta) {
@@ -254,6 +351,7 @@ int run(int argc, char** argv) {
                   if (it != b.ents.end()) {
                     it->second.x = tx;
                     it->second.y = ty;
+                    it->second.hp = d.hp;  // T-118 r7: focus-fire state
                   }
                 }
               }
@@ -261,18 +359,37 @@ int run(int argc, char** argv) {
               bh::proto::EntityDespawn d;
               if (d.deserialize(pv.body)) b.ents.erase(d.id);
               if (b.attackTarget == d.id) b.attackTarget = 0;
+              if (d.id == b.bossId) b.bossId = 0;  // T-118: she's gone
             } else if (pv.id == bh::proto::kIdCombatEvent) {
               bh::proto::CombatEvent m;
-              if (m.deserialize(pv.body) && m.kind == 3) {
-                if (m.attackerId == b.ownId) ++b.kills;
-                if (m.targetId == b.ownId) {  // T-040: authoritative source
-                  ++b.deaths;
-                  int kl = 0;
-                  const auto ki = b.ents.find(m.attackerId);
-                  if (ki != b.ents.end()) kl = ki->second.level;
-                  ++b.deathByKillerLevel[kl];
-                  b.lastDeathX = b.tileX;
-                  b.lastDeathY = b.tileY;
+              if (m.deserialize(pv.body)) {
+                if (m.kind == 3) {
+                  if (m.attackerId == b.ownId) ++b.kills;
+                  if (m.targetId == b.ownId) {  // T-040: authoritative source
+                    ++b.deaths;
+                    int kl = 0;
+                    const auto ki = b.ents.find(m.attackerId);
+                    if (ki != b.ents.end()) kl = ki->second.level;
+                    ++b.deathByKillerLevel[kl];
+                    b.lastDeathX = b.tileX;
+                    b.lastDeathY = b.tileY;
+                  }
+                  // T-118 raid telemetry: classify the kill, stamp the boss
+                  if (b.campaignT0 >= 0.0) {
+                    const auto te = b.ents.find(m.targetId);
+                    if (te != b.ents.end()) {
+                      if (te->second.kind == 10) ++b.eliteKills;  // Sepulcher
+                      else if (te->second.kind == 7 || te->second.kind == 8)
+                        ++b.trashKills;  // gravecaller / sexton
+                    }
+                    if (m.targetId == b.bossId && b.tBossKilled < 0.0)
+                      b.tBossKilled = nowSec() - b.campaignT0;
+                  }
+                } else if (m.kind == 15 && m.targetId == b.ownId) {
+                  // T-091 telegraph on me: the rot blooms on my tile in 3 s
+                  b.slamDodgeUntil = nowSec() + 3.5;
+                  ++b.dodges;  // one window per telegraph (only the Mother
+                               // arms kind 15 — Cantor Vex stays instant)
                 }
               }
             } else if (pv.id == bh::proto::kIdOwnStats) {
@@ -298,6 +415,8 @@ int run(int argc, char** argv) {
                 b.kitClass = m.classId;
                 b.mp = m.mp;
                 b.mpMax = m.mpMax;
+                b.xp = m.xp;             // T-118 summary
+                b.statPoints = m.statPoints;
               }
             } else if (pv.id == bh::proto::kIdPartyReset) {
               bh::proto::PartyReset m;
@@ -364,17 +483,41 @@ int run(int argc, char** argv) {
       }
       const bool pilgrimRites = (profile == "pilgrim");
       const bool campaign = (profile == "campaign");
-      if (campaign) {
+      const bool raider = (profile == "raider");  // T-118 M3 gate
+      // T-118 r3: 5 s state trace — the gate legs died silently, and the
+      // journal shows WHAT was sent but not WHICH state sent it.
+      if (raider && b.welcomed && t - b.lastTraceAt >= 5.0) {
+        b.lastTraceAt = t;
+        std::fprintf(stderr,
+                     "[trace] %-9s t=%.0f (%d,%d) map=%u ret=%d rest=%.0f "
+                     "route=%d camp=(%d,%d) nd=%d hp=%d%% bestD=%d "
+                     "swarm=%d nearTown=%d\n",
+                     b.name.c_str(), t, b.tileX, b.tileY, b.mapId,
+                     (int)b.retreating, b.routeRest, b.routeIdx, b.campX,
+                     b.campY,
+                     b.campX >= 0
+                         ? std::max(std::abs(b.tileX - b.campX),
+                                    std::abs(b.tileY - b.campY))
+                         : -1,
+                     b.hpMax > 0 ? b.hp * 100 / b.hpMax : 0, b.bestDDebug,
+                     b.swarmDebug,
+                     (int)(b.mapId == 1 && b.homeX >= 0 &&
+                           std::abs(b.tileX - b.homeX) < 4 &&
+                           std::abs(b.tileY - b.homeY) < 4));
+      }
+      if (campaign || raider) {
         if (b.campaignT0 < 0.0) {
           b.campaignT0 = t;
           // S13 auto-party: sibling pair-up so party-shared legs gate M2b-final.
           // Even-indexed bot invites its successor, odd accepts (server
           // resolves the name -> entityId before journaling; replay-exact).
           (void)0;
-          b.nextRestAt = t + 60.0 + rng.range(0, 30);  // first break a minute in
+          if (!raider)
+            b.nextRestAt = t + 60.0 + rng.range(0, 30);  // first break a minute in
         }
-        // player-paced rhythm: ~60-90s engaged, then a 6-11s door-stop
-        if (t >= b.nextRestAt) {
+        // player-paced rhythm: ~60-90s engaged, then a 6-11s door-stop.
+        // The raider fights flat — the gate measures sustained pressure.
+        if (!raider && t >= b.nextRestAt) {
           b.nextRestAt = t + 60.0 + rng.range(0, 30);
           b.restUntil = t + 6.0 + rng.range(0, 5);
         }
@@ -387,7 +530,29 @@ int run(int argc, char** argv) {
         // (7 at night) so only the north row pulls, and the leash (14 from
         // anchor) lets a retreat home break the fight cleanly.
         b.campIsPortal = false;
-        if (b.mapId == 3) {
+        b.routeRest = 0.0;
+        if (raider) {
+          // T-118 r3 staged push: the camp IS the current route node (see
+          // raiderRoute). Portal nodes settle EXACTLY (the fire check needs
+          // a settled walker); rest nodes pause; the font is a fight camp.
+          int rx = 0, ry = 0;
+          double rrest = 0.0;
+          bool rportal = false;
+          b.campX = -1;
+          if (raiderRoute(b.mapId, b.routeIdx, &rx, &ry, &rrest, &rportal)) {
+            b.campX = rx;
+            b.campY = ry;
+            b.campIsPortal = rportal;
+            b.routeRest = rrest;
+          }
+          // retreat target: town on map 1; on map 3 the ENTRY HALL (6,17) —
+          // a separate room 12+ tiles from every anchor, and one corridor
+          // from the stairs_up portal (the full pullout). The r3 ossuary
+          // node was the death spot (two leash edges meet there). Map 5 has
+          // no retreat (the measure); map 2 falls back to axis.
+          b.safeX = (b.mapId == 1) ? 32 : (b.mapId == 3) ? 6 : -1;
+          b.safeY = (b.mapId == 1) ? 16 : (b.mapId == 3) ? 17 : -1;
+        } else if (b.mapId == 3) {
           b.campX = 0; b.campY = 17; b.campIsPortal = true;   // crypt: back up
         } else if (b.mapId == 2) {
           // gate evidence gathered in early legs; fields grind is pack-country,
@@ -433,7 +598,7 @@ int run(int argc, char** argv) {
         // retry while MY roster is missing the sibling (a 1-member "party" is
         // the leader alone — invites are only done when roster size confirms)
         const bool unformed = b.party.size() < 2;
-        if (bots.size() >= 2 && unformed) {
+        if (bots.size() >= 2 && unformed && partySize < 3) {  // legacy pairs
           const size_t sib = botIdx % 2 == 0 ? botIdx + 1 : botIdx - 1;
           if (sib < bots.size() && bots[sib].welcomed && b.partyTries < 4 &&
               t >= b.nextPartyTryAt) {
@@ -445,13 +610,63 @@ int run(int argc, char** argv) {
             sendProto(b.peer, bh::proto::pack(cs));
           }
         }
-        // oath first (T-053): odd bot swears Cultist 3 s after campaign start
-        if (!b.kitSworn && botIdx % 2 == 1 && t >= b.campaignT0 + 3.0) {
-          b.kitSworn = true;
-          bh::proto::ChatSend cs;
-          cs.channel = 0;
-          cs.text = "/kit cultist";
-          sendProto(b.peer, bh::proto::pack(cs));
+        // T-118 N-party: with --party-size N (>=3) bot 0 leads and invites
+        // bots 1..N-1 in one pass (the server keeps one pending invite per
+        // invitee, renewed each round), the rest accept on the same 10 s
+        // heartbeat. Invites range 12 tiles; everyone converges on the
+        // waypoint first, so formation lands once the column is together.
+        // The raider retries without the 4-attempt cap — the gate needs the
+        // circle, and re-inviting is free (renew, not spam: 10 s cadence).
+        if (partySize >= 3 && botIdx < (size_t)partySize &&
+            bots.size() >= (size_t)partySize &&
+            b.party.size() < (size_t)partySize &&
+            t >= b.nextPartyTryAt && (raider || b.partyTries < 4)) {
+          b.nextPartyTryAt = t + 10.0;
+          ++b.partyTries;
+          if (botIdx == 0) {
+            for (int k = 1; k < partySize && k < (int)bots.size(); ++k) {
+              if (!bots[static_cast<size_t>(k)].welcomed) continue;
+              bh::proto::ChatSend cs;
+              cs.channel = 0;
+              cs.text = "/invite " + bots[static_cast<size_t>(k)].name;
+              sendProto(b.peer, bh::proto::pack(cs));
+            }
+          } else {
+            bh::proto::ChatSend cs;
+            cs.channel = 0;
+            cs.text = "/accept";
+            sendProto(b.peer, bh::proto::pack(cs));
+          }
+        }
+        // oath first (T-053/T-118): one-time, idempotent (the server's oath
+        // is one-shot — a re-say is an ordinary chat line, not a re-choose).
+        // Legacy pairs: odd swears Cultist. T-118 N-party mixed kits:
+        // 0/4 Ravager (default class, no oath), 1/3 Cultist (the menders),
+        // 2 Gravecaller (the kiter).
+        if (!b.kitSworn && t >= b.campaignT0 + 3.0) {
+          std::string oath;
+          if (partySize >= 3 && botIdx < (size_t)partySize) {
+            if (botIdx == 1 || botIdx == 3) oath = "/kit cultist";
+            else if (botIdx == 2) oath = "/kit gravecaller";
+          } else if (botIdx % 2 == 1) {
+            oath = "/kit cultist";
+          }
+          if (!oath.empty()) {
+            b.kitSworn = true;
+            bh::proto::ChatSend cs;
+            cs.channel = 0;
+            cs.text = oath;
+            sendProto(b.peer, bh::proto::pack(cs));
+          }
+        }
+        // T-118 stat bank: the raider spends unassigned points into VIT
+        // (one assign per 2 s — the server CD). hpMax = 40 + 6*lvl + 6*VIT:
+        // a banked VIT pool is the gate's survivability lever.
+        if (raider && b.statPoints > 0 && t >= b.nextStatAt) {
+          b.nextStatAt = t + 2.0;
+          bh::proto::StatAssign sa;
+          sa.stat = 1;  // VIT
+          sendProto(b.peer, bh::proto::pack(sa));
         }
         // ---- T-055 choir behavior (Cultist kit bots) --------------------
         // priority: mend any <60% party member (ranged 6), bless the leader,
@@ -492,6 +707,22 @@ int run(int argc, char** argv) {
             b.nextBlessAt = t + 240.0;
             ++b.blessCasts;
           }
+          // T-118 raid: ch4 Ironskin (Choir L3, +20% DR 5 min) — the
+          // cultist's plate against the boss swing. Shipped channel the
+          // existing bots never cast; the 190 s period outruns the 300 s
+          // duration.
+          // kitSkillUnlock returns 0 for a channel the kit CANNOT use —
+          // require a positive unlock or the ravager would spam a dead cast.
+          const std::uint8_t ironUnlock =
+              bh::content::kitSkillUnlock(b.kitClass, 4);
+          if (raider && ironUnlock > 0 && b.level >= ironUnlock &&
+              b.mp >= 15 && t >= b.nextIronAt) {
+            bh::proto::SkillUse su;
+            su.skill = 4;
+            su.targetId = b.ownId;
+            sendProto(b.peer, bh::proto::pack(su));
+            b.nextIronAt = t + 190.0;
+          }
           // T-054b choir-bot v2: kit-v2 channels. Level gates come from the
           // shared chUnlock table — the server enforces them too, so an early
           // cast is a quiet no-op, never a gamble.
@@ -512,7 +743,10 @@ int run(int argc, char** argv) {
               su.skill = 6;
               su.targetId = b.ownId;
               sendProto(b.peer, bh::proto::pack(su));
-              b.nextChorusAt = t + 150.0;
+              // T-118 raid: the Gravecaller's verse runs the gauntlet —
+              // 90 s period keeps the +5% damage near-continuous (120 s
+              // duration, 12 s server CD, 14 mp well inside regen).
+              b.nextChorusAt = t + (raider ? 90.0 : 150.0);
               ++b.chorusCasts;
             }
           }
@@ -583,28 +817,53 @@ int run(int argc, char** argv) {
         }
         if (b.campaignDone) continue;  // target reached: idle out the clock
       }
-      if (profile == "fighter" || pilgrimRites || campaign) {
+      if (profile == "fighter" || pilgrimRites || campaign || raider) {
         // nearest mob within 10 tiles -> chase / attack
         std::uint32_t bestId = 0;
         int bestD = 100;
+        std::uint32_t bestHp = 0;  // T-118 r7: focus-fire mark (raider only)
         int swarmOnUs = 0;  // Route v5: aggressive mobs within 2 tiles of US --
                             // the dive-death gauge that drives the early break
         for (const auto& kv : b.ents) {
           if (kv.second.kind == 0 || bh::content::wireIsFurniture(kv.second.kind)) continue;  // players, furniture
           const int d = std::max(std::abs(kv.second.x - b.tileX),
                                  std::abs(kv.second.y - b.tileY));
-          if (campaign && d <= 2 && entAggressive(kv.second.kind)) ++swarmOnUs;
+          // T-118 r2: the raider counts the swarm too — leg 1's 44 deaths
+          // were the raiders (campaign=false) blinding past every filter.
+          if ((campaign || raider) && d <= 2 && entAggressive(kv.second.kind))
+            ++swarmOnUs;
           if (campaign && kv.second.level > b.level + 2 && d > 1) continue;  // no walls: strike back only at point-blank
           if (campaign && t < b.restUntil && d > 1) continue;  // resting: fight back only
-          if (campaign && b.campIsPortal) continue;  // portal leg: hands off the sword —
-              // any AttackRequest path-clears; bat harassment at the chapel door
-              // otherwise livelocks the crossing (observed smoke v2)
+          // Sword-off at portal camps: any AttackRequest path-clears, and
+          // bat/ghoul harassment at the hatch livelocked the crossing
+          // (observed smoke v2). T-118: the raider inherits it for the
+          // map-1/2 crossings — but NOT the map-3 depths stairs, where the
+          // sexton seat + cantor choir + gravecaller pulpit ring the portal
+          // and the raid FIGHTS its approach to the font.
+          if (b.campIsPortal &&
+              (campaign || (raider && b.mapId != 3)))
+            continue;
+          // portal leg: hands off the sword — any AttackRequest path-clears;
+          // bat harassment at the chapel door otherwise livelocks the
+          // crossing (observed smoke v2). T-118: the map-3 leg EXEMPT — the
+          // sexton seat + cantor choir + gravecaller pulpit ring the depths
+          // stairs, and the raid FIGHTS its approach to the font.
           // Route v5c: "no new pulls" means no new pulls -- a fleeing bot must
           // still swing at whatever is already on it (see the defend block in
           // the retreat branch below).  Skipping point-blank here too left
           // bestId == 0 for the whole disengage and zeroed XP gain.
           if (campaign && b.retreating && d > 1) continue;
-          if (campaign && d > 1) {                     // pull singles: skip packed targets
+          // pull singles: skip packed targets — T-118: the Gravemother
+          // (wire kind 9, L14) is the gate objective; she is worth the pack.
+          // T-118 r2: the raider obeys it too — the cocoon's 6-widow pack
+          // at the depths entry killed leg 1's party faster than it could
+          // kill back; singles + the panic-break below chew it down.
+          // T-118 r4: in the crypt the pack cap is OFF — the gauntlet IS the
+          // packs (the 6-widow cocoon, the 7-ghoul racks, the barrow ring);
+          // a cap that skips them left the party walking through aggro
+          // taking hits it could not answer (leg 3).
+          if ((campaign || (raider && b.mapId != 3)) && d > 1 &&
+              !(kv.second.kind == 9 && kv.second.level == 14)) {
             int pack = 0;
             for (const auto& kv2 : b.ents) {
               if (kv2.first == kv.first || kv2.second.kind == 0 ||
@@ -622,11 +881,32 @@ int run(int argc, char** argv) {
             if (b.level >= 3 && pack >= 2) continue;
             if (pack > 0 && kv.second.level >= b.level - 1) continue;
           }
-          if (d < bestD) {
+          // T-118 r7: FOCUS FIRE. The r6b leg's 34 deaths were 28 L9
+          // widows: five bots each picking their own nearest widow spread
+          // the party ~0.8 bots per mark — no widow died before the party
+          // did. The raider marks the LOWEST-HP candidate instead (tie:
+          // nearest), so the five bots converge on the same dying target
+          // and finish it before the next mark matters.
+          if (raider) {
+            const bool candAgg = entAggressive(kv.second.kind);
+            const bool bestAgg =
+                bestId != 0 && entAggressive(b.ents[bestId].kind);
+            if (bestId == 0 ||
+                (candAgg && !bestAgg) ||  // threats beat wounded passives
+                (candAgg == bestAgg &&
+                 (kv.second.hp < bestHp ||
+                  (kv.second.hp == bestHp && d < bestD)))) {
+              bestId = kv.first;
+              bestD = d;
+              bestHp = kv.second.hp;
+            }
+          } else if (d < bestD) {
             bestD = d;
             bestId = kv.first;
           }
         }
+        b.bestDDebug = bestD;
+        b.swarmDebug = swarmOnUs;
         // economy (v2 grinder): at login (near vendor Marta) buy a vial; later,
         // whenever back near spawn with junk, pawn it and upgrade gear.
         if (b.nextAnvilAt == 0.0 && t > 30.0) b.nextAnvilAt = t + 1.0;
@@ -777,7 +1057,8 @@ int run(int argc, char** argv) {
         // choir-bot v2 potion priority: baseline band <50%, but with a mob in
         // swing range or a live retreat the band raises — flask before fangs.
         const bool threatAdj = bestId != 0 && bestD <= 2;
-        const int sipPct = (campaign && (b.retreating || threatAdj)) ? 65 : 50;
+        const int sipPct =
+            ((campaign || raider) && (b.retreating || threatAdj)) ? 65 : 50;
         if (!reckless && b.hpMax > 0 && b.hp * 100 < b.hpMax * sipPct) {
           for (const auto& kv : b.inv) {
             if (kv.second.itemId == 3001) {
@@ -804,25 +1085,47 @@ int run(int argc, char** argv) {
           b.nextMoveAt = t + 1.2;
           continue;  // walk home for the rite
         }
-        if (campaign) {
+        // T-118 r2: the approach keeps the campaign's full survival kit —
+        // swarm panic, hurt/critical break, the sticky heal-and-unpursued
+        // release. Map 5 is the measure itself: there the raider fights
+        // flat (vials at 65%, choir mend + ironskin); a death at the font
+        // is data for the verdict, not a re-run.
+        if (campaign || (raider && b.mapId != 5)) {
           const bool hurt = b.hpMax > 0 && b.hp * 100 < b.hpMax * 50;
           const bool critical = b.hpMax > 0 && b.hp * 100 < b.hpMax * 35;
-          if (b.level >= 3 && swarmOnUs >= 5 && !b.retreating) {
-            b.retreating = true;  // Route v5: 5+ aggressive on us is a lost
-                                  // trade at ANY hp -- break before the red.
-                                  // Threshold is high on purpose: at 3 the bot
-                                  // disengaged from every normal ghoul trade at
-                                  // the north edge and never banked XP.
-                                  // T-077 round 2 tried 4: 92 deaths vs 32
-                                  // (stuck L3, never out-levels the pack) —
-                                  // reverted to v5c 5.
-          } else if (hurt && !b.retreating && bestId != 0 && bestD <= 2) {
+          // T-118 r4: in the crypt (map 3) the raider fights flat through
+          // the gauntlet — a swarm-3 or a 50% hit used to send it pulling
+          // out (leg 3: the party fragmented on every pack and never
+          // reached the font). There the ONLY retreat is critical: sub-35%
+          // with a threat on top = pullout to the entry hall.
+          const bool gauntlet = (raider && b.mapId == 3);
+          if (b.level >= 3 && !gauntlet && swarmOnUs >= (raider ? 3 : 5) &&
+              !b.retreating) {
+            // Route v5: 5+ aggressive on us is a lost trade at ANY hp --
+            // break before the red. The threshold is high on purpose in the
+            // OPEN fields (at 3 the campaign disengaged from every normal
+            // ghoul trade and never banked XP; T-077 r2 tried 4: 92 deaths
+            // vs 32). The raider uses 3 in the open: 4 mobs within 2 tiles
+            // is already 80+ raw dmg/s and the safe node is the way out.
             b.retreating = true;
+            b.retreatT0 = t;
+          } else if (hurt && !gauntlet && !b.retreating && bestId != 0 &&
+                     bestD <= 2) {
+            b.retreating = true;
+            b.retreatT0 = t;
           } else if (critical && !b.retreating && bestId != 0 && bestD <= 6) {
             b.retreating = true;  // v2 band: sub-35% with a threat near — break
+            b.retreatT0 = t;
           } else if (b.retreating &&
-                     b.hp * 100 >= b.hpMax * (nearTown ? 75 : 85) &&
-                     (nearTown || bestId == 0 || bestD > 8)) {
+                     ((b.hp * 100 >= b.hpMax * (nearTown ? 75 : 85)) ||
+                      // T-118 r3: time cap — an empty belt + no mend in sight
+                      // must not soft-lock the bot in retreat forever.
+                      (t - b.retreatT0 > 45.0)) &&
+                     (nearTown || bestId == 0 || bestD > 8 ||
+                      // T-118 r6: the cap ALSO bypasses the unpursued
+                      // check — a pinned bot (flee off the map edge) with a
+                      // phantom blocker at d 3-8 else retreats forever.
+                      (t - b.retreatT0 > 45.0))) {
             // Route v5: sticky until healed AND unpursued.  Clearing on hp
             // alone let the bot pivot mid-flight and re-aggro the same pack.
             // nearTown drops the bar to 75% -- the flask belt and the choir
@@ -840,7 +1143,23 @@ int run(int argc, char** argv) {
               b.attackTarget = bestId;
               b.nextAttackAt = t + 0.9;
             }
-            if (b.mapId == 1 && b.homeX >= 0 && !nearTown) {
+            if (raider && b.safeX >= 0) {
+              // T-118 r3/r6: the raider's retreat target is the route's
+              // safe node (town / entry hall). AT the node the bot STANDS —
+              // the old fall-through sent it on a 10-tile threat-axis flee
+              // that ran off the map edge (no path, no release: the r5b
+              // party pinned at (6,17)/(3,17) for 150 s). Sip + mend + the
+              // point-blank defend swing cover the wait; the release above
+              // (healed / 45 s cap) ends it.
+              const int sd = std::max(std::abs(b.tileX - b.safeX),
+                                      std::abs(b.tileY - b.safeY));
+              if (sd > 1) {
+                bh::proto::InputPath ip;
+                ip.goalX = b.safeX;
+                ip.goalY = b.safeY;
+                sendProto(b.peer, bh::proto::pack(ip));
+              }
+            } else if (b.mapId == 1 && b.homeX >= 0 && !nearTown) {
               // Route v5: walk HOME, not away along the threat axis.  The v4
               // +-10 flee west-walked bots off (55,19) down the south road
               // x[14,15] y[17,33], which passes 3 tiles from the L11
@@ -871,6 +1190,77 @@ int run(int argc, char** argv) {
         }
         if (bestId != 0 && bestD <= 12) {
           if (bestD > 1) {
+            // T-118 kiter bolt: the Cultist's Firebolt (ch5, range 8,
+            // no-DEF plague fire). Cast en route whenever the mark is in
+            // range; the movement policy below decides where she steps.
+            // (Firebolt is the Pale Choir's channel — the Gravecaller kit
+            // is Chorus/Haste, so the kiter is kitClass 3.)
+            if (raider && b.kitClass == 3 && bestD <= 8 &&
+                t >= b.nextFireboltAt) {
+              if (b.mp >= 12) {
+                bh::proto::SkillUse su;
+                su.skill = 5;
+                su.targetId = bestId;
+                sendProto(b.peer, bh::proto::pack(su));
+                b.nextFireboltAt = t + 2.5;
+                ++b.swings;  // book the bolt like a swing for telemetry
+              } else {
+                b.nextFireboltAt = t + 1.5;  // MP regen 2/2s: recheck soon
+              }
+            }
+            // T-118 r5: on the open fields the raider NEVER stops for a
+            // fight — the r4 gate sat 150 s on a respawning pack because
+            // "something is always within 12" in mob country, so the route
+            // machine (below) never ran. March-first: bolt en route above,
+            // then FALL THROUGH to the march branch — the route walk IS the
+            // movement. (An early version `continue`d here, which stalled
+            // the party at town on any passive rat within 12.)
+            // T-118 r6: a PASSIVE mark is never worth stopping for either
+            // — the r5b hall rat sat inside the kiter's band for 65 s
+            // (band-mid = stand and shoot) while the party's march stalled.
+            const bool passiveMark =
+                b.ents.find(bestId) != b.ents.end() &&
+                !entAggressive(b.ents[bestId].kind);
+            if (raider && (b.mapId == 1 || passiveMark)) {
+              b.attackTarget = 0;
+            } else {
+            // T-118 kiter band (gauntlet/boss maps): hold the line instead
+            // of the route. Bolt casters (kind 14 Cantor, kind 9
+            // Gravemother: bolt range 6) get the far band 7-8 — inside
+            // our Firebolt's range 8, outside theirs. Melee: 3-6.
+            if (raider && b.kitClass == 3 && bestD <= 8) {
+              b.attackTarget = 0;
+              const SeenEnt& se = b.ents[bestId];
+              const bool caster = (se.kind == 14 || se.kind == 9);
+              const int farEdge = caster ? 8 : 6;
+              const int nearEdge = caster ? 6 : 3;
+              if (bestD > farEdge) {
+                // close from range
+                bh::proto::InputPath ip;
+                ip.goalX = se.x;
+                ip.goalY = se.y;
+                sendProto(b.peer, bh::proto::pack(ip));
+              } else if (bestD <= nearEdge) {
+                // inside the band's near edge: step 4 out, away from her
+                const int ax = b.tileX - se.x, ay = b.tileY - se.y;
+                int gx = b.tileX, gy = b.tileY;
+                if (std::abs(ax) >= std::abs(ay) && ax != 0)
+                  gx += (ax > 0 ? 4 : -4);
+                else if (ay != 0)
+                  gy += (ay > 0 ? 4 : -4);
+                else
+                  gx += 4;
+                if (map->inBounds(gx, gy) && !map->isBlocked(gx, gy)) {
+                  bh::proto::InputPath ip;
+                  ip.goalX = gx;
+                  ip.goalY = gy;
+                  sendProto(b.peer, bh::proto::pack(ip));
+                }
+              }
+              // band middle: stand and shoot; re-evaluate next tick
+              b.nextMoveAt = t + 0.5;
+              continue;
+            }
             b.attackTarget = 0;
             const SeenEnt& se = b.ents[bestId];
             bh::proto::InputPath ip;
@@ -878,6 +1268,7 @@ int run(int argc, char** argv) {
             ip.goalY = se.y;
             sendProto(b.peer, bh::proto::pack(ip));
             b.nextMoveAt = t + 0.5;
+            }  // close: not the map-1 march-first path
           } else {
             if (b.attackTarget != bestId || t >= b.nextAttackAt) {
               bh::proto::AttackRequest ar;
@@ -896,16 +1287,85 @@ int run(int argc, char** argv) {
             }
             b.nextMoveAt = t + 0.3;  // reconsider quickly while in melee
           }
-          continue;
+          // T-118 r5: the map-1 march-first path FALLS THROUGH — the march
+          // branch below sends the route walk (the point-blank swing above
+          // rides the existing path; a swing never cancels it).
+          if (!(raider && b.mapId == 1 && bestD > 1)) continue;
         }
-        // nothing near: campaign walks the level route instead of milling
-        if (campaign) {
+        // nothing near: campaign/raider walks the route instead of milling
+        if (campaign || raider) {
+          // T-118 resupply: with multi-leg persistence the character resumes
+          // AT CAMP, so `home` — and the nearTown economy — can no longer
+          // see Marta. When the belt is thin (or gear is missing) and no
+          // aggressive mob is within 6, walk to the vendor (wire kind 64)
+          // and buy in gear-first order.
+          if ((raider || partySize >= 3) && b.mapId == 1) {
+            int vials = 0;
+            for (const auto& kv : b.inv)
+              if (kv.second.itemId == 3001) vials += kv.second.qty;
+            std::uint32_t vendorId = 0;
+            int vendorD = 99;
+            for (const auto& kv : b.ents) {
+              if (kv.second.kind != bh::content::kWireKindVendor) continue;
+              const int d = std::max(std::abs(kv.second.x - b.tileX),
+                                     std::abs(kv.second.y - b.tileY));
+              if (d < vendorD) { vendorD = d; vendorId = kv.first; }
+            }
+            int threat = 0;
+            for (const auto& kv : b.ents) {
+              if (kv.second.kind == 0 ||
+                  bh::content::wireIsFurniture(kv.second.kind))
+                continue;
+              if (!entAggressive(kv.second.kind)) continue;
+              if (std::max(std::abs(kv.second.x - b.tileX),
+                           std::abs(kv.second.y - b.tileY)) <= 6)
+                ++threat;
+            }
+            const bool poor = vials < 6 || !hasBlade || !hasArmor;
+            if (poor && threat == 0 && vendorId != 0) {
+              if (vendorD <= 3 && t >= b.nextShopAt) {
+                b.nextShopAt = t + 2.0;
+                bh::proto::BuyRequest buy;
+                bool bought = false;
+                if (!hasBlade && b.gold >= 260) {
+                  buy.itemId = 2002;  // Pit Blade
+                  buy.qty = 1;
+                  bought = true;
+                } else if (hasBlade && !hasArmor && b.gold >= 120) {
+                  buy.itemId = 2101;  // Hide Armor
+                  buy.qty = 1;
+                  bought = true;
+                } else if (vials < 16 && b.gold >= 240) {
+                  buy.itemId = 3001;
+                  buy.qty = static_cast<std::uint32_t>(
+                      std::min(16 - vials, static_cast<int>((b.gold - 90) / 30)));
+                  bought = buy.qty > 0;  // 240g gate makes 0 unreachable; guard
+                }
+                if (bought) {
+                  sendProto(b.peer, bh::proto::pack(buy));
+                  ++b.shops;
+                  b.nextMoveAt = t + 0.8;
+                  continue;
+                }
+                // poor but short on gold: stop standing at the counter — fall
+                // through to the route (fight for the coin, then return).
+                b.nextMoveAt = t + 2.0;
+              } else if (vendorD > 3) {
+                bh::proto::InputPath ip;
+                ip.goalX = b.ents[vendorId].x;
+                ip.goalY = b.ents[vendorId].y;
+                sendProto(b.peer, bh::proto::pack(ip));
+                b.nextMoveAt = t + 1.2;
+                continue;
+              }
+            }
+          }
           // T-034d re-gear trip: walk home when the next gear tier is
           // affordable, instead of hitching shopping to death-respawn. The
           // economy block above does the actual buy/equip once nearTown.
           const bool wantGear = (!hasBlade && b.gold >= 260) ||
                                 (bladeArmed && !hasArmor && b.gold >= 120);
-          if (wantGear && b.mapId == 1 && b.homeX >= 0) {
+          if (campaign && wantGear && b.mapId == 1 && b.homeX >= 0) {
             if (!b.regearHome) {
               b.regearHome = true;
               ++b.regearTrips;
@@ -920,6 +1380,43 @@ int run(int argc, char** argv) {
             continue;
           }
           b.regearHome = false;
+          if (raider && b.campX >= 0) {
+            // T-118 r3 staged push: walk the current node; on arrival hold
+            // for its rest (group + sip + mend), then advance. Portal nodes
+            // re-path to the exact tile until the fire check trips.
+            const int nd = std::max(std::abs(b.tileX - b.campX),
+                                    std::abs(b.tileY - b.campY));
+            if (nd <= 2) {
+              if (b.campIsPortal) {
+                // portal node: re-path the exact tile until the fire check
+                // settles the walker on the rect
+                bh::proto::InputPath ip;
+                ip.goalX = b.campX;
+                ip.goalY = b.campY;
+                sendProto(b.peer, bh::proto::pack(ip));
+                b.nextMoveAt = t + 1.2;
+              } else if (b.routeRest > 0.0) {
+                // rest node: stand — the party converges, sips, mends —
+                // then advance
+                if (b.routeRestUntil == 0.0) b.routeRestUntil = t + b.routeRest;
+                if (t >= b.routeRestUntil) {
+                  b.routeRestUntil = 0.0;
+                  ++b.routeIdx;
+                }
+              } else {
+                // T-118 r4 waypoint: the gauntlet push never stops mid-room
+                ++b.routeIdx;
+              }
+            } else {
+              b.routeRestUntil = 0.0;  // interrupted: re-rest on arrival
+              bh::proto::InputPath ip;
+              ip.goalX = b.campX;
+              ip.goalY = b.campY;
+              sendProto(b.peer, bh::proto::pack(ip));
+              b.nextMoveAt = t + 1.2;
+            }
+            continue;
+          }
           if (b.campX >= 0 && b.campIsPortal) {
             // portals: the fire check needs the walker SETTLED on the rect;
             // keep re-pathing to the exact tile (the level filter above keeps
@@ -1058,6 +1555,30 @@ int run(int argc, char** argv) {
       }
     }
     std::printf("\n");
+    if (profile == "raider") {  // T-118 gate line, one per bot (greppable)
+      // Four DISTINCT buffers — a shared one would alias the %s args and
+      // print the last value for every field.
+      char tm5[32], tbs[32], tbk[32], ttk[32];
+      auto fmtT = [](char* buf, size_t n, double v) {
+        std::snprintf(buf, n, v < 0.0 ? "n/a" : "%.1f", v);
+      };
+      const double ttkS = (b.tBossSight >= 0.0 && b.tBossKilled >= 0.0)
+                              ? b.tBossKilled - b.tBossSight
+                              : -1.0;
+      fmtT(tm5, sizeof tm5, b.tMap5Entry);
+      fmtT(tbs, sizeof tbs, b.tBossSight);
+      fmtT(tbk, sizeof tbk, b.tBossKilled);
+      fmtT(ttk, sizeof ttk, ttkS);
+      std::printf("[raid] %-12s kit=%d party=%zu deaths=%llu dodges=%llu "
+                  "elites=%llu trash=%llu lvl=%d xp=%u gold=%u map5=%s "
+                  "boss_sight=%s boss_kill=%s TTK=%s\n",
+                  b.name.c_str(), b.kitClass, b.party.size(),
+                  static_cast<unsigned long long>(b.deaths),
+                  static_cast<unsigned long long>(b.dodges),
+                  static_cast<unsigned long long>(b.eliteKills),
+                  static_cast<unsigned long long>(b.trashKills),
+                  b.level, b.xp, b.gold, tm5, tbs, tbk, ttk);
+    }
     if (b.peer != nullptr) enet_peer_disconnect_now(b.peer, 0);
   }
   enet_host_destroy(chost);
