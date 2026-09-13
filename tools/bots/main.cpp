@@ -1610,13 +1610,24 @@ int run(int argc, char** argv) {
             // combat path won), the 5-stack fragmented into solo trades
             // against the swarm-8 racks+cocoon pile, and three died on
             // the node. Attack when adjacent, march only when loose.
+            // T-118 r11: on the gauntlet maps the RUNNER holds too. The
+            // r10 leg died here: the runner marked the Cantor from 12
+            // tiles at the corridor threshold, chased the mark OFF the
+            // route into the lair (37,6) — inside the ring — swarm 5,
+            // dead in 5 s, column broken, party wiped. March-first means
+            // the route walk is the ONLY movement on maps 3/5: the ring
+            // members come to the stack on their own aggro/leash, and
+            // the stack chews them at point-blank en route. Loose
+            // followers (>3 from the runner) also march the route — the
+            // mill branch below glues them back; a solo chase into a
+            // pack is the r10 death in slow motion.
             {
               const FrontRunner hfr = frontRunnerOf(b);
               const bool holdStack = raider &&
-                  (b.mapId == 3 || b.mapId == 5) && hfr.id != 0 &&
-                  hfr.id != b.ownId &&
-                  std::max(std::abs(hfr.x - b.tileX),
-                           std::abs(hfr.y - b.tileY)) <= 3;
+                  (b.mapId == 3 || b.mapId == 5) &&
+                  (hfr.id == 0 || hfr.id == b.ownId ||
+                   std::max(std::abs(hfr.x - b.tileX),
+                            std::abs(hfr.y - b.tileY)) <= 3);
               if (!holdStack) {
                 bh::proto::InputPath ip;
                 ip.goalX = se.x;
