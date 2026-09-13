@@ -1610,24 +1610,18 @@ int run(int argc, char** argv) {
             // combat path won), the 5-stack fragmented into solo trades
             // against the swarm-8 racks+cocoon pile, and three died on
             // the node. Attack when adjacent, march only when loose.
-            // T-118 r11: on the gauntlet maps the RUNNER holds too. The
-            // r10 leg died here: the runner marked the Cantor from 12
-            // tiles at the corridor threshold, chased the mark OFF the
-            // route into the lair (37,6) — inside the ring — swarm 5,
-            // dead in 5 s, column broken, party wiped. March-first means
-            // the route walk is the ONLY movement on maps 3/5: the ring
-            // members come to the stack on their own aggro/leash, and
-            // the stack chews them at point-blank en route. Loose
-            // followers (>3 from the runner) also march the route — the
-            // mill branch below glues them back; a solo chase into a
-            // pack is the r10 death in slow motion.
+            // (r11 generalised this to ALL raiders on maps 3/5; r14
+            // restores the runner's chase — the no-chase sprint dragged
+            // the whole double-leash field into one swarm-10 convergence
+            // at (32,18) and wiped. r9's posture: the runner fights its
+            // way along the route, millers hold their slots.)
             {
               const FrontRunner hfr = frontRunnerOf(b);
               const bool holdStack = raider &&
-                  (b.mapId == 3 || b.mapId == 5) &&
-                  (hfr.id == 0 || hfr.id == b.ownId ||
-                   std::max(std::abs(hfr.x - b.tileX),
-                            std::abs(hfr.y - b.tileY)) <= 3);
+                  (b.mapId == 3 || b.mapId == 5) && hfr.id != 0 &&
+                  hfr.id != b.ownId &&
+                  std::max(std::abs(hfr.x - b.tileX),
+                           std::abs(hfr.y - b.tileY)) <= 3;
               if (!holdStack) {
                 bh::proto::InputPath ip;
                 ip.goalX = se.x;
@@ -1665,15 +1659,11 @@ int run(int argc, char** argv) {
           // machine so the runner's routeIdx never advanced — the column
           // ground in circles around (22,21) until the leg clock died.
           // March-first: the route walk IS the movement, the swing rides it.
-          // T-118 r12: on the gauntlet maps the POINT-BLANK swing rides it
-          // too. r11 pinned the millers at the node pile: the fall-through
-          // demanded bestD > 1, so a bot engaged at d==1 stood and traded
-          // with the swarm-9 overlap pile (never re-entering the route
-          // machine / column glue) until it died. Swing + keep walking:
-          // the AttackRequest above never cancels a path.
-          if (!(raider &&
-                ((b.mapId == 1 && bestD > 1) || b.mapId == 3 ||
-                 b.mapId == 5)))
+          // (r12 let the point-blank swing fall through on maps 3/5; r14
+          // restores bestD > 1 — with the runner's chase back, the r9
+          // posture: stop-and-win the point-blank fight, march between.)
+          if (!(raider && bestD > 1 &&
+                (b.mapId == 1 || b.mapId == 3 || b.mapId == 5)))
             continue;
         }
         // nothing near: campaign/crypt/raider walks the route instead of milling
@@ -1936,16 +1926,32 @@ int run(int argc, char** argv) {
                 // the 30 s respawn can reform the swarm. The r4 design
                 // intent, restored now that the column actually holds
                 // together (election + holdStack + stack retreat).
-                // T-118 r13: the unbroken march — intermediate waypoints
-                // advance on arrival, no holds. The r8d quorum gates were
-                // the string-split remedy, but once the column moves as
-                // one (swing-and-ride + glue) they became the NEW pile
-                // sites: r12's runner milled a residual wait at (32,18)
-                // under swarm 7 and died holding nothing. r4 doctrine
-                // restored: the party never rests in the ossuary or the
-                // barrow — there is no safe floor there. The map-1 hatch
-                // quorum (stack-cross only, r13) is the only hold left.
-                b.quorumWaitT0 = 0.0;
+                // T-118 r14: the r8d quorum gate returns (r9 won its map-5
+                // entries WITH these holds) — the r13 unbroken march
+                // out-sprinted its own kills and dragged the entire
+                // double-leash field into a swarm-10 convergence at
+                // (32,18). Hold the waypoints, win the fights, advance.
+                // The pile node stays wait-IMMUNE (r12): drop any
+                // residual wait and go — waiting on the overlap rect is
+                // how every r8 leg lost 2-3 of 5.
+                const bool pileNode =
+                    b.mapId == 3 && b.campX == 22 && b.campY == 21;
+                if (pileNode) {
+                  b.quorumWaitT0 = 0.0;
+                } else {
+                  if ((b.mapId == 3 || b.mapId == 5) &&
+                      b.quorumWaitT0 == 0.0) {
+                    if (quorumNear(b, b.campX, b.campY, 6) < 3)
+                      b.quorumWaitT0 = t;
+                  }
+                  if (b.quorumWaitT0 != 0.0) {
+                    if (t - b.quorumWaitT0 < 45.0) {
+                      b.nextMoveAt = t + 0.8;  // mill in place: column forms
+                      continue;
+                    }
+                    b.quorumWaitT0 = 0.0;  // cap: advance anyway
+                  }
+                }
                 ++b.routeIdx;
               }
             } else {
