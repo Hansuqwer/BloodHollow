@@ -26,14 +26,40 @@ if len(names) != 5:
 # meant the party arrived with empty belts).
 marks = ",".join("?" * len(names))
 cur.execute(f"UPDATE characters SET level=13, xp=0, stat_points=0, gold=600 WHERE name IN ({marks})", names)
+# Staging: the party regroups at the crypt entry-hall camp (1,22) — the r8
+# safe node, outside every leash. A leg whose bots persist mid-ossuary
+# (17,18) would otherwise run the ghoul racks WEST first (the route's node
+# 0 is behind them) and then again east: two full crossings of an infinite
+# 30 s respawn pack for no new information. Staging the column at camp is
+# the disclosed part of the top-up (the racks/cocoon/barrow are still all
+# fought from scratch in-world every leg).
+cur.execute(
+    f"UPDATE characters SET map_id=3, x=1, y=22 WHERE name IN ({marks})",
+    names)
 # The T-114 flask belt: 16 Blood Vials (stackMax 16). The gate's party
 # cannot wait on a town vendor mid-gauntlet, so the belt is stocked here
 # (blob grammar "iid:qty:equipped:aura:durability:affix:refine;").
+# T-118 r8: NORMALIZE, not just add — after a gate leg the belt is partly
+# drunk and a missing top-off quietly changes the next leg's survivability.
+def norm_belt(inv):
+    rows, have = [], False
+    for rec in (inv or "").split(";"):
+        if not rec:
+            continue
+        f = rec.split(":")
+        if f[0] == "3001":
+            have = True
+            f[1] = "16"
+            rec = ":".join(f)
+        rows.append(rec)
+    if not have:
+        rows.append("3001:16:0:0:100:0:0")
+    return ";".join(rows) + ";"
+
 cur.execute(f"SELECT id, inv FROM characters WHERE name IN ({marks})", names)
 for (cid, inv) in cur.fetchall():
-    if "3001:" not in (inv or ""):
-        con.execute("UPDATE characters SET inv = inv || ? WHERE id = ?",
-                    ("3001:16:0:0:100:0:0;", cid))
+    con.execute("UPDATE characters SET inv = ? WHERE id = ?",
+                (norm_belt(inv), cid))
 con.commit()
 cur.execute(f"SELECT name, level, xp FROM characters WHERE name IN ({marks}) ORDER BY name", names)
 print("before:", before)
