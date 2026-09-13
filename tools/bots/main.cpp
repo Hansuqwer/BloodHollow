@@ -1782,7 +1782,12 @@ int run(int argc, char** argv) {
             // nearest its own tile: it stands at the column's head, so
             // that IS the column's node (ties take the furthest — the
             // route only marches east).
-            if (b.mapId == 3 || b.mapId == 5) {
+            // T-118 r13: the column exists on map 1 TOO. r12 forensics:
+            // the post-wipe return march ping-ponged at (24-30,14) for
+            // minutes — five solo routeIdxes, fr election flipping every
+            // overshoot, nobody ever reached the hatch. One brain per
+            // zone, everywhere the raider routes.
+            if (b.mapId == 1 || b.mapId == 3 || b.mapId == 5) {
               const FrontRunner fr = frontRunnerOf(b);
               if (fr.id != 0 && fr.id != b.ownId) {
                 const int fd = std::max(std::abs(fr.x - b.tileX),
@@ -1877,9 +1882,13 @@ int run(int argc, char** argv) {
                     continue;
                   }
                   const int q2 = quorumNear(b, b.campX, b.campY, 6);
-                  if (q2 >= 2) {
-                    b.quorumWaitT0 = 0.0;  // cap: cross as a pair+
-                  } else {
+                  if (q2 >= 3) {
+                    b.quorumWaitT0 = 0.0;  // T-118 r13: cross as a STACK.
+                    // The r8e pair-cap let duos/solos through; the r12
+                    // leg's solo re-crosser died in the cocoon corridor
+                    // (22,24), swarm 8. Under 3 after the cap: fall back
+                    // to town and re-converge, like the solo rule.
+                  } else if (q2 < 3) {
                     // T-118 r8f: solo after the cap — the r8e4 looped bot
                     // sat the chapel 130 s, lost to the party. Walk back
                     // to town (node 0, rest 3 s, safe floor); the ~90 s
@@ -1927,30 +1936,16 @@ int run(int argc, char** argv) {
                 // the 30 s respawn can reform the swarm. The r4 design
                 // intent, restored now that the column actually holds
                 // together (election + holdStack + stack retreat).
-                const bool pileNode =
-                    b.mapId == 3 && b.campX == 22 && b.campY == 21;
-                if (pileNode) {
-                  // T-118 r12: the pile node is wait-IMMUNE. r11 died
-                  // exactly here: a wait started at the previous waypoint
-                  // (route-table confusion just past the hatch) bled into
-                  // the (22,21) arrival — the honor branch milled the
-                  // stack on the double-leash overlap under swarm 9 and
-                  // it was eaten alive. Drop any residual wait and go.
-                  b.quorumWaitT0 = 0.0;
-                } else {
-                  if ((b.mapId == 3 || b.mapId == 5) &&
-                      b.quorumWaitT0 == 0.0) {
-                    if (quorumNear(b, b.campX, b.campY, 6) < 3)
-                      b.quorumWaitT0 = t;
-                  }
-                  if (b.quorumWaitT0 != 0.0) {
-                    if (t - b.quorumWaitT0 < 45.0) {
-                      b.nextMoveAt = t + 0.8;  // mill in place: column forms
-                      continue;
-                    }
-                    b.quorumWaitT0 = 0.0;  // cap: advance anyway
-                  }
-                }
+                // T-118 r13: the unbroken march — intermediate waypoints
+                // advance on arrival, no holds. The r8d quorum gates were
+                // the string-split remedy, but once the column moves as
+                // one (swing-and-ride + glue) they became the NEW pile
+                // sites: r12's runner milled a residual wait at (32,18)
+                // under swarm 7 and died holding nothing. r4 doctrine
+                // restored: the party never rests in the ossuary or the
+                // barrow — there is no safe floor there. The map-1 hatch
+                // quorum (stack-cross only, r13) is the only hold left.
+                b.quorumWaitT0 = 0.0;
                 ++b.routeIdx;
               }
             } else {
