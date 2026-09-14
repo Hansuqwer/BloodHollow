@@ -188,6 +188,16 @@ open the PR and leave it open.
 kills in the 300 s leg, TTK <15 s focused; no tuning). Remaining, in the
 continuation prompt's order:
 
+**Amendment (2026-09-13, post-T-118 r8→r17 series, devlog 0084):** "CLOSED"
+above means *killability proven*, and it stays true — but the unassisted
+re-measurement (ten legs, r9–r17, no pre-seeded staging at the font) says the
+march is not repeatable: the font was reached **once** (leg r9, 3/5 bots,
+boss sighted, no engagement) and the **boss verdict is NOT established**.
+The blocker is content-side — the map-3 respawn-swarm attrition wall. Untried
+fixes and the r18 experiment are in `docs/handover/T-118-r17.md` §5; §4 is
+the do-not-retry list. If Track A reopens, it reopens as a *content* card,
+not a bot card.
+
 | next | card | notes |
 |---|---|---|
 | T-120 | **B1 weapon-skill persistence** (schema v11) | the T-096 gap; aura grind is fake progression until it lands; likely epoch bump |
@@ -201,6 +211,37 @@ Blood Moon stays a director call (roadmap vs GDD §10 conflict). Human-only
 items (T-033/T-099) are never self-assigned.
 
 ## 5. Counters and pins (verify on the board anyway)
+**Amendment (2026-09-13, post-T-125):** T-125 landed the M3 gate follow-on
+(r18→r22): the font reach is **no longer luck-dependent** — r19 3/5, r20 4/5,
+**r21 4/5 at 232–238 s with 3–5 elite kills** — and the **boss verdict is
+still open**; the party now dies at map-5 x=15 inside three simultaneous
+aggro fields (apse elite (16,4), Sexton (21,5), Gravemother (21,2), all r8),
+not on map 3. Suite pin moves to **209/209 · 329,058** (six new kit-channel
+assertions). New law to carry: **Firebolt (ch5) belongs to the Gravecaller
+(kit 2), not the Cultist** — kits.h leaves the Cultist's ch5 at 0 and
+`World::trySkill` silently drops the cast; pinned in `tests/test_kits.cpp`.
+r22 (kiter band on map 5) was **attempted, never exercised by either of its
+two legs, and reverted** — do not treat it as tested. Next moves are in
+`docs/handover/T-125-r18-r22.md` §5: re-run r21 to confirm 4/5 is its mode,
+then break the x=15 triple-aggro (candidate node (19,10)). **Next card T-126
+· next devlog 0087.** Epoch 21 · schema v11 · wire 237 · duel pin unchanged.
+
+**Amendment (2026-09-13, post-T-124 wave):** master `2a813ec` — the T-118
+r8→r17 gate series landed (PR #25 squash), PR #24 closed superseded. Journal
+epoch **21** · wire **237** · schema **v11** · suite **209/209 · 329,052**
+(headless preset; the 3 client-law TUs — 7 `TEST_CASE`s — are CI-only when
+apt/X11 is unavailable) · duel pin `b273be661b54673a` · legs of record
+`m3_gate.bwj` (`ticks=36042 sessionCmds=5933 hashes=360 mismatches=0`) and
+`t120.bwj` (`ticks=1500 hashes=15 mismatches=0`); `t115/t118.bwj` refuse on
+the epoch guard (correct). **Next card T-125 · next devlog 0086.** T-122 and
+T-123 are claimed in flight by PRs #22/#23 — do not reuse those numbers;
+those PRs must sync (`CONFLICT (content): tools/bots/main.cpp`, merge-tree
+verified) and renumber their devlogs to whatever is free at their own merge
+time (0086/0087 if nothing else lands first) before merging.
+Sandbox bootstrap, in order: `git fetch --unshallow`; pip
+`--break-system-packages cmake ninja`; `ninja -C build/verify bh_maps` before
+any test/replay run; replay is `bh_server --replay-world` (no `bh_replay`).
+
 **Amendment (2026-09-12, post-T-120):** journal epoch **21** · schema
 **v11** · suite **209/209 · 329,052** · leg of record `t120.bwj`
 (`ticks=1500 hashes=15 mismatches=0`) · `t115.bwj`/`t118.bwj` now refuse on

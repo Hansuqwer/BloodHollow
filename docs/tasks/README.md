@@ -705,6 +705,96 @@ Squash-merged `7b2e9b8`, branch deleted. **The Sisyphus ladder is fixed**
 T-122 = pledge-lite (Track B2). Standing prompts amended (epoch 21,
 schema v11, l-line v3 grammar). Devlog 0083 · card `done/T-121.md`.
 
+## Done — T-118 series (2026-09-13): M3 gate, r8→r17 raider series (bot-side measurement)
+
+T-118 BOT-ONLY (raider profile): ten gate legs (r9–r17) at the Thornwall
+Crypt → Drowned Crypt Depths gate, five-bot mixed-kit party `m3g__00..04`,
+every journal replayed bit-exact. Machinery: one-brain column,
+direction-aware runner election (min-x on the west map-1 march) + dead-band
+2, pile-node wait-immunity, swing-and-ride point-blank, guarded desync
+re-adoption (stand-on-node ≤2, never node k−1); TEMP `[dbg]`/`fr/q/qT0`
+trace scaffolding stripped at close-out. **Verdict: hard gate (reach the
+font) PASSED once** — leg r9, 3/5 bots into map 5 (692.9/692.5/617.1 s),
+boss_sight, clock expired before engagement. **Boss verdict NOT
+established** — no leg engaged the Gravemother; r14 restored r9's posture
+and did not reproduce the reach, so r9 is luck-dependent. Blocker is
+content-side: the map-3 respawn-swarm attrition wall (racks' 30 s respawn +
+cocoon widows + barrow-ring convergence); r17 at 1800 s budget = deaths
+26/22/16/4/16, zero map-5 entries. Disclosed staging: `tools/m3_topup.sh`
+seeds `class_id` (the in-game kit oath rejects L13) + inv/stat rows,
+server-down only. Epoch stays 21 (bots/docs/logs only). Devlog 0084 · card
+`done/T-118-m3-gate-raider-series.md` · handover `docs/handover/T-118-r17.md`
+(§4 do-not-retry, §5 untried content-side fixes) · `logs/m3_gate.bwj`
+force-added. *Row added by the T-124 wave — PR #25 shipped the card without
+a board row.*
+
+## Done — T-124 (2026-09-13): PR #25 merge wave — the gate series lands; #24 closed superseded
+
+T-124 WAVE: director-directed merge (overriding never-self-merge for this
+wave). PR #25 (`arena/01a09acb-bloodhollow`, `9163617`, 14 commits) verified
+MERGEABLE/CLEAN + 4 green checks with master unmoved at `818d661`, then
+squash-merged as **`2a813ec`** with the PR title as subject. PR #24 (r8
+lineage, CONFLICTING) **closed unmerged** as superseded — its four r8
+commits are cherry-picked into the merged series. Post-merge battery on
+master: 209/209 · 329,052, ctest 2/2, duel pin `b273be661b54673a`,
+`m3_gate.bwj` replay `ticks=36042 sessionCmds=5933 hashes=360 mismatches=0
+entities=189` (epoch 21 = build 21, guard did not refuse), `t120.bwj` mm=0,
+guard refuses `t118.bwj` (20 vs 21) exit 4. Epoch 21 / wire 237 / schema v11
+untouched (diff is tools/docs/logs only). Sandbox taxes recorded: shallow
+clone → `--unshallow`; no cmake/ninja → pip `--break-system-packages`; apt
+blocked → headless preset (3 client-law TUs left to CI); `bh_maps` ALL-target
+must be built or 4 `loadZone` tests fail and replay cannot open the maps;
+replay is `bh_server --replay-world` (there is no `bh_replay`). **Queue
+flags:** PRs #22/#23 (T-122/T-123) now CONFLICT in `tools/bots/main.cpp`
+(merge-tree verified on both heads) and carry devlog 0084/0085, which master
+has taken — they renumber on merge. Devlog 0085 · card `done/T-124.md` ·
+next card **T-125**, next devlog **0086**.
+
+## Done — T-125 (2026-09-13): M3 gate follow-on r18→r22 — the reach stops being luck
+
+T-125 BOT-ONLY (raider profile; no server/sim change, epoch stays 21). Six
+900 s legs (r18-r22b), every journal replayed bit-exact. **r18** restored r9's map-1
+posture (individual return march + cap-cross q>=2, keeping r16b's
+election/re-adoption): 0 map-5 entries, deaths 12/4/6/2/8, but **all five
+reached map-3 x=38-39** (barrow corridor) vs r17's x=24. **r19** added
+handover 5 fix #2 — **distance-aligned marks** (nearest-first; per-peer
+last-seen hp is stale, distance is the only field a 3-tile-tight column
+agrees on): **3/5 map-5 entries at 147.1/147.8/196.4 s** — ~4x faster than
+r9's 617-693 s, `bossSeen=12 curse=2 slam=4 kills=0`. **r20** fixed a bug the
+r19 forensics exposed: the Firebolt cast and kiter band were gated on
+`kitClass == 3` (Cultist), but kits.h gives ch5 to the **Gravecaller** (L1)
+and leaves the Cultist's ch5 at 0, so `World::trySkill` dropped every such
+cast — **the whole r8->r19 series fought melee-only with a no-op "kiter"**.
+Gates moved to `kitClass == 2` and the channel table pinned in
+`tests/test_kits.cpp` (runtime-proven via `World::trySkill`): **4/5 map-5
+entries at 268.4/268.6/269.4/272.1 s**, `bossSeen=20 curse=2 slam=0`, first
+elite kills at this gate. **Boss verdict STILL NOT ESTABLISHED** — the party
+arrives on map 5 at 84-100% hp and died crossing (3,30)->(22,3) at deepest
+x=12, because map 5 had a **single** route node. **r21** staged that
+crossing — **(6,21)->(13,10)->(22,10)->(22,3)** on the verified walkable
+corridor — and it worked: **4/5 map-5 entries at 231.7/232.8/237.5/237.9 s**,
+map-5 traces 24->122, **elites 3/5/5/5**, trash 2-4 -> 12-14, `bossSeen=26`.
+The party now dies at **x=15** inside **three simultaneous aggro fields**
+(apse elite (16,4) r8, Sexton (21,5) r8, Gravemother (21,2) r8) — the last 7
+tiles are the whole fight. **r22** (kiter band on map 5, so the Gravecaller
+trades bolts from 7-8, outside her bolt range 6) was **attempted, never
+exercised by either of its two legs, and reverted**: r22 never entered map 5
+(618 of 791 traces on map 1), r22b put two bots there for 1.3/2.3 s stuck at
+node (6,21). The change is inert on maps 1/3 where both legs were lost, so
+that is **leg variance, not the lever** — and an unexercised `continue`
+branch on map 5 is the r8c stall risk inside the best-known configuration.
+**Leg variance is large** (same binary: 0/5 then 2/5; r21 4/5) — one leg
+cannot retire a lever, and one cannot promote one. Next: re-run r21, then
+break the x=15 triple-aggro (candidate node (19,10)). Also corrected:
+`m3_topup.sh` never seeded the gear/stats its own handover claimed (added,
+idempotent) — without it a cold-sandbox top-up stages a fists-and-rags L13.
+Suite **209/209 · 329,058** (+6), ctest 2/2, duel pin `b273be661b54673a`,
+r17 journal preserved byte-identical (md5 `b4c0cf3f…`). Devlog 0086 · card
+`done/T-125.md` · handover `docs/handover/T-125-r18-r22.md` · journals
+`logs/m3_gate_r{18,19,20,21,22,22b}.bwj` force-added. Next card **T-126**,
+next devlog **0087**.
+
+
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
 | Card | Title | Notes |

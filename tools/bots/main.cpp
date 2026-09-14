@@ -294,8 +294,26 @@ static int raiderRoute(int mapId, int idx, int* x, int* y, double* rest,
       r = r3; n = 5; break;
     }
     case 5: {
-      static const RaiderNode r5[] = {{22, 3, 0.0, false}};
-      r = r5; n = 1; break;
+      // T-125 r21: the depths finally get a route. One node at (22,3) made
+      // the crossing a single 46-step dive from the portal, and both r19 and
+      // r20 died inside it — arriving at 84-100% hp and reaching a deepest
+      // x of 12 out of 22. Nodes verified against
+      // data/maps-src/drowned_crypt.tmj and the derived blocked grid
+      // (mapconv: ground id in {2,3} = blocked): the walkable corridor is
+      // (3,30) -> north up x=6 -> (6,12) -> east along y=10 -> (22,10) ->
+      // north up x=22 -> (22,3). All four nodes below are walkable and on
+      // that corridor. (The r18-r20 handover suggested (8,20) and (14,12):
+      // BOTH ARE BLOCKED — verified, do not use them.)
+      // Anchors, all aggro 7-8: entry elite (3,29), west chapel elite
+      // (13,18), causeway pair (8,8), apse elites (16,4)/(25,4), Sexton
+      // (21,5), Gravemother (21,2). No tile on the corridor is outside
+      // every aggro field, so these nodes exist to STAGE the fights — the
+      // map-5 waypoint quorum holds already apply — not to rest.
+      static const RaiderNode r5[] = {{6, 21, 0.0, false},   // entry elite, as a stack
+                                      {13, 10, 0.0, false},  // shoulder: causeway pair comes to us
+                                      {22, 10, 0.0, false},  // foot of the apse climb
+                                      {22, 3, 0.0, false}};  // the font
+      r = r5; n = 4; break;
     }
     case 2: {
       static const RaiderNode r2[] = {{0, 14, 0.0, true}};
@@ -1215,6 +1233,17 @@ int run(int argc, char** argv) {
           // did. The raider marks the LOWEST-HP candidate instead (tie:
           // nearest), so the five bots converge on the same dying target
           // and finish it before the next mark matters.
+          // T-125 r19: NEAREST-first, lowest-HP as the tie-break. The r18
+          // forensics put all five at the barrow corridor (x=38-39, the
+          // deepest penetration of the series) dying into a convergence at
+          // (29-34,18)/(39,12) — the wall the r17 handover names. r7's
+          // lowest-HP rule cannot converge here: each bot's hp view is its
+          // OWN last-seen EntityDelta, so five stale views rank five
+          // different "lowest" targets and the DPS still splits
+          // (handover T-118-r8g §5 fix #2, untried until now). Distance is
+          // the one field the column agrees on — the stack stands within 3
+          // tiles of itself — so nearest-first makes the marks coincide by
+          // construction. Aggroed threats still outrank wounded passives.
           if (raider) {
             const bool candAgg = entAggressive(kv.second.kind);
             const bool bestAgg =
@@ -1222,8 +1251,8 @@ int run(int argc, char** argv) {
             if (bestId == 0 ||
                 (candAgg && !bestAgg) ||  // threats beat wounded passives
                 (candAgg == bestAgg &&
-                 (kv.second.hp < bestHp ||
-                  (kv.second.hp == bestHp && d < bestD)))) {
+                 (d < bestD ||
+                  (d == bestD && kv.second.hp < bestHp)))) {
               bestId = kv.first;
               bestD = d;
               bestHp = kv.second.hp;
@@ -1578,12 +1607,17 @@ int run(int argc, char** argv) {
         }
         if (bestId != 0 && bestD <= 12) {
           if (bestD > 1) {
-            // T-118 kiter bolt: the Cultist's Firebolt (ch5, range 8,
+            // T-118 kiter bolt: the Firebolt caster's bolt (ch5, range 8,
             // no-DEF plague fire). Cast en route whenever the mark is in
             // range; the movement policy below decides where she steps.
-            // (Firebolt is the Pale Choir's channel — the Gravecaller kit
-            // is Chorus/Haste, so the kiter is kitClass 3.)
-            if (raider && b.kitClass == 3 && bestD <= 8 &&
+            // T-125 r20: kitClass **2** (Gravecaller), not 3. kits.h gives
+            // ch5 to the Gravecaller at L1 and leaves the Cultist's ch5 at 0
+            // ("kit may not channel it") — Chorus/MassMend/Haste are the
+            // Cultist's channels. The old gate asked the Cultist to bolt and
+            // World::trySkill dropped every one of those casts at the unlock
+            // gate (pinned in tests/test_kits.cpp), so the r8->r19 party had
+            // no ranged damage at all.
+            if (raider && b.kitClass == 2 && bestD <= 8 &&
                 t >= b.nextFireboltAt) {
               if (b.mp >= 12) {
                 bh::proto::SkillUse su;
@@ -1623,7 +1657,22 @@ int run(int argc, char** argv) {
             // walk supplies the position (the font node (22,3) IS inside
             // the boss band, the portal node (44,6) just outside the
             // cantor's).
-            if (raider && b.kitClass == 3 && bestD <= 8 &&
+            // T-125 r20: kitClass 2 — the band belongs to the kit that owns
+            // the bolt (see the cast gate above).
+            // T-125 r22 ATTEMPTED AND REVERTED (measured inconclusive, not
+            // red). The plan was to switch this band ON at the font so the
+            // Gravecaller trades bolts from 7-8 — outside the Gravemother's
+            // bolt range 6 — instead of walking into a 40-dmg slam. Two legs
+            // ran it (r22, r22b) and NEITHER exercised it: r22 never reached
+            // map 5 at all (618 of 791 traces on map 1, deepest map-3 x=36),
+            // and r22b put two bots on map 5 for 1.3-2.3 s, stuck at node
+            // (6,21), 16 traces total. The change is inert on maps 1 and 3,
+            // where both legs were actually lost, so it was never measured.
+            // Reverted rather than left in: the band ends in `continue`, so
+            // an unexercised map-5 branch is exactly the r8c stall risk
+            // sitting inside the best-known configuration (r21). Re-land it
+            // only behind a leg that reaches the font.
+            if (raider && b.kitClass == 2 && bestD <= 8 &&
                 b.mapId != 1 && b.mapId != 3 && b.mapId != 5) {
               b.attackTarget = 0;
               const SeenEnt& se = b.ents[bestId];
@@ -1833,7 +1882,18 @@ int run(int argc, char** argv) {
             // minutes — five solo routeIdxes, fr election flipping every
             // overshoot, nobody ever reached the hatch. One brain per
             // zone, everywhere the raider routes.
-            if (b.mapId == 1 || b.mapId == 3 || b.mapId == 5) {
+            // T-125 r18: map 1 goes back to INDIVIDUAL marching. r13's
+            // map-1 column was a fix for the r12 oscillation, but r16
+            // fixed that failure at its actual source (direction-aware
+            // election: the west march was electing its rearmost member
+            // as the brain) and r14b added dead-band 2 against the
+            // position-staleness jitter. r9 — the only leg of the series
+            // that ever reached the font — had no map-1 column and
+            // crossed the cap on a pair. Handover T-118-r17 §5.2 names
+            // exactly this restoration as the next experiment. Maps 3/5
+            // keep the one-brain column: that is where the stack's DPS
+            // decides the gauntlet.
+            if (b.mapId == 3 || b.mapId == 5) {
               const FrontRunner fr = frontRunnerOf(b);
               if (fr.id != 0 && fr.id != b.ownId) {
                 const int fd = std::max(std::abs(fr.x - b.tileX),
@@ -1920,7 +1980,12 @@ int run(int argc, char** argv) {
                                            std::abs(ei->second.y - b.campY));
                     if (d <= 6) ++q;
                   }
-                  if (q < 3) b.quorumWaitT0 = t;
+                  // T-125 r18: q>=2 (the r8e/r9 pair cap), not r13's q>=3.
+                  // r9 crossed the cap on a pair and is the only leg that
+                  // reached the font; r13's stack-only rule was a response
+                  // to a solo re-crosser dying at (22,24), and a lone bot
+                  // still falls back to town below.
+                  if (q < 2) b.quorumWaitT0 = t;
                 }
                 if (b.mapId == 1 && b.quorumWaitT0 != 0.0) {
                   if (t - b.quorumWaitT0 < 45.0) {
@@ -1928,13 +1993,15 @@ int run(int argc, char** argv) {
                     continue;
                   }
                   const int q2 = quorumNear(b, b.campX, b.campY, 6);
-                  if (q2 >= 3) {
+                  if (q2 >= 2) {
                     b.quorumWaitT0 = 0.0;  // T-118 r13: cross as a STACK.
                     // The r8e pair-cap let duos/solos through; the r12
                     // leg's solo re-crosser died in the cocoon corridor
                     // (22,24), swarm 8. Under 3 after the cap: fall back
                     // to town and re-converge, like the solo rule.
-                  } else if (q2 < 3) {
+                    // T-125 r18: the pair cap is back (see above) — a duo
+                    // crosses, a lone bot still falls back.
+                  } else if (q2 < 2) {
                     // T-118 r8f: solo after the cap — the r8e4 looped bot
                     // sat the chapel 130 s, lost to the party. Walk back
                     // to town (node 0, rest 3 s, safe floor); the ~90 s

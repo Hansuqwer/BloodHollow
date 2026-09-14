@@ -71,10 +71,33 @@ def norm_belt(inv):
         rows.append("3001:16:0:0:100:0:0")
     return ";".join(rows) + ";"
 
+# T-125: gear + stat seed (idempotent). The handover (T-118-r8g.md §3) has
+# always claimed this script "re-seeds inventory rows 2002/2101 +
+# str/vit/dex via the python seed" — the committed script never did. The
+# r9-r17 party carried gear and stats EARNED by the grind legs in that
+# sandbox's DB, and both are gone. Without this the top-up force-sets
+# level=13 on a character still holding creation fists and no armor: a
+# materially weaker party than the one the series measured, which would
+# make any follow-on leg uninterpretable. Disclosed precedent: the original
+# T-118 crypt pre-seed (Pit Blade / Hide Armor / 16 vials via sqlite).
+# Blob grammar (server/src/world.cpp parseInvBlob):
+#   iid:qty:equipped:aura:durability:affix:refine;
+cur.execute(
+    f"UPDATE characters SET str=7, vit=11, dex=6 WHERE name IN ({marks})",
+    names)
+
+def norm_gear(inv):
+    rows = [rec for rec in (inv or "").split(";") if rec]
+    have = {rec.split(":")[0] for rec in rows}
+    for iid in ("2002", "2101"):  # Pit Blade (dmg 18) / Hide Armor (def 6)
+        if iid not in have:
+            rows.append(f"{iid}:1:1:0:100:0:0")  # equipped, full durability
+    return ";".join(rows) + ";"
+
 cur.execute(f"SELECT id, inv FROM characters WHERE name IN ({marks})", names)
 for (cid, inv) in cur.fetchall():
     con.execute("UPDATE characters SET inv = ? WHERE id = ?",
-                (norm_belt(inv), cid))
+                (norm_gear(norm_belt(inv)), cid))
 con.commit()
 cur.execute(f"SELECT name, level, xp FROM characters WHERE name IN ({marks}) ORDER BY name", names)
 print("before:", before)
