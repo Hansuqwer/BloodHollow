@@ -294,8 +294,26 @@ static int raiderRoute(int mapId, int idx, int* x, int* y, double* rest,
       r = r3; n = 5; break;
     }
     case 5: {
-      static const RaiderNode r5[] = {{22, 3, 0.0, false}};
-      r = r5; n = 1; break;
+      // T-125 r21: the depths finally get a route. One node at (22,3) made
+      // the crossing a single 46-step dive from the portal, and both r19 and
+      // r20 died inside it — arriving at 84-100% hp and reaching a deepest
+      // x of 12 out of 22. Nodes verified against
+      // data/maps-src/drowned_crypt.tmj and the derived blocked grid
+      // (mapconv: ground id in {2,3} = blocked): the walkable corridor is
+      // (3,30) -> north up x=6 -> (6,12) -> east along y=10 -> (22,10) ->
+      // north up x=22 -> (22,3). All four nodes below are walkable and on
+      // that corridor. (The r18-r20 handover suggested (8,20) and (14,12):
+      // BOTH ARE BLOCKED — verified, do not use them.)
+      // Anchors, all aggro 7-8: entry elite (3,29), west chapel elite
+      // (13,18), causeway pair (8,8), apse elites (16,4)/(25,4), Sexton
+      // (21,5), Gravemother (21,2). No tile on the corridor is outside
+      // every aggro field, so these nodes exist to STAGE the fights — the
+      // map-5 waypoint quorum holds already apply — not to rest.
+      static const RaiderNode r5[] = {{6, 21, 0.0, false},   // entry elite, as a stack
+                                      {13, 10, 0.0, false},  // shoulder: causeway pair comes to us
+                                      {22, 10, 0.0, false},  // foot of the apse climb
+                                      {22, 3, 0.0, false}};  // the font
+      r = r5; n = 4; break;
     }
     case 2: {
       static const RaiderNode r2[] = {{0, 14, 0.0, true}};
@@ -1641,6 +1659,19 @@ int run(int argc, char** argv) {
             // cantor's).
             // T-125 r20: kitClass 2 — the band belongs to the kit that owns
             // the bolt (see the cast gate above).
+            // T-125 r22 ATTEMPTED AND REVERTED (measured inconclusive, not
+            // red). The plan was to switch this band ON at the font so the
+            // Gravecaller trades bolts from 7-8 — outside the Gravemother's
+            // bolt range 6 — instead of walking into a 40-dmg slam. Two legs
+            // ran it (r22, r22b) and NEITHER exercised it: r22 never reached
+            // map 5 at all (618 of 791 traces on map 1, deepest map-3 x=36),
+            // and r22b put two bots on map 5 for 1.3-2.3 s, stuck at node
+            // (6,21), 16 traces total. The change is inert on maps 1 and 3,
+            // where both legs were actually lost, so it was never measured.
+            // Reverted rather than left in: the band ends in `continue`, so
+            // an unexercised map-5 branch is exactly the r8c stall risk
+            // sitting inside the best-known configuration (r21). Re-land it
+            // only behind a leg that reaches the font.
             if (raider && b.kitClass == 2 && bestD <= 8 &&
                 b.mapId != 1 && b.mapId != 3 && b.mapId != 5) {
               b.attackTarget = 0;

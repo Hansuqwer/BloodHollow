@@ -750,10 +750,10 @@ flags:** PRs #22/#23 (T-122/T-123) now CONFLICT in `tools/bots/main.cpp`
 has taken — they renumber on merge. Devlog 0085 · card `done/T-124.md` ·
 next card **T-125**, next devlog **0086**.
 
-## Done — T-125 (2026-09-13): M3 gate follow-on r18→r20 — the reach stops being luck
+## Done — T-125 (2026-09-13): M3 gate follow-on r18→r22 — the reach stops being luck
 
-T-125 BOT-ONLY (raider profile; no server/sim change, epoch stays 21). Three
-900 s legs, every journal replayed bit-exact. **r18** restored r9's map-1
+T-125 BOT-ONLY (raider profile; no server/sim change, epoch stays 21). Six
+900 s legs (r18-r22b), every journal replayed bit-exact. **r18** restored r9's map-1
 posture (individual return march + cap-cross q>=2, keeping r16b's
 election/re-adoption): 0 map-5 entries, deaths 12/4/6/2/8, but **all five
 reached map-3 x=38-39** (barrow corridor) vs r17's x=24. **r19** added
@@ -769,16 +769,30 @@ Gates moved to `kitClass == 2` and the channel table pinned in
 `tests/test_kits.cpp` (runtime-proven via `World::trySkill`): **4/5 map-5
 entries at 268.4/268.6/269.4/272.1 s**, `bossSeen=20 curse=2 slam=0`, first
 elite kills at this gate. **Boss verdict STILL NOT ESTABLISHED** — the party
-arrives on map 5 at 84-100% hp and dies crossing (3,30)->(22,3), deepest
-x=12; map 5 has a single route node and the kiter band is off there. Next:
-r21 map-5 route nodes, r22 kiter band on map 5. Also corrected:
+arrives on map 5 at 84-100% hp and died crossing (3,30)->(22,3) at deepest
+x=12, because map 5 had a **single** route node. **r21** staged that
+crossing — **(6,21)->(13,10)->(22,10)->(22,3)** on the verified walkable
+corridor — and it worked: **4/5 map-5 entries at 231.7/232.8/237.5/237.9 s**,
+map-5 traces 24->122, **elites 3/5/5/5**, trash 2-4 -> 12-14, `bossSeen=26`.
+The party now dies at **x=15** inside **three simultaneous aggro fields**
+(apse elite (16,4) r8, Sexton (21,5) r8, Gravemother (21,2) r8) — the last 7
+tiles are the whole fight. **r22** (kiter band on map 5, so the Gravecaller
+trades bolts from 7-8, outside her bolt range 6) was **attempted, never
+exercised by either of its two legs, and reverted**: r22 never entered map 5
+(618 of 791 traces on map 1), r22b put two bots there for 1.3/2.3 s stuck at
+node (6,21). The change is inert on maps 1/3 where both legs were lost, so
+that is **leg variance, not the lever** — and an unexercised `continue`
+branch on map 5 is the r8c stall risk inside the best-known configuration.
+**Leg variance is large** (same binary: 0/5 then 2/5; r21 4/5) — one leg
+cannot retire a lever, and one cannot promote one. Next: re-run r21, then
+break the x=15 triple-aggro (candidate node (19,10)). Also corrected:
 `m3_topup.sh` never seeded the gear/stats its own handover claimed (added,
 idempotent) — without it a cold-sandbox top-up stages a fists-and-rags L13.
 Suite **209/209 · 329,058** (+6), ctest 2/2, duel pin `b273be661b54673a`,
 r17 journal preserved byte-identical (md5 `b4c0cf3f…`). Devlog 0086 · card
-`done/T-125.md` · handover `docs/handover/T-125-r18-r20.md` · journals
-`logs/m3_gate_r{18,19,20}.bwj` force-added. Next card **T-126**, next devlog
-**0087**.
+`done/T-125.md` · handover `docs/handover/T-125-r18-r22.md` · journals
+`logs/m3_gate_r{18,19,20,21,22,22b}.bwj` force-added. Next card **T-126**,
+next devlog **0087**.
 
 
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)

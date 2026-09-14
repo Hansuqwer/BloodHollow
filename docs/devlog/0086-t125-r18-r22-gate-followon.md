@@ -1,17 +1,20 @@
-# 0086 — The reach stops being luck, and the kiter was never casting (T-125)
+# 0086 — The reach stops being luck, the kiter was never casting, and the crossing got a route (T-125)
 
 T-118's series closed on an uncomfortable sentence: the font was reached
 once, in ten legs, and the leg that reproduced its posture exactly did not
 reproduce the reach. So the entry went into the record as luck. The
 follow-on had one job — find out whether that was true.
 
-It wasn't. Three legs, all 900 s, all replayed bit-exact:
+It wasn't. Six legs, all 900 s, all replayed bit-exact:
 
 | leg | change | map-5 entries | reach times |
 |---|---|---|---|
 | r18 | r9's map-1 posture restored (individual march, cap-cross q≥2) | 0 | — |
 | r19 | + distance-aligned marks | **3/5** | **147.1 / 147.8 / 196.4 s** |
 | r20 | + the Firebolt kit-gate fix | **4/5** | **268.4 / 268.6 / 269.4 / 272.1 s** |
+| **r21** | + a staged map-5 route (four nodes) | **4/5** | **231.7 / 232.8 / 237.5 / 237.9 s** |
+| r22 | + the kiter band on map 5 — **reverted** | 0 | — |
+| r22b | r22 re-run, same binary | 2/5 | 331.0 / 331.3 s |
 
 Two consecutive reaches where the previous ten legs produced one, and r19 got
 there in a quarter of r9's time. r9 wasn't a lucky corridor; the party had
@@ -68,10 +71,54 @@ corridor spine and map 5 got nothing. And the kiter band is still switched
 off on map 5, so the Gravecaller now bolts, but from inside the boss's range
 rather than outside it.
 
-r21 gives map 5 a route; r22 puts the kiter on the 7–8 band at the font. If
-a four-deep party with working ranged damage and a staged crossing still
-cannot kill her, "unkillable at L13" becomes a real measured finding. It has
-not been earned yet — until r20 the party never had ranged damage at all.
+## The crossing got a route, and it worked
+
+r21 gave map 5 the spine map 3 already had. The geometry had to be verified
+rather than read from the handover, and that mattered: the handover's own
+suggestion put nodes at `(8,20)` and `(14,12)`, and both are **blocked**. The
+walkable corridor runs up x=6, east along y=10, then north up x=22 to the
+font — 46 steps from the portal. Four nodes on it, **(6,21) → (13,10) →
+(22,10) → (22,3)**, turned the dive into four fights, and the numbers moved
+everywhere at once:
+
+- map-5 time in the traces: **24 → 122** entries
+- elites killed per bot: **1 → 3, 5, 5, 5**
+- trash: **2–4 → 12–14**
+- reach: **4/5 at 231.7 / 232.8 / 237.5 / 237.9 s**, `bossSeen=26`
+
+Deepest x went 12 → **15**. The party clears the entry chapel, holds the
+causeway shoulder at (13,10), and dies where three aggro fields overlap:
+apse elite (16,4) r8, Sexton (21,5) r8, Gravemother (21,2) r8. The last
+seven tiles of the corridor are the whole fight, and a four-deep L13 party
+walking into three 8-tile fields at once is not going to survive it by
+DPS alone.
+
+## And a lever that never got a fair test
+
+r22 switched the kiter band on at the font — the Gravemother's bolt range is
+6 and our Firebolt's is 8, so the Gravecaller can trade from outside her
+reach if it stops walking into a 40-damage slam. Two legs ran that binary.
+**Neither one reached the code.**
+
+r22 never entered map 5 at all: 618 of its 791 traces were on map 1, its
+deepest map-3 x was 36, and it visited node (39,12) five times where r21
+visited it 115. r22b, the same binary re-run, put two bots on map 5 for
+**1.3 seconds and 2.3 seconds**, stuck at node (6,21), sixteen traces total.
+The band never fired at the font in either leg.
+
+The diff is provably inert on maps 1 and 3 — `bandMap` is false there and
+the compiled path is byte-identical — and that is where both legs were
+actually lost. So the honest verdict is **inconclusive**, not "the kiter
+band is bad". Same binary, same staging, 0/5 then 2/5, against r21's 4/5:
+one 900 s leg is a sample of one, and this series has always said so.
+
+It was reverted anyway, and the reason is not caution for its own sake: the
+band ends in `continue`, so leaving it in means leaving an unexercised
+branch on map 5 inside the best-known configuration, where the failure mode
+is exactly the r8c stall the series already paid for once. Re-land it behind
+a leg that reaches the font, with the front-runner guard intact — the runner
+owns the route machine the whole column follows, and banding it is how a
+stall becomes a wipe.
 
 ## Housekeeping worth recording
 
@@ -85,9 +132,9 @@ looked like evidence and meant nothing, so the seed went into the script
 (Pit Blade, Hide Armor, 7/11/6), idempotent and disclosed. Two docs claimed
 behaviour the code did not have. Only one of them was in a comment.
 
-Legs of record: `logs/m3_gate_r18.bwj`, `logs/m3_gate_r19.bwj`,
-`logs/m3_gate_r20.bwj`, each re-verified `mismatches=0`. The r17 journal
-`logs/m3_gate.bwj` was preserved byte-identical through all three
+Legs of record: `logs/m3_gate_r18.bwj` through `logs/m3_gate_r22b.bwj` (six
+legs), each re-verified `mismatches=0`. The r17 journal
+`logs/m3_gate.bwj` was preserved byte-identical through all six
 (md5 `b4c0cf3f3255e38071c172cc3a3336bd`) — the harness overwrites it, so it
 was copied aside and restored each time. Epoch stays 21, schema v11, duel pin
 untouched; no sim code moved.

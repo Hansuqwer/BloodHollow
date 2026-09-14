@@ -212,14 +212,18 @@ items (T-033/T-099) are never self-assigned.
 
 ## 5. Counters and pins (verify on the board anyway)
 **Amendment (2026-09-13, post-T-125):** T-125 landed the M3 gate follow-on
-(r18→r20): the font reach is **no longer luck-dependent** (3/5 then 4/5 in
-consecutive legs) and the **boss verdict is still open** — the party now dies
-crossing the depths (3,30)→(22,3), not on map 3. Suite pin moves to
-**209/209 · 329,058** (six new kit-channel assertions). New law to carry:
-**Firebolt (ch5) belongs to the Gravecaller (kit 2), not the Cultist** —
-kits.h leaves the Cultist's ch5 at 0 and `World::trySkill` silently drops the
-cast; pinned in `tests/test_kits.cpp`. Next moves: r21 map-5 route nodes, r22
-kiter band on map 5 (`docs/handover/T-125-r18-r20.md` §5). **Next card T-126
+(r18→r22): the font reach is **no longer luck-dependent** — r19 3/5, r20 4/5,
+**r21 4/5 at 232–238 s with 3–5 elite kills** — and the **boss verdict is
+still open**; the party now dies at map-5 x=15 inside three simultaneous
+aggro fields (apse elite (16,4), Sexton (21,5), Gravemother (21,2), all r8),
+not on map 3. Suite pin moves to **209/209 · 329,058** (six new kit-channel
+assertions). New law to carry: **Firebolt (ch5) belongs to the Gravecaller
+(kit 2), not the Cultist** — kits.h leaves the Cultist's ch5 at 0 and
+`World::trySkill` silently drops the cast; pinned in `tests/test_kits.cpp`.
+r22 (kiter band on map 5) was **attempted, never exercised by either of its
+two legs, and reverted** — do not treat it as tested. Next moves are in
+`docs/handover/T-125-r18-r22.md` §5: re-run r21 to confirm 4/5 is its mode,
+then break the x=15 triple-aggro (candidate node (19,10)). **Next card T-126
 · next devlog 0087.** Epoch 21 · schema v11 · wire 237 · duel pin unchanged.
 
 **Amendment (2026-09-13, post-T-124 wave):** master `2a813ec` — the T-118
