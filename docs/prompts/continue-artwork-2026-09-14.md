@@ -11,9 +11,11 @@ that boundary. Lane law (binds every turn): write ONLY `assets/aigen/`,
 ## Verify on entry (every turn, before any generation)
 
 ```
-git log --oneline -3        # expect the batch-1 commit below at/near HEAD
+git log --oneline -2        # expect dd337e0 (batch 2) at/near HEAD
+gh pr view 28 --json state  # expect OPEN (all 2026-09-14 art commits land here)
 ls assets/aigen/mobs/1004_plague_bat/plates/   # expect S, SE, E
-ls assets/aigen/players/gravecaller/{m,f}/plates/
+ls assets/aigen/players/gravecaller/{m,f}/plates/ | wc -l   # 9 + 9 today; 10 + 10 after the next batch
+```
 python3 - <<'EOF'           # md5-distinctness spot check on any new batch
 from PIL import Image; import glob, hashlib
 for p in sorted(glob.glob('assets/aigen/players/*/*/plates/*.png')):
@@ -21,7 +23,7 @@ for p in sorted(glob.glob('assets/aigen/players/*/*/plates/*.png')):
 EOF
 ```
 
-## DONE (this session, commit "B3 SE natives + B6 Gravecaller batch 1")
+## DONE (sessions of 2026-09-14 — commits 73de497 + dd337e0, all in PR #28; condensed session-starter: `assets/aigen/_pipeline/CONTINUE_PROMPT.md`)
 
 - **P0 CLOSED.** Native SE plates generated, accepted, and shipped into the
   sheets for `1004_plague_bat` + `1005_bonepicker_gnoll`
