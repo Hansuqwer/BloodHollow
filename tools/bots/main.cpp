@@ -309,11 +309,20 @@ static int raiderRoute(int mapId, int idx, int* x, int* y, double* rest,
       // (21,5), Gravemother (21,2). No tile on the corridor is outside
       // every aggro field, so these nodes exist to STAGE the fights — the
       // map-5 waypoint quorum holds already apply — not to rest.
+      // T-126 r24: r21 died between (13,10) and (22,10) at x=15 — the
+      // apse elite (16,4), the Sexton (21,5) and the Gravemother (21,2)
+      // aggro fields overlap there and the column was strung out
+      // mid-march. (19,10) sits on the corridor between (13,10) and
+      // (22,10) — verified walkable in the shipped drowned_crypt.bhmap
+      // (blocked=0, ground=1), 5 Chebyshev from the Sexton rect — so the
+      // waypoint quorum assembles the stack there and the apse elite is
+      // killed as a stacked fight before the last 7 tiles to the font.
       static const RaiderNode r5[] = {{6, 21, 0.0, false},   // entry elite, as a stack
                                       {13, 10, 0.0, false},  // shoulder: causeway pair comes to us
+                                      {19, 10, 0.0, false},  // T-126 r24: apse-elite wall, stacked
                                       {22, 10, 0.0, false},  // foot of the apse climb
                                       {22, 3, 0.0, false}};  // the font
-      r = r5; n = 4; break;
+      r = r5; n = 5; break;
     }
     case 2: {
       static const RaiderNode r2[] = {{0, 14, 0.0, true}};
