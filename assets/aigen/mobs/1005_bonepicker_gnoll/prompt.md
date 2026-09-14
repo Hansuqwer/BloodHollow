@@ -1,6 +1,6 @@
 # prompt.md — Bonepicker Gnoll (1005)
 
-**Status:** B3 first-pass GENERATED 2026-09-08 (native S + E plates; SE/SW/W/NW/N/NE derived). Offline QA pass; in-engine UNVALIDATED. Final prompts are appended verbatim under *Runs* when generation happens; the model/version goes to `assets/LICENSES.md` (write "undisclosed" if the provider hides it — never omit).
+**Status:** B3 first-pass GENERATED 2026-09-08; **native SE plate added 2026-09-14** (S/SE/E all native; SW/W/NW/N/NE derived; SE mirror-derivation superseded). Offline QA pass; in-engine UNVALIDATED. Final prompts are appended verbatim under *Runs* when generation happens; the model/version goes to `assets/LICENSES.md` (write "undisclosed" if the provider hides it — never omit).
 
 ## Prompt
 

@@ -33,6 +33,13 @@
    ],
    "width_limited": true
   },
+  "SE": {
+   "sprite_px": [
+    32,
+    34
+   ],
+   "width_limited": true
+  },
   "E": {
    "sprite_px": [
     32,
@@ -43,11 +50,12 @@
  },
  "native_plates": [
   "E",
-  "S"
+  "S",
+  "SE"
  ],
  "direction_provenance": {
   "S": "native",
-  "SE": "fallback",
+  "SE": "native",
   "E": "native",
   "N": "derived: S re-shaded (back view)",
   "NE": "derived: E re-shaded (3/4 back)",

@@ -1,6 +1,6 @@
 # prompt.md — Gravecaller — male base (gravecaller/m)
 
-**Status:** DRAFT prompt package (B0.5 A1). No plate generated. Final prompts are appended verbatim under *Runs* when generation happens; the model/version goes to `assets/LICENSES.md` (write "undisclosed" if the provider hides it — never omit).
+**Status:** B6 keyframe batch 1 GENERATED 2026-09-14 — 4 plates in `plates/` (walk_f0 S/SE/E, die_f3 S; 1774×887 keyed `#00FF00`). Remaining AI keyframes: die_f3 SE/E, attack_f1 SE/E, cast_f2 SE/E (6). Offline contact-sheet QA pass (`docs/research-notes/qa/turn2026-09-14_batch1_montage.png`); in-engine UNVALIDATED. Final prompts are appended verbatim under *Runs*; the model/version goes to `assets/LICENSES.md` (write "undisclosed" if the provider hides it — never omit).
 
 ## Prompt
 

@@ -31,4 +31,9 @@ Full prompt = PREFIX + ", " + SUBJECT + ", palette: " + PALETTE + " --neg " + NE
 32×48 (body ≤ 43 px; D2 ruled) · idle1+walk6+attack3+cast4+hurt2+die4+gib3 → 23 cols × 8 rows = 736×384
 
 ## Runs
-_(none yet — one line per generation: date · model or "undisclosed" · seed if known · which dirs · accepted y/n)_
+
+- walk_f0 S · 2026-09-14 · Arena Agent Mode image generation, model **undisclosed** (provider-abstracted), 1774×887 keyed, hardened pixel/green-screen prompt (Ravager-regen pattern) · seed n/a · SUBJECT + "walking mid-stride contact pose, left leg forward, facing the viewer front-on (SOUTH)" · accepted **y** (knife RIGHT, censer LEFT, robe stride, no painted shadow)
+- walk_f0 SE · 2026-09-14 · same provider, model **undisclosed** · seed n/a · SUBJECT + walk contact pose, "3/4 view facing SOUTH-EAST" · accepted **y**
+- walk_f0 E · 2026-09-14 · same provider, model **undisclosed** · seed n/a · SUBJECT + walk contact pose, "strict side profile facing EAST" · accepted **y**
+- die_f3 S · 2026-09-14 · same provider, model **undisclosed** · seed n/a · SUBJECT + "final death frame: collapsed and crumpled face-down, robe pooled, censer fallen beside the left hand, knife dropped" · accepted **y**
+- 10/10 distinct (md5); contact sheet `docs/research-notes/qa/turn2026-09-14_batch1_montage.png`. Next batch: die_f3 SE/E, attack_f1 SE/E, cast_f2 SE/E both sexes (12 plates; 10-image turn budget).
