@@ -791,9 +791,66 @@ idempotent) — without it a cold-sandbox top-up stages a fists-and-rags L13.
 Suite **209/209 · 329,058** (+6), ctest 2/2, duel pin `b273be661b54673a`,
 r17 journal preserved byte-identical (md5 `b4c0cf3f…`). Devlog 0086 · card
 `done/T-125.md` · handover `docs/handover/T-125-r18-r22.md` · journals
-`logs/m3_gate_r{18,19,20,21,22,22b}.bwj` force-added. Next card **T-126**,
-next devlog **0087**.
+`logs/m3_gate_r{18,19,20,21,22,22b}.bwj` force-added. (Counters as filed:
+next card T-126, next devlog 0087 — both **since consumed**, see the T-126
+row below.)
 
+
+## Done — T-126 (2026-09-14): PR #26 merge wave — T-124 + T-125 land on master
+
+Merge-wave / record-keeping card, authorized by
+`docs/prompts/merge-pr26-2026-09-13.md` (director: *"Make a prompt to merge.
+Execute prompt."* — this session only, **not precedent**; reverses the
+earlier "leave PR #26 open" instruction for that PR alone). **PR #26
+squash-merged** to master with the **PR title as the subject**: master
+`2a813ec` -> **`2845a3d`**, `mergedAt=2026-09-14T06:26:33Z`, source head
+`02dfa1d`. **Branch not deleted** (it is the session-pinned branch — a
+deliberate break with the four earlier waves).
+
+Preconditions all verified on the exact merged head: MERGEABLE/CLEAN, CI
+green on **both** jobs across two runs, `bh_tests` **209/209 · 329,058 ·
+0 failed**, duel pin `b273be661b54673a`, **seven** journals replaying mm=0
+(r17 record + r18-r22b), r17 journal byte-identical
+(md5 `b4c0cf3f3255e38071c172cc3a3336bd`), and **no `server/`, `shared/` or
+`client/` change** in the diff. Post-merge: `git diff origin/master 02dfa1d`
+**empty** -> `IDENTICAL TREES`.
+
+**Incident 1 — a green check that wasn't.** `build-test (macos-latest)`
+failed at the cmake Configure step on `71ab8d5` (Build/Tests skipped), and a
+poll loop printed `CI_GREEN` anyway because it tested for "not pending"
+rather than for pass. **The merge was held.** The failure log was unreadable
+— GitHub's results-receiver returned `EOF` on six attempts plus a zip
+download — so the diagnosis came from comparison, not from a log: the
+identical tree had passed macos at `7d47729` ten minutes earlier and the only
+change since was one markdown file. `gh run rerun --failed` was refused and
+the API rerun returned **`403 Resource not accessible by integration`** (no
+`actions:write`), so an empty commit forced a fresh run: both jobs passed,
+twice. **Recorded as transient on that evidence, not as a verified root
+cause.**
+
+**Incident 2 — `.git` rolled back a second time**, to `818d661` (pre-PR-#25),
+deleting local commit `39dbe3d` (`git cat-file` -> *Not a valid object
+name*) while the working tree kept every edit. Recovered with `git fetch` +
+`git reset --mixed 4e2c298` and a re-commit as `7d47729`; no force-push,
+nothing rewritten on the remote. This branch has now lost committed work to a
+rollback twice, and both times it survived only because the work had already
+been pushed — **push each commit as soon as it lands**.
+
+**Queue:** #22 (`c0de5634`) and #23 (`e0718d7d`, stacked) both edit
+`tools/bots/main.cpp` and both conflict against master
+(`git merge-tree` verified); both carry devlogs 0084/0085, which master has
+taken. They stay open for their owner to rebase and renumber.
+
+**Boss verdict: still NOT established.** Six legs, `bossSeen` 12 -> 26, zero
+Gravemother kills, no TTK in either direction. "M3 gate follow-on merged"
+means the reach stopped being luck and the crossing got a staged route —
+**not** that the boss is beaten. r22's kiter band stays recorded as
+**inconclusive, not measured red**.
+
+Devlog **0087** · card `done/T-126.md` · prompt
+`docs/prompts/merge-pr26-2026-09-13.md`. Counters: master **`2845a3d`** ·
+next card **T-127** · next devlog **0088** · epoch **21** · schema **v11** ·
+wire **237** · suite **209/209 · 329,058**.
 
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 

@@ -211,6 +211,22 @@ Blood Moon stays a director call (roadmap vs GDD §10 conflict). Human-only
 items (T-033/T-099) are never self-assigned.
 
 ## 5. Counters and pins (verify on the board anyway)
+**Amendment (2026-09-14, post-T-126 merge wave):** **PR #26 is MERGED** —
+master `2a813ec` -> **`2845a3d`**, squash with the PR title as subject,
+`mergedAt=2026-09-14T06:26:33Z`, source head `02dfa1d` (branch **not**
+deleted). `git diff origin/master 02dfa1d` empty -> identical trees. T-124
++ T-125 (r18->r22) are now on master. Counters: next card **T-127**, next
+devlog **0088**, epoch **21**, schema **v11**, wire **237**, suite
+**209/209 · 329,058**, duel pin `b273be661b54673a`. Two harness lessons to
+carry: (a) a poll loop that greps for "not pending" will report a **failed**
+CI job as green — read the rows, not the loop; (b) this sandbox rolls `.git`
+back while keeping the working tree, so `git fetch` + `git reset --mixed
+<remote-sha>` (never `--hard`) recovers, and pushing each commit promptly is
+the only real protection. **The boss verdict is still NOT established**:
+six legs, `bossSeen` 12 -> 26, zero Gravemother kills, no TTK either way.
+Queue: #22 / #23 still conflict against master and hold devlogs 0084/0085
+that master has taken.
+
 **Amendment (2026-09-13, post-T-125):** T-125 landed the M3 gate follow-on
 (r18→r22): the font reach is **no longer luck-dependent** — r19 3/5, r20 4/5,
 **r21 4/5 at 232–238 s with 3–5 elite kills** — and the **boss verdict is
@@ -223,8 +239,8 @@ assertions). New law to carry: **Firebolt (ch5) belongs to the Gravecaller
 r22 (kiter band on map 5) was **attempted, never exercised by either of its
 two legs, and reverted** — do not treat it as tested. Next moves are in
 `docs/handover/T-125-r18-r22.md` §5: re-run r21 to confirm 4/5 is its mode,
-then break the x=15 triple-aggro (candidate node (19,10)). **Next card T-126
-· next devlog 0087.** Epoch 21 · schema v11 · wire 237 · duel pin unchanged.
+then break the x=15 triple-aggro (candidate node (19,10)). *(Counters as filed: next card T-126 · next devlog 0087 — both since
+consumed; see the post-T-126 amendment above.)* Epoch 21 · schema v11 · wire 237 · duel pin unchanged.
 
 **Amendment (2026-09-13, post-T-124 wave):** master `2a813ec` — the T-118
 r8→r17 gate series landed (PR #25 squash), PR #24 closed superseded. Journal
