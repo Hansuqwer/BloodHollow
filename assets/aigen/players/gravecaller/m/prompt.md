@@ -1,6 +1,6 @@
 # prompt.md — Gravecaller — male base (gravecaller/m)
 
-**Status:** B6 keyframe batch 1 GENERATED 2026-09-14 — 4 plates in `plates/` (walk_f0 S/SE/E, die_f3 S; 1774×887 keyed `#00FF00`). Remaining AI keyframes: die_f3 SE/E, attack_f1 SE/E, cast_f2 SE/E (6). Offline contact-sheet QA pass (`docs/research-notes/qa/turn2026-09-14_batch1_montage.png`); in-engine UNVALIDATED. Final prompts are appended verbatim under *Runs*; the model/version goes to `assets/LICENSES.md` (write "undisclosed" if the provider hides it — never omit).
+**Status:** B6 keyframes 18/20 GENERATED (batches 1–2, 2026-09-14; 1774×887 keyed `#00FF00`). Remaining AI keyframes: cast_f2 E only (1). Offline contact-sheet QA passes (`docs/research-notes/qa/turn2026-09-14_batch{1,2}_montage.png`); in-engine UNVALIDATED. Final prompts are appended verbatim under *Runs*; the model/version goes to `assets/LICENSES.md` (write "undisclosed" if the provider hides it — never omit).
 
 ## Prompt
 
@@ -31,4 +31,14 @@ Full prompt = PREFIX + ", " + SUBJECT + ", palette: " + PALETTE + " --neg " + NE
 32×48 (body ≤ 43 px; D2 ruled) · idle1+walk6+attack3+cast4+hurt2+die4+gib3 → 23 cols × 8 rows = 736×384
 
 ## Runs
-_(none yet — one line per generation: date · model or "undisclosed" · seed if known · which dirs · accepted y/n)_
+
+- walk_f0 S · 2026-09-14 · Arena Agent Mode image generation, model **undisclosed** (provider-abstracted), 1774×887 keyed, hardened pixel/green-screen prompt (Ravager-regen pattern) · seed n/a · SUBJECT + "walking mid-stride contact pose, left leg forward, facing the viewer front-on (SOUTH)" · accepted **y** (knife RIGHT, censer LEFT, robe stride, no painted shadow)
+- walk_f0 SE · 2026-09-14 · same provider, model **undisclosed** · seed n/a · SUBJECT + walk contact pose, "3/4 view facing SOUTH-EAST" · accepted **y** (batch 1)
+- walk_f0 E · 2026-09-14 · same provider, model **undisclosed** · seed n/a · SUBJECT + walk contact pose, "strict side profile facing EAST" · accepted **y** (batch 1)
+- die_f3 S · 2026-09-14 · same provider, model **undisclosed** · seed n/a · SUBJECT + "final death frame: collapsed and crumpled face-down, robe pooled, censer fallen beside the left hand, knife dropped" · accepted **y** (batch 1)
+- die_f3 SE · 2026-09-14 · same provider, model **undisclosed** · seed n/a · die prompt + "3/4 view oriented toward the SOUTH-EAST" · accepted **y** (batch 2)
+- die_f3 E · 2026-09-14 · same provider, model **undisclosed** · seed n/a · die prompt + "strict side profile oriented toward the EAST" · accepted **y** (batch 2)
+- attack_f1 SE · 2026-09-14 · same provider, model **undisclosed** · seed n/a · SUBJECT + "melee attack contact frame: lunging forward, short bone knife thrusting in the RIGHT hand, censer held in the LEFT" · accepted **y** (batch 2)
+- attack_f1 E · 2026-09-14 · same provider, model **undisclosed** · seed n/a · attack prompt + "strict side profile facing EAST" · accepted **y** (batch 2)
+- cast_f2 SE · 2026-09-14 · same provider, model **undisclosed** · seed n/a · SUBJECT + "spell release frame: censer swung raised aloft in the LEFT hand, ember glow at the mouth, knife held low in the RIGHT" · accepted **y** (batch 2)
+- Batches 1–2: 10/10 distinct (md5), knife RIGHT verified on all attack/cast plates; contact sheets `docs/research-notes/qa/turn2026-09-14_batch{1,2}_montage.png`. Remaining: cast_f2 E (1 plate) — then Cultist starts. *(Batch-1 lines were lost to a concurrent-edit write race in commit 73de497 — re-recorded verbatim here.)*

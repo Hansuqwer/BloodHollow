@@ -28,13 +28,17 @@ EOF
   (`sh tools/atlaspack/b3_build.sh` → exit 0, 2026-09-14; SE provenance in
   `derivation.json` = native; 1001–1003 rebuilt byte-identical — the chain is
   deterministic, don't "fix" diffs on unchanged mobs).
-- **B6 Gravecaller batch 1 (8 plates)** — `players/gravecaller/{m,f}/plates/`:
-  walk_f0 S/SE/E + die_f3 S per sex (1774×887, keyed `#00FF00`, md5-distinct,
-  knife RIGHT / censer LEFT verified on all 8). Contact QA:
-  `docs/research-notes/qa/turn2026-09-14_batch1_montage.png`.
+- **B6 Gravecaller batches 1–2 (18/20 plates)** — `players/gravecaller/{m,f}/plates/`:
+  walk_f0 S/SE/E + die_f3 S/SE/E + attack_f1 SE/E + cast_f2 SE per sex (batch 2
+  adds die_f3 SE/E, attack_f1 SE/E, cast_f2 SE; 1774×887, keyed `#00FF00`,
+  md5-distinct, knife RIGHT / censer LEFT verified on all 18). Contact QA:
+  `docs/research-notes/qa/turn2026-09-14_batch{1,2}_montage.png`.
 - Bookkeeping: §Runs updated in all four touched `prompt.md` files;
-  `assets/LICENSES.md` row added. All plates/sheets remain
+  `assets/LICENSES.md` rows added. All plates/sheets remain
   **UNVALIDATED in engine** (T-ART-01/04/05 pending) — never claim otherwise.
+- Process rule learned the hard way: **never issue two `edit_file` calls to
+  the same file in one parallel batch** — one write per file was silently lost
+  in commit 73de497 (m Runs / f status) and had to be re-recorded.
 
 ## TODO queue (strict order; one 10-image batch per turn)
 
@@ -43,12 +47,13 @@ Per-sex AI keyframe template = **10 plates** (Ravager m/f are the completed
 reference set — compare counts against them):
 `walk_f0 S/SE/E (3) + die_f3 S/SE/E (3) + attack_f1 SE/E (2) + cast_f2 SE/E (2)`.
 
-1. **Next batch (10):** Gravecaller remaining 12 → take 10 now:
-   `gc_{m,f}_die_f3_{SE,E}` (4), `gc_{m,f}_attack_f1_{SE,E}` (4),
-   `gc_{m,f}_cast_f2_{SE,E}` first 2 (pick m cast SE + f cast SE).
-2. **Batch after (2 + 8):** last 2 Gravecaller cast plates, then Cultist m/f
-   walk_f0 S/SE/E + die_f3 S (8 of 20).
-3. Cultist remainder (12) spills into the following turn(s) the same way.
+1. **Next batch (10):** last 2 Gravecaller cast plates →
+   `gc_{m,f}_cast_f2_E` (2) — Gravecaller then stands at 20/20 — then Cultist
+   m/f walk_f0 S/SE/E + die_f3 S (8 of 20).
+2. **Batch after (10):** Cultist die_f3 SE/E + attack_f1 SE/E + cast_f2 SE
+   per sex (10 of 12).
+3. Cultist final 2 (cast_f2 E) + first Ravager-derived/img2img work spills
+   into the following turn(s) the same way.
 - Prompts are FROZEN per class/sex in `players/<class>/<sex>/prompt.md`
   (PREFIX/SUBJECT/PALETTE/NEGATIVE + §Runs). Never re-word mid-class; append
   the exact final prompt line per generation under §Runs.

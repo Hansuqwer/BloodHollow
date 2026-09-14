@@ -1,6 +1,6 @@
 # prompt.md — Gravecaller — female base (gravecaller/f)
 
-**Status:** DRAFT prompt package (B0.5 A1). No plate generated. Final prompts are appended verbatim under *Runs* when generation happens; the model/version goes to `assets/LICENSES.md` (write "undisclosed" if the provider hides it — never omit).
+**Status:** B6 keyframes 18/20 GENERATED (batches 1–2, 2026-09-14; 1774×887 keyed `#00FF00`). Remaining AI keyframes: cast_f2 E only (1). Offline contact-sheet QA passes (`docs/research-notes/qa/turn2026-09-14_batch{1,2}_montage.png`); in-engine UNVALIDATED. Final prompts are appended verbatim under *Runs*; the model/version goes to `assets/LICENSES.md` (write "undisclosed" if the provider hides it — never omit).
 
 ## Prompt
 
@@ -37,3 +37,9 @@ Full prompt = PREFIX + ", " + SUBJECT + ", palette: " + PALETTE + " --neg " + NE
 - walk_f0 E · 2026-09-14 · same provider, model **undisclosed** · seed n/a · SUBJECT + walk contact pose, "strict side profile facing EAST" · accepted **y**
 - die_f3 S · 2026-09-14 · same provider, model **undisclosed** · seed n/a · SUBJECT + "final death frame: collapsed and crumpled face-down, robe pooled, censer fallen beside the left hand, knife dropped" · accepted **y**
 - 10/10 distinct (md5); contact sheet `docs/research-notes/qa/turn2026-09-14_batch1_montage.png`. Next batch: die_f3 SE/E, attack_f1 SE/E, cast_f2 SE/E both sexes (12 plates; 10-image turn budget).
+- die_f3 SE · 2026-09-14 · Arena Agent Mode image generation, model **undisclosed** (provider-abstracted) · seed n/a · die prompt + "3/4 view oriented toward the SOUTH-EAST" · accepted **y** (batch 2)
+- die_f3 E · 2026-09-14 · same provider, model **undisclosed** · seed n/a · die prompt + "strict side profile oriented toward the EAST" · accepted **y** (batch 2)
+- attack_f1 SE · 2026-09-14 · same provider, model **undisclosed** · seed n/a · SUBJECT + "melee attack contact frame: lunging forward, short bone knife thrusting in the RIGHT hand, censer held in the LEFT" · accepted **y** (batch 2)
+- attack_f1 E · 2026-09-14 · same provider, model **undisclosed** · seed n/a · attack prompt + "strict side profile facing EAST" · accepted **y** (batch 2)
+- cast_f2 SE · 2026-09-14 · same provider, model **undisclosed** · seed n/a · SUBJECT + "spell release frame: censer swung raised aloft in the LEFT hand, ember glow at the mouth, knife held low in the RIGHT" · accepted **y** (batch 2)
+- Batch 2: 10/10 distinct (md5), knife RIGHT verified on all attack/cast plates; contact sheet `docs/research-notes/qa/turn2026-09-14_batch2_montage.png`. Remaining: cast_f2 E (1 plate) — then Cultist starts.
