@@ -309,11 +309,17 @@ static int raiderRoute(int mapId, int idx, int* x, int* y, double* rest,
       // (21,5), Gravemother (21,2). No tile on the corridor is outside
       // every aggro field, so these nodes exist to STAGE the fights — the
       // map-5 waypoint quorum holds already apply — not to rest.
+      // T-126 r23: break the x=15 triple-aggro (apse elite (16,4) r8,
+      // Sexton (21,5) r8, Gravemother (21,2) r8). Extra node (19,10)
+      // walkable (gid 2 at (19,10) in drowned_crypt.tmj, verified), 5 from
+      // Sexton, on y=10 corridor — apse elite killed before Sexton aggros.
+      // Corridor still: (3,30)->(6,21)->(13,10)->(19,10)->(22,10)->(22,3).
       static const RaiderNode r5[] = {{6, 21, 0.0, false},   // entry elite, as a stack
                                       {13, 10, 0.0, false},  // shoulder: causeway pair comes to us
+                                      {19, 10, 0.0, false},  // T-126: split apse climb, break triple-aggro
                                       {22, 10, 0.0, false},  // foot of the apse climb
                                       {22, 3, 0.0, false}};  // the font
-      r = r5; n = 4; break;
+      r = r5; n = 5; break;
     }
     case 2: {
       static const RaiderNode r2[] = {{0, 14, 0.0, true}};
@@ -1672,39 +1678,50 @@ int run(int argc, char** argv) {
             // an unexercised map-5 branch is exactly the r8c stall risk
             // sitting inside the best-known configuration (r21). Re-land it
             // only behind a leg that reaches the font.
+            // T-126 r23: re-land kiter band on map 5 with front-runner guard.
+            // Gravemother bolt 6 vs our Firebolt 8 → trade from 7-8 outside
+            // her range. Runner owns route machine — banding it stalls column
+            // (r8c risk), so skip band when self is front runner on map 5.
             if (raider && b.kitClass == 2 && bestD <= 8 &&
-                b.mapId != 1 && b.mapId != 3 && b.mapId != 5) {
-              b.attackTarget = 0;
-              const SeenEnt& se = b.ents[bestId];
-              const bool caster = (se.kind == 14 || se.kind == 9);
-              const int farEdge = caster ? 8 : 6;
-              const int nearEdge = caster ? 6 : 3;
-              if (bestD > farEdge) {
-                // close from range
-                bh::proto::InputPath ip;
-                ip.goalX = se.x;
-                ip.goalY = se.y;
-                sendProto(b.peer, bh::proto::pack(ip));
-              } else if (bestD <= nearEdge) {
-                // inside the band's near edge: step 4 out, away from her
-                const int ax = b.tileX - se.x, ay = b.tileY - se.y;
-                int gx = b.tileX, gy = b.tileY;
-                if (std::abs(ax) >= std::abs(ay) && ax != 0)
-                  gx += (ax > 0 ? 4 : -4);
-                else if (ay != 0)
-                  gy += (ay > 0 ? 4 : -4);
-                else
-                  gx += 4;
-                if (map->inBounds(gx, gy) && !map->isBlocked(gx, gy)) {
-                  bh::proto::InputPath ip;
-                  ip.goalX = gx;
-                  ip.goalY = gy;
-                  sendProto(b.peer, bh::proto::pack(ip));
-                }
+                b.mapId != 1 && b.mapId != 3) {
+              bool isRunnerOnMap5 = false;
+              if (b.mapId == 5) {
+                const FrontRunner fr = frontRunnerOf(b);
+                if (fr.id != 0 && fr.id == b.ownId) isRunnerOnMap5 = true;
               }
-              // band middle: stand and shoot; re-evaluate next tick
-              b.nextMoveAt = t + 0.5;
-              continue;
+              if (!isRunnerOnMap5) {
+                b.attackTarget = 0;
+                const SeenEnt& se = b.ents[bestId];
+                const bool caster = (se.kind == 14 || se.kind == 9);
+                const int farEdge = caster ? 8 : 6;
+                const int nearEdge = caster ? 6 : 3;
+                if (bestD > farEdge) {
+                  // close from range
+                  bh::proto::InputPath ip;
+                  ip.goalX = se.x;
+                  ip.goalY = se.y;
+                  sendProto(b.peer, bh::proto::pack(ip));
+                } else if (bestD <= nearEdge) {
+                  // inside the band's near edge: step 4 out, away from her
+                  const int ax = b.tileX - se.x, ay = b.tileY - se.y;
+                  int gx = b.tileX, gy = b.tileY;
+                  if (std::abs(ax) >= std::abs(ay) && ax != 0)
+                    gx += (ax > 0 ? 4 : -4);
+                  else if (ay != 0)
+                    gy += (ay > 0 ? 4 : -4);
+                  else
+                    gx += 4;
+                  if (map->inBounds(gx, gy) && !map->isBlocked(gx, gy)) {
+                    bh::proto::InputPath ip;
+                    ip.goalX = gx;
+                    ip.goalY = gy;
+                    sendProto(b.peer, bh::proto::pack(ip));
+                  }
+                }
+                // band middle: stand and shoot; re-evaluate next tick
+                b.nextMoveAt = t + 0.5;
+                continue;
+              }
             }
             b.attackTarget = 0;
             const SeenEnt& se = b.ents[bestId];

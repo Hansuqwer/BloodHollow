@@ -794,6 +794,9 @@ r17 journal preserved byte-identical (md5 `b4c0cf3f…`). Devlog 0086 · card
 `logs/m3_gate_r{18,19,20,21,22,22b}.bwj` force-added. Next card **T-126**,
 next devlog **0087**.
 
+## Done — T-126 (2026-09-14): M3 gate finalizer — 5/5 reach at 150s
+
+T-126 BOT-ONLY (raider; epoch stays 21). Two legs same binary (extra node (19,10) + kiter band re-land with runner guard): **300s smoke 5/5 at 147-152s elites 3-4 trash 8-9**, **900s gate 5/5 at 145.8/150.3/150.0/152.3/153.8s elites 1,5,5,5,2 trash 5-8**, replay mm=0 both. **Reach now 5/5, not 4/5, ~35% faster than r21's 4/5 at 232s**. Node (19,10) walkable (gid 2) splits apse climb, breaks triple-aggro staging; kiter band now exercised on map5 (was unmeasured in r22) with front-runner guard (never band runner — route machine). Boss verdict still open — no kills, party dies last 7 tiles at x=15 triple (16,4)/(21,5)/(21,2). Next: re-run r23 900s to confirm 5/5 mode, then extra node (22,6) or pre-mark ordering. Suite 209/209 · 329,058, duel pin `b273be661b54673a`, m3_gate.bwj (18042 ticks) and t120.bwj (1500 ticks) mm=0. Devlog 0087 · card `done/T-126.md` · handover `docs/handover/T-126-r23.md`. Next card **T-127**, next devlog **0088**.
 
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
