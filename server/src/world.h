@@ -288,6 +288,7 @@ class World {
     std::uint8_t emblem = 0;           // 0..9 placeholder (client chrome: T-123)
     std::string liege;                 // liege's character name
     std::vector<std::string> members;  // character names, registry of record
+    std::uint32_t vault = 0;           // T-140 tax-only pool (deposit-only MVP)
   };
   static constexpr int kPledgeMaxMembers = 20;              // lite cap (flagged)
   static constexpr std::int32_t kPledgeCreateGold = 10000;  // lite toll (flagged)
@@ -302,6 +303,8 @@ class World {
   bool pledgeDisband(Entity& e);
   void pledgeChat(const Entity& e, const std::string& text);  // events only
   void pledgeWho(const Entity& e);                            // roster reply
+  bool pledgeTithe(Entity& e, std::uint32_t amount);  // T-140 voluntary tithe
+  void pledgeVaultReadout(const Entity& e);           // T-140 vault reply
   void emitPledgeMsg(std::uint32_t pledgeId, std::uint32_t aboutId,
                      const std::string& text);
   // replay-only: restore membership from the journal g-sidecar, synthesizing

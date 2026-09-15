@@ -40,6 +40,7 @@ struct PledgeRec {
   std::string name;
   int emblem = 0;
   std::string liege;
+  std::uint32_t vault = 0;  // T-140 tax-only pool (v14)
 };
 
 // SQLite (WAL) persistence, ADR-0004. Login flow for M1 is intentionally a

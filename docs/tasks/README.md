@@ -952,6 +952,15 @@ schema, no wire, no journal change. 286/286 (4 new) · `logs/t139.bwj`
 (5-member single enlistment, replay mm=0) · `t138.bwj` mm=0 (neutrality).
 Devlog 0100 · card `T-139.md` (→ done on merge). Next: T-140 pledge vault.
 
+## Done — T-140 (2026-09-15): pledge vault, deposit-only MVP (Phase P done)
+
+T-140 VAULT: `Pledge::vault` (hash-neutral) + tithe (kind 41) + vault
+readout + sworn-holder drip routing (name-keyed, offline-safe); schema
+v13→**v14**; disband burns the pool. No epoch (26), no wire. 291/291
+(5 new) · `logs/t140.bwj` (vault=500, kind-41, replay mm=0) · `t138`/`t139`
+mm=0 (neutrality). Live-crown drip proof deferred (doctest twins pin it).
+Devlog 0101 · card `T-140.md` (→ done on merge). Next: Phase A art.
+
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
 | Card | Title | Notes |

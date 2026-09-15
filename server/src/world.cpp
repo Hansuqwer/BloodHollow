@@ -2843,7 +2843,7 @@ bool World::partyKick(Entity& leader, std::uint32_t targetId) {
 
 // ---- pledge-lite (T-122) ---------------------------------------------------
 // Persistent social registry (GDD §8 MVP cut: create/emblem/ranks/chat; the
-// vault/tax half arrives with the Phase-4 holdings card). Design notes:
+// vault/tax half landed with T-140: deposit-only vault, sworn-holder drip).
 // - Membership by character NAME: entities are session-transient, pledges are
 //   not. e.pledgeId/rank is the entity-side cache, restored at login (DB live,
 //   journal g-sidecar in replay).
@@ -3032,6 +3032,43 @@ const World::Pledge* World::pledgeById(std::uint32_t id) const {
   for (const Pledge& p : pledges_)
     if (p.id == id) return &p;
   return nullptr;
+}
+
+// ---- pledge vault (T-140, Phase P 3/3) --------------------------------------
+// MVP-lite: DEPOSIT ONLY (siege tax drip while the holder is sworn + voluntary
+// tithe). No withdrawal economy — disband burns the vault with the registry
+// row (documented, no silent loss: the book says so at disband time via the
+// emitPledgeMsg line). Outside worldHash like all pledge state (T-122 law).
+bool World::pledgeTithe(Entity& e, std::uint32_t amount) {
+  if (e.kind != EntityKind::kPlayer || e.dead || e.pledgeId == 0) return false;
+  if (amount == 0 || amount > e.gold) return false;  // quiet, era-right
+  Pledge* p = const_cast<Pledge*>(pledgeById(e.pledgeId));
+  if (p == nullptr) return false;
+  e.gold -= amount;
+  p->vault += amount;
+  pledgesDirty = true;
+  WorldEvent ev;
+  ev.chatCh = 255;
+  ev.aboutId = e.id;
+  ev.chatText = e.name + " tithes " + std::to_string(amount) + "g to " +
+                p->name + " (" + std::to_string(p->vault) + "g in vault).";
+  events_.push_back(std::move(ev));
+  return true;
+}
+
+void World::pledgeVaultReadout(const Entity& e) {
+  if (e.kind != EntityKind::kPlayer) return;
+  std::string line = "Unsworn. No vault to count.";
+  if (e.pledgeId != 0) {
+    if (const Pledge* p = pledgeById(e.pledgeId))
+      line = p->name + " vault: " + std::to_string(p->vault) +
+             "g (tax-only, deposit-only).";
+  }
+  WorldEvent ev;
+  ev.chatCh = 255;
+  ev.aboutId = e.id;
+  ev.chatText = line;
+  events_.push_back(std::move(ev));
 }
 
 bool World::nearRegistrar(const Entity& e) const {
@@ -3313,8 +3350,27 @@ void World::killMob(Entity& mob, Entity* killer) {
         if (siegeHolder_ != 0) {  // T-134 castle tax: 5% of the award, silent
           const std::uint32_t tithe = award * 5u / 100u;
           award -= tithe;
-          siegeVault_ += tithe;
-          siegeDirty_ = true;
+          // T-140: a sworn holder's drip feeds the pledge vault (deposit-only
+          // MVP); unsworn holders keep the castle pool. Name-keyed: the holder
+          // need not be online for the oath to eat.
+          Pledge* sworn = nullptr;
+          if (!siegeHolderName_.empty()) {
+            for (Pledge& p : pledges_) {
+              for (const std::string& m : p.members)
+                if (m == siegeHolderName_) {
+                  sworn = &p;
+                  break;
+                }
+              if (sworn != nullptr) break;
+            }
+          }
+          if (sworn != nullptr) {
+            sworn->vault += tithe;
+            pledgesDirty = true;
+          } else {
+            siegeVault_ += tithe;
+            siegeDirty_ = true;
+          }
         }
         killer->gold += award;  // bad moral: richer drops (folded above)
         WorldEvent ev2;

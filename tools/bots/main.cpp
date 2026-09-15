@@ -1462,6 +1462,11 @@ int run(int argc, char** argv) {
           } else if (b.pledgeStep == 5 && t >= b.nextPartyTryAt) {
             say("/pledge kick " + botName(2));
             b.pledgeStep = 6;
+            b.nextPartyTryAt = t + 2.0;
+          } else if (b.pledgeStep == 6 && t >= b.nextPartyTryAt) {
+            say("/pledge tithe 500");  // T-140: voluntary deposit (seeded 15k)
+            say("/pledge vault");
+            b.pledgeStep = 7;
           }
         } else {  // the oath-takers
           if (b.pledgeStep == 0 && lt >= 13.0 && t >= b.nextPartyTryAt) {

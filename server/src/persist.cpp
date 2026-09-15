@@ -208,6 +208,16 @@ bool Db::open(const std::string& path, std::string* err) {
     if (!exec("PRAGMA user_version=13;", err)) return false;
     uv = 13;
   }
+  if (uv < 14) {
+    // v14 (T-140): pledge vault — tax-only pool (deposit-only MVP). The
+    // pledges table always exists here (v13 above runs first on old DBs).
+    if (!exec("ALTER TABLE pledges ADD COLUMN vault_gold INTEGER NOT NULL DEFAULT 0;",
+              err)) {
+      return false;
+    }
+    if (!exec("PRAGMA user_version=14;", err)) return false;
+    uv = 14;
+  }
   return true;
 }
 
@@ -445,10 +455,11 @@ bool Db::loadSiege(SiegeRow* out, std::string* err) {
 }
 
 // ---- T-122 pledge-lite registry I/O (live shell only) ----------------------
+// T-140: SELECT carries vault_gold (v14; Db::open always migrates first).
 bool Db::loadPledges(std::vector<PledgeRec>* out, std::string* err) {
   if (db_ == nullptr) return false;
   sqlite3_stmt* st = nullptr;
-  if (sqlite3_prepare_v2(db_, "SELECT id, name, emblem, liege FROM pledges;", -1,
+  if (sqlite3_prepare_v2(db_, "SELECT id, name, emblem, liege, vault_gold FROM pledges;", -1,
                          &st, nullptr) != SQLITE_OK) {
     if (err) *err = "prepare failed (pledges)";
     return false;
@@ -459,6 +470,7 @@ bool Db::loadPledges(std::vector<PledgeRec>* out, std::string* err) {
     p.name = reinterpret_cast<const char*>(sqlite3_column_text(st, 1));
     p.emblem = sqlite3_column_int(st, 2);
     p.liege = reinterpret_cast<const char*>(sqlite3_column_text(st, 3));
+    p.vault = static_cast<std::uint32_t>(sqlite3_column_int64(st, 4));
     out->push_back(std::move(p));
   }
   sqlite3_finalize(st);
@@ -514,9 +526,10 @@ bool Db::upsertPledge(const PledgeRec& p, std::string* err) {
   if (db_ == nullptr) return false;
   sqlite3_stmt* st = nullptr;
   if (sqlite3_prepare_v2(db_,
-                         "INSERT INTO pledges (id, name, emblem, liege) VALUES (?,?,?,?) "
+                         "INSERT INTO pledges (id, name, emblem, liege, vault_gold) VALUES (?,?,?,?,?) "
                          "ON CONFLICT(id) DO UPDATE SET name=excluded.name, "
-                         "emblem=excluded.emblem, liege=excluded.liege;",
+                         "emblem=excluded.emblem, liege=excluded.liege, "
+                         "vault_gold=excluded.vault_gold;",
                          -1, &st, nullptr) != SQLITE_OK) {
     if (err) *err = "prepare failed (pledges upsert)";
     return false;
@@ -525,6 +538,7 @@ bool Db::upsertPledge(const PledgeRec& p, std::string* err) {
   sqlite3_bind_text(st, 2, p.name.c_str(), -1, SQLITE_TRANSIENT);
   sqlite3_bind_int(st, 3, p.emblem);
   sqlite3_bind_text(st, 4, p.liege.c_str(), -1, SQLITE_TRANSIENT);
+  sqlite3_bind_int64(st, 5, p.vault);
   const bool ok = sqlite3_step(st) == SQLITE_DONE;
   sqlite3_finalize(st);
   if (!ok && err) *err = "pledges upsert failed";

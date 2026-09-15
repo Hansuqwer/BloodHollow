@@ -28,13 +28,14 @@ struct Command {
                              kSiegeReg, kSiegeStart, kBreach, kCrown,
                              kPledgeCreate, kPledgeInvite, kPledgeAccept,
                              kPledgeLeave, kPledgeKick, kPledgeRank,
-                             kPledgeDisband } kind;
+                             kPledgeDisband, kPledgeTithe } kind;
   // T-053: a = kit id; T-056: kDuel a = target id (resolved pre-journal);
   // T-122/T-138: pledge a = target id (invite/kick/rank; resolved
   // pre-journal), channel = rank for kPledgeRank; kPledgeCreate carries
   // the name in text live-only (the c-line journal carries no strings —
   // replay synthesizes "pledge-<id>", hash-neutral: pledge state is not
-  // in worldHash). Pledge kinds sit at 34-40 (post-T-133 append).
+  // in worldHash). Pledge kinds sit at 34-40 (post-T-133 append);
+  // kPledgeTithe is 41 (T-140, a = gold amount).
   std::int32_t a = 0, b = 0;
   std::uint8_t channel = 0;
   std::string text{};
@@ -214,6 +215,9 @@ inline void applyWorldCommand(World& w, Entity& e, const Command& c) {
       break;
     case Command::kPledgeDisband:
       w.pledgeDisband(e);
+      break;
+    case Command::kPledgeTithe:
+      w.pledgeTithe(e, static_cast<std::uint32_t>(c.a));  // T-140 tithe
       break;
     case Command::kChat:
     case Command::kPing:

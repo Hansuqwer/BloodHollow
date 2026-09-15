@@ -371,7 +371,7 @@ TEST_CASE("T-122: g-sidecar restore — stubs, membership dedup") {
   CHECK(L->pledgeId == 6);
 }
 
-TEST_CASE("T-122/T-138: schema v13 — migration, registry + membership round-trip") {
+TEST_CASE("T-122/T-138: schema migration to head — registry + membership round-trip") {
   const std::string path = tmpDbPath("v12");
   rmDb(path);
 
@@ -403,7 +403,7 @@ TEST_CASE("T-122/T-138: schema v13 — migration, registry + membership round-tr
 
   server::Db db;
   std::string err;
-  REQUIRE(db.open(path, &err));  // migrates v11->v12->v13
+  REQUIRE(db.open(path, &err));  // migrates v11->..->head
 
   // registry round-trip
   server::PledgeRec rec;
@@ -459,7 +459,7 @@ TEST_CASE("T-122/T-138: schema v13 — migration, registry + membership round-tr
   sqlite3_stmt* st = nullptr;
   REQUIRE(sqlite3_prepare_v2(check, "PRAGMA user_version;", -1, &st, nullptr) == SQLITE_OK);
   REQUIRE(sqlite3_step(st) == SQLITE_ROW);
-  CHECK(sqlite3_column_int(st, 0) == 13);  // T-138: schema v13 (was v12 in T-122)
+  CHECK(sqlite3_column_int(st, 0) == 14);  // T-140: schema v14 (was v13 in T-138)
   sqlite3_finalize(st);
   sqlite3_close(check);
   rmDb(path);
