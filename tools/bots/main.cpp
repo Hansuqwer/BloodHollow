@@ -152,9 +152,11 @@ struct Bot {
   // T-136 siege rehearsal: attacker choreography (march/reg/breach/crown).
   // Staging tiles (tmj-verified walkable; generator staging until PR #23):
   // castle_road (21,14) map 1; gates (23,10)/(26,10); stone ring (28,10).
-  int siegeStage = 0;  // 0 march, 1 reg, 2 start, 3/4 breach, 5 crown loop
+  int siegeStage = 0;  // atk: 0 march,1 reg,2 start,3/4 breach,5 crown loop
+                       // def: 10 march, 11 hold ring (set via --defenders)
   double siegeT0 = -1.0;
   bool siegeRegged = false, siegeStartSent = false;
+  bool siegeDefend = false;  // set from botIdx < defenders at init
   int siegeBreachN = 0;
   double nextBreachAt = 0.0, nextCrownAt = 0.0;
   std::uint64_t siegeDeathsSeen = 0;
@@ -361,6 +363,7 @@ int run(int argc, char** argv) {
   bool reckless = false;  // M2 gate hires: no flasks, no shopping
   int targetLevel = 8;  // campaign profile: stop condition (OwnStats level)
   int partySize = 0;    // T-118: N-party formation (>=3 replaces S13 pair-up)
+  int defenders = 0;    // T-137: first N siege bots DEFEND (hold the stone)
   std::string visitGoal = "";
 
   for (int i = 1; i < argc; ++i) {
@@ -377,11 +380,12 @@ int run(int argc, char** argv) {
     else if (a == "--visit") visitGoal = next("");  // "x,y" anchor: path into reach
     else if (a == "--target-level") targetLevel = std::atoi(next("8"));
     else if (a == "--party-size") partySize = std::atoi(next("0"));
+    else if (a == "--defenders") defenders = std::atoi(next("0"));  // T-137
     else {
       std::fprintf(stderr,
                    "usage: bh_bots [--host H] [--port P] [--count N] [--secs S] [--map M] "
                   "[--prefix P] [--profile wander|fighter|pilgrim|campaign|crypt|raider|siege] "
-                  "[--target-level N] [--party-size N]\n");
+                  "[--target-level N] [--party-size N] [--defenders N]\n");
       return 2;
     }
   }
@@ -1185,11 +1189,58 @@ int run(int argc, char** argv) {
       // sound the horn (bot 0), ram both gates, hold the stone and kneel.
       // Every verb is server-gated quietly — mistimed lines are harmless.
       if (siege && b.welcomed) {
-        if (b.siegeT0 < 0.0) { b.siegeT0 = t; b.siegeDeathsSeen = b.deaths; }
+        if (b.siegeT0 < 0.0) {
+          b.siegeT0 = t;
+          b.siegeDeathsSeen = b.deaths;
+          // T-137 defenders: first N bots hold the stone (never register).
+          // Friend-or-foe is a drill-harness name convention (atk_/def_
+          // prefixes): the wire carries no bands until Phase P pledges.
+          b.siegeDefend = (int)botIdx < defenders;
+          if (b.siegeDefend) b.siegeStage = 10;
+        }
         if (b.deaths != b.siegeDeathsSeen) {  // fell: re-march, re-register
           b.siegeDeathsSeen = b.deaths;
-          b.siegeStage = 0;
+          b.siegeStage = b.siegeDefend ? 10 : 0;
           b.siegeRegged = false;
+        }
+        // T-137 bands ARE parties (5-man quintiles; M4's 40 = 8 bands):
+        // leaders invite on march, members accept. Re-inviting is free
+        // (renew, not spam: 10 s cadence, crypt precedent). HOLD AT SPAWN
+        // until the quintile shows in the roster (invites refuse past 12
+        // tiles and a marching column outruns them): march on complete or
+        // 60 s timeout, whichever first.
+        if (!b.siegeDefend && b.siegeStage == 0 && b.partyTries < 100) {
+          const int lead = (botIdx / 5) * 5;
+          if ((int)botIdx == lead && t >= b.nextPartyTryAt) {
+            // one cadence tick invites ALL missing quintile members (the
+            // per-member gate starved formation to one invite per 10 s).
+            b.nextPartyTryAt = t + 10.0;
+            ++b.partyTries;
+            for (int k = 1; k < 5; ++k) {
+              const size_t si = static_cast<size_t>(lead + k);
+              if (si >= bots.size()) break;
+              if (!bots[si].welcomed) continue;
+              bool already = false;
+              for (const auto& kv : b.party) {
+                if (kv.second.name == bots[si].name) {
+                  already = true;
+                  break;
+                }
+              }
+              if (already) continue;
+              bh::proto::ChatSend cs;
+              cs.channel = 0;
+              cs.text = "/invite " + bots[si].name;
+              sendProto(b.peer, bh::proto::pack(cs));
+            }
+          } else if ((int)botIdx != lead && t >= b.nextPartyTryAt) {
+            b.nextPartyTryAt = t + 10.0;
+            ++b.partyTries;
+            bh::proto::ChatSend cs;
+            cs.channel = 0;
+            cs.text = "/accept";
+            sendProto(b.peer, bh::proto::pack(cs));
+          }
         }
         auto siegeGoto = [&](int gx, int gy) {
           const int d = std::max(std::abs(b.tileX - gx), std::abs(b.tileY - gy));
@@ -1209,13 +1260,24 @@ int run(int argc, char** argv) {
           sendProto(b.peer, bh::proto::pack(cs));
           ++counter;
         };
-        if (b.siegeStage == 0) {  // march to the castle road portal
+        if (!b.siegeDefend && b.siegeStage == 0) {  // muster, then march
+          // muster: hold spawn until the quintile is in the roster (or 60 s
+          // timeout) so invites land within range; then march the road.
+          const int lead = (botIdx / 5) * 5;
+          int want = 0;
+          for (int k = 0; k < 5; ++k) {
+            const size_t si = static_cast<size_t>(lead + k);
+            if (si >= bots.size()) break;
+            if (bots[si].welcomed) ++want;
+          }
+          const bool mustered =
+              (int)b.party.size() >= want - 1 || t >= b.siegeT0 + 60.0;
           if (b.mapId == 6) {
             b.siegeStage = 1;
-          } else {
+          } else if (mustered) {
             siegeGoto(21, 14);
           }
-        } else if (b.siegeStage == 1) {  // register the band
+        } else if (!b.siegeDefend && b.siegeStage == 1) {  // register the band
           if (!b.siegeRegged) {
             siegeSay("/siege-reg", b.siegeRegs);
             b.siegeRegged = true;
@@ -1240,20 +1302,90 @@ int run(int argc, char** argv) {
             b.nextBreachAt = t + 2.0;
             if (++b.siegeBreachN >= 15) { b.siegeStage = 5; b.siegeBreachN = 0; }
           }
-        } else {  // hold the stone ring, then kneel on loop
-          siegeGoto(28, 10);
-          if (t >= b.siegeT0 + 280.0 && t >= b.nextCrownAt) {
+        } else if (!b.siegeDefend) {  // stage 5: hold ring and kneel
+          // T-137 kiter split: even bots drag yard packs off (chase nearest
+          // mob, never crowns) while odd bots hold still — a 10 s quiet
+          // window never opens under the kennel's 3.5 s refill otherwise.
+          // Deterministic, no comms.
+          if (botIdx % 2 == 0) {
+            std::uint32_t kiteId = 0;
+            int kiteD = 100;
+            for (const auto& kv : b.ents) {
+              if (kv.second.kind == 0 ||
+                  bh::content::wireIsFurniture(kv.second.kind))
+                continue;
+              const int d = std::max(std::abs(kv.second.x - b.tileX),
+                                     std::abs(kv.second.y - b.tileY));
+              if (d < kiteD) {
+                kiteD = d;
+                kiteId = kv.first;
+              }
+            }
+            if (kiteId != 0 && kiteD > 1 && t >= b.nextMoveAt) {
+              const auto& ke = b.ents[kiteId];
+              bh::proto::InputPath ip;
+              ip.goalX = ke.x;
+              ip.goalY = ke.y;
+              sendProto(b.peer, bh::proto::pack(ip));
+              b.nextMoveAt = t + 0.8;
+            }
+            if (kiteId != 0 && kiteD <= 1 && t >= b.nextAttackAt) {
+              bh::proto::AttackRequest ar;
+              ar.targetId = kiteId;
+              sendProto(b.peer, bh::proto::pack(ar));
+              b.attackTarget = kiteId;
+              b.nextAttackAt = t + 0.9;
+            }
+          } else {
+            siegeGoto(28, 10);
+          }
+          // kiters never kneel (they roam by design).
+          if (botIdx % 2 != 0 && t >= b.siegeT0 + 200.0 && t >= b.nextCrownAt) {
             siegeSay("/crown", b.siegeCrowns);
             b.nextCrownAt = t + 5.0;
           }
         }
+        // T-137 adjacent defense (stages 3-5, defender 11): nearest
+        // adjacent MOB, never chase, never stab players. Stillness wins
+        // sieges; PvP without bands is friendly-fire soup (T-137 drill:
+        // clustered crowners kept every channel broken via lastHurtTick).
+        // Bot PvP returns with Phase-P pledge colors on the wire.
+        if ((b.siegeStage >= 3 && b.siegeStage <= 5) || b.siegeStage == 11) {
+          std::uint32_t holdId = 0;
+          for (const auto& kv : b.ents) {
+            if (kv.second.kind == 0) continue;  // players: hands off (see above)
+            if (bh::content::wireIsFurniture(kv.second.kind)) continue;
+            if (std::max(std::abs(kv.second.x - b.tileX),
+                         std::abs(kv.second.y - b.tileY)) <= 1) {
+              holdId = kv.first;
+              break;
+            }
+          }
+          if (holdId != 0 && t >= b.nextAttackAt) {
+            bh::proto::AttackRequest ar;
+            ar.targetId = holdId;
+            sendProto(b.peer, bh::proto::pack(ar));
+            b.attackTarget = holdId;
+            b.nextAttackAt = t + 0.9;
+          }
+        }
+        if (b.siegeDefend && b.siegeStage == 10) {  // defender march
+          if (b.mapId == 6) {
+            b.siegeStage = 11;
+          } else {
+            siegeGoto(21, 14);
+          }
+        } else if (b.siegeDefend) {  // stage 11: hold the ring (defense below)
+          siegeGoto(28, 10);
+        }
       }
-      // T-136 drill: siege bots fight everywhere except the march (stage 0
-      // runs choreography blind to escape wildlife drag). Blind crowners
-      // died to yard packs without answering (14 deaths); the kneel needs
-      // defenders, not martyrs. Full combat integration in T-137.
+      // T-136 drill: siege attackers fight on the muster (stages 1-2);
+      // the march (0/10) runs blind, the works + holds (3-5, 11) answer
+      // adjacent only, in choreography above — the fighter's 10-tile chase
+      // broke every T-136 channel and dragged every breacher.
       if (profile == "fighter" || pilgrimRites || campaign || crypt || raider ||
-          (siege && b.siegeStage != 0)) {
+          (siege && !b.siegeDefend && b.siegeStage >= 1 &&
+           b.siegeStage <= 2)) {
         // nearest mob within 10 tiles -> chase / attack
         std::uint32_t bestId = 0;
         int bestD = 100;
