@@ -112,10 +112,11 @@ void sendMsg(ENetPeer* peer, const Msg& m, Server& s) {
 // persistence: 21; T-126 affix roll widens 1..3 -> 1..10 (shifts every
 // downstream draw in journals containing gear drops): 22; T-127 Old Maw
 // unique rows draw per-row range(1,100) on 1012 kills: 23; T-128 trio rows
-// (1013/1014/1009) extend the same draws: 24.
+// (1013/1014/1009) extend the same draws: 24; T-135 Weeping Castle boots
+// as zone 6 (spawners + gates + heartstone shift the entity set): 25.
 // Replay refuses non-matching epoch journals instead of lying with them.
-constexpr int kJournalEpoch = 24;  // T-128: trio uniques. Fresh
-                                   // gate leg: logs/t128.bwj
+constexpr int kJournalEpoch = 25;  // T-135: castle zone live. Fresh
+                                   // gate leg: logs/t135.bwj
 
 // ---- world journal record helpers (M2) ------------------------------------
 void journalTickHash(Server& s) {
@@ -1128,7 +1129,8 @@ int runReplayWorld(const std::string& path, const std::string& mapPath) {
     for (const auto& [zid, zpath] : {std::pair<std::uint16_t, const char*>{2, "assets/maps/fields_overflow.bhmap"},
                                      {3, "assets/maps/thornwall_crypt.bhmap"},
                                      {4, "assets/maps/bonehowl_mine.bhmap"},
-                                     {5, "assets/maps/drowned_crypt.bhmap"}}) {
+                                     {5, "assets/maps/drowned_crypt.bhmap"},
+                                     {6, "assets/maps/weeping_castle.bhmap"}}) {
       std::string zerr;
       (void)world.loadZone(zid, zpath, &zerr);
     }
@@ -1461,10 +1463,12 @@ int run(int argc, char** argv) {
     return 1;
   }
   // T-036/T-035: load every zone that's present (optional on old deployments)
+  // T-135: Weeping Castle (zone 6) joins the boot set.
   for (const auto& [zid, zpath] : {std::pair<std::uint16_t, const char*>{2, "assets/maps/fields_overflow.bhmap"},
                                    {3, "assets/maps/thornwall_crypt.bhmap"},
                                    {4, "assets/maps/bonehowl_mine.bhmap"},
-                                   {5, "assets/maps/drowned_crypt.bhmap"}}) {
+                                   {5, "assets/maps/drowned_crypt.bhmap"},
+                                   {6, "assets/maps/weeping_castle.bhmap"}}) {
     std::string zerr;
     if (s.world.loadZone(zid, zpath, &zerr)) {
       const sim::Map* zm = s.world.zoneMap(zid);

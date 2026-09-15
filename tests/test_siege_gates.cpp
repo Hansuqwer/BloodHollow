@@ -135,3 +135,25 @@ TEST_CASE("T-132: journaled breach path") {
   server::applyWorldCommand(w, *ctx.a, c);
   CHECK(w.find(ctx.gate->id)->hp == 290u);
 }
+
+TEST_CASE("T-135: the real castle map seeds the works") {
+  // assets/ paths are repo-root-relative (ctest WORKING_DIRECTORY).
+  server::World w;
+  REQUIRE(w.loadFrom(makeArena()));
+  std::string err;
+  REQUIRE(w.loadZone(6, "assets/maps/weeping_castle.bhmap", &err));
+  std::uint32_t gates = 0, stones = 0;
+  for (const auto& e : w.entities()) {
+    if (e.zoneId != 6u) continue;
+    if (e.wireKind == content::kWireKindSiegeGate) {
+      ++gates;
+      CHECK(e.hp == 300u);
+    }
+    if (e.wireKind == content::kWireKindHeartstone) {
+      ++stones;
+      CHECK(e.hp == 1u);
+    }
+  }
+  CHECK(gates == 2u);
+  CHECK(stones == 1u);
+}

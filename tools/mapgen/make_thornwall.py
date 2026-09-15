@@ -184,6 +184,9 @@ def main() -> int:
     portals = [
         portal("east_gate", 63, 14, 1, 2, 2, 2, 14),   # -> fields map (Phase 2)
         portal("crypt_hatch", 10, 10, 1, 1, 3, 24, 30),  # chapel interior -> crypt (Phase 3)
+        # T-135: the castle road — Thornwall (21,14) -> Weeping Castle (20,27).
+        # Paired with castle_gate in make_weeping_castle.py (-> map 1 (21,14)).
+        portal("castle_road", 21, 14, 1, 1, 6, 20, 27),
     ]
 
     def tilelayer(i, name, data):
