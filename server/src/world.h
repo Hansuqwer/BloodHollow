@@ -44,7 +44,7 @@ struct InvSlot {
   bool equipped = false;
   std::uint8_t aura = 0;   // T-042: applied aura tier (0=none, 1..5 per RFC 0001)
   std::uint8_t durability = 100;  // T-058: 0 = dormant (kept, no stats); weapons/armor
-  std::uint8_t affix = 0;         // T-059: 0 none, 1 whet, 2 ward, 3 leech
+  std::uint8_t affix = 0;         // T-059 v1: 0 none, 1 whet, 2 ward, 3 leech; T-126 v2 adds 4..10
   std::uint8_t refine = 0;        // T-060: 0..3, T-079: to +7 (+2 weapon dmg / +1 armor def per tier)
 };
 
@@ -221,9 +221,13 @@ class World {
   bool toggleEquip(Entity& e, std::uint8_t slot);
   void trySkill(Entity& e, std::uint8_t skill, std::uint32_t targetId);
   bool kitChoose(Entity& e, std::uint8_t kitId);  // T-053 one-time swear
-  std::uint32_t effAcc(const Entity& e) const;    // bless-adjusted accuracy
+  std::uint32_t effAcc(const Entity& e) const;    // bless-adjusted accuracy (+Focus)
   std::uint32_t effDmgBase(const Entity& e) const;
   std::uint32_t effDef(const Entity& e) const;    // ironskin-adjusted mitigation
+  // T-126 affix probe: equipped + slot-gated (0 weapon, 1 armor, 9 any gear)
+  // + awake (durability > 0). Mobs carry no affixed gear.
+  bool hasAffix(const Entity& e, std::uint8_t affix, std::uint8_t slot) const;
+  std::uint8_t vigilBonus(const Entity& e) const;  // T-126: +2 light if of the Vigil worn
 
  private:
   void tryMend(Entity& e, std::uint32_t targetId);      // T-054 (chan 2)

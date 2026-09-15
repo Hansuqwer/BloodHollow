@@ -47,6 +47,7 @@ set(BH_TEST_SOURCES
   test_t111_review.cpp
   test_t112_spawn_epoch.cpp
   test_weapon_skill_persist.cpp
+  test_affix_v2.cpp
 )
 if(BH_BUILD_CLIENT)
   # T-ART-02: snapZoom lives in raylib-including camera_rig.h — the test TUs

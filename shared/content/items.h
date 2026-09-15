@@ -39,11 +39,17 @@ inline constexpr ItemDef kItems[] = {
     {4005, "Revenant Ash",         3, 0,  0,  0,   75,   16},
 };
 
-// ---- T-059 affixes v1 -----------------------------------------------
+// ---- T-059 affixes v1 + T-126 affix v2 -------------------------------
 // drop-time one-liner mods; era-small, stack-free (one per item).
 // 1 whet (+10% weapon dmg), 2 ward (+2 armor def), 3 leech (+5% of dealt dmg healed)
-inline constexpr const char* kAffixNames[] = {"", "of Whet", "of Warding", "of Leech"};
-inline constexpr std::uint8_t kAffixCount = 3;
+// T-126 v2: 4 ox (+20 hpMax, armor), 5 thorns (reflect 2, never kills, armor),
+// 6 focus (+4 acc, weapon), 7 embers (+2 dmg +1 at night, weapon),
+// 8 vigil (+2 light radius while lit, any gear), 9 greed (+10% kill gold, weapon),
+// 10 mending (+1 OOC regen, armor). Wrong slot = flavor text only (v1 precedent).
+inline constexpr const char* kAffixNames[] = {"", "of Whet", "of Warding", "of Leech",
+    "of the Ox", "of Thorns", "of Focus", "of Embers", "of the Vigil", "of Greed",
+    "of Mending"};
+inline constexpr std::uint8_t kAffixCount = 10;
 
 // gear-drop side-table (kept off MobDef rows: content table stays 16-wide)
 struct GearDropDef { std::uint32_t mobId; std::uint32_t itemId; std::uint8_t chancePct; };

@@ -349,7 +349,25 @@ bool World::assignStat(Entity& e, std::uint8_t stat) {
 }
 
 std::uint32_t World::recomputeHpMax(Entity& e) const {
-  return sim::playerHpMax(e.level, e.vit);
+  std::uint32_t base = sim::playerHpMax(e.level, e.vit);
+  if (hasAffix(e, 4, 1)) base += 20;  // T-126 of the Ox: equipped armor carries +20
+  return base;
+}
+
+// T-126 affix probe: equipped + slot-gated + awake. Affix ids are unique per
+// design, so a slot mismatch (Ox on a blade) is flavor text only (v1 precedent).
+bool World::hasAffix(const Entity& e, std::uint8_t affix, std::uint8_t slot) const {
+  if (e.kind != EntityKind::kPlayer) return false;
+  for (const InvSlot& sl : e.inv) {
+    if (!sl.equipped || sl.affix != affix || sl.durability == 0) continue;
+    const content::ItemDef* d = content::findItem(sl.itemId);
+    if (d != nullptr && (slot == 9 || d->slot == slot)) return true;
+  }
+  return false;
+}
+
+std::uint8_t World::vigilBonus(const Entity& e) const {
+  return hasAffix(e, 8, 9) ? 2 : 0;  // T-126 of the Vigil: +2 while lit
 }
 
 std::vector<Entity*> World::playersNear(Zone& zone, int x, int y, int radius) {
@@ -659,6 +677,10 @@ std::uint32_t World::equippedWeaponDmg(const Entity& e) const {
         if (sl.durability == 0) return kFistsBaseDmg;  // dormant (T-058)
         std::uint32_t dmg = d->dmg + 2u * sl.refine;  // T-060 refine steps
         if (sl.affix == 1) dmg = dmg + dmg / 10;      // of Whet (T-059): +10%
+        if (sl.affix == 7) {  // T-126 of Embers: +2, +1 more after dark
+          dmg += 2;
+          if (isNight()) dmg += 1;
+        }
         if (sl.aura >= 1) {  // Edge Rite (tier I): flat attack bleed
           if (const content::AuraTier* t = content::findAuraTier(sl.aura))
             dmg += t->atkBonusFlat;
@@ -714,7 +736,7 @@ bool World::useItem(Entity& e, std::uint8_t slot) {
     e.lastSipTick = tick_;
     --sl.qty;
     if (sl.qty == 0) e.inv.erase(e.inv.begin() + slot);
-    e.lightRadius = 6;
+    e.lightRadius = static_cast<std::uint8_t>(6 + vigilBonus(e));
     e.lightUntil = tick_ + 6000;  // 300 s of carried light
     e.lanternLit = false;         // the torch wins while it burns
     WorldEvent ev;
@@ -722,14 +744,15 @@ bool World::useItem(Entity& e, std::uint8_t slot) {
     ev.invChanged = true;
     ev.statsChanged = true;
     ev.chatCh = 2;
-    ev.chatText = e.name + " lights a torch (6 tiles, 5 min).";
+    ev.chatText = e.name + " lights a torch (" +
+                  std::to_string(e.lightRadius) + " tiles, 5 min).";
     events_.push_back(std::move(ev));
     return true;
   }
   if (sl.itemId == 3004) {  // Blessed Lantern: never consumed, toggles 8
     e.lastSipTick = tick_;
     e.lanternLit = !e.lanternLit;
-    e.lightRadius = e.lanternLit ? 8 : 0;
+    e.lightRadius = e.lanternLit ? static_cast<std::uint8_t>(8 + vigilBonus(e)) : 0;
     e.lightUntil = -1;  // held light never expires; dropping ends it (later)
     WorldEvent ev;
     ev.aboutId = e.id;
@@ -773,6 +796,14 @@ bool World::toggleEquip(Entity& e, std::uint8_t slot) {
   } else {
     sl.equipped = false;
   }
+  // T-126 of the Ox materializes on armor equip/unequip, not just level-up.
+  // Gated to armor toggles: weapon toggles never touched hpMax before, and a
+  // hand-set cap (tests, GM staging) must survive them. Replay-neutral —
+  // affix 4 gear cannot exist in pre-v2 journals.
+  if (d->slot == 1) {
+    e.hpMax = recomputeHpMax(e);
+    if (e.hp > e.hpMax) e.hp = e.hpMax;
+  }
   syncIndxPush(e);
   return true;
 }
@@ -781,6 +812,7 @@ bool World::toggleEquip(Entity& e, std::uint8_t slot) {
 // (the rite is not yours) — no event spam on keyspam.
 std::uint32_t World::effAcc(const Entity& e) const {
   std::uint32_t acc = 2u * e.dex;
+  if (hasAffix(e, 6, 0)) acc += 4;  // T-126 of Focus: equipped blade steadies +4
   if (e.blessUntil >= 0 && tick_ < e.blessUntil) acc = acc * 110u / 100u;  
   if (e.chorusUntil >= 0 && tick_ < e.chorusUntil) acc = acc * 105u / 100u;  // T-054b
   return acc;
@@ -2048,6 +2080,12 @@ void World::trySwing(Entity& att, Entity& def) {
   }
   def.hp = dmg >= def.hp ? 0 : def.hp - dmg;
   def.lastHurtTick = tick_;
+  // T-126 of Thorns: worn plate bites back for 2 per landed swing. Never lands
+  // the kill (floored at 1) so thorns stays out of the kill/loot path. Swings
+  // only — bolts and slams do not answer.
+  if (def.kind == EntityKind::kPlayer && hasAffix(def, 5, 1) && !att.dead) {
+    att.hp = att.hp > 2 ? att.hp - 2 : 1;
+  }
   if (att.kind == EntityKind::kPlayer) {
     ++att.swingLands;
     // T-059 of Leech: equipped weapon drinks 5% of damage dealt
@@ -2508,10 +2546,11 @@ void World::killMob(Entity& mob, Entity* killer) {
         }
       }
       if (md->goldHi >= md->goldLo) {
-        const std::uint32_t g =
+        std::uint32_t g =
             md->goldLo + static_cast<std::uint32_t>(rng_.range(
                              0, static_cast<std::int64_t>(md->goldHi) -
                                     static_cast<std::int64_t>(md->goldLo)));
+        if (hasAffix(*killer, 9, 0)) g = g * 110u / 100u;  // T-126 of Greed (pre-moral)
         killer->gold += (killer->karma < 0) ? g * 115u / 100u : g;  // bad moral: richer drops
         WorldEvent ev2;
         ev2.aboutId = killer->id;
@@ -3214,6 +3253,8 @@ void World::tick() {
     if (e.kind != EntityKind::kPlayer || e.dead || e.hp >= e.hpMax) continue;
     if (tick_ - e.lastHurtTick > kOocRegenDelay && tick_ % kOocRegenPeriod == 0) {
       ++e.hp;
+      if (hasAffix(e, 10, 1)) ++e.hp;  // T-126 of Mending: worn mail knits +1
+      if (e.hp > e.hpMax) e.hp = e.hpMax;
       std::uint8_t aura = 0;
       for (const InvSlot& sl : e.inv) {
         if (sl.equipped && sl.aura >= 2) aura = sl.aura;

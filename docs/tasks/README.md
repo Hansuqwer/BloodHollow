@@ -794,6 +794,16 @@ r17 journal preserved byte-identical (md5 `b4c0cf3f…`). Devlog 0086 · card
 `logs/m3_gate_r{18,19,20,21,22,22b}.bwj` force-added. Next card **T-126**,
 next devlog **0087**.
 
+## Done — T-126 (2026-09-15): affix v2, table 3 → 10 (H3 loot depth, 1/5)
+
+T-126 CONTENT (epoch 21→22): 7 hooked affixes (Ox/Thorns/Focus/Embers/
+Vigil/Greed/Mending, one-per-item, wrong-slot mute); armor-gated hpMax
+re-sync in toggleEquip (T-047 pin safe); 10 new tests incl. 1M-draw
+distribution + paired-world Greed + Thorns never-kill floor. Gate leg
+`logs/t126.bwj` (5 fighters, 40 kills, mm=0); guard refuses t120 exit 4.
+Duel pin unchanged. Devlog 0087 · card `done/T-126.md`. Next: T-127 Old Maw
+uniques (then Widow T-128, Cantor T-129, Gravemother T-130).
+
 
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 

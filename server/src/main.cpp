@@ -109,11 +109,11 @@ void sendMsg(ENetPeer* peer, const Msg& m, Server& s) {
 // T-103 Cantor Vex = 17; T-107 worldHash widened to economy/progression = 18;
 // T-104 review fixes + T-111 fixes = 19 (both lineages, independently
 // numbered); T-115 reconciliation re-bumps: 20; T-120 weapon-skill
-// persistence: 21.
+// persistence: 21; T-126 affix roll widens 1..3 -> 1..10 (shifts every
+// downstream draw in journals containing gear drops): 22.
 // Replay refuses non-matching epoch journals instead of lying with them.
-constexpr int kJournalEpoch = 21;  // T-120: sword_skill + swing_lands persisted,
-                                   // journal l-line now carries skill. Fresh
-                                   // gate leg: logs/t120.bwj
+constexpr int kJournalEpoch = 22;  // T-126: affix v2 roll widening. Fresh
+                                   // gate leg: logs/t126.bwj
 
 // ---- world journal record helpers (M2) ------------------------------------
 void journalTickHash(Server& s) {
