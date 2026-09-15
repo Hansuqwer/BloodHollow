@@ -970,6 +970,13 @@ R-LUMA FAIL recorded (Δ 10.7/4.3, remediation = T-142); LICENSES rows.
 b5_build.sh exit 0 · suite 2/2 · validate 0/6. No epoch/wire/code.
 Devlog 0102 · card `T-141.md` (→ done on merge). Next: T-142 wiring.
 
+## Open — T-142 (2026-09-15): player sheets to visible (Phase A, 2/3)
+
+T-142 WIRES the T-141 sheets: snapshot needs class/sex (absent today) →
+wire change + server pack + client map + screenshots + contrast call.
+Turn-1 Gravecaller gens (seeds 2001–2010) REJECTED 10/10, quarantined;
+probe-before-batch rule. Devlog 0103 · card `T-142.md`. In progress.
+
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
 | Card | Title | Notes |
