@@ -842,6 +842,15 @@ readout (site page = Phase O). 8 new tests; T-118 migration pin updated
 to v12 (expected cascade). `t128.bwj` re-replays mm=0. Devlog 0091 · card
 `done/T-130.md`. Next: Phase S siege battle logic.
 
+## Done — T-131 (2026-09-15): siege scheduler + registration (Phase S, 1/4)
+
+T-131 CONTENT (no epoch bump, stays 24): Saturday 20:00–21:30 window
+(pure tick math) + captain-id registration (cap 8, journaled kSiegeReg)
++ holder slot + kSiegeStart battle-to-window-end. Zone-agnostic (map =
+PR #23, rehearsal = PR #29, pledge bands = Phase P follow-up). 6 new
+tests. `t128.bwj` re-replays mm=0. Devlog 0092 · card `done/T-131.md`.
+Next: S2 gates → Heartstone → crown.
+
 
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 

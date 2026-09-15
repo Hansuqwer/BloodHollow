@@ -296,6 +296,22 @@ class World {
   sim::Tick bloodMoonUntil() const { return bloodMoonUntil_; }
   sim::Tick curseDuration() const;  // 600, doubled under the moon
   std::uint32_t nightBiteNum() const;  // T-061 numerator: 115, 130 under the moon
+  // T-131 siege window + registration (Phase S 1/4, zone-agnostic: the
+  // castle map rides PR #23, H1's rehearsal rides PR #29, pledge bands
+  // ride Phase P — this skeleton plugs into all three).
+  static constexpr sim::Tick kSiegeDayTicks = 288000;  // 24 game-hours
+  static constexpr sim::Tick kSiegeWeekTicks = 2016000;  // 7 game-days
+  static constexpr sim::Tick kSiegeStartOff = 1872000;  // Saturday 20:00
+  static constexpr sim::Tick kSiegeLenTicks = 108000;  // 90 min battle
+  static constexpr std::size_t kSiegeMaxBands = 8;
+  sim::Tick siegeWindowStart() const;  // this week's Saturday 20:00
+  sim::Tick siegeWindowEnd() const { return siegeWindowStart() + kSiegeLenTicks; }
+  bool inSiegeWindow() const;
+  bool siegeRegister(std::uint32_t captainId);  // war-band captain (player id)
+  bool siegeStart(Entity& e);  // gm siege-start: in-window + bands, else quiet
+  bool siegeBattleActive() const;
+  const std::vector<std::uint32_t>& siegeAttackers() const { return siegeAttackers_; }
+  std::uint32_t siegeHolder() const { return siegeHolder_; }
   void spawnConfessor(Zone& zone);  // zone 1 chapel only
   void spawnAnvils();                        // plaza (z1) + bone barrow (z3)
   void spawnNpcs();  // T-094: twins flank the anvil, guards stand the posts
@@ -493,6 +509,12 @@ class World {
   // from the journaled kBloodMoon command, H1 pattern).
   bool bloodMoonActive_ = false;
   sim::Tick bloodMoonUntil_ = -1;
+  // T-131 siege battle (session-scoped; holder/tax persist lands in S3).
+  // Bands are captain entity ids today, pledge ids when Phase P lands.
+  std::vector<std::uint32_t> siegeAttackers_{};
+  std::uint32_t siegeHolder_ = 0;  // 0 = unclaimed castle
+  bool siegeBattleActive_ = false;
+  sim::Tick siegeBattleEndsAt_ = -1;
   sim::Tick tick_ = 0;
   std::vector<WorldEvent> events_{};
 

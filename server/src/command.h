@@ -24,7 +24,8 @@ struct Command {
                              kTradeCancel, kAnvil,
                              kPartyInvite, kPartyAccept, kPartyLeave,
                              kPartyKick, kKitChoose, kDuel, kForfeit, kRepair, kRefine,
-                             kConfess, kRepent, kBloodMoon, kOath } kind;
+                             kConfess, kRepent, kBloodMoon, kOath,
+                             kSiegeReg, kSiegeStart } kind;
   // T-053: a = kit id; T-056: kDuel a = target id (resolved pre-journal)
   std::int32_t a = 0, b = 0;
   std::uint8_t channel = 0;
@@ -170,6 +171,12 @@ inline void applyWorldCommand(World& w, Entity& e, const Command& c) {
       break;
     case Command::kOath:
       w.oath(e, static_cast<std::uint8_t>(c.a));  // T-130 town swear
+      break;
+    case Command::kSiegeReg:
+      w.siegeRegister(e.id);  // T-131: the speaker captains a war-band
+      break;
+    case Command::kSiegeStart:
+      w.siegeStart(e);  // T-131 battle opener (journaled: replay-exact)
       break;
     case Command::kChat:
     case Command::kPing:
