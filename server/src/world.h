@@ -278,6 +278,13 @@ class World {
   bool nearConfessor(const Entity& e) const;
   bool confess(Entity& e);  // clears curseUntil within 3 tiles, fiction line
   bool repent(Entity& e);   // T-075: +20 karma within 3 tiles, hourly, no curse touch
+  // T-129 Blood Moon: session-scoped red-moon flag to next dawn. Journaled
+  // via kBloodMoon (replay rebuilds it); scheduler hook lands in Phase S.
+  bool bloodMoon(Entity& e);  // gm blood-moon: raise until dawn, quiet on repeat/dead
+  bool bloodMoonActive() const;
+  sim::Tick bloodMoonUntil() const { return bloodMoonUntil_; }
+  sim::Tick curseDuration() const;  // 600, doubled under the moon
+  std::uint32_t nightBiteNum() const;  // T-061 numerator: 115, 130 under the moon
   void spawnConfessor(Zone& zone);  // zone 1 chapel only
   void spawnAnvils();                        // plaza (z1) + bone barrow (z3)
   void spawnNpcs();  // T-094: twins flank the anvil, guards stand the posts
@@ -471,6 +478,10 @@ class World {
   // T-101 named-elite first blood (session-scoped: vanishes at reboot like
   // the bounty sheet — persistent ledgers wait on Marrowgate/EK design).
   bool namedEliteSlain_[3] = {false, false, false};
+  // T-129 Blood Moon: session flags (never persisted; replay reproduces them
+  // from the journaled kBloodMoon command, H1 pattern).
+  bool bloodMoonActive_ = false;
+  sim::Tick bloodMoonUntil_ = -1;
   sim::Tick tick_ = 0;
   std::vector<WorldEvent> events_{};
 

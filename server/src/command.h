@@ -24,7 +24,7 @@ struct Command {
                              kTradeCancel, kAnvil,
                              kPartyInvite, kPartyAccept, kPartyLeave,
                              kPartyKick, kKitChoose, kDuel, kForfeit, kRepair, kRefine,
-                             kConfess, kRepent } kind;
+                             kConfess, kRepent, kBloodMoon } kind;
   // T-053: a = kit id; T-056: kDuel a = target id (resolved pre-journal)
   std::int32_t a = 0, b = 0;
   std::uint8_t channel = 0;
@@ -164,6 +164,9 @@ inline void applyWorldCommand(World& w, Entity& e, const Command& c) {
       break;
     case Command::kRepent:
       w.repent(e);  // T-075 chapel grace
+      break;
+    case Command::kBloodMoon:
+      w.bloodMoon(e);  // T-129 red-moon flag (journaled: replay-exact)
       break;
     case Command::kChat:
     case Command::kPing:

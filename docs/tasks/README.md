@@ -824,6 +824,14 @@ T-129/T-130 stay free; the 10 → 40 table is a filed follow-up. Gate leg
 `logs/t128.bwj` (60 kills, mm=0); guard refuses t127 exit 4. Devlog 0089 ·
 card `done/T-128.md`. Next: Phase H4 (Blood Moon + EK + L19 oath).
 
+## Done — T-129 (2026-09-15): Blood Moon flag + two levers (H4 night war, 1/3)
+
+T-129 CONTENT (no epoch bump, stays 24): session moon-to-dawn via `gm
+blood-moon` → journaled `kBloodMoon` (H1 shape); curse 60 s + bite ×1.30
+while red; scheduler/tint/gating filed as follow-ups. 6 new tests incl.
+paired-worlds ratio. `t128.bwj` re-replays mm=0 (neutrality proof). Devlog
+0090 · card `done/T-129.md`. Next: T-130 EK ledger + L19 oath.
+
 
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 

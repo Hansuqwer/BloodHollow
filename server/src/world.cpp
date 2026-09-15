@@ -1491,6 +1491,42 @@ void World::spawnConfessor(Zone& zone) {
   }
 }
 
+// ---- Blood Moon (T-129, H4 night war) --------------------------------------
+// Session flag to next dawn: curse lasts 60 s and the night bite lands
+// x1.30 while red. GM-raised for now (open to all callers like H1's
+// rehearsal hook — gating waits on accounts); the weekly scheduler hook
+// lands in Phase S. Never persisted; replay rebuilds from kBloodMoon.
+bool World::bloodMoonActive() const {
+  return bloodMoonActive_ && tick_ < bloodMoonUntil_;
+}
+
+sim::Tick World::curseDuration() const {
+  return bloodMoonActive() ? 2 * kCurseTicks : kCurseTicks;
+}
+
+std::uint32_t World::nightBiteNum() const {
+  return bloodMoonActive() ? 130u : 115u;  // over 100 (T-061 law)
+}
+
+bool World::bloodMoon(Entity& e) {
+  if (e.kind != EntityKind::kPlayer || e.dead) return false;
+  if (bloodMoonActive()) return false;  // one moon at a time, quiet
+  // ticks to next 05:00 dawn (exactly-at-dawn yields a full-day moon).
+  const float h = sim::hourAt(tick_);
+  float ahead = 5.0f - h;
+  if (ahead <= 0) ahead += 24.0f;
+  bloodMoonActive_ = true;
+  bloodMoonUntil_ =
+      tick_ + static_cast<sim::Tick>(ahead * sim::kTicksPerGameHour);
+  WorldEvent ev;
+  ev.chatCh = 2;
+  ev.chatText = "the moon rises red over Vessalia — blood answers blood.";
+  events_.push_back(ev);
+  std::printf("[moon] %s raised it until tick %d\n", e.name.c_str(),
+              static_cast<int>(bloodMoonUntil_));
+  return true;
+}
+
 // ---- anvil & aura spine (T-041/T-042, RFC 0001) ----------------------------
 
 void World::spawnAnvils() {
@@ -2068,7 +2104,7 @@ void World::trySwing(Entity& att, Entity& def) {
   std::uint32_t dmg = sim::rollDamage(base, att.kind == EntityKind::kPlayer ? att.str : 0,
                                       ddef, hc.crit);
   if (att.kind == EntityKind::kMob && isNight()) {
-    dmg = dmg * 115u / 100u;  // T-061 nightcreep: +15% mob bite after dark
+    dmg = dmg * nightBiteNum() / 100u;  // T-061 law, x1.30 under Blood Moon
     dmg = dmg < 1 ? 1 : dmg;
   }
   if (att.kind == EntityKind::kPlayer && def.kind == EntityKind::kPlayer) {
@@ -2926,7 +2962,7 @@ void World::slamStrike(Entity& mob) {
                 ? 0
                 : v->hp - static_cast<std::int32_t>(sdmg);
     if (v->hp > 0) {
-      v->curseUntil = tick_ + kCurseTicks;  // rot gets in the blood (T-070 lane)
+      v->curseUntil = tick_ + curseDuration();  // T-129: 60 s under Blood Moon
       WorldEvent cev;
       cev.aboutId = v->id;
       cev.chatCh = 2;
@@ -3052,9 +3088,10 @@ void World::mobThink(Entity& mob) {
       target->hp = bdmg >= static_cast<std::uint32_t>(target->hp)
                        ? 0 : target->hp - static_cast<std::int32_t>(bdmg);
       // T-070 Blood Curse: the bolt leaves thin blood — heals land at 75%
-      // for 30 s. Gravecaller and Gravemother share this cast path.
+      // for 30 s (60 s under Blood Moon, T-129). Gravecaller and
+      // Gravemother share this cast path.
       if (target->kind == EntityKind::kPlayer && target->hp > 0) {
-        target->curseUntil = tick_ + kCurseTicks;
+        target->curseUntil = tick_ + curseDuration();
         WorldEvent cev;
         cev.aboutId = target->id;
         cev.chatCh = 2;
