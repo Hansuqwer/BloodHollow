@@ -1,0 +1,70 @@
+{
+ "input": "assets/aigen/players/ravager/f/sheet.png",
+ "kind": "sheet",
+ "cell": [
+  32,
+  48
+ ],
+ "anchor_y": 42,
+ "hour": 2.0,
+ "night_overlay": [
+  18,
+  22,
+  70,
+  145
+ ],
+ "hover": 0,
+ "gates": {
+  "colours_le_max_all_frames": true,
+  "feet_on_anchor_all_frames": false,
+  "r_luma_day_ge_gate": false,
+  "r_luma_night_ge_gate": false
+ },
+ "engine_validated": false,
+ "note": "terrain luma defaulted to B0 fields plate (51.0); pass --plate for the real zone",
+ "terrain_luma": 51.0,
+ "loader_rule_replica": "clean",
+ "frames_total": 32,
+ "anims": {
+  "walk": {
+   "frames": 1,
+   "fps": 10.0,
+   "max_colours": 28,
+   "feet_ok_all_dirs": true
+  },
+  "attack": {
+   "frames": 1,
+   "fps": 12.0,
+   "max_colours": 31,
+   "feet_ok_all_dirs": false
+  },
+  "cast": {
+   "frames": 1,
+   "fps": 10.0,
+   "max_colours": 31,
+   "feet_ok_all_dirs": true
+  },
+  "die": {
+   "frames": 1,
+   "fps": 8.0,
+   "max_colours": 29,
+   "feet_ok_all_dirs": false
+  }
+ },
+ "r_luma": {
+  "body_mean": 57.2,
+  "terrain_mean": 51.0,
+  "delta_day": 6.2,
+  "body_mean_incl_outline": 50.8,
+  "delta_day_incl_outline": -0.2,
+  "definition": "rulebook R-LUMA = opaque body pixels EXCLUDING the #1a1214 outline; the B0 style_tile_audit.json included the outline (hence its lower 23.7)",
+  "body_night": 39.7,
+  "terrain_night": 37.2,
+  "delta_night": 2.5
+ },
+ "failures": [
+  "feet_on_anchor_all_frames",
+  "r_luma_day_ge_gate",
+  "r_luma_night_ge_gate"
+ ]
+}
