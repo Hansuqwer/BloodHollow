@@ -130,3 +130,17 @@ TEST_CASE("T-131: journaled registration and start") {
   server::applyWorldCommand(w, *a, s);
   CHECK(w.siegeBattleActive());
 }
+
+TEST_CASE("T-136: rehearsal posture opens the window unconditionally") {
+  server::World w;
+  REQUIRE(w.loadFrom(makeArena()));
+  CHECK_FALSE(w.rehearsalMode());
+  w.debugSetTick(500);  // Monday nowhere near Saturday
+  CHECK_FALSE(w.inSiegeWindow());
+  w.setRehearsal(true);
+  CHECK(w.rehearsalMode());
+  CHECK(w.inSiegeWindow());
+  w.setRehearsal(false);
+  CHECK_FALSE(w.rehearsalMode());
+  CHECK_FALSE(w.inSiegeWindow());
+}

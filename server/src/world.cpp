@@ -1540,6 +1540,7 @@ sim::Tick World::siegeWindowStart() const {
 }
 
 bool World::inSiegeWindow() const {
+  if (rehearsalMode_) return true;  // T-136 drill posture
   const sim::Tick w = tick_ % kSiegeWeekTicks;
   return w >= kSiegeStartOff && w < kSiegeStartOff + kSiegeLenTicks;
 }
