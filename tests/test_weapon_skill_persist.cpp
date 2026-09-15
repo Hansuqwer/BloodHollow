@@ -79,7 +79,9 @@ TEST_CASE("weapon skill persist: v10 -> v11 migration adds columns with defaults
   REQUIRE(sqlite3_step(st) == SQLITE_ROW);
   int uv = sqlite3_column_int(st, 0);
   sqlite3_finalize(st);
-  CHECK(uv == 12);
+  // T-122/T-138: Db::open migrates to the CURRENT schema head; this test
+  // only pins that the v10 -> v11 weapon-skill step ran (columns + defaults).
+  CHECK(uv >= 11);
 
   bool hasSword = false, hasLands = false;
   REQUIRE(sqlite3_prepare_v2(check, "PRAGMA table_info(characters);", -1, &st, nullptr) == SQLITE_OK);
@@ -115,7 +117,8 @@ TEST_CASE("weapon skill persist: saveProgress + loginOrCreate round-trips skill"
   // Simulate gaining skill: 20 skill, 500 lands
   db.saveProgress(row.id, row.level, row.xp, row.str, row.vit, row.dex,
                   row.statPoints, row.gold, row.invBlob, row.anvilMercy,
-                  row.karma, row.classId, 20, 500, row.townId, row.ek);
+                  row.karma, row.classId, 20, 500, row.townId, row.ek,
+                  row.pledgeId, row.pledgeRank);
 
   // Reload via new Db instance
   Db db2;
@@ -128,7 +131,8 @@ TEST_CASE("weapon skill persist: saveProgress + loginOrCreate round-trips skill"
   // Update again: 25 skill, 625 lands
   db2.saveProgress(row2.id, row2.level, row2.xp, row2.str, row2.vit, row2.dex,
                    row2.statPoints, row2.gold, row2.invBlob, row2.anvilMercy,
-                   row2.karma, row2.classId, 25, 625, row2.townId, row2.ek);
+                   row2.karma, row2.classId, 25, 625, row2.townId, row2.ek,
+                   row2.pledgeId, row2.pledgeRank);
 
   Db db3;
   REQUIRE(db3.open(path, &err));
