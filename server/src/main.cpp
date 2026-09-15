@@ -178,6 +178,10 @@ void journalLogin(Server& s, const Session& sess, const CharacterRow& row,
   std::fprintf(s.journal, "k %lld %u %u\n",
                static_cast<long long>(s.tick + 1), idx,
                static_cast<unsigned>(row.classId > 0 ? row.classId : 1));
+  // T-130: town/EK sidecar (same precedent — missing line replays as 0,0).
+  std::fprintf(s.journal, "w %lld %u %u %u\n",
+               static_cast<long long>(s.tick + 1), idx,
+               static_cast<unsigned>(row.townId), static_cast<unsigned>(row.ek));
 }
 
 void journalDisconnect(Server& s, const Session& sess) {
@@ -260,7 +264,9 @@ void dropSession(Server& s, Session& sess) {
                           e->statPoints, static_cast<int>(e->gold), blob,
                           e->anvilMercyMask, e->karma, e->classId,
                           static_cast<int>(e->swordSkill),
-                          static_cast<std::int64_t>(e->swingLands));
+                          static_cast<std::int64_t>(e->swingLands),
+                          static_cast<int>(e->townId),
+                          static_cast<int>(e->ek));
       }
       std::printf("[net] %-16s saved at (%d,%d)\n", e->name.c_str(), p.x, p.y);
     }
@@ -372,6 +378,9 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
         if (pe->swingLands > 0 && pe->swordSkill == 0) {
           pe->swordSkill = static_cast<std::uint8_t>(pe->swingLands / 25u);
         }
+        // T-130: town war identity + EK fame (schema v12; clamped, era-safe)
+        pe->townId = static_cast<std::uint8_t>(row.townId < 0 ? 0 : (row.townId > 2 ? 0 : row.townId));
+        pe->ek = static_cast<std::uint32_t>(row.ek < 0 ? 0 : row.ek);
         const auto bit = s.bless.find(row.name);
         if (bit != s.bless.end()) {
           // parse "id:qty,id:qty"
@@ -532,6 +541,21 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
           } else {
             okCmd = false;  // unknown oath name: say it aloud, era-right
           }
+        }
+        else if (m.text.rfind("/oath ", 0) == 0) {  // T-130 town swear (L19+)
+          const std::string k = m.text.substr(6);
+          std::uint8_t town = 0;
+          if (k == "thornwall" || k == "ashen") town = 1;
+          else if (k == "marrowgate" || k == "synod") town = 2;
+          if (town != 0) {
+            c.kind = Command::kOath;
+            c.a = town;
+          } else {
+            okCmd = false;  // unknown town: say it aloud, era-right
+          }
+        } else if (m.text == "gm ek") {  // T-130 board readout (directed)
+          okCmd = false;  // shell output, never journaled
+          if (Entity* me = s.world.find(sess.entityId)) s.world.ekReadout(*me);
         } else { okCmd = false; }
         if (okCmd && sess.cmdq.size() < 32) { sess.cmdq.push_back(std::move(c)); break; }
         // fall through: unknown/failed slash visible as an ordinary say
@@ -1098,6 +1122,8 @@ int runReplayWorld(const std::string& path, const std::string& mapPath) {
   };
   struct QueuedBless { sim::Tick tick; std::string name; std::string spec; };
   std::unordered_map<std::uint32_t, std::uint32_t> loginKits;  // k-lines (T-053)
+  std::unordered_map<std::uint32_t, std::pair<std::uint32_t, std::uint32_t>>
+      loginTowns;  // w-lines: town+ek sidecar (T-130; absent => 0,0)
   
   struct QueuedCmd {
     sim::Tick tick;
@@ -1155,6 +1181,10 @@ int runReplayWorld(const std::string& path, const std::string& mapPath) {
       long long ktick; unsigned kidx, kit;
       if (std::sscanf(line, "k %lld %u %u", &ktick, &kidx, &kit) == 3)
         loginKits[kidx] = kit;
+    } else if (line[0] == 'w') {  // T-130 town/EK sidecar: w tick idx town ek
+      long long wtick; unsigned widx, town, ek;
+      if (std::sscanf(line, "w %lld %u %u %u", &wtick, &widx, &town, &ek) == 4)
+        loginTowns[widx] = {town, ek};
     } else if (line[0] == 'b') {
       long long tick;
       char nm[64], spec[256];
@@ -1209,8 +1239,7 @@ int runReplayWorld(const std::string& path, const std::string& mapPath) {
       kit = static_cast<std::uint8_t>(ki->second);
     Entity& e = world.spawn(L.name, 0, sim::TilePos{L.x, L.y},
                             static_cast<std::uint16_t>(L.zoneId), kit);
-    Entity* pe = world.find(e.id);
-    pe->level = static_cast<std::uint8_t>(L.level < 1 ? 1 : (L.level > 25 ? 25 : L.level));
+    Entity* pe = world.find(e.id);    pe->level = static_cast<std::uint8_t>(L.level < 1 ? 1 : (L.level > 25 ? 25 : L.level));
     pe->xp = L.xp;
     pe->str = static_cast<std::uint8_t>(L.st_);
     pe->vit = static_cast<std::uint8_t>(L.vit);
@@ -1231,6 +1260,12 @@ int runReplayWorld(const std::string& path, const std::string& mapPath) {
     pe->swingLands = static_cast<std::uint32_t>(L.swingLands < 0 ? 0 : L.swingLands);
     if (pe->swingLands > 0 && pe->swordSkill == 0) {
       pe->swordSkill = static_cast<std::uint8_t>(pe->swingLands / 25u);
+    }
+    // T-130: town/EK sidecar (absent in pre-T-130 journals => 0,0)
+    if (const auto wi = loginTowns.find(L.idx); wi != loginTowns.end()) {
+      pe->townId =
+          static_cast<std::uint8_t>(wi->second.first > 2 ? 0 : wi->second.first);
+      pe->ek = wi->second.second;
     }
     // replay bless grants (debug lane recorded as b-lines) — AFTER the
     // persisted blob, exactly like the live login order, so debugGive

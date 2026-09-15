@@ -25,6 +25,8 @@ struct CharacterRow {
   int classId = 1;  // schema v7 (S14): kKit* in content/kits.h
   int swordSkill = 0;           // schema v11 (T-118): use-based skill
   std::int64_t swingLands = 0;  // schema v11: exact land counter
+  int townId = 0;  // schema v12 (T-130): 0 unsworn, 1 Thornwall, 2 Marrowgate
+  int ek = 0;      // schema v12: enemy-kill fame (persisted, board-read)
   std::string invBlob{};  // "itemId:qty:equipped;..." (schema v3)
 };
 
@@ -49,7 +51,7 @@ class Db {
                     int vit, int dex, int statPoints, int gold,
                     const std::string& invBlob, std::int64_t anvilMercy,
                     std::int32_t karma, int classId, int swordSkill,
-                    std::int64_t swingLands);
+                    std::int64_t swingLands, int townId, int ek);
 
  private:
   sqlite3* db_ = nullptr;

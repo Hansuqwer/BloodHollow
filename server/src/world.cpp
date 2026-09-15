@@ -10,6 +10,7 @@
 #include <system_error>
 
 #include "content/auras.h"
+#include "content/towns.h"
 #include "content/wirekind.h"
 #include "sim/clock.h"
 #include "sim/combat.h"
@@ -2664,6 +2665,60 @@ std::uint8_t World::karmaBandOf(std::int32_t karma) {
   return karma > 500 ? 0 : 1;     // lawful / neutral
 }
 
+// ---- town war (T-130, H4) --------------------------------------------------
+// One oath at 19+, never respec'd in MVP (Helbreath rule, GDD section 1).
+bool World::oath(Entity& e, std::uint8_t town) {
+  if (e.kind != EntityKind::kPlayer || e.dead) return false;
+  if (e.townId != content::kTownNone) return false;  // sworn is sworn
+  if (e.level < content::kTownOathLevel) return false;
+  if (town != content::kTownThornwall && town != content::kTownMarrowgate)
+    return false;
+  e.townId = town;
+  WorldEvent ev;
+  ev.aboutId = e.id;
+  ev.chatCh = 2;  // town-crier broadcast: the realm hears the oath
+  ev.chatText = e.name + " swears to " + content::kTownNames[town] + " of the " +
+                content::kTownFactions[town] + ".";
+  events_.push_back(std::move(ev));
+  std::printf("[oath] %s town=%u\n", e.name.c_str(),
+              static_cast<unsigned>(town));
+  return true;
+}
+
+std::vector<std::tuple<std::string, std::uint32_t, std::uint8_t>>
+World::ekBoard(std::size_t n) const {
+  std::vector<std::tuple<std::string, std::uint32_t, std::uint8_t>> rows;
+  for (const Entity& e : entities_) {
+    if (e.kind != EntityKind::kPlayer || e.ek == 0) continue;
+    rows.emplace_back(e.name, e.ek, e.townId);
+  }
+  std::sort(rows.begin(), rows.end(), [](const auto& a, const auto& b) {
+    return std::get<1>(a) > std::get<1>(b);
+  });
+  if (rows.size() > n) rows.resize(n);
+  return rows;
+}
+
+void World::ekReadout(Entity& requester) {
+  const auto rows = ekBoard(5);
+  if (rows.empty()) {
+    WorldEvent ev;
+    ev.aboutId = requester.id;
+    ev.chatCh = 255;
+    ev.chatText = "no enemy kills recorded.";
+    events_.push_back(std::move(ev));
+    return;
+  }
+  for (const auto& [nm, ek, town] : rows) {
+    WorldEvent ev;
+    ev.aboutId = requester.id;
+    ev.chatCh = 255;
+    ev.chatText = "EK " + nm + " " + std::to_string(ek) + " (" +
+                  content::kTownNames[town] + ").";
+    events_.push_back(std::move(ev));
+  }
+}
+
 void World::bumpKarma(Entity& e, std::int32_t delta) {
   if (e.kind != EntityKind::kPlayer || delta == 0) return;
   const std::uint8_t before = karmaBandOf(e.karma);
@@ -2776,8 +2831,27 @@ void World::killPlayer(Entity& victim, Entity* killer) {
     events_.push_back(std::move(txt));
     return;  // no XP debt below, no drops
   }
+  // T-130 war law: sworn enemies of the other town grant EK fame INSTEAD
+  // of chaos (GDD sections 1/5). No karma stain, no red-hands line, no guard
+  // wanted — war is not murder. (Chaotic-victim crowd-pick drops below still
+  // run: those key on the victim's state, not the killer's.) Duels return
+  // earlier — consensual steel never mints EK.
+  const bool warKill =
+      killer != nullptr && killer->kind == EntityKind::kPlayer &&
+      killer->townId != content::kTownNone && victim.townId != content::kTownNone &&
+      killer->townId != victim.townId;
+  if (warKill) {
+    ++killer->ek;
+    WorldEvent ftxt;
+    ftxt.aboutId = killer->id;
+    ftxt.chatCh = 2;
+    ftxt.chatText = killer->name + " earns an enemy kill for " +
+                    content::kTownNames[killer->townId] + " (" +
+                    std::to_string(killer->ek) + ").";
+    events_.push_back(std::move(ftxt));
+  }
   if (killer != nullptr && killer->kind == EntityKind::kPlayer &&
-      victim.duelWith == 0 && karmaBandOf(victim.karma) != 2) {
+      victim.duelWith == 0 && karmaBandOf(victim.karma) != 2 && !warKill) {
     const std::int32_t deficit =
         killer->level > victim.level ? killer->level - victim.level : 0;
     bumpKarma(*killer, -(300 + 20 * deficit));  // GDD §5 formula

@@ -50,6 +50,7 @@ set(BH_TEST_SOURCES
   test_affix_v2.cpp
   test_uniques.cpp
   test_blood_moon.cpp
+  test_ek_oath.cpp
 )
 if(BH_BUILD_CLIENT)
   # T-ART-02: snapZoom lives in raylib-including camera_rig.h — the test TUs
