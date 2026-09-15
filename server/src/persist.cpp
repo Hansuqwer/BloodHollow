@@ -180,6 +180,19 @@ bool Db::open(const std::string& path, std::string* err) {
     }
     if (!exec("PRAGMA user_version=12;", err)) return false;
   }
+  // T-134 siege_state: castle holder + tax vault (version-free table —
+  // IF NOT EXISTS, characters ladder untouched).
+  if (!exec("CREATE TABLE IF NOT EXISTS siege_state ("
+            "  id INTEGER PRIMARY KEY CHECK (id = 1),"
+            "  holder_id INTEGER NOT NULL DEFAULT 0,"
+            "  holder_name TEXT NOT NULL DEFAULT '',"
+            "  vault_gold INTEGER NOT NULL DEFAULT 0,"
+            "  crowns INTEGER NOT NULL DEFAULT 0,"
+            "  updated INTEGER NOT NULL DEFAULT (strftime('%s','now'))"
+            ");",
+            err)) {
+    return false;
+  }
   return true;
 }
 
@@ -387,8 +400,53 @@ void Db::saveProgress(std::int64_t characterId, int level, std::int64_t xp, int 
   sqlite3_finalize(st);
 }
 
-void Db::savePosition(std::int64_t characterId, int mapId, int x, int y) {
-  if (db_ == nullptr) return;
+// T-134 siege_state: single-row castle memory (empty table => zeros).
+bool Db::loadSiege(SiegeRow* out, std::string* err) {
+  if (db_ == nullptr || out == nullptr) return false;
+  *out = SiegeRow{};
+  sqlite3_stmt* st = nullptr;
+  if (sqlite3_prepare_v2(db_,
+                         "SELECT holder_id, holder_name, vault_gold, crowns "
+                         "FROM siege_state WHERE id=1;",
+                         -1, &st, nullptr) != SQLITE_OK) {
+    if (err) *err = "prepare failed (siege_state)";
+    return false;
+  }
+  if (sqlite3_step(st) == SQLITE_ROW) {
+    out->holderId = sqlite3_column_int64(st, 0);
+    const unsigned char* nm = sqlite3_column_text(st, 1);
+    out->holderName = nm != nullptr ? reinterpret_cast<const char*>(nm) : "";
+    out->vaultGold = sqlite3_column_int64(st, 2);
+    out->crowns = sqlite3_column_int64(st, 3);
+  }
+  sqlite3_finalize(st);
+  return true;
+}
+
+bool Db::saveSiege(std::int64_t holderId, const std::string& holderName,
+                   std::int64_t vaultGold, std::int64_t crowns,
+                   std::string* err) {
+  if (db_ == nullptr) return false;
+  sqlite3_stmt* st = nullptr;
+  // INSERT OR REPLACE (not ON CONFLICT — older sqlite compat): single row.
+  if (sqlite3_prepare_v2(db_,
+                         "INSERT OR REPLACE INTO siege_state(id, holder_id, holder_name, vault_gold, crowns) "
+                         "VALUES(1,?,?,?,?);",
+                         -1, &st, nullptr) != SQLITE_OK) {
+    if (err) *err = "prepare failed (siege_state)";
+    return false;
+  }
+  sqlite3_bind_int64(st, 1, holderId);
+  sqlite3_bind_text(st, 2, holderName.c_str(), -1, SQLITE_TRANSIENT);
+  sqlite3_bind_int64(st, 3, vaultGold);
+  sqlite3_bind_int64(st, 4, crowns);
+  const bool ok = sqlite3_step(st) == SQLITE_DONE;
+  if (!ok && err) *err = "write failed (siege_state)";
+  sqlite3_finalize(st);
+  return ok;
+}
+
+void Db::savePosition(std::int64_t characterId, int mapId, int x, int y) {  if (db_ == nullptr) return;
   sqlite3_stmt* st = nullptr;
   if (sqlite3_prepare_v2(db_, "UPDATE characters SET map_id=?, x=?, y=? WHERE id=?;", -1, &st,
                          nullptr) != SQLITE_OK) {

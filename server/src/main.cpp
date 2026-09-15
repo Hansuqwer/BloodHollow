@@ -571,6 +571,9 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
         } else if (m.text == "gm ek") {  // T-130 board readout (directed)
           okCmd = false;  // shell output, never journaled
           if (Entity* me = s.world.find(sess.entityId)) s.world.ekReadout(*me);
+        } else if (m.text == "gm siege") {  // T-134 castle readout (directed)
+          okCmd = false;  // shell output, never journaled
+          if (Entity* me = s.world.find(sess.entityId)) s.world.siegeReadout(*me);
         } else { okCmd = false; }
         if (okCmd && sess.cmdq.size() < 32) { sess.cmdq.push_back(std::move(c)); break; }
         // fall through: unknown/failed slash visible as an ordinary say
@@ -972,6 +975,18 @@ void tickServer(Server& s) {
   // 2) simulate (movement + combat + respawns)
   s.world.tick();
   distributeEvents(s);
+
+  // T-134: throttled castle-memory write (vault accrues per taxed kill).
+  if (s.world.siegeSaveDue(s.tick)) {
+    std::string siegeErr;
+    if (s.db.saveSiege(s.world.siegeHolder(), s.world.siegeHolderName(),
+                       s.world.siegeVault(), s.world.siegeCrowns(),
+                       &siegeErr)) {
+      s.world.markSiegeSaved(s.tick);
+    } else {
+      std::fprintf(stderr, "bh_server: siege save: %s\n", siegeErr.c_str());
+    }
+  }
 
   // 3) AoI deltas per session
   for (auto& kv : s.sessions) {
@@ -1464,6 +1479,19 @@ int run(int argc, char** argv) {
   if (!s.db.open(dbPath, &err)) {
     std::fprintf(stderr, "bh_server: %s\n", err.c_str());
     return 1;
+  }
+  // T-134: the castle remembers its master across reboots (empty => zeros).
+  {
+    Db::SiegeRow siege{};
+    std::string siegeErr;
+    if (s.db.loadSiege(&siege, &siegeErr)) {
+      s.world.loadSiegeState(static_cast<std::uint32_t>(siege.holderId),
+                             siege.holderName,
+                             static_cast<std::uint32_t>(siege.vaultGold),
+                             static_cast<std::uint32_t>(siege.crowns));
+    } else {
+      std::fprintf(stderr, "bh_server: siege load: %s\n", siegeErr.c_str());
+    }
   }
   // T-109: make the auth posture visible in every server log.
   std::printf("[auth] registration %s; limiter: %d logins + %d new accounts "

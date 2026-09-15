@@ -52,6 +52,18 @@ class Db {
                     const std::string& invBlob, std::int64_t anvilMercy,
                     std::int32_t karma, int classId, int swordSkill,
                     std::int64_t swingLands, int townId, int ek);
+  // T-134 siege_state (id=1 row): castle holder + tax vault + crown count.
+  // Created IF NOT EXISTS on open (no user_version change — characters
+  // ladder untouched). Empty table loads as all-zeros.
+  struct SiegeRow {
+    std::int64_t holderId = 0;
+    std::string holderName{};
+    std::int64_t vaultGold = 0;
+    std::int64_t crowns = 0;
+  };
+  bool loadSiege(SiegeRow* out, std::string* err);
+  bool saveSiege(std::int64_t holderId, const std::string& holderName,
+                 std::int64_t vaultGold, std::int64_t crowns, std::string* err);
 
  private:
   sqlite3* db_ = nullptr;

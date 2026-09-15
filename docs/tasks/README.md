@@ -870,6 +870,15 @@ session-only. 6 new tests (incl. the movement-validation lesson). `t128.bwj`
 re-replays mm=0. Devlog 0094 · card `done/T-133.md`. Next: S3 taxes +
 holder persist.
 
+## Done — T-134 (2026-09-15): taxes + vault + holder buff (Phase S, 3/4)
+
+T-134 CONTENT (no epoch bump, stays 24): `siege_state` table (holder,
+vault, crowns) + boot load + throttled save; 5% PvE kill-gold tithe
+while held; holder +10% hit&dmg; crown books name/crowns/dirty; `gm
+siege` readout. Vault spending = Phase P. 6 new tests. `t128.bwj`
+re-replays mm=0. Devlog 0095 · card `done/T-134.md`. Next: S4 bots +
+M4 gate.
+
 
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
