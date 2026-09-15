@@ -814,6 +814,16 @@ broadcast); 3 new ItemDefs (2201/2103/2202, never stocked). 4 new tests in
 also claims epoch 23 — T-115 precedent rules. Devlog 0088 · card
 `done/T-127.md`. Next: T-128 Red Widow uniques.
 
+## Done — T-128 (2026-09-15): trio uniques ×9, 12/12 set complete (H3 loot depth, 3–5/5 COMBINED)
+
+T-128 CONTENT (epoch 23→24): 9 ItemDefs (2301/2104/2302 Widow,
+2303/2105/2304 Cantor, 2401/2106/2402 Gravemother @6%) + 9 `kUniqueDrops`
+rows, slot-legal fixed affixes; `test_uniques.cpp` +3 cases (counts/rates,
+slot-law sweep, per-boss grants, never-stocked sweep). Combined card —
+T-129/T-130 stay free; the 10 → 40 table is a filed follow-up. Gate leg
+`logs/t128.bwj` (60 kills, mm=0); guard refuses t127 exit 4. Devlog 0089 ·
+card `done/T-128.md`. Next: Phase H4 (Blood Moon + EK + L19 oath).
+
 
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
