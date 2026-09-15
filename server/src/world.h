@@ -312,6 +312,10 @@ class World {
   void debugKillPlayerBy(Entity& e, Entity* killer) { killPlayer(e, killer); }
   void debugAwardXp(Entity& e, std::uint32_t amt) { awardXp(e, amt); }
   void debugKillMob(Entity& mob, Entity* killer) { killMob(mob, killer); }
+  // T-127: unique grant (fixed item + fixed affix + world broadcast). No roll
+  // inside — the caller owns the chance draw (testable deterministically).
+  // Inv-full grants nothing (no partial state). Returns the grant or false.
+  bool grantUniqueDrop(Entity& killer, const content::UniqueDropDef& u);
   void debugSetTick(sim::Tick t) { tick_ = t; }  // T-061/62 test seam: hour dial
   bool isNight() const;  // T-061: dark hours 21:00-05:00 (game clock)
   // T-065 session-scoped bounty board (no persistence by design)

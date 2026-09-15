@@ -804,6 +804,16 @@ distribution + paired-world Greed + Thorns never-kill floor. Gate leg
 Duel pin unchanged. Devlog 0087 · card `done/T-126.md`. Next: T-127 Old Maw
 uniques (then Widow T-128, Cantor T-129, Gravemother T-130).
 
+## Done — T-127 (2026-09-15): Old Maw uniques ×3 (H3 loot depth, 2/5)
+
+T-127 CONTENT (epoch 22→23): `UniqueDropDef` + `kUniqueDrops` (3 rows for
+1012 @4%, fixed Embers/Thorns/Greed) + `grantUniqueDrop` (cap-32, chatCh 2
+broadcast); 3 new ItemDefs (2201/2103/2202, never stocked). 4 new tests in
+`test_uniques.cpp` (grows with T-128..T-130). Gate leg `logs/t127.bwj`
+(52 kills, mm=0); guard refuses t126 exit 4. COLLISION FLAG: arena PR #23
+also claims epoch 23 — T-115 precedent rules. Devlog 0088 · card
+`done/T-127.md`. Next: T-128 Red Widow uniques.
+
 
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 

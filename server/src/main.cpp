@@ -110,10 +110,11 @@ void sendMsg(ENetPeer* peer, const Msg& m, Server& s) {
 // T-104 review fixes + T-111 fixes = 19 (both lineages, independently
 // numbered); T-115 reconciliation re-bumps: 20; T-120 weapon-skill
 // persistence: 21; T-126 affix roll widens 1..3 -> 1..10 (shifts every
-// downstream draw in journals containing gear drops): 22.
+// downstream draw in journals containing gear drops): 22; T-127 Old Maw
+// unique rows draw per-row range(1,100) on 1012 kills: 23.
 // Replay refuses non-matching epoch journals instead of lying with them.
-constexpr int kJournalEpoch = 22;  // T-126: affix v2 roll widening. Fresh
-                                   // gate leg: logs/t126.bwj
+constexpr int kJournalEpoch = 23;  // T-127: boss-unique rolls. Fresh
+                                   // gate leg: logs/t127.bwj
 
 // ---- world journal record helpers (M2) ------------------------------------
 void journalTickHash(Server& s) {
