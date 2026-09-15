@@ -312,6 +312,11 @@ class World {
   bool siegeBattleActive() const;
   const std::vector<std::uint32_t>& siegeAttackers() const { return siegeAttackers_; }
   std::uint32_t siegeHolder() const { return siegeHolder_; }
+  // T-132 gates: breach objectives (kind 75) on zone 6, felled by /breach.
+  static constexpr std::uint32_t kSiegeGateHp = 300;
+  static constexpr std::uint32_t kBreachDmg = 10;  // ~30 ram-actions per gate
+  void spawnSiegeGates(Zone& zone);  // zone 6 only (staging positions)
+  bool breach(Entity& e);  // registered attacker near a standing gate
   void spawnConfessor(Zone& zone);  // zone 1 chapel only
   void spawnAnvils();                        // plaza (z1) + bone barrow (z3)
   void spawnNpcs();  // T-094: twins flank the anvil, guards stand the posts
