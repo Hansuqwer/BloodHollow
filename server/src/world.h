@@ -139,6 +139,7 @@ struct Entity {
   sim::Tick spawnProtectUntil = -1;
   // T-075 chapel repentance: one whitening-hour per logged hour at most.
   sim::Tick repentUntil = -1;
+  sim::Tick crownUntil = -1;  // T-133: crown channel deadline (-1 = idle)
 
   // trade (T-029): intents only until BOTH commit; swap validated at commit.
   std::uint32_t tradeWith = 0;
@@ -317,6 +318,13 @@ class World {
   static constexpr std::uint32_t kBreachDmg = 10;  // ~30 ram-actions per gate
   void spawnSiegeGates(Zone& zone);  // zone 6 only (staging positions)
   bool breach(Entity& e);  // registered attacker near a standing gate
+  // T-133 Heartstone + crown (kind 76): presence attunes, channel crowns.
+  static constexpr std::uint32_t kHeartCaptureTicks = 1200;  // 60 s uncontested
+  static constexpr sim::Tick kCrownChannelTicks = 200;  // 10 s kneel
+  void spawnHeartstone(Zone& zone);  // zone 6 only (by the Inner Gate)
+  bool crown(Entity& e);  // /crown: registered attacker kneels at attuned stone
+  std::uint32_t heartProgress() const { return heartProgress_; }
+  bool heartAttuned() const { return heartAttuned_; }
   void spawnConfessor(Zone& zone);  // zone 1 chapel only
   void spawnAnvils();                        // plaza (z1) + bone barrow (z3)
   void spawnNpcs();  // T-094: twins flank the anvil, guards stand the posts
@@ -487,6 +495,8 @@ class World {
   void awardXp(Entity& player, std::uint32_t amount);
   std::uint32_t recomputeHpMax(Entity& e) const;
   void respawnTick();
+  void heartTick();  // T-133: presence attunement while battle runs
+  void crownTick();  // T-133: channel progress/breaks/crowning
   std::vector<Entity*> playersNear(Zone& zone, int x, int y, int radius);
   // inventory helpers (sorted by itemId; equips occupy their slot domain)
   bool addItem(Entity& e, std::uint32_t itemId, std::uint16_t qty);
@@ -520,6 +530,9 @@ class World {
   std::uint32_t siegeHolder_ = 0;  // 0 = unclaimed castle
   bool siegeBattleActive_ = false;
   sim::Tick siegeBattleEndsAt_ = -1;
+  // T-133 Heartstone (session-scoped like the battle).
+  std::uint32_t heartProgress_ = 0;
+  bool heartAttuned_ = false;
   sim::Tick tick_ = 0;
   std::vector<WorldEvent> events_{};
 

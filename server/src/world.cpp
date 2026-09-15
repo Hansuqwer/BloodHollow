@@ -125,6 +125,7 @@ done:
   initialMobSpawns(zone, mapId);
   if (mapId == 1 || mapId == 3) spawnAnvils();   // plaza + bone barrow
   if (mapId == 6) spawnSiegeGates(zone);  // T-132: breach objectives
+  if (mapId == 6) spawnHeartstone(zone);  // T-133: capture + crown
   if (mapId == 1) spawnNpcs();  // T-094: twins + post guards (after anvil)
   return true;
 }
@@ -1648,6 +1649,150 @@ bool World::breach(Entity& e) {
   events_.push_back(std::move(fev));
   std::printf("[siege] %s breached by %s\n", fallen.c_str(), e.name.c_str());
   return true;
+}
+
+// ---- Heartstone + crown (T-133, Phase S 2b/4) ------------------------------
+// Presence attunes the stone (attackers uncontested); a registered attacker
+// then kneels 10 s to take the castle. Swings allowed mid-channel —
+// stillness is about feet, not steel. No RNG anywhere on this path.
+void World::spawnHeartstone(Zone& zone) {
+  sim::TilePos want{zone.spawnPoint.x + 9, zone.spawnPoint.y};
+  sim::TilePos at = want;
+  if (!zone.map.inBounds(at.x, at.y) || zone.map.isBlocked(at.x, at.y)) {
+    bool placed = false;
+    for (int r = 1; r < 8 && !placed; ++r) {
+      for (int dy = -r; dy <= r && !placed; ++dy) {
+        for (int dx = -r; dx <= r && !placed; ++dx) {
+          const int x = want.x + dx, y = want.y + dy;
+          if (!zone.map.inBounds(x, y) || zone.map.isBlocked(x, y)) continue;
+          at = sim::TilePos{x, y};
+          placed = true;
+        }
+      }
+    }
+    if (!placed) return;
+  }
+  Entity stone;
+  stone.id = nextId_++;
+  stone.zoneId = 6;
+  stone.kind = EntityKind::kMob;  // furniture: non-combat
+  stone.wireKind = content::kWireKindHeartstone;
+  stone.name = "Heartstone";
+  stone.hp = 1;
+  stone.hpMax = 1;
+  stone.walker.place(at);
+  insertEntity(std::move(stone));
+}
+
+bool World::crown(Entity& e) {
+  if (e.kind != EntityKind::kPlayer || e.dead) return false;
+  if (!siegeBattleActive() || !heartAttuned_) return false;
+  bool enlisted = false;
+  for (const std::uint32_t id : siegeAttackers_)
+    if (id == e.id) {
+      enlisted = true;
+      break;
+    }
+  if (!enlisted) return false;
+  const Entity* stone = nullptr;
+  for (const auto& other : entities_) {
+    if (other.wireKind != content::kWireKindHeartstone || other.dead) continue;
+    if (other.zoneId != e.zoneId) continue;
+    if (other.hp == 0) continue;
+    if (chebyshev(e.walker.tile(), other.walker.tile()) <= 2) {
+      stone = &other;
+      break;
+    }
+  }
+  if (stone == nullptr) return false;
+  e.crownUntil = tick_ + kCrownChannelTicks;
+  WorldEvent ev;
+  ev.aboutId = e.id;
+  ev.chatCh = 255;
+  ev.chatText = "you kneel before the Heartstone... (hold still)";
+  events_.push_back(std::move(ev));
+  return true;
+}
+
+void World::heartTick() {
+  if (!siegeBattleActive() || heartAttuned_) return;
+  const Entity* stone = nullptr;
+  for (const auto& other : entities_) {
+    if (other.wireKind != content::kWireKindHeartstone || other.dead) continue;
+    if (other.hp == 0) continue;
+    stone = &other;
+    break;
+  }
+  if (stone == nullptr) return;
+  std::uint32_t attackers = 0, contest = 0;
+  for (const auto& e : entities_) {
+    if (e.kind != EntityKind::kPlayer || e.dead) continue;
+    if (e.zoneId != stone->zoneId) continue;
+    if (chebyshev(e.walker.tile(), stone->walker.tile()) > 3) continue;
+    bool enlisted = false;
+    for (const std::uint32_t id : siegeAttackers_)
+      if (id == e.id) {
+        enlisted = true;
+        break;
+      }
+    if (enlisted)
+      ++attackers;
+    else
+      ++contest;
+  }
+  if (attackers == 0 || contest > 0) return;  // empty or contested: hold
+  if (++heartProgress_ >= kHeartCaptureTicks) {
+    heartAttuned_ = true;
+    WorldEvent ev;
+    ev.chatCh = 2;
+    ev.chatText = "the Heartstone drinks deep — it is attuned.";
+    events_.push_back(std::move(ev));
+    std::printf("[siege] heartstone attuned at tick %d\n", static_cast<int>(tick_));
+  }
+}
+
+void World::crownTick() {
+  for (auto& e : entities_) {
+    if (e.kind != EntityKind::kPlayer || e.crownUntil < 0) continue;
+    const sim::Tick start = e.crownUntil - kCrownChannelTicks;
+    bool broken = e.dead || !siegeBattleActive() || e.walker.moving ||
+                  !e.path.empty() || e.lastHurtTick >= start;
+    if (!broken) {
+      // leaving the stone's radius breaks the kneel
+      bool near = false;
+      for (const auto& other : entities_) {
+        if (other.wireKind != content::kWireKindHeartstone || other.dead) continue;
+        if (other.zoneId != e.zoneId) continue;
+        if (other.hp == 0) continue;
+        if (chebyshev(e.walker.tile(), other.walker.tile()) <= 2) {
+          near = true;
+          break;
+        }
+      }
+      broken = !near;
+    }
+    if (broken) {
+      e.crownUntil = -1;
+      if (!e.dead) {
+        WorldEvent ev;
+        ev.aboutId = e.id;
+        ev.chatCh = 255;
+        ev.chatText = "the kneel breaks — the Heartstone waits.";
+        events_.push_back(std::move(ev));
+      }
+      continue;
+    }
+    if (tick_ >= e.crownUntil) {
+      e.crownUntil = -1;
+      siegeHolder_ = e.id;
+      siegeBattleActive_ = false;
+      WorldEvent ev;
+      ev.chatCh = 2;
+      ev.chatText = e.name + " takes the Weeping Crown!";
+      events_.push_back(std::move(ev));
+      std::printf("[siege] crowned: %s holds the castle\n", e.name.c_str());
+    }
+  }
 }
 
 // ---- anvil & aura spine (T-041/T-042, RFC 0001) ----------------------------
@@ -3534,6 +3679,9 @@ void World::tick() {
       }
     }
   }
+
+  heartTick();  // T-133 Heartstone attunement
+  crownTick();  // T-133 crown channels
 
   respawnTick();
 }
