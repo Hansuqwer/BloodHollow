@@ -595,8 +595,10 @@ class World {
   // T-131 siege battle (session-scoped; holder/tax persist lands in S3).
   // Bands are parties: one registration enlists the captain's living party
   // (5-man convention; M4's 40 = 8 bands). Unaffiliated captains ride solo.
-  // Pledge ids replace captain ids when Phase P lands (same shape).
+  // T-139 pledge bands: a sworn captain musters the whole sworn war-host
+  // (living online pledge members) keyed by pledge id — one pledge, one band.
   std::vector<std::uint32_t> siegeAttackers_{};
+  std::vector<std::uint32_t> siegeBandPledges_{};  // T-139: pledge id per band (0 = unaffiliated)
   std::uint32_t siegeHolder_ = 0;  // 0 = unclaimed castle
   bool siegeBattleActive_ = false;
   sim::Tick siegeBattleEndsAt_ = -1;

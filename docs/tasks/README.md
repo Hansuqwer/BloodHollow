@@ -943,6 +943,15 @@ spliced inside loadSiege restored. Battery + `logs/t138.bwj` on the PR.
 Devlog 0099 · card `T-138.md` (→ done on merge). Next: pledge bands +
 vault follow-ups.
 
+## Done — T-139 (2026-09-15): pledge bands muster sworn war-hosts (Phase P, 2/3)
+
+T-139 MUSTER: `siegeRegister` keys bands by pledge id (one pledge, one
+band); sworn callers muster missing members into the enlisted band (no slot);
+desertion never un-enlists; unaffiliated keep party shape. No epoch (26), no
+schema, no wire, no journal change. 286/286 (4 new) · `logs/t139.bwj`
+(5-member single enlistment, replay mm=0) · `t138.bwj` mm=0 (neutrality).
+Devlog 0100 · card `T-139.md` (→ done on merge). Next: T-140 pledge vault.
+
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
 | Card | Title | Notes |
