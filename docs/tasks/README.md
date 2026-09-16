@@ -1022,14 +1022,16 @@ broke ci.yml (fixed, yaml-parsed). Devlog 0110 · card
 
 ## Audit wave T-150..T-169 (2026-09-16 playable-audit; drafts in PR #53 / commit a1bd867)
 
-Shipped → `done/`: T-150 (zone6 client map, `91c5325`), T-151 (siege/pledge
-wire+HUD epoch 28, `04a60b8`), T-152 (GM allowlist+/ban/announce, `9f3b43e`),
-T-155 (--bless replay guard, `ef618a5`), T-169 (/help+F1, `ca3e71a`),
-T-165-Wave0 (castle test salvage, `eeee6e0`); T-154/T-168 (PR #55), T-159
-(PR #54) → done on merge. Open: T-153 argon2id · T-156 T-ART-12..15 · T-157-F2 bands · T-157-F3 attune
+Shipped → `done/`: T-150 (zone6 client map), T-151 (siege/pledge wire+HUD),
+T-152 (GM allowlist+/ban/announce), T-153 (argon2id, ADR-0012),
+T-154/T-168 (headless gate + build-dir law), T-155 (--bless guard),
+T-157 verdicts + F3(a) (M4 FAIL, cause + attune gap carded),
+T-158 (GDD truth-up, ADR-0013/14), T-159 (loot depth), T-169 (/help+F1),
+T-165-Wave0, wave-2 (creation/five-stat/Resurrect/roster/war/bounty,
+epoch 30). Open: T-156 T-ART-12..15 · T-157-F2 bands · T-157-F3 attune
 (director call) · T-159f1 loot follow-ups · T-161b kit spine part 2 ·
-T-164 night light · T-165 remainder (director merges). T-157 verdicts + T-158
-+ wave-2 are done. Human-only T-146..T-149 stay director-owned.
+T-164 night light · T-165 remainder (director merges).
+Human-only T-146..T-149 stay director-owned.
 
 ## Done — T-158 (2026-09-16): GDD law truth-up + ADRs (docs-only)
 
@@ -1067,6 +1069,15 @@ T-166 bounty persistence (y-sidecar, hash widened). 325/325 (11 new) ·
 T-161b, T-159f1, patrol red-name tint, live Resurrect staging. Client compiles
 via CI matrix. Devlog 0115 · card `done/T-WAVE2.md`. Open wave-2 follow-ups:
 T-161b, T-159f1.
+
+## Done — T-153 (2026-09-16): argon2id password hashing (schema v16)
+
+Vendored argon2-20190702 (pinned hash, `bh_argon2`), m=19MiB/t=2/p=1:
+hash 47 ms / verify 44 ms measured. Stub rows rehash silently on login
+(proven incl. second-login-uses-argon); garbage refuses reason-1, no crash;
+new accounts hash at birth. Single-threaded tick impact stated + bounded.
+Runbook §7 wave-1 `--no-register` default. 5 new tests, suite 330/330.
+Devlog 0116 · card `done/T-153.md` · ADR-0012.
 
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 

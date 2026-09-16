@@ -68,4 +68,27 @@ if(BH_BUILD_SERVER)
   set_property(TARGET bh_sqlite PROPERTY C_STANDARD 99)
   target_compile_definitions(bh_sqlite PRIVATE
     SQLITE_THREADSAFE=1 SQLITE_OMIT_LOAD_EXTENSION=1 SQLITE_ENABLE_FTS5=1)
+
+  # ---- Argon2 20190702 reference impl (ADR-0012; password hashing) ----
+  # Built directly like ENet/SQLite (upstream has no cmake). CC0/Apache-2.0.
+  set(_ar_tgz ${_deps}/argon2-20190702.tar.gz)
+  set(_ar_dir ${_deps}/phc-winner-argon2-20190702)
+  if(NOT EXISTS ${_ar_dir}/include/argon2.h)
+    file(DOWNLOAD https://github.com/P-H-C/phc-winner-argon2/archive/refs/tags/20190702.tar.gz
+         ${_ar_tgz}
+         EXPECTED_HASH SHA256=daf972a89577f8772602bf2eb38b6a3dd3d922bf5724d45e7f9589b5e830442c
+         SHOW_PROGRESS)
+    file(ARCHIVE_EXTRACT INPUT ${_ar_tgz} DESTINATION ${_deps})
+  endif()
+  add_library(bh_argon2 STATIC
+    ${_ar_dir}/src/argon2.c
+    ${_ar_dir}/src/core.c
+    ${_ar_dir}/src/ref.c
+    ${_ar_dir}/src/thread.c
+    ${_ar_dir}/src/blake2/blake2b.c
+    ${_ar_dir}/src/encoding.c
+  )
+  target_include_directories(bh_argon2 SYSTEM PUBLIC ${_ar_dir}/include)
+  target_link_libraries(bh_argon2 PUBLIC Threads::Threads)
+  set_property(TARGET bh_argon2 PROPERTY C_STANDARD 99)
 endif()

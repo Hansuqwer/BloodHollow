@@ -461,7 +461,7 @@ TEST_CASE("T-122/T-138: schema migration to head — registry + membership round
   sqlite3_stmt* st = nullptr;
   REQUIRE(sqlite3_prepare_v2(check, "PRAGMA user_version;", -1, &st, nullptr) == SQLITE_OK);
   REQUIRE(sqlite3_step(st) == SQLITE_ROW);
-  CHECK(sqlite3_column_int(st, 0) == 15);  // wave-2: schema v15 (was v14)
+  CHECK(sqlite3_column_int(st, 0) == 16);  // T-153: schema v16 (was v15)
   sqlite3_finalize(st);
   sqlite3_close(check);
   rmDb(path);

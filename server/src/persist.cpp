@@ -2,8 +2,13 @@
 #include <cstring>
 
 #include <cstdio>
+#include <ctime>
 #include <filesystem>
+#include <fstream>
 #include <system_error>
+#include <unistd.h>  // getpid (argon salt fallback only)
+
+#include <argon2.h>
 
 #include "sim/bhmap.h"  // fnv1a64
 
@@ -20,6 +25,52 @@ std::uint64_t stubPasswordHash(std::uint64_t salt, const std::string& pass) {
   }
   return h;
 }
+
+// ---- T-153 argon2id (ADR-0012) ---------------------------------------------
+// OWASP low-end cost: tens of ms per verify on the alpha box (measured in
+// the T-153 card). Auth only — never gameplay/sim (salts must differ).
+namespace {
+constexpr std::uint32_t kArgon2Time = 2;
+constexpr std::uint32_t kArgon2MemKiB = 19456;  // 19 MiB
+constexpr std::uint32_t kArgon2Lanes = 1;
+constexpr std::size_t kArgon2SaltLen = 16;
+constexpr std::size_t kArgon2HashLen = 32;
+constexpr std::size_t kArgon2EncodedLen = 128;
+
+bool constTimeEq64(std::uint64_t a, std::uint64_t b) {  // branch-free u64 compare
+  std::uint64_t d = a ^ b;
+  d |= d >> 32;
+  d |= d >> 16;
+  d |= d >> 8;
+  d |= d >> 4;
+  d |= d >> 2;
+  d |= d >> 1;
+  return (d & 1u) == 0u;
+}
+
+bool randomSalt16(std::uint8_t out[16]) {
+  std::ifstream f("/dev/urandom", std::ios::binary);
+  if (f.read(reinterpret_cast<char*>(out), 16)) return true;
+  // Fallback (NOT cryptographic): startup-only path, still unique per call.
+  const std::uint64_t t = static_cast<std::uint64_t>(::time(nullptr));
+  const std::uint64_t p = static_cast<std::uint64_t>(::getpid());
+  for (int i = 0; i < 16; ++i)
+    out[i] = static_cast<std::uint8_t>((t * 2654435761ULL + p * 40503ULL) >> ((i % 8) * 8));
+  return false;
+}
+
+bool argonHashPassword(const std::string& pass, std::string* encodedOut) {
+  std::uint8_t salt[16];
+  randomSalt16(salt);
+  char encoded[kArgon2EncodedLen];
+  if (argon2id_hash_encoded(kArgon2Time, kArgon2MemKiB, kArgon2Lanes,
+                            pass.data(), pass.size(), salt, kArgon2SaltLen,
+                            kArgon2HashLen, encoded, kArgon2EncodedLen) != ARGON2_OK)
+    return false;
+  *encodedOut = encoded;
+  return true;
+}
+}  // namespace
 
 bool Db::exec(const char* sql, std::string* err) {
   char* msg = nullptr;
@@ -234,6 +285,16 @@ bool Db::open(const std::string& path, std::string* err) {
     if (!exec("PRAGMA user_version=15;", err)) return false;
     uv = 15;
   }
+  if (uv < 16) {
+    // v16 (T-153, ADR-0012): argon2id PHC column on accounts. Empty string =
+    // stub-era row (verified via FNV-1a, then silently rehashed on login).
+    if (!exec("ALTER TABLE accounts ADD COLUMN pwhash_phc TEXT NOT NULL DEFAULT '';",
+              err)) {
+      return false;
+    }
+    if (!exec("PRAGMA user_version=16;", err)) return false;
+    uv = 16;
+  }
   // T-152: bans + gm_accounts (version-free, IF NOT EXISTS — like siege_state —
   // so old journals keep epoch 28; no user_version bump required).
   if (!exec("CREATE TABLE IF NOT EXISTS bans ("
@@ -305,7 +366,7 @@ bool Db::loginOrCreate(const std::string& user, const std::string& pass,
 
   sqlite3_stmt* st = nullptr;
   bool ok = false;
-  if (sqlite3_prepare_v2(db_, "SELECT id, salt, pwhash FROM accounts WHERE name=?;", -1, &st,
+  if (sqlite3_prepare_v2(db_, "SELECT id, salt, pwhash, pwhash_phc FROM accounts WHERE name=?;", -1, &st,
                          nullptr) != SQLITE_OK) {
     *failReason = 3;
     if (err) *err = "prepare failed (accounts)";
@@ -316,12 +377,41 @@ bool Db::loginOrCreate(const std::string& user, const std::string& pass,
   std::int64_t accountId = 0;
   if (rc == SQLITE_ROW) {
     accountId = sqlite3_column_int64(st, 0);
-    const std::uint64_t salt = static_cast<std::uint64_t>(sqlite3_column_int64(st, 1));
-    const std::uint64_t pw = static_cast<std::uint64_t>(sqlite3_column_int64(st, 2));
+    const unsigned char* phcTxt = sqlite3_column_text(st, 3);
+    const std::string phc =
+        phcTxt != nullptr ? reinterpret_cast<const char*>(phcTxt) : "";
+    bool passOk = false;
+    bool needsRehash = false;
+    if (!phc.empty()) {
+      // argon2id era: lib verify is constant-time; garbage decodes to an
+      // error (refused, never crashes).
+      passOk = argon2id_verify(phc.c_str(), pass.data(), pass.size()) == ARGON2_OK;
+    } else {
+      // stub era (pre-v16 row): constant-time FNV-1a compare, then migrate.
+      const std::uint64_t salt = static_cast<std::uint64_t>(sqlite3_column_int64(st, 1));
+      const std::uint64_t pw = static_cast<std::uint64_t>(sqlite3_column_int64(st, 2));
+      passOk = constTimeEq64(stubPasswordHash(salt, pass), pw);
+      needsRehash = passOk;
+    }
     sqlite3_finalize(st);
-    if (stubPasswordHash(salt, pass) != pw) {
+    if (!passOk) {
       *failReason = 1;
       return false;
+    }
+    if (needsRehash) {
+      // Silent migration: best-effort single UPDATE — login succeeds even if
+      // the rewrite fails (next login retries).
+      std::string encoded;
+      if (argonHashPassword(pass, &encoded)) {
+        sqlite3_stmt* up = nullptr;
+        if (sqlite3_prepare_v2(db_, "UPDATE accounts SET pwhash_phc=? WHERE id=?;",
+                               -1, &up, nullptr) == SQLITE_OK) {
+          sqlite3_bind_text(up, 1, encoded.c_str(), -1, SQLITE_TRANSIENT);
+          sqlite3_bind_int64(up, 2, accountId);
+          sqlite3_step(up);
+          sqlite3_finalize(up);
+        }
+      }
     }
     ok = true;
   } else {
@@ -329,13 +419,20 @@ bool Db::loginOrCreate(const std::string& user, const std::string& pass,
   }
 
   if (!ok) {
-    // First sight of this user: create account.
+    // First sight of this user: create account — argon2id from birth
+    // (T-153); stub columns ride along for schema continuity.
     std::uint64_t salt = sim::fnv1a64(
         reinterpret_cast<const std::uint8_t*>(user.data()), user.size(), 0);
     salt ^= static_cast<std::uint64_t>(::time(nullptr)) * 2654435761ULL;
+    std::string encoded;
+    if (!argonHashPassword(pass, &encoded)) {
+      *failReason = 3;
+      if (err) *err = "argon2 hash failed";
+      return false;
+    }
     sqlite3_stmt* ins = nullptr;
     if (sqlite3_prepare_v2(db_,
-                           "INSERT INTO accounts(name, salt, pwhash) VALUES(?,?,?);", -1, &ins,
+                           "INSERT INTO accounts(name, salt, pwhash, pwhash_phc) VALUES(?,?,?,?);", -1, &ins,
                            nullptr) != SQLITE_OK) {
       *failReason = 3;
       if (err) *err = "prepare failed (insert account)";
@@ -345,6 +442,7 @@ bool Db::loginOrCreate(const std::string& user, const std::string& pass,
     sqlite3_bind_int64(ins, 2, static_cast<sqlite3_int64>(salt));
     sqlite3_bind_int64(ins, 3,
                        static_cast<sqlite3_int64>(stubPasswordHash(salt, pass)));
+    sqlite3_bind_text(ins, 4, encoded.c_str(), -1, SQLITE_TRANSIENT);
     if (sqlite3_step(ins) != SQLITE_DONE) {
       sqlite3_finalize(ins);
       *failReason = 1;  // raced by another login; caller retries

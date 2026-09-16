@@ -87,3 +87,12 @@ Refused at handshake by construction: `Hello.protoVersion` mismatch →
 `LoginResult(ok=0, reason=4)` (messages.md). Launcher duty is to fetch the
 manifest first so players never see reason=4. There is NO launcher in the
 repo (director-owned, MVP §7 box open). **New reason 7** = banned (T-152).
+
+## 7. Registration posture (wave-1 default)
+
+- Passwords are argon2id (T-153, ADR-0012, m=19MiB/t=2/p=1, ~45 ms/verify);
+  stub-era rows rehash silently on next login. T-109 limiter still applies
+  (30 new accounts/60 s/IP, 10-fail 60 s lockout).
+- **Wave-1 default: `--no-register`.** Pre-create invite accounts, then run
+  closed. Open registration is for load/soak windows only (announced,
+  monitored, limiter briefed). Reason 6 = registration disabled.
