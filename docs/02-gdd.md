@@ -1,4 +1,8 @@
-# 02 — Game Design Document (BLOODHOLLOW)
+# 02 — Game Design Document / BIBLE v2 (BLOODHOLLOW)
+
+BIBLE v2 (2026-09-16, director-locked): **horror Lineage1 / Dark Eden, really dark.**
+Feel law, not flavor. Factions SKIPPED for MVP (see §1, §5, §10). Dark law in §2 + §9
+is normative: if a number conflicts, §2/§9 wins over older rows.
 
 Scope note: this document describes the **whole intended game**, with every feature
 tagged **[MVP]**, **[v0.2]**, or **[LATER]**. The MVP cut is what `docs/05-mvp.md`
@@ -17,14 +21,18 @@ opposite banks of the Redwater:
 - **Thornwall** (west) — dour fortress-town of the **Ashen Compact**.
 - **Marrowgate** (east) — zealot port of the **Pale Synod**.
 
-Characters start neutral in the refugee camp; at **level 19** you must swear to one
-town to keep leveling (Helbreath rule). The two towns are at war: killing a sworn
-member of the enemy town grants **EK (Enemy Kills)** fame instead of chaos — the
-same hemisphere, same laws, different colors. Between them: **Weeping Castle**, held
-by whichever bloodpledge took it last siege night.
+Characters start neutral in the refugee camp. **MVP: no town oath, no level gate, no
+second-city sim** (director cut 2026-09-16 — Marrowgate exists as lore + EK-target
+placeholder only, no population). The L19 Helbreath oath (swear to Thornwall vs
+Marrowgate) returns in **[v0.2] with the Vampire race** as a true race-war. MVP
+politics is pledges + castle holder vs everyone + karma/red-names (see §5, §8, §10).
+Between them: **Weeping Castle**, held by whichever bloodpledge took it last siege night.
 
 Tone keywords: *mud, rust, candle-light, rot, incense, teeth.* No elves, no sparkle.
 Horror comes from consequence (death, night, loss) more than jump-scares.
+**BIBLE v2 feel law: Lineage1 dread (open PK, red-names, drops, guards, siege tax)
+× Dark Eden night warfare (night-dominant horrors, light = life, infection).
+Really dark, but readable-dark — never blind (see §2, §9).**
 
 ## 2. Camera, controls, feel
 
@@ -40,18 +48,23 @@ Horror comes from consequence (death, night, loss) more than jump-scares.
 - F1–F8 side-slots for potions/scrolls (Helbreath culture), hotbar 1–8 for skills.
 - Zoom: 1×/1.5×/2× integer steps only.
 
-### Art-direction spec (era-authentic)
+### Art-direction spec (era-authentic) — HORROR LAW [MVP, normative]
+
+Horror rule: darkness is gameplay, not blindness. Night must force torches,
+lanterns and Vigil affixes, hide monsters in shadow pools, and make Curse/magic
+light the only neon on screen — while a human at 04:00 with a torch can still
+grind. T-164 proves this with screenshots (torch vs no-torch, zoom 1/1.5/2).
 
 | Element | Spec |
 |---|---|
-| Palette | Per-asset ≤32 colors; global dither pass; night = desaturated blue-black multiply + additive light mask. **Soma lesson: never pitch-black — night tint alpha capped at ~65% so the field stays playable (Myth of Soma servers literally shipped "permanent daytime" as a QoL hack; we bake the fix).** |
-| Look target | **Helbreath-favored split lock** (director 2026-09-04): **terrain** = Myth of Soma painterly pre-rendered (rooted giant trees, swamp mud, broken aqueducts, taller zoom than Mir); **characters & VFX** = Helbreath hand-drawn sprites with visible paper-doll silhouettes + crowd-readable spell FX (a 15-player pile must still parse); **combat storytelling** = HB red-caps ability callouts over heads ("Power-Swing!", "Hell-Fire!") + party-name colors; **grade** = Lineage 1 dark-horror palette with DarkEden neon-gothic accents reserved for curse/magic light |
-| Terrain dressing | Painterly scatter: root clusters, leaning gravestones, broken pillars/aqueduct arches over water, mud puddles; monsters lurk in shadow pools (Soma composition) |
+| Palette | Per-asset ≤32 colors; global dither pass; night = desaturated blue-black multiply **78–80% alpha + additive light mask** (BIBLE v2: darker than the old 65% cap; Soma lesson still holds — never pitch-black, servers that went full-black shipped permanent-daytime as a QoL hack). Day stays mud/rust/candle-light; night goes Lineage-C + DarkEden dread. |
+| Look target | **Horror Lineage1 × Dark Eden split lock** (BIBLE v2 2026-09-16, supersedes 2026-09-04 HB-favored lock): **terrain** = Myth of Soma painterly pre-rendered (rooted giant trees, swamp mud, broken aqueducts, taller zoom than Mir) graded dark-horror; **characters & VFX** = Helbreath hand-drawn sprites with visible paper-doll silhouettes + crowd-readable spell FX (a 15-player pile must still parse); **combat storytelling** = HB red-caps ability callouts over heads ("Power-Swing!", "Hell-Fire!") + party-name colors; **grade** = Lineage 1 dark-horror palette with DarkEden neon-gothic accents reserved for curse/magic light — curse/magic is the ONLY neon |
+| Terrain dressing | Painterly scatter: root clusters, leaning gravestones, broken pillars/aqueduct arches over water, mud puddles; monsters lurk in shadow pools (Soma composition). Night: shadow pools are real hiding spots (night-only spawns sit in them) |
 | Sprites | 8 directions; walk 6f, attack 3f (era-authentic minimalism), cast 4f, hurt 2f, die 4f, gib 3f |
-| Gore | Blood decals persist on the ground for 10 min; overkill (≥2× lethal dmg) = gib spray; corpses decay in 3 stages [MVP-lite: decal + 1 corpse frame] |
-| UI | Helbreath-layout: bottom-left red/blue HP/MP bars (numbers on the bars), right-side wood/brass panels (inventory shows item art + weight), bottom-left chat, level always visible; ornate-silver trim from Soma for modal NPC dialogs |
-| Screen | Optional CRT scanline shader (off by default); low-HP heartbeat vignette |
-| Audio | Dry, close foley (thwack, squelch); sparse drones + bell ambience; no orchestral score |
+| Gore | Blood decals persist on the ground for 10 min; overkill (≥2× lethal dmg) = gib spray; corpses decay in 3 stages [MVP-lite: decal + 1 corpse frame]. Gore is the horror UI — blood on the ground tells the story |
+| UI | Helbreath-layout: bottom-left red/blue HP/MP bars (numbers on the bars), right-side wood/brass panels (inventory shows item art + weight), bottom-left chat, level always visible; ornate-silver trim from Soma for modal NPC dialogs. Night clock always visible in HUD |
+| Screen | Optional CRT scanline shader (off by default); low-HP heartbeat vignette (<25% HP). Fog edge at light-radius falloff |
+| Audio | Dry, close foley (thwack, squelch, footsteps); sparse bell drones + night dread ambience; low-HP heartbeat; distant sow-bell for nameds; no orchestral score, no music. Quiet is dread — no global spam |
 
 ## 3. Characters
 
@@ -148,14 +161,16 @@ party wants one).
   on alpha data, start ±5%-ish, capped and visible on the character sheet.
 - **Safe zones:** towns + chapel grounds. **Combat zones:** all field/dungeon maps.
   Dueling flag (`/duel`, consent, no penalties) [MVP].
-- **Enemy-town (EK) rule [MVP-lite, full in v0.2]:** sworn towns at war → kills of
-  enemy sworn players cost no karma and feed the public **EK leaderboard**. MVP
-  ships the leaderboard + war state; the opt-in declaration Nuance v0.2. *(Updated:
-  since town-swear is level 19+, MVP must ship war-state or nobody is 19 in alpha —
-  resolved: MVP ships the two-town war as the ONLY lawful-PvP channel.)*
-- **Blood Curse [MVP-lite]:** bitten-type night mobs can apply a stacking curse
-  (-10% all stats at night, +1% at dawn death); cured free at any chapel. Flavor
-  seed for the Vampire race.
+- **Enemy-town (EK) rule [MVP-rescoped BIBLE v2, full town-war in v0.2]:** MVP has NO
+  town oath and NO lawful town-vs-town channel (skip-factions cut 2026-09-16).
+  `/ek` + the board track **pledge/PK fame** (kills, reds, castle flips) instead of
+  town EK. Town-war (sworn kills cost no karma + public town EK leaderboard) returns
+  in v0.2 with Vampire race-war. Old note retired: MVP no longer ships any two-town
+  war as the lawful-PvP channel — lawful PvP in MVP is duels + siege + pledge wars.
+- **Blood Curse [MVP — horror law]:** bitten-type night mobs apply a stacking curse
+  (-10% all stats at night per stack, +1% dawn-death risk); cured free at any chapel.
+  Curse light is neon-gothic (the only neon). Flavor seed for the Vampire race, and
+  MVP's main night-dread mechanic alongside light radius.
 
 ## 6. Progression, grind, party
 
@@ -209,8 +224,10 @@ stalls/auction [LATER]. Server-side transaction log for every trade (dupe audits
 
 ## 8. Bloodpledges & the Weeping Castle siege
 
-- **Bloodpledge (guild) [v0.2-minus… see MVP doc]:** creation needs CHA ≥ 20 +
-  100k gold; ranks (Liege → Bloodsworn → Initiate); pledge storage; pledge chat.
+- **Bloodpledge (guild) [MVP-lite]:** creation needs **L≥10 + 10,000g (shipped law,
+  BIBLE v2)**; ranks (Liege → Bloodsworn → Initiate); pledge storage deferred;
+  pledge chat + emblem + vault (tax-only). CHA ≥20 + 100k gate was the old spec —
+  deferred to v0.2 with factions (CHA decision in T-160).
   *Cut decision in 05-mvp: MVP ships pledge-lite = name/emblem/members/chat; storage
   & pledge-XP later.*
 - **Siege [MVP, simplified]:** every **Saturday 20:00 UTC, 90 minutes**, one castle.
@@ -225,16 +242,21 @@ stalls/auction [LATER]. Server-side transaction log for every trade (dupe audits
 - Bots fill sieges in alpha (different bot profiles per archetype) so a 10-person
   alpha can still experience a 40-"player" siege.
 
-## 9. Day/night & events
+## 9. Day/night & events — HORROR LAW [MVP, normative]
 
 - **Cycle [MVP]:** 4 real hours = 24 game hours: Day 120 min, Dusk 30, Night 90,
-  Dawn 30 (clock UI in HUD).
-- **Night [MVP]:** global darkness (light radius: base 0; torches 6,
-  lantern 8, of-the-Vigil extend — shipped 0 per T-076/B, torch economy
-  balanced around it), night-only spawns (Wraiths, Bloodfiends) worth +50% XP,
-  Blood Bolt-type effects buffed, ambient dread audio.
-- **Blood Moon [v0.2]:** weekly 20-min event — all spawn rates ×2, world boss
-  **The Pale Sow** roams, all drops +loot-tier.
+  Dawn 30 (clock UI in HUD, always visible).
+- **Night [MVP — really dark, readable-dark]:** global darkness **78–80% desat
+  blue-black multiply + additive light mask** (BIBLE v2 law, T-164 proves with
+  screenshots). Light radius law: **base 0; torch 6, lantern 8, of-the-Vigil
+  extends** — without light you can walk, you cannot grind. Torch economy is
+  balanced around this. Night-only spawns (Wraiths, Bloodfiends) sit in shadow
+  pools, worth **+50% XP**, Blood Bolt-type effects buffed (+25% at night).
+  Ambient dread audio (bell drone, no music), fog at light falloff. First-kill
+  world call only — quiet is dread.
+- **Blood Moon [v0.2 — deferred BIBLE v2]:** weekly 20-min event — all spawn rates
+  ×2, world boss **The Pale Sow** roams, all drops +loot-tier. NOT in MVP (was
+  shipped partial out-of-scope; gated behind GM-only flag until v0.2).
 - Named elites on 15–60 min rotating timers (world-announced first-kill, T-097 reword):
   *Old Maw* (fields — shipped T-101: Gnoll-base L7, 30-min pit), *The Red Widow*
   (mine — shipped T-102: Widow-base L9, 45-min nest), *Cantor Vex* (crypt —
@@ -242,9 +264,11 @@ stalls/auction [LATER]. Server-side transaction log for every trade (dupe audits
 
 ## 10. Post-MVP content map
 
-- **[v0.2]** Vampire race (bite→drain XP; night-dominant; jewelry-only gear;
-  bat-dash; slayers gain "Hunter" sub-skills incl. see-invisible), full pledge
-  systems (levels, storage, wars), Blood Moon, +8–10 scrolls, stalls.
+- **[v0.2 — faction return]** Town oath L19 (Ashen Compact vs Pale Synod) + Marrowgate
+  population/city sim + town-war EK + CHA ≥20 pledge gate; Vampire race (bite→drain
+  XP; night-dominant; jewelry-only gear; bat-dash; slayers gain "Hunter" sub-skills
+  incl. see-invisible), full pledge systems (levels, storage, wars), Blood Moon,
+  +8–10 scrolls, stalls.
 - **[LATER]** Ouster-like elementalist; Crusade (monthly 6–9h nation war);
   second castle; Blood Bible relic hunts; mounts? (no — wagons/carriages flavor
   instead); hardcore ruleset server flag.
@@ -275,5 +299,7 @@ bolt-mirror damage/curse, movers dodge; T-091). Each common mob: 8-dir walk(4f)/
 Auction house, achievements, quest-heavy PvE (quests = bounty board only:
 kill-N/pickup-N), instanced dungeons, matchmaking, cosmetics shop, mobile/Windows
 ports, controller support, localization (en only at alpha), account web portal
-(plain launcher), pets-as-loot, fishing. Every one of these has sunk a similar
-project; they are listed here so a future agent can't "just add" one casually.
+(plain launcher), pets-as-loot, fishing. **BIBLE v2 MVP cuts: town oath + second-city
+(Marrowgate) sim + town-war EK + Blood Moon event + CHA≥20 pledge gate (all v0.2).**
+Every one of these has sunk a similar project; they are listed here so a future
+agent can't "just add" one casually.
