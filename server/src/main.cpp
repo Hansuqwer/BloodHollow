@@ -462,6 +462,12 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
     case kIdChatSend: {
       ChatSend m;
       if (!m.deserialize(pv.body) || !sess.inWorld) return;
+      if (m.text == "gm blood-moon") {  // T-129: journaled, replay-exact (H1 shape)
+        Command c;
+        c.kind = Command::kBloodMoon;
+        if (sess.cmdq.size() < 32) sess.cmdq.push_back(std::move(c));
+        break;
+      }
       if (!m.text.empty() && m.text[0] == '/') {  // party verbs (era commands)
         Command c;
         bool okCmd = true;
