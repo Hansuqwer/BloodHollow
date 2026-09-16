@@ -21,11 +21,12 @@ opposite banks of the Redwater:
 - **Thornwall** (west) — dour fortress-town of the **Ashen Compact**.
 - **Marrowgate** (east) — zealot port of the **Pale Synod**.
 
-Characters start neutral in the refugee camp. **MVP: no town oath, no level gate, no
-second-city sim** (director cut 2026-09-16 — Marrowgate exists as lore + EK-target
-placeholder only, no population). The L19 Helbreath oath (swear to Thornwall vs
-Marrowgate) returns in **[v0.2] with the Vampire race** as a true race-war. MVP
-politics is pledges + castle holder vs everyone + karma/red-names (see §5, §8, §10).
+Characters start neutral in the refugee camp. **MVP-shipped (T-130/T-163):**
+L19 oath to Thornwall vs Marrowgate + field-war EK via town-affiliated patrols
+(Synod in the Fields, Ashen in the Mine) + `/ek` readout — no second-city sim
+(Marrowgate exists as lore + patrol population only). Full race-war returns in
+**[v0.2] with the Vampire race**. MVP politics is pledges + castle holder vs
+everyone + karma/red-names (see §5, §8, §10).
 Between them: **Weeping Castle**, held by whichever bloodpledge took it last siege night.
 
 Tone keywords: *mud, rust, candle-light, rot, incense, teeth.* No elves, no sparkle.
@@ -68,7 +69,7 @@ grind. T-164 proves this with screenshots (torch vs no-torch, zoom 1/1.5/2).
 
 ## 3. Characters
 
-### Stats (6 — Helbreath model) [MVP]
+### Stats (5 — Helbreath model minus CHA) [MVP-shipped, T-160(B) + ADR-0015]
 
 | Stat | Drives |
 |---|---|
@@ -77,7 +78,9 @@ grind. T-164 proves this with screenshots (torch vs no-torch, zoom 1/1.5/2).
 | DEX | Hit rate, evade |
 | INT | Spell-circle unlocks (all classes have small lists), curse resist |
 | MAG | Max MP, MP regen, magic dmg, cast success |
-| CHA | Party-aura radius, pet slots, guild creation (≥20), vendor prices |
+
+CHA cut for MVP (ADR-0015): aura radius hard-coded 12, pledge gate L≥10+10k,
+no pet slots (no pets ship), vendor prices flat. Returns with factions v0.2.
 
 - **+3 points per level** (never auto-assigned), no respec in MVP (a costly NPC
   respec arrives v0.2).
@@ -90,7 +93,7 @@ grind. T-164 proves this with screenshots (torch vs no-torch, zoom 1/1.5/2).
 |---|---|---|---|
 | **Ravager** | Melee DPS / off-tank | STR → VIT/DEX | Big deliberate hits, armor shred, gap-close. Simple to start, timing to master. |
 | **Gravecaller** | Ranged burst / control | INT → MAG | Plague-and-fire caster; DoTs, slows, fear; mana-shield gambling; corpse ammo. |
-| **Cultist** (Pale Choir) | **Support**: heals + buffs + pet | VIT/INT → MAG/CHA | The party multiplier. Mend/Mass Mend, Bless, Ironskin, Haste, Purify, skeleton pet, curse debuffs. Resurrect at 20 = social glue. |
+| **Cultist** (Pale Choir) | **Support**: heals + buffs | VIT/INT → MAG | The party multiplier. Mend/Mass Mend, Bless, Ironskin, Haste, Purify, curse debuffs. Resurrect at 20 = social glue. (Pet, Sanctuary + rest of the kit list: T-161b.) |
 
 Skill lists (numbers = MVP start values, all cooldowns in server ticks @20 Hz):
 
@@ -111,6 +114,12 @@ Purify (cleanse + brief immunity) · Curse of Weakness (-15% target dmg/def) · 
 Skeleton (1 pet tank/backup; CHA adds slots) · **Sanctuary** (ground healing circle,
 600t) · **Resurrect** (lvl 20, 5 min CD, returns 50% of XP debt — the reason every
 party wants one).
+
+Shipped kits (MVP): Ravager ch1 · Gravecaller ch5/ch8 · Cultist
+ch1/ch2/ch3/ch4/ch6/ch7/ch8/ch9 **+ch10 Resurrect (T-161)**. Resurrect ships as a
+post-mortem debt rebate within 5 min (3 s respawn makes corpse-raise unusable —
+recorded deviation). Unshipped kit rows (Gravecaller control set, Ravager set,
+Sanctuary/Curse/Raise): T-161b.
 
 > Support-class design rule: a Cultist's raid DPS contribution ≈ 0.4 of a damage
 > class, but a party WITH one out-farms/out-survives an equal party without one.
@@ -161,12 +170,12 @@ party wants one).
   on alpha data, start ±5%-ish, capped and visible on the character sheet.
 - **Safe zones:** towns + chapel grounds. **Combat zones:** all field/dungeon maps.
   Dueling flag (`/duel`, consent, no penalties) [MVP].
-- **Enemy-town (EK) rule [MVP-rescoped BIBLE v2, full town-war in v0.2]:** MVP has NO
-  town oath and NO lawful town-vs-town channel (skip-factions cut 2026-09-16).
-  `/ek` + the board track **pledge/PK fame** (kills, reds, castle flips) instead of
-  town EK. Town-war (sworn kills cost no karma + public town EK leaderboard) returns
-  in v0.2 with Vampire race-war. Old note retired: MVP no longer ships any two-town
-  war as the lawful-PvP channel — lawful PvP in MVP is duels + siege + pledge wars.
+- **Enemy-town (EK) rule [MVP-shipped: oath T-130, field-war T-163, full
+  town-war in v0.2]:** sworn Thornwall/Marrowgate kill each other karma-free
+  (PvP) AND earn EK from the other town's field patrols (PvE, `/ek` readout).
+  No second-city sim — the war is patrols + oath + board. `/ek` + the board
+  also track pledge/PK fame (kills, reds, castle flips). Lawful PvP in MVP is
+  duels + siege + pledge wars + field-war.
 - **Blood Curse [MVP — horror law]:** bitten-type night mobs apply a stacking curse
   (-10% all stats at night per stack, +1% dawn-death risk); cured free at any chapel.
   Curse light is neon-gothic (the only neon). Flavor seed for the Vampire race, and
@@ -312,9 +321,12 @@ bolt-mirror damage/curse, movers dodge; T-091). Each common mob: 8-dir walk(4f)/
 ## 12. What we are explicitly NOT building
 
 Auction house, achievements, quest-heavy PvE (quests = bounty board only:
-kill-N/pickup-N), instanced dungeons, matchmaking, cosmetics shop, mobile/Windows
+single-mark kill contracts, persisted across restarts — pickup-N cut, T-166),
+instanced dungeons, matchmaking, cosmetics shop, mobile/Windows
 ports, controller support, localization (en only at alpha), account web portal
-(plain launcher), pets-as-loot, fishing. **BIBLE v2 MVP cuts: town oath + second-city
-(Marrowgate) sim + town-war EK + Blood Moon event + CHA≥20 pledge gate (all v0.2).**
+(plain launcher), pets-as-loot, fishing. **BIBLE v2 MVP cuts (remaining):**
+second-city (Marrowgate) sim + full Blood Moon event + CHA≥20 pledge gate
+(all v0.2). Shipped back from the cut list: town oath (T-130), field-war EK
+(T-163 patrols + /ek), Blood Moon lite (ADR-0014).
 Every one of these has sunk a similar project; they are listed here so a future
 agent can't "just add" one casually.

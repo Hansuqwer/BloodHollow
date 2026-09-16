@@ -218,6 +218,22 @@ bool Db::open(const std::string& path, std::string* err) {
     if (!exec("PRAGMA user_version=14;", err)) return false;
     uv = 14;
   }
+  if (uv < 15) {
+    // v15 (wave-2: T-167/T-161/T-166): creation identity + rebate stamps +
+    // bounty mark. All additive with era defaults (sex 0 = legacy unknown,
+    // ticks -1/0 = never, bounty 0 = none posted). T-153 (auth) takes v16.
+    if (!exec("ALTER TABLE characters ADD COLUMN sex INTEGER NOT NULL DEFAULT 0;"
+              "ALTER TABLE characters ADD COLUMN last_death_tick INTEGER NOT NULL DEFAULT -1;"
+              "ALTER TABLE characters ADD COLUMN last_debt_xp INTEGER NOT NULL DEFAULT 0;"
+              "ALTER TABLE characters ADD COLUMN last_res_tick INTEGER NOT NULL DEFAULT -7000;"
+              "ALTER TABLE characters ADD COLUMN bounty_mob INTEGER NOT NULL DEFAULT 0;"
+              "ALTER TABLE characters ADD COLUMN bounty_cycle INTEGER NOT NULL DEFAULT 0;",
+              err)) {
+      return false;
+    }
+    if (!exec("PRAGMA user_version=15;", err)) return false;
+    uv = 15;
+  }
   // T-152: bans + gm_accounts (version-free, IF NOT EXISTS — like siege_state —
   // so old journals keep epoch 28; no user_version bump required).
   if (!exec("CREATE TABLE IF NOT EXISTS bans ("
@@ -268,7 +284,8 @@ bool Db::accountExists(const std::string& user, bool* outExists,
 }
 
 bool Db::loginOrCreate(const std::string& user, const std::string& pass,
-                       CharacterRow* out, std::uint8_t* failReason, std::string* err) {
+                       CharacterRow* out, std::uint8_t* failReason, std::string* err,
+                       bool* freshOut) {
   if (db_ == nullptr) {
     if (err) *err = "db not open";
     return false;
@@ -341,9 +358,10 @@ bool Db::loginOrCreate(const std::string& user, const std::string& pass,
   // after migration). The SELECT is prepared AFTER open() migrations, so
   // columns are guaranteed to exist on a migrated file.
   // v12 (T-130): town_id + ek ride the same guarantee.
+  // v15 (wave-2): sex + rebate stamps + bounty mark ride it too.
   sqlite3_stmt* cs = nullptr;
   if (sqlite3_prepare_v2(db_,
-                         "SELECT id, name, map_id, x, y, level, xp, str, vit, dex, stat_points, gold, inv, anvil_mercy, karma, class_id, sword_skill, swing_lands, town_id, ek, pledge_id, pledge_rank "
+                         "SELECT id, name, map_id, x, y, level, xp, str, vit, dex, stat_points, gold, inv, anvil_mercy, karma, class_id, sword_skill, swing_lands, town_id, ek, pledge_id, pledge_rank, sex, last_death_tick, last_debt_xp, last_res_tick, bounty_mob, bounty_cycle "
 
         "FROM characters "
                          "WHERE account_id=? LIMIT 1;",
@@ -377,7 +395,14 @@ bool Db::loginOrCreate(const std::string& user, const std::string& pass,
     out->ek = sqlite3_column_int(cs, 19);
     out->pledgeId = sqlite3_column_int(cs, 20);  // v13 (T-138 rebase)
     out->pledgeRank = sqlite3_column_int(cs, 21);
+    out->sex = sqlite3_column_int(cs, 22);  // v15 (T-167)
+    out->lastDeathTick = sqlite3_column_int64(cs, 23);  // v15 (T-161)
+    out->lastDebtXp = sqlite3_column_int64(cs, 24);
+    out->lastResTick = sqlite3_column_int64(cs, 25);
+    out->bountyMob = sqlite3_column_int(cs, 26);  // v15 (T-166)
+    out->bountyCycle = sqlite3_column_int(cs, 27);
     sqlite3_finalize(cs);
+    if (freshOut != nullptr) *freshOut = false;
     return true;
   }
   sqlite3_finalize(cs);
@@ -409,6 +434,94 @@ bool Db::loginOrCreate(const std::string& user, const std::string& pass,
   out->swingLands = 0;
   out->townId = 0;  // unsworn (T-130)
   out->ek = 0;
+  out->classId = 0;  // T-167: Unsworn until the creation panel answers
+  out->sex = 0;      // T-167: unknown until chosen (v15 defaults match)
+  out->lastDeathTick = -1;
+  out->lastDebtXp = 0;
+  out->lastResTick = -7000;
+  out->bountyMob = 0;
+  out->bountyCycle = 0;
+  if (freshOut != nullptr) *freshOut = true;
+  return true;
+}
+
+bool Db::setCreation(std::int64_t characterId, int classId, int sex,
+                     std::string* err) {
+  if (db_ == nullptr) {
+    if (err) *err = "db not open";
+    return false;
+  }
+  if (classId < 1 || classId > 3 || sex < 1 || sex > 2) {
+    if (err) *err = "creation out of domain";
+    return false;
+  }
+  sqlite3_stmt* st = nullptr;
+  if (sqlite3_prepare_v2(db_, "UPDATE characters SET class_id=?, sex=? WHERE id=?;",
+                         -1, &st, nullptr) != SQLITE_OK) {
+    if (err) *err = "prepare failed (set creation)";
+    return false;
+  }
+  sqlite3_bind_int(st, 1, classId);
+  sqlite3_bind_int(st, 2, sex);
+  sqlite3_bind_int64(st, 3, characterId);
+  const bool ok = sqlite3_step(st) == SQLITE_DONE && sqlite3_changes(db_) == 1;
+  sqlite3_finalize(st);
+  if (!ok && err) *err = "creation update missed";
+  return ok;
+}
+
+bool Db::loginByRowId(std::int64_t characterId, CharacterRow* out,
+                      std::uint8_t* failReason, std::string* err) {
+  if (db_ == nullptr) {
+    if (err) *err = "db not open";
+    return false;
+  }
+  sqlite3_stmt* cs = nullptr;
+  if (sqlite3_prepare_v2(db_,
+                         "SELECT id, name, map_id, x, y, level, xp, str, vit, dex, stat_points, gold, inv, anvil_mercy, karma, class_id, sword_skill, swing_lands, town_id, ek, pledge_id, pledge_rank, sex, last_death_tick, last_debt_xp, last_res_tick, bounty_mob, bounty_cycle "
+                         "FROM characters WHERE id=? LIMIT 1;",
+                         -1, &cs, nullptr) != SQLITE_OK) {
+    *failReason = 3;
+    if (err) *err = "prepare failed (characters by id)";
+    return false;
+  }
+  sqlite3_bind_int64(cs, 1, characterId);
+  if (sqlite3_step(cs) != SQLITE_ROW) {
+    sqlite3_finalize(cs);
+    *failReason = 3;
+    if (err) *err = "character row gone";
+    return false;
+  }
+  out->id = sqlite3_column_int64(cs, 0);
+  out->name = reinterpret_cast<const char*>(sqlite3_column_text(cs, 1));
+  out->mapId = sqlite3_column_int(cs, 2);
+  out->x = sqlite3_column_int(cs, 3);
+  out->y = sqlite3_column_int(cs, 4);
+  out->level = sqlite3_column_int(cs, 5);
+  out->xp = sqlite3_column_int64(cs, 6);
+  out->str = sqlite3_column_int(cs, 7);
+  out->vit = sqlite3_column_int(cs, 8);
+  out->dex = sqlite3_column_int(cs, 9);
+  out->statPoints = sqlite3_column_int(cs, 10);
+  out->gold = sqlite3_column_int(cs, 11);
+  const unsigned char* invTxt = sqlite3_column_text(cs, 12);
+  out->invBlob = invTxt != nullptr ? reinterpret_cast<const char*>(invTxt) : "";
+  out->anvilMercy = sqlite3_column_int64(cs, 13);
+  out->karma = sqlite3_column_int(cs, 14);
+  out->classId = sqlite3_column_int(cs, 15);
+  out->swordSkill = sqlite3_column_int(cs, 16);
+  out->swingLands = sqlite3_column_int64(cs, 17);
+  out->townId = sqlite3_column_int(cs, 18);
+  out->ek = sqlite3_column_int(cs, 19);
+  out->pledgeId = sqlite3_column_int(cs, 20);
+  out->pledgeRank = sqlite3_column_int(cs, 21);
+  out->sex = sqlite3_column_int(cs, 22);
+  out->lastDeathTick = sqlite3_column_int64(cs, 23);
+  out->lastDebtXp = sqlite3_column_int64(cs, 24);
+  out->lastResTick = sqlite3_column_int64(cs, 25);
+  out->bountyMob = sqlite3_column_int(cs, 26);
+  out->bountyCycle = sqlite3_column_int(cs, 27);
+  sqlite3_finalize(cs);
   return true;
 }
 
@@ -417,12 +530,15 @@ void Db::saveProgress(std::int64_t characterId, int level, std::int64_t xp, int 
                       const std::string& invBlob, std::int64_t anvilMercy,
                       std::int32_t karma, int classId, int swordSkill,
                       std::int64_t swingLands, int townId, int ek,
-                      int pledgeId, int pledgeRank) {
+                      int pledgeId, int pledgeRank,
+                      int sex, std::int64_t lastDeathTick, std::int64_t lastDebtXp,
+                      std::int64_t lastResTick, int bountyMob, int bountyCycle) {
   if (db_ == nullptr) return;
   sqlite3_stmt* st = nullptr;
   if (sqlite3_prepare_v2(db_,
                          "UPDATE characters SET level=?, xp=?, str=?, vit=?, dex=?, "
-                         "stat_points=?, gold=?, inv=?, anvil_mercy=?, karma=?, class_id=?, sword_skill=?, swing_lands=?, town_id=?, ek=?, pledge_id=?, pledge_rank=? WHERE id=?;",
+                         "stat_points=?, gold=?, inv=?, anvil_mercy=?, karma=?, class_id=?, sword_skill=?, swing_lands=?, town_id=?, ek=?, pledge_id=?, pledge_rank=?, "
+                         "sex=?, last_death_tick=?, last_debt_xp=?, last_res_tick=?, bounty_mob=?, bounty_cycle=? WHERE id=?;",
                          -1, &st, nullptr) != SQLITE_OK) {
     return;
   }
@@ -443,7 +559,13 @@ void Db::saveProgress(std::int64_t characterId, int level, std::int64_t xp, int 
   sqlite3_bind_int(st, 15, ek);
   sqlite3_bind_int(st, 16, pledgeId);  // v13 (T-138 rebase)
   sqlite3_bind_int(st, 17, pledgeRank);
-  sqlite3_bind_int64(st, 18, characterId);
+  sqlite3_bind_int(st, 18, sex);  // v15 (wave-2: T-167/T-161/T-166)
+  sqlite3_bind_int64(st, 19, lastDeathTick);
+  sqlite3_bind_int64(st, 20, lastDebtXp);
+  sqlite3_bind_int64(st, 21, lastResTick);
+  sqlite3_bind_int(st, 22, bountyMob);
+  sqlite3_bind_int(st, 23, bountyCycle);
+  sqlite3_bind_int64(st, 24, characterId);
   sqlite3_step(st);
   sqlite3_finalize(st);
 }

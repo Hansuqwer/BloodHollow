@@ -42,6 +42,12 @@ constexpr sim::Tick kIronskinCdTicks = 40;
 constexpr sim::Tick kFireboltCdTicks = 30;
 constexpr int kMendRange = 6;                // tiles, party-only target
 
+// ---- support-kit spine (T-161 wave-2) --------------------------------------
+constexpr sim::Tick kResurrectWindowTicks = 6000;  // 5 min post-mortem rebate
+constexpr sim::Tick kResurrectCdTicks = 6000;      // 5 min CD (GDD §3)
+constexpr std::uint32_t kResurrectMpCost = 25;
+constexpr int kResurrectRange = 6;  // same reach as Mend (one law, one distance)
+
 // ---- kit skills v2 (T-054b) ----------------------------------------------
 constexpr sim::Tick kChorusTicks = 2400;    // song lasts 2 min
 constexpr sim::Tick kChorusCdTicks = 240;   // 12s between verses
@@ -143,7 +149,7 @@ Entity& World::insertEntity(Entity e) {
 
 Entity& World::spawn(const std::string& name, std::int64_t charRowId,
                      std::optional<sim::TilePos> at, std::uint16_t zoneId,
-                     std::uint8_t classId) {
+                     std::uint8_t classId, std::uint8_t sex) {
   if (zones_.count(zoneId) == 0) zoneId = 1;  // zoneless test maps fall back
   Zone& z = zones_.at(zoneId);
   Entity e;
@@ -153,6 +159,7 @@ Entity& World::spawn(const std::string& name, std::int64_t charRowId,
   e.charRowId = charRowId;
   e.zoneId = zoneId;
   e.classId = classId;
+  e.sex = sex;  // T-167: packed since T-142 (was 0 until T-142b)
   if (const content::KitDef* kit = content::findKit(classId)) {  // T-053 seed
     e.str = kit->str;
     e.vit = kit->vit;
@@ -230,6 +237,14 @@ Entity& World::spawnMob(const content::MobDef& def, sim::TilePos at, size_t spaw
   e.atkCdTicks = def.atkCdTicks;
   e.xpValue = def.xp;
   e.dex = def.dex;
+  // T-162: night-premium stamp — read off the spawner (debug spawns pass
+  // SIZE_MAX and stay day-rated; deterministic either way, replay-exact).
+  e.nightSpawned = false;
+  if (spawnerIdx != SIZE_MAX) {
+    const auto zit = zones_.find(zoneId);
+    if (zit != zones_.end() && spawnerIdx < zit->second.spawners.size())
+      e.nightSpawned = zit->second.spawners[spawnerIdx].def.nightOnly != 0;
+  }
   // mobs store their flat damage as str=0/base via xpValue; raw dmg is def.dmg
   e.walker.place(at);
   Entity& ref = insertEntity(std::move(e));
@@ -336,11 +351,13 @@ void World::setAttack(Entity& self, std::uint32_t targetId) {
 }
 
 bool World::assignStat(Entity& e, std::uint8_t stat) {
-  if (e.kind != EntityKind::kPlayer || e.statPoints == 0 || stat > 2) return false;
+  if (e.kind != EntityKind::kPlayer || e.statPoints == 0 || stat > 4) return false;
   switch (stat) {
     case 0: ++e.str; break;
     case 1: ++e.vit; break;
-    default: ++e.dex; break;
+    case 2: ++e.dex; break;
+    case 3: ++e.intg; break;  // T-160(B) wave-2: casters spend past creation
+    default: ++e.mag; break;
   }
   --e.statPoints;
   const std::uint32_t newMax = recomputeHpMax(e);
@@ -880,7 +897,7 @@ std::uint32_t World::effDef(const Entity& e) const {
 
 void World::trySkill(Entity& e, std::uint8_t skill, std::uint32_t targetId) {
   if (e.kind != EntityKind::kPlayer || e.dead) return;
-  if (skill >= 2 && skill <= 9) {
+  if (skill >= 2 && skill <= 10) {
     const std::uint8_t unlock = content::kitSkillUnlock(e.classId, skill);
     if (unlock == 0 || e.level < unlock) return;
     switch (skill) {
@@ -892,6 +909,7 @@ void World::trySkill(Entity& e, std::uint8_t skill, std::uint32_t targetId) {
       case 7: tryMassMend(e); return;   // T-054b
       case 8: tryHaste(e); return;      // T-054b
       case 9: tryPurify(e, targetId); return;  // T-082 field cleanse
+      case 10: tryResurrect(e, targetId); return;  // T-161 rebate
       default: return;
     }
   }
@@ -973,8 +991,40 @@ bh::server::Entity* choirTarget(bh::server::World& w, bh::server::Entity& e,
 }
 }  // namespace
 
-void World::tryMend(Entity& e, std::uint32_t targetId) {
-  if (tick_ - e.lastMendTick < kMendCdTicks) return;
+void World::tryResurrect(Entity& e, std::uint32_t targetId) {
+  // T-161: post-mortem debt rebate, NOT corpse-raise — the 3 s respawn
+  // (kPlayerRespawnTicks) makes corpse-raise unusable, so the pillar reads as
+  // "the reason every party wants one" via the rebate instead (recorded
+  // deviation). Cultist L20+, 5-min CD, 25 MP, 6-tile same-zone reach.
+  if (tick_ - e.lastResTick < kResurrectCdTicks) return;
+  if (e.mp < kResurrectMpCost) return;  // out of breath (era: quiet fail)
+  Entity* t = find(targetId);
+  if (t == nullptr || t->kind != EntityKind::kPlayer || t->id == e.id) return;
+  if (t->zoneId != e.zoneId) return;
+  if (chebyshev(e.walker.tile(), t->walker.tile()) > kResurrectRange) return;
+  if (t->lastDebtXp == 0) return;  // nothing to rebate (or already rebated)
+  if (t->lastDeathTick < 0 || tick_ - t->lastDeathTick > kResurrectWindowTicks) return;
+  e.lastResTick = tick_;
+  e.mp -= kResurrectMpCost;
+  const std::uint32_t rebate = t->lastDebtXp / 2u;
+  t->lastDebtXp = 0;  // one rebate per death (no double-dip)
+  awardXp(*t, rebate);  // may re-level: the debt undone, era-loud
+  WorldEvent ev;
+  ev.attacker = e.id;
+  ev.target = t->id;
+  ev.kind = 8;  // life-given floater, Mend green
+  ev.amount = static_cast<std::uint16_t>(rebate > 65535 ? 65535 : rebate);
+  ev.statsChanged = true;
+  events_.push_back(ev);
+  WorldEvent txt;
+  txt.aboutId = t->id;
+  txt.chatCh = 2;
+  txt.chatText = e.name + " calls " + t->name + " back from the debt (+" +
+                 std::to_string(rebate) + " XP).";
+  events_.push_back(std::move(txt));
+}
+
+void World::tryMend(Entity& e, std::uint32_t targetId) {  if (tick_ - e.lastMendTick < kMendCdTicks) return;
   if (e.mp < kMendMpCost) return;  // out of breath (era: quiet fail)
   Entity* t = choirTarget(*this, e, targetId);
   if (t == nullptr) return;
@@ -3348,7 +3398,8 @@ void World::bountyAssign(Entity& e) {
   ev.chatCh = 255;
   const content::MobDef* md = content::findMob(b->mobId);
   ev.chatText = std::string("the board wants: ") + (md != nullptr ? md->name : "?") +
-                " — " + std::to_string(b->payoutGold) + "g.";
+                " — " + std::to_string(b->payoutGold) + "g." +
+                " (the mark survives a restart — T-166).";
   events_.push_back(std::move(ev));
 }
 
@@ -3394,12 +3445,17 @@ void World::killMob(Entity& mob, Entity* killer) {
     }
     const std::uint32_t nightXp = isNight() ? mob.xpValue * 110u / 100u
                                             : mob.xpValue;  // T-062
+    // T-162: GDD §9 night premium — night-spawned quarry hunted at night
+    // pays +50% (rows carry day-base xp; the premium lands here, epoch 30).
+    // Day-stragglers pay base: the premium is for hunting the dark, not the mob.
+    const std::uint32_t premiumXp =
+        (mob.nightSpawned && isNight()) ? nightXp * 150u / 100u : nightXp;
     if (sharers.size() <= 1) {
-      awardXp(*killer, nightXp);
+      awardXp(*killer, premiumXp);
     } else {
       const std::uint32_t bonus = 100u +
           kPartyXpBonusPct * static_cast<std::uint32_t>(sharers.size() - 1);
-      const std::uint32_t each = nightXp * bonus / 100u /
+      const std::uint32_t each = premiumXp * bonus / 100u /
                                  static_cast<std::uint32_t>(sharers.size());
       for (const std::uint32_t mid : sharers) {
         Entity* m = find(mid);
@@ -3421,6 +3477,21 @@ void World::killMob(Entity& mob, Entity* killer) {
       }
     }
     const content::MobDef* md = content::findMob(mob.mobId);
+    // T-163 field-war: a sworn killer felling town-affiliated quarry of the
+    // OTHER town mints EK fame (same coin as PvP war kills, T-130 law) — no
+    // karma stain, no wanted mark. Reachable war without a second city.
+    // Red-name tint for patrols rides a later client pass (recorded gap).
+    if (md != nullptr && md->town != 0 && killer->townId != content::kTownNone &&
+        md->town != killer->townId) {
+      ++killer->ek;
+      WorldEvent ftxt;
+      ftxt.aboutId = killer->id;
+      ftxt.chatCh = 2;
+      ftxt.chatText = killer->name + " earns an enemy kill for " +
+                      content::kTownNames[killer->townId] + " (" +
+                      std::to_string(killer->ek) + ").";
+      events_.push_back(std::move(ftxt));
+    }
     // T-078 guard-murder (M3 exit): the post is town law, not game. A player
     // who drops a guard stains like an unlawful PK against level 15 (GDD §5
     // shape, victim level pinned — no new numbers) and takes the same wanted
@@ -3869,8 +3940,9 @@ void World::killPlayer(Entity& victim, Entity* killer) {
   if (bar > 0 || victim.level > 1) {
     const std::uint32_t pct = 10u + (static_cast<std::uint32_t>(victim.level) - 1) * 15u / 24u;
     const std::uint32_t refBar = bar > 0 ? bar : sim::xpNext(24);
+    const std::uint32_t debt = refBar * pct / 100u;  // T-161 nominal rebate base
     std::int64_t xpv = static_cast<std::int64_t>(victim.xp) -
-                       static_cast<std::int64_t>(refBar * pct / 100u);
+                       static_cast<std::int64_t>(debt);
     bool deleveled = false;
     while (xpv < 0 && victim.level > 1) {
       --victim.level;
@@ -3880,6 +3952,8 @@ void World::killPlayer(Entity& victim, Entity* killer) {
     if (xpv < 0) xpv = 0;
     victim.xp = static_cast<std::uint32_t>(xpv);
     victim.hpMax = recomputeHpMax(victim);
+    victim.lastDeathTick = tick_;  // T-161: rebate window + amount stamps
+    victim.lastDebtXp = debt;
     WorldEvent ev;
     ev.aboutId = victim.id;
     ev.statsChanged = true;
@@ -4504,6 +4578,12 @@ std::uint64_t World::worldHash() const {
     mix(static_cast<std::uint64_t>(e.lastHasteTick));
     mix(static_cast<std::uint64_t>(e.lastIronskinTick));
     mix(static_cast<std::uint64_t>(e.lastFireboltTick));
+    // Wave-2 (epoch 30): rebate stamps + night flag ride the hash with the
+    // other last*Tick stamps (sex is display-only and stays out, like ek).
+    mix(static_cast<std::uint64_t>(e.lastDeathTick));
+    mix(e.lastDebtXp);
+    mix(static_cast<std::uint64_t>(e.lastResTick));
+    mix(e.nightSpawned ? 1ULL : 0ULL);
     mix(e.duelWith);
     mix(static_cast<std::uint64_t>(e.duelUntil));
     mix(e.duelOfferTo);

@@ -60,7 +60,7 @@ TEST_CASE("T-101: Maw pit spawns in fields_overflow (mapgen truth)") {
   REQUIRE(w.loadZone(2, "assets/maps/fields_overflow.bhmap", &err));
   const sim::Map* fields = w.zoneMap(2);
   REQUIRE(fields != nullptr);
-  CHECK(fields->spawners.size() == 5);  // 4 camps + Maw pit
+  CHECK(fields->spawners.size() == 8);  // 4 camps + Maw pit + cultist/wraith/synod (T-162/163)
   bool pit = false;
   for (const auto& sd : fields->spawners)
     if (sd.mobId == 1012) {
@@ -121,7 +121,7 @@ TEST_CASE("T-102: Widow nest spawns in bonehowl_mine (mapgen truth)") {
   REQUIRE(w.loadZone(4, "assets/maps/bonehowl_mine.bhmap", &err));
   const sim::Map* mine = w.zoneMap(4);
   REQUIRE(mine != nullptr);
-  CHECK(mine->spawners.size() == 8);  // 7 camps + Widow nest
+  CHECK(mine->spawners.size() == 13);  // 7 camps + Widow nest + wretch/spider/golem/bloodfiend/ashen (T-162/163)
   bool nest = false;
   for (const auto& sd : mine->spawners)
     if (sd.mobId == 1013) {
@@ -172,7 +172,7 @@ TEST_CASE("T-103: Cantor choir spawns in thornwall_crypt (mapgen truth)") {
   REQUIRE(w.loadZone(3, "assets/maps/thornwall_crypt.bhmap", &err));
   const sim::Map* crypt = w.zoneMap(3);
   REQUIRE(crypt != nullptr);
-  CHECK(crypt->spawners.size() == 5);  // 4 camps + Cantor choir
+  CHECK(crypt->spawners.size() == 8);  // 4 camps + Cantor choir + revenant/banshee/ringer (T-162)
   bool choir = false;
   for (const auto& sd : crypt->spawners)
     if (sd.mobId == 1014) {

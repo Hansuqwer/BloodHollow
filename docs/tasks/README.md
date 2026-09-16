@@ -1026,12 +1026,10 @@ Shipped → `done/`: T-150 (zone6 client map, `91c5325`), T-151 (siege/pledge
 wire+HUD epoch 28, `04a60b8`), T-152 (GM allowlist+/ban/announce, `9f3b43e`),
 T-155 (--bless replay guard, `ef618a5`), T-169 (/help+F1, `ca3e71a`),
 T-165-Wave0 (castle test salvage, `eeee6e0`); T-154/T-168 (PR #55), T-159
-(PR #54) → done on merge. Open (filed this wave, implement per queue):
-T-153 argon2id · T-156 T-ART-12..15 · T-157-F1 horn (blocker) · T-157-F2 bands ·
-T-160 stat model · T-161 kit spine · T-162 roster · T-163 field-war
-· T-164 night light · T-165 remainder (director merges) · T-166 bounty ·
-T-167 char-create. T-157 verdict (M4 FAIL, cause carded) + T-158 are done. Wave-2 epoch-30 batch proposal: `T-WAVE2-EPOCH30.md`.
-Human-only T-146..T-149 stay director-owned.
+(PR #54) → done on merge. Open: T-153 argon2id · T-156 T-ART-12..15 · T-157-F2 bands · T-157-F3 attune
+(director call) · T-159f1 loot follow-ups · T-161b kit spine part 2 ·
+T-164 night light · T-165 remainder (director merges). T-157 verdicts + T-158
++ wave-2 are done. Human-only T-146..T-149 stay director-owned.
 
 ## Done — T-158 (2026-09-16): GDD law truth-up + ADRs (docs-only)
 
@@ -1064,6 +1062,18 @@ Open: `T-157-F3` (attune levers, recommend 16v6/900 s first). Devlog 0113.
 FAIL. p99 4.8 ms PASS, replay mm=0 PASS (leg kept). (a) exhausted — sim
 constants unchanged since epoch-25 3/3, smells structural. `T-157-F3` now a
 director call: (b) tune attune law or (c) accept gate shape. Devlog 0114.
+
+## Done — Wave-2 epoch 30 (2026-09-16): creation, rebate, roster, war, bounty
+
+Six cards, one bump (epoch 29→30, wire 242→244, schema v15): T-167 creation
+(prompt/panel/CharCreate, bots answer, 8/8 live), T-160 five-stat (ADR-0015,
+F8/F9), T-161 Resurrect rebate (ch10, deviation recorded), T-162 roster +
+night premium (11 rows, D9 rename, validate 0/6), T-163 field-war + /ek,
+T-166 bounty persistence (y-sidecar, hash widened). 325/325 (11 new) ·
+`logs/wave2.bwj` replay mm=0 + epoch-29 guard exit 4 · CI leg swapped. Gaps:
+T-161b, T-159f1, patrol red-name tint, live Resurrect staging. Client compiles
+via CI matrix. Devlog 0115 · card `done/T-WAVE2.md`. Open wave-2 follow-ups:
+T-161b, T-159f1.
 
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 

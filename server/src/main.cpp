@@ -44,6 +44,7 @@ struct Session {
   ENetPeer* peer = nullptr;
   bool authed = false;
   bool inWorld = false;
+  bool awaitingCreate = false;  // T-167: fresh row held at creation panel
   std::string user{};
   std::int64_t charRowId = 0;
   std::uint32_t entityId = 0;
@@ -191,7 +192,11 @@ void sendMsg(ENetPeer* peer, const Msg& m, Server& s) {
 // incompatible — kProtocolVersion 237→241): epoch 28, fresh leg epoch28.bwj.
 // T-159: loot depth (rarity roll + 5 slots + affixes 11..20 hooks + ItemSlot
 // rarity wire 241→242): sim + RNG-stream change → epoch 29.
-constexpr int kJournalEpoch = 29;  // T-159 loot depth. Fresh gate leg: logs/t159.bwj (8 fighters x30s, replay mm=0)
+// Wave-2 (T-161/T-162/T-163/T-166/T-167): resurrect stamps + night premium +
+// warband/EK law + bounty persistence + creation/sex + roster composition
+// shift (entity-set, T-068 precedent) + worldHash widening → epoch 30.
+// Wire 242→244 (CharCreate 25 + CharCreatePrompt 120 via message count).
+constexpr int kJournalEpoch = 30;  // Wave-2. Fresh gate leg: logs/wave2.bwj (8 fighters x60s + relog, replay mm=0)
 
 // ---- world journal record helpers (M2) ------------------------------------
 void journalTickHash(Server& s) {
@@ -286,6 +291,16 @@ void journalLogin(Server& s, const Session& sess, const CharacterRow& row,
                static_cast<long long>(s.tick + 1), idx,
                static_cast<unsigned>(row.pledgeId > 0 ? row.pledgeId : 0),
                static_cast<unsigned>(row.pledgeRank));
+  // Wave-2 identity sidecar (same precedent — absent in pre-30 journals):
+  // sex + rebate stamps + bounty mark. Replay restores them in applyLogin.
+  std::fprintf(s.journal, "y %lld %u %u %lld %lld %lld %u %u\n",
+               static_cast<long long>(s.tick + 1), idx,
+               static_cast<unsigned>(row.sex),
+               static_cast<long long>(row.lastDeathTick),
+               static_cast<long long>(row.lastDebtXp),
+               static_cast<long long>(row.lastResTick),
+               static_cast<unsigned>(row.bountyMob),
+               static_cast<unsigned>(row.bountyCycle));
 }
 
 void journalDisconnect(Server& s, const Session& sess) {
@@ -362,7 +377,7 @@ void dropSession(Server& s, Session& sess) {
       const sim::TilePos p = e->walker.tile();
       s.db.savePosition(e->charRowId, e->zoneId, p.x, p.y);  // T-039: zone travels
       {
-        // T-049x: canonical 7-field serializer shared with the probes
+        // T-049x: canonical 8-field serializer shared with the probes
         const std::string blob = canonicalInvBlob(e->inv);
         s.db.saveProgress(e->charRowId, e->level, e->xp, e->str, e->vit, e->dex,
                           e->statPoints, static_cast<int>(e->gold), blob,
@@ -372,7 +387,13 @@ void dropSession(Server& s, Session& sess) {
                           static_cast<int>(e->townId),
                           static_cast<int>(e->ek),
                           static_cast<int>(e->pledgeId),
-                          static_cast<int>(e->pledgeRank));
+                          static_cast<int>(e->pledgeRank),
+                          static_cast<int>(e->sex),
+                          static_cast<std::int64_t>(e->lastDeathTick),
+                          static_cast<std::int64_t>(e->lastDebtXp),
+                          static_cast<std::int64_t>(e->lastResTick),
+                          static_cast<int>(e->bountyMobId),
+                          static_cast<int>(e->bountyCycle));
       }
       // T-122: mirror registry changes (create/invite/leave/kick/disband)
       // into SQLite. Posture matches gold: unsaved changes die with a kill.
@@ -387,8 +408,111 @@ void dropSession(Server& s, Session& sess) {
   s.sessions.erase(sess.peer);
 }
 
-void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
-  using namespace proto;
+// T-167 wave-2: shared spawn-from-row (Hello for returning rows, CharCreate
+// for fresh rows after the creation panel). Spawns, journals, restores all
+// persisted progression incl. v15 identity/rebate/bounty, then Welcomes.
+static void enterWorldFromRow(Server& s, Session& sess, CharacterRow& row) {
+  sess.inWorld = true;
+  sess.user = row.name;
+  sess.charRowId = row.id;
+  std::optional<sim::TilePos> at;
+  if (row.x != 0 || row.y != 0) at = sim::TilePos{row.x, row.y};
+  const std::uint16_t loginZone =
+      static_cast<std::uint16_t>(row.mapId > 0 ? row.mapId : 1);
+  Entity& e = s.world.spawn(row.name, row.id, at, loginZone,
+                            static_cast<std::uint8_t>(row.classId),
+                            static_cast<std::uint8_t>(row.sex));
+  sess.entityId = e.id;
+  journalLogin(s, sess, row, e);
+  Entity* pe = s.world.find(e.id);
+  pe->level = static_cast<std::uint8_t>(row.level < 1 ? 1 : (row.level > 25 ? 25 : row.level));
+  pe->xp = static_cast<std::uint32_t>(row.xp < 0 ? 0 : row.xp);
+  pe->str = static_cast<std::uint8_t>(row.str);
+  pe->vit = static_cast<std::uint8_t>(row.vit);
+  pe->dex = static_cast<std::uint8_t>(row.dex);
+  pe->statPoints = static_cast<std::uint8_t>(row.statPoints);
+  pe->gold = static_cast<std::uint32_t>(row.gold < 0 ? 0 : row.gold);
+  pe->hpMax = sim::playerHpMax(pe->level, pe->vit);
+  pe->hp = pe->hpMax;
+  if (!row.invBlob.empty()) parseInvBlob(row.invBlob, pe->inv);
+  pe->anvilMercyMask = static_cast<std::uint32_t>(row.anvilMercy);
+  pe->karma = row.karma;
+  pe->swordSkill = static_cast<std::uint8_t>(row.swordSkill < 0 ? 0 : (row.swordSkill > 100 ? 100 : row.swordSkill));
+  pe->swingLands = static_cast<std::uint32_t>(row.swingLands < 0 ? 0 : row.swingLands);
+  if (pe->swingLands > 0 && pe->swordSkill == 0) {
+    pe->swordSkill = static_cast<std::uint8_t>(pe->swingLands / 25u);
+  }
+  pe->townId = static_cast<std::uint8_t>(row.townId < 0 ? 0 : (row.townId > 2 ? 0 : row.townId));
+  pe->ek = static_cast<std::uint32_t>(row.ek < 0 ? 0 : row.ek);
+  pe->pledgeId = static_cast<std::uint32_t>(row.pledgeId < 0 ? 0 : row.pledgeId);
+  pe->pledgeRank = static_cast<std::uint8_t>(row.pledgeRank);
+  // wave-2 v15: identity + rebate stamps + bounty mark (clamped, era-safe)
+  pe->sex = static_cast<std::uint8_t>(row.sex < 1 ? 0 : (row.sex > 2 ? 0 : row.sex));
+  pe->lastDeathTick = static_cast<sim::Tick>(row.lastDeathTick);
+  pe->lastDebtXp = static_cast<std::uint32_t>(row.lastDebtXp < 0 ? 0 : row.lastDebtXp);
+  pe->lastResTick = static_cast<sim::Tick>(row.lastResTick);
+  pe->bountyMobId = static_cast<std::uint32_t>(row.bountyMob < 0 ? 0 : row.bountyMob);
+  pe->bountyCycle = static_cast<std::uint32_t>(row.bountyCycle < 0 ? 0 : row.bountyCycle);
+  const auto bit = s.bless.find(row.name);  if (bit != s.bless.end()) {
+    // parse "id:qty,id:qty"
+    size_t bpos = 0;
+    while (bpos < bit->second.size()) {
+      const size_t bend = bit->second.find(',', bpos);
+      const std::string pr = bit->second.substr(
+          bpos, bend == std::string::npos ? std::string::npos : bend - bpos);
+      bpos = (bend == std::string::npos) ? bit->second.size() : bend + 1;
+      const size_t colon = pr.find(':');
+      if (colon == std::string::npos) continue;
+      if (pr.substr(0, colon) == "skill") {
+        const std::uint32_t sk =
+            static_cast<std::uint32_t>(std::stoul(pr.substr(colon + 1)));
+        // combat derives swordSkill from swingLands/kSkillLandsPerPoint: seed the counter
+        pe->swingLands = sk * 20u;
+        pe->swordSkill = sk;
+        continue;
+      }
+      if (pr.substr(0, colon) == "gold") {
+        pe->gold = static_cast<std::uint32_t>(std::stoul(pr.substr(colon + 1)));
+        continue;
+      }
+      s.world.debugGive(*pe,
+                        static_cast<std::uint32_t>(std::stoul(pr.substr(0, colon))),
+                        static_cast<std::uint16_t>(std::stoul(pr.substr(colon + 1))));
+    }
+    std::printf("[bless] %s <- %s (skill now %u, gold %u)\n", row.name.c_str(),
+                bit->second.c_str(), static_cast<unsigned>(pe->swordSkill),
+                static_cast<unsigned>(pe->gold));
+    for (const auto& sl : pe->inv)
+      std::printf("[bless]   inv %u:%u eq=%u aura=%u\n", sl.itemId, sl.qty,
+                  sl.equipped ? 1u : 0u, static_cast<unsigned>(sl.aura));
+    if (s.journal != nullptr) {
+      std::fprintf(s.journal, "b %lld %s %s\n",
+                   static_cast<long long>(s.tick + 1), row.name.c_str(),
+                   bit->second.c_str());
+    }
+  }
+  // T-049x probe: post-application login fingerprint (pairs with
+  // [replay-login] — the relog-launderer canary).
+  if (std::getenv("BH_DUMP_ENTS") != nullptr) {
+    std::fprintf(stderr,
+                 "[live-login] name=%s lvl=%u xp=%u gold=%u hp=%u/%u "
+                 "skill=%u mercy=%u karma=%d inv=%s\n",
+                 row.name.c_str(), static_cast<unsigned>(pe->level), pe->xp,
+                 pe->gold, pe->hp, pe->hpMax,
+                 static_cast<unsigned>(pe->swordSkill), pe->anvilMercyMask,
+                 pe->karma, canonicalInvBlob(pe->inv).c_str());
+  }
+  proto::Welcome w;
+  w.entityId = e.id;
+  w.mapId = loginZone;
+  w.x = e.walker.x;
+  w.y = e.walker.y;
+  w.tick = static_cast<std::uint32_t>(s.tick % 0xFFFFFFFFu);
+  w.hourCenti = static_cast<std::uint32_t>(sim::hourAt(s.tick) * 100.0f);
+  sendMsg(sess.peer, w, s);
+}
+
+void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {  using namespace proto;
   switch (pv.id) {
     case kIdHello: {
       Hello h;
@@ -472,7 +596,8 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
       CharacterRow row;
       std::uint8_t reason = 0;
       std::string err;
-      if (!s.db.loginOrCreate(h.username, h.password, &row, &reason, &err)) {
+      bool fresh = false;  // T-167: fresh rows hold at the creation panel
+      if (!s.db.loginOrCreate(h.username, h.password, &row, &reason, &err, &fresh)) {
         if (reason == 1) s.loginLimiter.noteFailure(ip, nowMs);  // bad creds
         LoginResult r;
         r.ok = 0;
@@ -487,117 +612,56 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
       sendMsg(sess.peer, r, s);
 
       sess.authed = true;
-      sess.inWorld = true;
       sess.user = row.name;
       sess.charRowId = row.id;
-
-      std::optional<sim::TilePos> at;
-      if (row.x != 0 || row.y != 0) at = sim::TilePos{row.x, row.y};
-      const std::uint16_t loginZone =
-          static_cast<std::uint16_t>(row.mapId > 0 ? row.mapId : 1);
-      Entity& e = s.world.spawn(row.name, row.id, at, loginZone,
-                                static_cast<std::uint8_t>(row.classId));
-      sess.entityId = e.id;
-      journalLogin(s, sess, row, e);
-      {
-        // apply persisted progression (schema v2..v11)
-        Entity* pe = s.world.find(e.id);
-        pe->level = static_cast<std::uint8_t>(row.level < 1 ? 1 : (row.level > 25 ? 25 : row.level));
-        pe->xp = static_cast<std::uint32_t>(row.xp < 0 ? 0 : row.xp);
-        pe->str = static_cast<std::uint8_t>(row.str);
-        pe->vit = static_cast<std::uint8_t>(row.vit);
-        pe->dex = static_cast<std::uint8_t>(row.dex);
-        pe->statPoints = static_cast<std::uint8_t>(row.statPoints);
-        pe->gold = static_cast<std::uint32_t>(row.gold < 0 ? 0 : row.gold);
-        // hpMax follows level/VIT; heal in full on login
-        pe->hpMax = sim::playerHpMax(pe->level, pe->vit);
-        pe->hp = pe->hpMax;
-        // inventory blob "iid:qty:equipped:aura:durability:affix:refine;..."
-        // T-049x: one shared grammar with the replay path (parseInvBlob),
-        // slots appended in blob order — nothing laundered on relog.
-        if (!row.invBlob.empty()) parseInvBlob(row.invBlob, pe->inv);
-        pe->anvilMercyMask = static_cast<std::uint32_t>(row.anvilMercy);
-        pe->karma = row.karma;
-        // T-120: weapon-skill persistence (sword_skill + swing_lands)
-        pe->swordSkill = static_cast<std::uint8_t>(row.swordSkill < 0 ? 0 : (row.swordSkill > 100 ? 100 : row.swordSkill));
-        pe->swingLands = static_cast<std::uint32_t>(row.swingLands < 0 ? 0 : row.swingLands);
-        // if lands present but skill 0 (old row with lands >0), recompute skill
-        if (pe->swingLands > 0 && pe->swordSkill == 0) {
-          pe->swordSkill = static_cast<std::uint8_t>(pe->swingLands / 25u);
-        }
-        // T-130: town war identity + EK fame (schema v12; clamped, era-safe)
-        pe->townId = static_cast<std::uint8_t>(row.townId < 0 ? 0 : (row.townId > 2 ? 0 : row.townId));
-        pe->ek = static_cast<std::uint32_t>(row.ek < 0 ? 0 : row.ek);
-        // T-122: pledge membership (schema v12; defaults 0 for old rows).
-        // Registry itself was loaded at boot; this restores the cache.
-        pe->pledgeId = static_cast<std::uint32_t>(row.pledgeId < 0 ? 0 : row.pledgeId);
-        pe->pledgeRank = static_cast<std::uint8_t>(row.pledgeRank);
-        const auto bit = s.bless.find(row.name);
-        if (bit != s.bless.end()) {
-          // parse "id:qty,id:qty"
-          size_t bpos = 0;
-          while (bpos < bit->second.size()) {
-            const size_t bend = bit->second.find(',', bpos);
-            const std::string pr = bit->second.substr(
-                bpos, bend == std::string::npos ? std::string::npos : bend - bpos);
-            bpos = (bend == std::string::npos) ? bit->second.size() : bend + 1;
-            const size_t colon = pr.find(':');
-            if (colon == std::string::npos) continue;
-            if (pr.substr(0, colon) == "skill") {
-              const std::uint32_t sk =
-                  static_cast<std::uint32_t>(std::stoul(pr.substr(colon + 1)));
-              // combat derives swordSkill from swingLands/kSkillLandsPerPoint: seed the counter
-              pe->swingLands = sk * 20u;
-              pe->swordSkill = sk;
-              continue;
-            }
-            if (pr.substr(0, colon) == "gold") {
-              pe->gold = static_cast<std::uint32_t>(std::stoul(pr.substr(colon + 1)));
-              continue;
-            }
-            s.world.debugGive(*pe,
-                              static_cast<std::uint32_t>(std::stoul(pr.substr(0, colon))),
-                              static_cast<std::uint16_t>(std::stoul(pr.substr(colon + 1))));
-          }
-          std::printf("[bless] %s <- %s (skill now %u, gold %u)\n", row.name.c_str(),
-                      bit->second.c_str(), static_cast<unsigned>(pe->swordSkill),
-                      static_cast<unsigned>(pe->gold));
-          for (const auto& sl : pe->inv)
-            std::printf("[bless]   inv %u:%u eq=%u aura=%u\n", sl.itemId, sl.qty,
-                        sl.equipped ? 1u : 0u, static_cast<unsigned>(sl.aura));
-          if (s.journal != nullptr) {
-            std::fprintf(s.journal, "b %lld %s %s\n",
-                         static_cast<long long>(s.tick + 1), row.name.c_str(),
-                         bit->second.c_str());
-          }
-        }
-        // T-049x probe: post-application login fingerprint (pairs with
-        // [replay-login] — the relog-launderer canary).
-        if (std::getenv("BH_DUMP_ENTS") != nullptr) {
-          std::fprintf(stderr,
-                       "[live-login] name=%s lvl=%u xp=%u gold=%u hp=%u/%u "
-                       "skill=%u mercy=%u karma=%d inv=%s\n",
-                       row.name.c_str(), static_cast<unsigned>(pe->level), pe->xp,
-                       pe->gold, pe->hp, pe->hpMax,
-                       static_cast<unsigned>(pe->swordSkill), pe->anvilMercyMask,
-                       pe->karma, canonicalInvBlob(pe->inv).c_str());
-        }
+      if (fresh) {
+        // T-167 (1-char alpha): fresh row — hold at the creation panel.
+        // LoginResult ok=1 already sent; the prompt follows, spawn waits
+        // for CharCreate (class 1..3, sex 1..2, validated there).
+        sess.awaitingCreate = true;
+        sess.inWorld = false;
+        CharCreatePrompt p;
+        p.unused = 0;
+        sendMsg(sess.peer, p, s);
+        break;
       }
-
-      Welcome w;
-      w.entityId = e.id;
-      w.mapId = loginZone;
-      w.x = e.walker.x;
-      w.y = e.walker.y;
-      w.tick = static_cast<std::uint32_t>(s.tick % 0xFFFFFFFFu);
-      w.hourCenti = static_cast<std::uint32_t>(sim::hourAt(s.tick) * 100.0f);
-      sendMsg(sess.peer, w, s);
+      enterWorldFromRow(s, sess, row);
       pushOwnStats(s, sess);
       pushInventory(s, sess);
       pushSiegeState(s, sess);
       pushPledgeRoster(s, sess);
       std::printf("[net] %-16s entered the world (entity %u, online %zu)\n",
                   row.name.c_str(), sess.entityId, s.sessions.size());
+      broadcastChat(s, 2, "", row.name + " has entered Thornwall.");
+      break;
+    }
+    case kIdCharCreate: {
+      // T-167: creation answer — authed + held only, exactly once.
+      CharCreate m;
+      if (!m.deserialize(pv.body)) return;
+      if (!sess.authed || !sess.awaitingCreate || sess.inWorld) return;
+      if ((m.classId < 1 || m.classId > 3) || (m.sex < 1 || m.sex > 2)) {
+        KickNotice kn;  // malformed creation: refuse loudly, keep the row fresh
+        kn.reason = "creation refused (class 1..3, sex 1..2)";
+        sendMsg(sess.peer, kn, s);
+        return;
+      }
+      std::string err;
+      if (!s.db.setCreation(sess.charRowId, m.classId, m.sex, &err)) return;
+      CharacterRow row;
+      std::uint8_t reason = 0;
+      // reload by name (no password re-check on an authed session): the row
+      // now carries class+sex; fresh=false so no second prompt, ever.
+      if (!s.db.loginByRowId(sess.charRowId, &row, &reason, &err)) return;
+      sess.awaitingCreate = false;
+      enterWorldFromRow(s, sess, row);
+      pushOwnStats(s, sess);
+      pushInventory(s, sess);
+      pushSiegeState(s, sess);
+      pushPledgeRoster(s, sess);
+      std::printf("[net] %-16s created (kit %u sex %u, entity %u)\n",
+                  row.name.c_str(), static_cast<unsigned>(m.classId),
+                  static_cast<unsigned>(m.sex), sess.entityId);
       broadcastChat(s, 2, "", row.name + " has entered Thornwall.");
       break;
     }
@@ -675,6 +739,11 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
         if (Entity* me = s.world.find(sess.entityId)) s.world.ekReadout(*me);
         gmAppendLog(s.gmLogPath, "[gm] tick=" + std::to_string(s.tick) +
                                      " by=" + sess.user + " verb=gm ek\n");
+        break;
+      }
+      // T-163 wave-2: /ek is the player-facing twin (self + top-5, same text).
+      if (m.text == "/ek") {
+        if (Entity* me = s.world.find(sess.entityId)) s.world.ekReadout(*me);
         break;
       }
       if (m.text == "gm siege") {  // T-134 castle readout (directed) — FIXED: was dead inside slash block
@@ -1557,10 +1626,10 @@ void distributeEvents(Server& s) {
           m.light = e->lightRadius;  // T-071 night light
           m.glowTier = s.world.equippedGlowTier(*e);  // T-092 refine glow
           // T-142: players ride class+sex so the client sheets them.
-          // Mobs carry none (0 = hero fallback). Sex is 0 (unknown) until
-          // T-142b captures it at creation (no source of truth exists yet).
+          // Mobs carry none (0 = hero fallback). T-167 captures sex at
+          // creation; legacy rows stay 0 (unknown → hero fallback).
           m.classId = e->kind == EntityKind::kPlayer ? e->classId : std::uint8_t(0);
-          m.sex = std::uint8_t(0);
+          m.sex = e->kind == EntityKind::kPlayer ? e->sex : std::uint8_t(0);
           sendMsg(kv.first, m, s);
         }
       }
@@ -1673,9 +1742,9 @@ void tickServer(Server& s) {
                           : std::uint8_t(1);  // mobs: neutral band
         m.light = e->lightRadius;  // T-071 night light
         m.glowTier = s.world.equippedGlowTier(*e);  // T-092 refine glow
-        // T-142: players ride class+sex (mobs 0; sex 0 unknown until T-142b).
+        // T-142: players ride class+sex (mobs 0; sex 0 unknown legacy).
         m.classId = e->kind == EntityKind::kPlayer ? e->classId : std::uint8_t(0);
-        m.sex = std::uint8_t(0);
+        m.sex = e->kind == EntityKind::kPlayer ? e->sex : std::uint8_t(0);
         sendMsg(sess.peer, m, s);
       }
       proto::EntityDelta d;
@@ -1689,7 +1758,7 @@ void tickServer(Server& s) {
       d.glowTier = s.world.equippedGlowTier(*e);  // T-092 (refine swaps ride too)
       // T-142: class rides the delta so a /kit oath re-sheets remotes live.
       d.classId = e->kind == EntityKind::kPlayer ? e->classId : std::uint8_t(0);
-      d.sex = std::uint8_t(0);
+      d.sex = e->kind == EntityKind::kPlayer ? e->sex : std::uint8_t(0);
       sendMsg(sess.peer, d, s);
     }
     for (const std::uint32_t id : sess.interest) {
@@ -1835,6 +1904,12 @@ int runReplayWorld(const std::string& path, const std::string& mapPath,
       loginTowns;  // w-lines: town+ek sidecar (T-130; absent => 0,0)
   std::unordered_map<std::uint32_t, std::pair<std::uint32_t, std::uint32_t>>
       loginPledges;  // g-lines (T-122/T-138): idx -> {pledgeId, rank}
+  struct Wave2Login {  // y-lines (wave-2 identity; absent pre-30 => defaults)
+    std::uint8_t sex = 0;
+    long long deathTick = -1, debtXp = 0, resTick = -7000;
+    unsigned bountyMob = 0, bountyCycle = 0;
+  };
+  std::unordered_map<std::uint32_t, Wave2Login> loginWave2;
 
   struct QueuedCmd {
     sim::Tick tick;
@@ -1900,6 +1975,13 @@ int runReplayWorld(const std::string& path, const std::string& mapPath,
       long long gtick; unsigned gidx, gpid, grank;
       if (std::sscanf(line, "g %lld %u %u %u", &gtick, &gidx, &gpid, &grank) == 4)
         loginPledges[gidx] = {gpid, grank};
+    } else if (line[0] == 'y') {  // wave-2 identity sidecar (absent pre-30)
+      long long ytick, ydeath, ydebt, yres;
+      unsigned yidx, ysex, ybmob, ybcyc;
+      if (std::sscanf(line, "y %lld %u %u %lld %lld %lld %u %u", &ytick, &yidx,
+                      &ysex, &ydeath, &ydebt, &yres, &ybmob, &ybcyc) == 8)
+        loginWave2[yidx] = Wave2Login{static_cast<std::uint8_t>(ysex), ydeath,
+                                      ydebt, yres, ybmob, ybcyc};
     } else if (line[0] == 'b') {
       long long tick;
       char nm[64], spec[256];
@@ -1987,6 +2069,17 @@ int runReplayWorld(const std::string& path, const std::string& mapPath,
     if (const auto gi = loginPledges.find(L.idx); gi != loginPledges.end())
       world.pledgeReplayRestore(*pe, gi->second.first,
                                 static_cast<std::uint8_t>(gi->second.second));
+    // Wave-2 identity from the y-sidecar (absent => pre-30 journal, defaults
+    // match fresh Entity fields exactly so old legs are unaffected).
+    if (const auto yi = loginWave2.find(L.idx); yi != loginWave2.end()) {
+      const Wave2Login& yl = yi->second;
+      pe->sex = yl.sex > 2 ? std::uint8_t(0) : yl.sex;
+      pe->lastDeathTick = static_cast<sim::Tick>(yl.deathTick);
+      pe->lastDebtXp = static_cast<std::uint32_t>(yl.debtXp < 0 ? 0 : yl.debtXp);
+      pe->lastResTick = static_cast<sim::Tick>(yl.resTick);
+      pe->bountyMobId = yl.bountyMob;
+      pe->bountyCycle = yl.bountyCycle;
+    }
     // replay bless grants (debug lane recorded as b-lines) — AFTER the
     // persisted blob, exactly like the live login order, so debugGive
     // stacking/appending lands identically on both sides.

@@ -3515,6 +3515,11 @@
        "name": "respawnTicks",
        "type": "int",
        "value": 1200
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
       }
      ]
     },
@@ -3543,6 +3548,11 @@
        "name": "respawnTicks",
        "type": "int",
        "value": 1200
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
       }
      ]
     },
@@ -3571,6 +3581,11 @@
        "name": "respawnTicks",
        "type": "int",
        "value": 1200
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
       }
      ]
     },
@@ -3599,6 +3614,11 @@
        "name": "respawnTicks",
        "type": "int",
        "value": 1200
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
       }
      ]
     },
@@ -3627,6 +3647,11 @@
        "name": "respawnTicks",
        "type": "int",
        "value": 1200
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
       }
      ]
     },
@@ -3655,6 +3680,11 @@
        "name": "respawnTicks",
        "type": "int",
        "value": 1200
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
       }
      ]
     },
@@ -3683,6 +3713,11 @@
        "name": "respawnTicks",
        "type": "int",
        "value": 1200
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
       }
      ]
     },
@@ -3711,6 +3746,11 @@
        "name": "respawnTicks",
        "type": "int",
        "value": 1200
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
       }
      ]
     },
@@ -3739,6 +3779,11 @@
        "name": "respawnTicks",
        "type": "int",
        "value": 1000
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
       }
      ]
     },
@@ -3767,6 +3812,11 @@
        "name": "respawnTicks",
        "type": "int",
        "value": 1400
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
       }
      ]
     },
@@ -3795,6 +3845,77 @@
        "name": "respawnTicks",
        "type": "int",
        "value": 4000
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
+      }
+     ]
+    },
+    {
+     "id": 12,
+     "name": "revenant_west_chapel",
+     "type": "spawner",
+     "x": 832,
+     "y": 704,
+     "width": 256,
+     "height": 96,
+     "rotation": 0,
+     "visible": true,
+     "properties": [
+      {
+       "name": "mobId",
+       "type": "int",
+       "value": 1018
+      },
+      {
+       "name": "maxAlive",
+       "type": "int",
+       "value": 3
+      },
+      {
+       "name": "respawnTicks",
+       "type": "int",
+       "value": 1100
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
+      }
+     ]
+    },
+    {
+     "id": 13,
+     "name": "banshee_east_row",
+     "type": "spawner",
+     "x": 2112,
+     "y": 576,
+     "width": 256,
+     "height": 96,
+     "rotation": 0,
+     "visible": true,
+     "properties": [
+      {
+       "name": "mobId",
+       "type": "int",
+       "value": 1019
+      },
+      {
+       "name": "maxAlive",
+       "type": "int",
+       "value": 2
+      },
+      {
+       "name": "respawnTicks",
+       "type": "int",
+       "value": 1500
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
       }
      ]
     }
@@ -3811,7 +3932,7 @@
    "name": "portals",
    "objects": [
     {
-     "id": 12,
+     "id": 14,
      "name": "depths_stairs_up",
      "type": "portal",
      "x": 128,
@@ -3847,7 +3968,7 @@
   }
  ],
  "nextlayerid": 6,
- "nextobjectid": 13,
+ "nextobjectid": 15,
  "orientation": "isometric",
  "renderorder": "right-down",
  "tiledversion": "1.10.2",

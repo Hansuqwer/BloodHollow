@@ -48,7 +48,7 @@ u32 targetId
 ```
 
 Spend one unassigned stat point (kStatPointsPerLevel per level-up).
-stat: 0=STR, 1=VIT, 2=DEX (INT/MAG land with casters in a later phase).
+stat: 0=STR, 1=VIT, 2=DEX, 3=INT, 4=MAG (T-160 five-stat model, wave-2).
 
 ```proto
 message StatAssign = 8
@@ -145,6 +145,17 @@ u8 unused
 ```proto
 message PartyKick = 24
 u32 targetId
+```
+
+T-167 creation (1-char alpha): a fresh account's first Hello gets LoginResult
+ok=1 AND a CharCreatePrompt instead of a spawn; the client answers CharCreate
+once (class 1..3, sex 1=m/2=f) and the server spawns. New messages bump the
+version via the count (no base change needed for additions).
+
+```proto
+message CharCreate = 25
+u8 classId
+u8 sex
 ```
 
 ## Server -> Client
@@ -349,4 +360,9 @@ message PledgeMember = 119
  u8 rank
  u16 level
  u8 online
+```
+
+```proto
+message CharCreatePrompt = 120
+u8 unused
 ```

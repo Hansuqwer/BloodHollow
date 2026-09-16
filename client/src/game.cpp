@@ -154,6 +154,18 @@ void Game::handleInput() {
 
 void Game::handleInputOnline() {
   if (chatTyping()) return;
+  // T-167 creation panel (pre-world): 1/2/3 kit, M/F sex, Enter to answer.
+  // Runs BEFORE chat-ENTER so Enter confirms instead of opening chat.
+  if (net_->needsCreate && !net_->welcomed) {
+    if (IsKeyPressed(KEY_ONE)) createClass_ = 1;
+    if (IsKeyPressed(KEY_TWO)) createClass_ = 2;
+    if (IsKeyPressed(KEY_THREE)) createClass_ = 3;
+    if (IsKeyPressed(KEY_M)) createSex_ = 1;
+    if (IsKeyPressed(KEY_F)) createSex_ = 2;
+    if (IsKeyPressed(KEY_ENTER) && createClass_ != 0 && createSex_ != 0)
+      net_->sendCharCreate(createClass_, createSex_);
+    return;
+  }
   if (IsKeyPressed(KEY_ENTER)) {
     chatFocus_ = true;
     return;
@@ -215,10 +227,13 @@ void Game::handleInputOnline() {
       cmdMarkerAt_ = GetTime();
     }
   }
-  if (net_->ownStats.statPoints > 0) {
+  if (net_->ownStats.statPoints > 0 && !showVendor_) {
     if (IsKeyPressed(KEY_F5)) net_->sendStat(0);
     if (IsKeyPressed(KEY_F6)) net_->sendStat(1);
     if (IsKeyPressed(KEY_F7)) net_->sendStat(2);
+    // T-160 five-stat model: F8 INT, F9 MAG (vendor guard: F-keys buy there).
+    if (IsKeyPressed(KEY_F8)) net_->sendStat(3);
+    if (IsKeyPressed(KEY_F9)) net_->sendStat(4);
   }
   if (IsKeyPressed(KEY_I)) showInv_ = !showInv_;
   // ---- trade (T-029): T opens with nearest player; P commits; X cancels. ----
@@ -256,6 +271,9 @@ void Game::handleInputOnline() {
   if (IsKeyPressed(KEY_THREE)) net_->sendSkill(3, chanTarget());
   if (IsKeyPressed(KEY_FOUR)) net_->sendSkill(4, chanTarget());
   if (IsKeyPressed(KEY_FIVE)) net_->sendSkill(5, targetId_);
+  // T-161: 6 = Resurrect at the click-selected fallen (server validates
+  // cultist/L20/range/window/rebate; 7+ reserved for the ch11/12 follow-ups).
+  if (IsKeyPressed(KEY_SIX) && targetId_ != 0) net_->sendSkill(10, targetId_);
   if (IsKeyPressed(KEY_Q)) {
     // quick-sip: first Blood Vial stack
     for (const auto& kv : net_->inventory) {
@@ -1212,7 +1230,7 @@ void Game::drawStatPanel() const {
   const bool showBuffs = st.blessTicksLeft > 0 || st.ironskinTicksLeft > 0;
   const bool showCurse = st.curseTicksLeft > 0;  // T-070: own row, violet
   const int ph =
-      (st.statPoints > 0 ? 92 : 74) + 40 + (showBuffs ? 12 : 0) + (showCurse ? 12 : 0);
+      (st.statPoints > 0 ? 106 : 88) + 40 + (showBuffs ? 12 : 0) + (showCurse ? 12 : 0);
   DrawRectangle(px, 8, 182, ph, Color{0, 0, 0, 170});
   DrawRectangleLinesEx(Rectangle{static_cast<float>(px), 8, 182,
                                  static_cast<float>(ph)},
@@ -1231,12 +1249,14 @@ void Game::drawStatPanel() const {
   DrawText(buf, px + 8, 40, 10, LIGHTGRAY);
   std::snprintf(buf, sizeof buf, "STR %u  VIT %u  DEX %u", st.str, st.vit, st.dex);
   DrawText(buf, px + 8, 54, 10, LIGHTGRAY);
+  std::snprintf(buf, sizeof buf, "INT %u  MAG %u", st.intg, st.mag);  // T-160
+  DrawText(buf, px + 8, 66, 10, LIGHTGRAY);
   if (st.statPoints > 0) {
-    std::snprintf(buf, sizeof buf, "+%u pts: F5 STR F6 VIT F7 DEX", st.statPoints);
-    DrawText(buf, px + 8, 70, 10, Color{255, 200, 80, 255});
+    std::snprintf(buf, sizeof buf, "+%u pts: F5 STR F6 VIT F7 DEX F8 INT F9 MAG", st.statPoints);
+    DrawText(buf, px + 8, 80, 10, Color{255, 200, 80, 255});
   }
   // T-053/54: mana bar + buff countdowns (kit resource legibility)
-  const int by = (st.statPoints > 0 ? 86 : 70) + 2;
+  const int by = (st.statPoints > 0 ? 100 : 84) + 2;
   const float mfrac = st.mpMax > 0 ? static_cast<float>(st.mp) / static_cast<float>(st.mpMax) : 0.0f;
   DrawRectangle(px + 8, by, 166, 6, Color{20, 20, 30, 255});
   DrawRectangle(px + 8, by, static_cast<int>(166.0f * mfrac), 6, Color{60, 70, 160, 255});
@@ -1764,7 +1784,37 @@ void Game::render(double /*interpAlpha*/) {
   drawTradeBanner();
   drawDeathOverlay();
   if (showHelp_) drawHelpPanel();  // T-169: F1 or /help
+  if (net_ != nullptr && net_->needsCreate && !net_->welcomed) drawCreatePanel();  // T-167
   EndDrawing();
+}
+
+// T-167: pre-world creation picker — keyboard only, era parchment, no art
+// dependency beyond text. 1/2/3 kit, M/F sex, Enter answers once.
+void Game::drawCreatePanel() const {
+  const int pw = 420, ph = 210, px = (1024 - pw) / 2, py = 200;
+  DrawRectangle(px, py, pw, ph, Color{28, 22, 14, 235});
+  DrawRectangleLinesEx(Rectangle{static_cast<float>(px), static_cast<float>(py),
+                                 static_cast<float>(pw), static_cast<float>(ph)},
+                       1.0f, Color{160, 140, 90, 220});
+  DrawText("WHO ENTERS THE HOLLOW?", px + 16, py + 12, 12, Color{235, 220, 190, 255});
+  const char* kits[3] = {"1  Ravager      (steel first)",
+                         "2  Gravecaller  (plague and fire)",
+                         "3  Cultist      (mend and rite)"};
+  for (int i = 0; i < 3; ++i) {
+    const bool sel = createClass_ == i + 1;
+    DrawText(kits[i], px + 16, py + 44 + i * 20, 10,
+             sel ? Color{255, 210, 120, 255} : Color{180, 170, 160, 255});
+  }
+  DrawText(createSex_ == 1 ? "> M  male" : "  M  male", px + 16, py + 112, 10,
+           createSex_ == 1 ? Color{255, 210, 120, 255} : Color{180, 170, 160, 255});
+  DrawText(createSex_ == 2 ? "> F  female" : "  F  female", px + 130, py + 112, 10,
+           createSex_ == 2 ? Color{255, 210, 120, 255} : Color{180, 170, 160, 255});
+  const bool ready = createClass_ != 0 && createSex_ != 0;
+  DrawText(ready ? "Enter  to step through the gate" : "1/2/3 + M/F, then Enter",
+           px + 16, py + 150, 10,
+           ready ? Color{200, 235, 170, 255} : Color{140, 140, 140, 255});
+  DrawText("one soul per account for alpha (T-167)", px + 16, py + 172, 10,
+           Color{120, 110, 100, 255});
 }
 
 // T-169: in-client discoverability — F1 or /help toggles this panel.
@@ -1791,9 +1841,10 @@ void Game::drawHelpPanel() const {
   header("COMBAT / MOVEMENT");
   line("LMB click    walk / attack", GRAY);
   line("WASD         instant step", GRAY);
-  line("1-8          hotbar skills", GRAY);
+  line("1-5          hotbar skills (6 = Resurrect @selected)", GRAY);
   line("Q            sip potion", GRAY);
   line("F5/F6/F7     +STR/+VIT/+DEX (stat point)", GRAY);
+  line("F8/F9        +INT/+MAG (stat point)", GRAY);
   line("F            open anvil (near anvil NPC)", GRAY);
   blank();
 

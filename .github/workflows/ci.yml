@@ -66,4 +66,4 @@ jobs:
         run: ctest --preset headless --output-on-failure
 
       - name: Replay leg of record (epoch guard)
-        run: ./build/headless/server/bh_server --replay-world logs/t159.bwj
+        run: ./build/headless/server/bh_server --replay-world logs/wave2.bwj
