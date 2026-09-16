@@ -16,7 +16,8 @@ DB=/tmp/t137_${TAG}.db
 rm -f $DB $DB-wal $DB-shm
 rm -f logs/t137_${TAG}.bwj logs/t137_${TAG}_server.log logs/t137_${TAG}_bots*.log
 mkdir -p logs
-BUILD_DIR=build/linux-gcc
+# T-154/T-168 one-build-dir law: BH_BUILD_DIR overrides (headless CI).
+BUILD_DIR=${BH_BUILD_DIR:-build/linux-gcc}
 
 echo "[t137] login wave A ($ATK attackers)..."
 ./$BUILD_DIR/server/bh_server --db $DB --port $PORT --soak-secs 120 > logs/t137_${TAG}_server.log 2>&1 &
