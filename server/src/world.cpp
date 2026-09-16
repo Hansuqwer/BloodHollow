@@ -121,8 +121,10 @@ done:
   Zone& zone = zones_.at(mapId);
   if (mapId == 1) spawnVendor(zone);
   if (mapId == 1) spawnConfessor(zone);  // T-070: the chapel cure
+  if (mapId == 6) spawnSteward(zone);  // H1: the castle keeper (kind 73)
   initialMobSpawns(zone, mapId);
   if (mapId == 1 || mapId == 3) spawnAnvils();   // plaza + bone barrow
+  if (mapId == 4) spawnOreNodes();  // H2: blackiron ore in the mine
   if (mapId == 1) spawnNpcs();  // T-094: twins + post guards (after anvil)
   return true;
 }
@@ -1491,6 +1493,61 @@ void World::spawnConfessor(Zone& zone) {
   }
 }
 
+// H1 siege stub: `gm siege-now` opens the impromptu rehearsal the MVP
+// Friday-Night Test assumes — registration flag + active flag + fiction
+// line, 90 min on the 20 Hz clock (108000 ticks, Saturday-law placeholder).
+// One rehearsal at a time; dead callers and mid-siege repeats fail quiet
+// (era law: the horn is already sounding). No scheduler, gates, Heartstone,
+// crown, taxes, or holder buff — those are H2-H4.
+bool World::siegeNow(Entity& e) {
+  if (e.kind != EntityKind::kPlayer || e.dead) return false;
+  if (siegeActive_) return false;
+  siegeRegistered_ = true;
+  siegeActive_ = true;
+  siegeEndsAt_ = tick_ + 108000;
+  WorldEvent ev;
+  ev.aboutId = e.id;
+  ev.statsChanged = true;
+  ev.chatCh = 2;
+  ev.chatText = e.name +
+                " sounds the war-horn: the Weeping Castle rehearsal begins (90 min).";
+  events_.push_back(std::move(ev));
+  return true;
+}
+
+// H1: the Castle Steward keeps the weeping keep (kind 73, T-ART-06 reserved).
+// First walkable tile with no furniture inside the keep interior
+// (17,5)-(22,8 per tools/mapgen/make_weeping_castle.py), session-seeded
+// like the confessor. Registrar (72) stays unplaced: Marrowgate is H2+.
+void World::spawnSteward(Zone& zone) {
+  for (int y = 5; y <= 8; ++y) {
+    for (int x = 17; x <= 22; ++x) {
+      if (!zone.map.inBounds(x, y) || zone.map.isBlocked(x, y)) continue;
+      bool occupied = false;
+      for (const Entity& ee : entities_)
+        if (ee.zoneId == 6 && !ee.dead && ee.walker.tile().x == x &&
+            ee.walker.tile().y == y &&
+            ee.wireKind >= content::kWireKindFurnitureFloor) {
+          occupied = true;
+          break;
+        }
+      if (occupied) continue;
+      Entity f;
+      f.id = nextId_++;
+      f.zoneId = 6;
+      f.kind = EntityKind::kMob;  // furniture, non-combat; wire kind 73
+      f.wireKind = content::kWireKindSteward;
+      f.name = "Castle Steward";
+      f.hp = 1;
+      f.hpMax = 1;
+      f.dead = false;
+      f.walker.place(sim::TilePos{x, y});
+      insertEntity(std::move(f));
+      return;
+    }
+  }
+}
+
 // ---- anvil & aura spine (T-041/T-042, RFC 0001) ----------------------------
 
 void World::spawnAnvils() {
@@ -1523,6 +1580,89 @@ void World::spawnAnvils() {
       }
     }
   }
+}
+
+// H2: blackiron ore nodes in Bonehowl Mine (zone 4).
+// 4 static deposits; no respawn yet.  hp=1, wireKind=74.
+void World::spawnOreNodes() {
+  auto it = zones_.find(4);
+  if (it == zones_.end()) return;
+  const sim::TilePos positions[] = {{20, 10}, {30, 15}, {15, 25}, {35, 20}};
+  for (const auto& at : positions) {
+    const int x = at.x, y = at.y;
+    if (!it->second.map.inBounds(x, y) || it->second.map.isBlocked(x, y)) continue;
+    Entity n;
+    n.id = nextId_++;
+    n.zoneId = 4;
+    n.kind = EntityKind::kMob;  // furniture: non-combat
+    n.wireKind = content::kWireKindOreNode;
+    n.name = "Ore Vein";
+    n.hp = 1;
+    n.hpMax = 1;
+    n.walker.place(sim::TilePos{x, y});
+    insertEntity(std::move(n));
+  }
+}
+
+bool World::nearNode(const Entity& e) const {
+  for (const Entity& other : entities_) {
+    if (other.wireKind == content::kWireKindOreNode && other.zoneId == e.zoneId &&
+        chebyshev(e.walker.tile(), other.walker.tile()) <= 2) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// H2: mine blackiron ore.  Gates: dead → near ore node → pick equipped (2003)
+// → cooldown ~40 ticks (2 s) → yield 1-2 ore via RNG.  Ore added to inventory;
+// [mine] log line emitted for replay.
+bool World::tryMine(Entity& e) {
+  if (e.kind != EntityKind::kPlayer || e.dead) return false;
+  if (!nearNode(e)) {
+    WorldEvent ev;
+    ev.aboutId = e.id;
+    ev.chatCh = 255;
+    ev.chatText = "there is no ore vein within reach.";
+    events_.push_back(ev);
+    return false;
+  }
+  // pick equipped?
+  int pickSlot = -1;
+  for (size_t i = 0; i < e.inv.size(); ++i) {
+    if (e.inv[i].equipped && e.inv[i].itemId == 2003) {
+      pickSlot = static_cast<int>(i);
+      break;
+    }
+  }
+  if (pickSlot < 0) {
+    WorldEvent ev;
+    ev.aboutId = e.id;
+    ev.chatCh = 255;
+    ev.chatText = "you need a Mine Pick to break ore.";
+    events_.push_back(ev);
+    return false;
+  }
+  // cooldown (reuse lastHurtTick as last-mine timestamp)
+  if (tick_ - e.lastHurtTick < 40) {
+    WorldEvent ev;
+    ev.aboutId = e.id;
+    ev.chatCh = 255;
+    ev.chatText = "the vein needs a moment to settle.";
+    events_.push_back(ev);
+    return false;
+  }
+  e.lastHurtTick = tick_;
+  const std::uint16_t qty = static_cast<std::uint16_t>(rng_.range(1, 2));
+  addItem(e, 5001, qty);  // Blackiron Ore
+  WorldEvent ev;
+  ev.aboutId = e.id;
+  ev.invChanged = true;
+  ev.chatCh = 255;
+  ev.chatText = "you pry " + std::to_string(qty) + " Blackiron Ore from the vein.";
+  std::printf("[mine] %s ore=%u\n", e.name.c_str(), static_cast<unsigned>(qty));
+  events_.push_back(std::move(ev));
+  return true;
 }
 
 bool World::nearAnvil(const Entity& e) const {
@@ -1691,9 +1831,11 @@ bool World::tryAnvil(Entity& e, std::uint8_t tier) {
     events_.push_back(ev);
     return false;
   }
+  // H2 ore lane: ore (5001) counts 1:5 toward any pelt toll (6 ore == 30 pelts)
   std::uint32_t parts = 0;
   for (const InvSlot& sl : e.inv) {
     if (sl.itemId == t->partItemId) parts += sl.qty;
+    else if (sl.itemId == 5001 && t->partItemId != 5001) parts += sl.qty * 5;
   }
   if (parts < t->partQty) {
     WorldEvent ev;
@@ -1717,6 +1859,7 @@ bool World::tryAnvil(Entity& e, std::uint8_t tier) {
 
   // consume parts + gold, atomically (all or nothing).
   // T-111: keep wslotIdx honest across erases (same discipline as tryRefine).
+  // H2: consume pelts first, then ore at 1:5 ratio if needed.
   std::uint16_t remaining = t->partQty;
   for (size_t i = 0; i < e.inv.size() && remaining > 0;) {
     InvSlot& sl = e.inv[i];
@@ -1727,9 +1870,26 @@ bool World::tryAnvil(Entity& e, std::uint8_t tier) {
     if (sl.qty == 0) {
       e.inv.erase(e.inv.begin() + static_cast<long>(i));
       if (static_cast<int>(i) < wslotIdx) --wslotIdx;
-      // do not ++i: next element slid into i
     } else {
       ++i;
+    }
+  }
+  // H2: if still short on pelts, consume ore at 1:5 ratio
+  if (remaining > 0 && t->partItemId != 5001) {
+    const std::uint16_t oreNeeded = (remaining + 4) / 5;  // ceil(remaining/5)
+    std::uint16_t oreLeft = oreNeeded;
+    for (size_t i = 0; i < e.inv.size() && oreLeft > 0;) {
+      InvSlot& sl = e.inv[i];
+      if (sl.itemId != 5001 || sl.equipped) { ++i; continue; }
+      const std::uint16_t take = sl.qty < oreLeft ? sl.qty : oreLeft;
+      sl.qty = static_cast<std::uint16_t>(sl.qty - take);
+      oreLeft = static_cast<std::uint16_t>(oreLeft - take);
+      if (sl.qty == 0) {
+        e.inv.erase(e.inv.begin() + static_cast<long>(i));
+        if (static_cast<int>(i) < wslotIdx) --wslotIdx;
+      } else {
+        ++i;
+      }
     }
   }
   e.gold -= t->gold;

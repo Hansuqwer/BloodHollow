@@ -24,6 +24,7 @@ inline constexpr ItemDef kItems[] = {
     //  id    name                slot dmg def heal value stack
     {2001, "Rusty Shank",          0, 12, 0,  0,   80,   1},
     {2002, "Pit Blade",            0, 18, 0,  0,   260,  1},
+    {2003, "Mine Pick",            0, 8,  0,  0,   150,  1},
     {2101, "Hide Armor",           1, 0,  6,  0,   120,  1},
     {2102, "Bone Plate",           1, 0,  11, 0,   350,  1},
     {3001, "Blood Vial",           2, 0,  0,  40,  30,   16},
@@ -37,6 +38,7 @@ inline constexpr ItemDef kItems[] = {
     {4003, "Hound Fang",           3, 0,  0,  0,   35,   32},
     {4004, "Widow Silk",           3, 0,  0,  0,   55,   32},
     {4005, "Revenant Ash",         3, 0,  0,  0,   75,   16},
+    {5001, "Blackiron Ore",        3, 0,  0,  0,   20,   32},
 };
 
 // ---- T-059 affixes v1 + T-126 affix v2 -------------------------------
@@ -74,8 +76,8 @@ inline const ItemDef* findItem(std::uint32_t itemId) {
 // Town vendor stock (Marta). Buy = full value; SellJunk = 40%.
 // T-071: Marta stocks the night (torch 8g, lantern 150g — pinned by the
 // overnight shift; director review). Potions/gold numbers otherwise untouched.
-inline constexpr std::uint32_t kVendorStock[] = {2001, 2002, 2101, 2102, 3001,
-                                                 3003, 3004};
+inline constexpr std::uint32_t kVendorStock[] = {2001, 2002, 2003, 2101, 2102, 3001,
+                                                  3003, 3004};
 
 // T-069 Smugglers' Cove fence (Sable): the no-questions lane Marta refuses.
 // Secret stock = contraband potion + rare junk, chaotic eyes only, at a 25%

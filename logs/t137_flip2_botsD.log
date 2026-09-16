@@ -1,0 +1,67 @@
+[siege-trace] t137d__01 t=32735 (32,16) map=1 stage=0 hp=100%
+[siege-trace] t137d__00 t=32735 (28,22) map=1 stage=0 hp=100%
+[siege-trace] t137d__02 t=32737 (36,12) map=1 stage=0 hp=100%
+[siege-trace] t137d__01 t=32765 (28,10) map=6 stage=11 hp=69%
+[siege-trace] t137d__00 t=32765 (27,11) map=6 stage=11 hp=1%
+[siege-trace] t137d__02 t=32767 (28,10) map=1 stage=11 hp=94%
+[siege-trace] t137d__01 t=32795 (28,10) map=6 stage=11 hp=59%
+[siege-trace] t137d__00 t=32795 (28,10) map=1 stage=10 hp=0%
+[siege-trace] t137d__02 t=32797 (28,10) map=1 stage=11 hp=22%
+[siege-trace] t137d__01 t=32825 (28,10) map=6 stage=11 hp=26%
+[siege-trace] t137d__00 t=32826 (28,10) map=1 stage=11 hp=100%
+[siege-trace] t137d__02 t=32827 (28,10) map=1 stage=11 hp=7%
+[siege-trace] t137d__01 t=32855 (28,10) map=6 stage=11 hp=17%
+[siege-trace] t137d__00 t=32856 (28,10) map=1 stage=11 hp=58%
+[siege-trace] t137d__02 t=32857 (28,10) map=1 stage=11 hp=25%
+[siege-trace] t137d__01 t=32885 (28,10) map=6 stage=11 hp=21%
+[siege-trace] t137d__00 t=32886 (27,10) map=1 stage=11 hp=62%
+[siege-trace] t137d__02 t=32887 (28,10) map=1 stage=10 hp=0%
+[siege-trace] t137d__01 t=32915 (28,10) map=1 stage=11 hp=98%
+[siege-trace] t137d__00 t=32916 (28,10) map=1 stage=11 hp=22%
+[siege-trace] t137d__02 t=32917 (28,10) map=1 stage=11 hp=32%
+[siege-trace] t137d__01 t=32945 (28,10) map=1 stage=11 hp=83%
+[siege-trace] t137d__00 t=32946 (28,10) map=1 stage=11 hp=26%
+[siege-trace] t137d__02 t=32947 (28,10) map=1 stage=10 hp=0%
+[siege-trace] t137d__01 t=32975 (28,10) map=1 stage=11 hp=81%
+[siege-trace] t137d__00 t=32976 (28,10) map=1 stage=11 hp=20%
+[siege-trace] t137d__02 t=32978 (22,15) map=6 stage=11 hp=100%
+[siege-trace] t137d__01 t=33005 (28,10) map=1 stage=11 hp=86%
+[siege-trace] t137d__00 t=33006 (28,10) map=1 stage=11 hp=23%
+[siege-trace] t137d__02 t=33008 (28,10) map=6 stage=11 hp=0%
+[siege-trace] t137d__01 t=33035 (28,10) map=1 stage=11 hp=92%
+[siege-trace] t137d__00 t=33036 (28,10) map=1 stage=11 hp=29%
+[siege-trace] t137d__02 t=33038 (28,10) map=1 stage=11 hp=48%
+[siege-trace] t137d__01 t=33065 (28,10) map=1 stage=11 hp=80%
+[siege-trace] t137d__00 t=33066 (28,10) map=1 stage=11 hp=35%
+[siege-trace] t137d__02 t=33068 (28,10) map=1 stage=10 hp=0%
+[siege-trace] t137d__01 t=33095 (28,10) map=1 stage=11 hp=78%
+[siege-trace] t137d__00 t=33096 (28,10) map=1 stage=11 hp=40%
+[siege-trace] t137d__02 t=33098 (28,10) map=1 stage=11 hp=8%
+[siege-trace] t137d__01 t=33125 (28,10) map=1 stage=11 hp=70%
+[siege-trace] t137d__00 t=33126 (28,10) map=1 stage=11 hp=38%
+[siege-trace] t137d__02 t=33128 (28,10) map=6 stage=11 hp=0%
+[siege-trace] t137d__01 t=33155 (28,10) map=1 stage=11 hp=76%
+[siege-trace] t137d__00 t=33156 (28,10) map=1 stage=11 hp=44%
+[siege-trace] t137d__02 t=33158 (28,10) map=6 stage=11 hp=42%
+[siege-trace] t137d__01 t=33185 (28,10) map=1 stage=11 hp=82%
+[siege-trace] t137d__00 t=33186 (28,10) map=1 stage=11 hp=3%
+[siege-trace] t137d__02 t=33188 (28,10) map=1 stage=11 hp=9%
+[siege-trace] t137d__01 t=33215 (28,10) map=1 stage=11 hp=87%
+[siege-trace] t137d__00 t=33216 (28,10) map=1 stage=11 hp=6%
+[siege-trace] t137d__02 t=33218 (28,10) map=6 stage=11 hp=23%
+[siege-trace] t137d__01 t=33245 (28,10) map=1 stage=11 hp=44%
+[siege-trace] t137d__00 t=33246 (28,10) map=1 stage=11 hp=12%
+[siege-trace] t137d__02 t=33248 (28,10) map=1 stage=11 hp=59%
+[siege-trace] t137d__01 t=33275 (28,10) map=1 stage=11 hp=19%
+[siege-trace] t137d__00 t=33276 (28,10) map=1 stage=11 hp=17%
+[siege-trace] t137d__02 t=33278 (28,10) map=6 stage=11 hp=39%
+[siege-trace] t137d__01 t=33305 (28,10) map=6 stage=11 hp=77%
+[siege-trace] t137d__00 t=33306 (26,11) map=6 stage=11 hp=100%
+[siege-trace] t137d__02 t=33308 (28,10) map=1 stage=11 hp=49%
+[bots] CRYPT bossSeen=505 bossKills=28 curse=0 slam=0
+[bots] SIEGE reg=0 breach=0 crown=0
+[bots] SUMMARY welcomed=3/3 moved=3/3 minDeltas=12000 kills=68 pots=0 swings=0 deaths=72 shops=0 anvilTries=0 levelDrops=7 regear=0 maxLevel=14 pkts=1204565 bytes=28786357 gates b/g/p/a/r=0/0/0/0/0 mGold=0 mPelts=0 bless=0 mend=0 noSee=0 hurt=0 choir c6=0 c7=0 c8=0
+[bots] t137d__00    kit=1 lvl=14 hp=100/268 party=0 deaths=8 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=82 bossKills=10 curse=0 slam=0 lastDeath=(28,10) killerByLvl=L10:2 L14:2 L15:4
+[bots] t137d__01    kit=1 lvl=14 hp=96/268 party=0 deaths=4 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=70 bossKills=8 curse=0 slam=0 lastDeath=(28,10) killerByLvl=L14:2 L15:2
+[bots] t137d__02    kit=1 lvl=10 hp=125/244 party=0 deaths=60 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=353 bossKills=10 curse=0 slam=0 lastDeath=(28,10) killerByLvl=L13:6 L14:42 L15:12
+[bots] OK

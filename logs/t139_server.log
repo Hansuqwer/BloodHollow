@@ -1,0 +1,84 @@
+[boot] zone 2 (assets/maps/fields_overflow.bhmap: 64x48) online
+[boot] zone 3 (assets/maps/thornwall_crypt.bhmap: 48x36) online
+[boot] zone 4 (assets/maps/bonehowl_mine.bhmap: 56x40) online
+[boot] zone 5 (assets/maps/drowned_crypt.bhmap: 48x36) online
+[boot] zone 6 (assets/maps/weeping_castle.bhmap: 40x30) online
+[rehearsal] siege window OPEN unconditionally (drill posture)
+[auth] registration OPEN (prototype posture; --no-register to gate); limiter: 60 logins + 30 new accounts per 60s per IP, 10 consecutive bad-password fails -> 60s lockout
+[journal] recording world to logs/t139.bwj (epoch 26)
+[boot] pledges: 0 registered, 0 sworn members
+[boot] bh_server on 0.0.0.0:7824 | map 'assets/maps/thornwall.bhmap' | db '/tmp/t139.db' | tick 20Hz | aoi 26
+[net] t139__00         entered the world (entity 208, online 1)
+[net] t139__01         entered the world (entity 209, online 2)
+[net] t139__02         entered the world (entity 210, online 3)
+[net] t139__03         entered the world (entity 211, online 4)
+[net] t139__04         entered the world (entity 212, online 5)
+[net] t139__00         saved at (24,29)
+[net] t139__01         saved at (24,14)
+[net] t139__02         saved at (37,13)
+[net] t139__03         saved at (36,13)
+[net] t139__04         saved at (33,3)
+[net] t139__00         entered the world (entity 213, online 1)
+[net] t139__01         entered the world (entity 214, online 2)
+[net] t139__02         entered the world (entity 215, online 3)
+[net] t139__03         entered the world (entity 216, online 4)
+[net] t139__04         entered the world (entity 217, online 5)
+[soak] tick=600 online=5 entities=206 tickUs p50=647 p99=1154 worldHash=a8c911cf5bfb503a pkts=92/158139
+[net] t139__00         saved at (33,16)
+[net] t139__01         saved at (33,16)
+[net] t139__02         saved at (32,15)
+[net] t139__03         saved at (32,15)
+[net] t139__04         saved at (33,16)
+[net] t139__00         entered the world (entity 220, online 1)
+[net] t139__01         entered the world (entity 221, online 2)
+[net] t139__02         entered the world (entity 222, online 3)
+[net] t139__03         entered the world (entity 223, online 4)
+[net] t139__04         entered the world (entity 224, online 5)
+[soak] tick=1200 online=5 entities=207 tickUs p50=648 p99=1090 worldHash=e2c01ffbde7f7e04 pkts=144/325299
+[zone] t139__02 -> map 6 at (20,27)
+[zone] t139__03 -> map 6 at (20,27)
+[zone] t139__02 -> map 6 at (20,27)
+[zone] t139__03 -> map 6 at (20,27)
+[zone] t139__00 -> map 6 at (20,27)
+[zone] t139__04 -> map 6 at (20,27)
+[zone] t139__00 -> map 6 at (20,27)
+[zone] t139__04 -> map 6 at (20,27)
+[zone] t139__01 -> map 6 at (20,27)
+[siege] band enlisted (5 members, 1/8 bands)
+[zone] t139__01 -> map 6 at (20,27)
+[siege] battle joined until tick 1980000 (5 bands)
+[soak] tick=1800 online=5 entities=204 tickUs p50=508 p99=1043 worldHash=f1a907b8b3731ab7 pkts=314/412841
+[zone] t139__00 -> map 1 at (32,16)
+[zone] t139__00 -> map 1 at (32,16)
+[zone] t139__00 -> map 6 at (20,27)
+[zone] t139__00 -> map 6 at (20,27)
+[soak] tick=2400 online=5 entities=199 tickUs p50=445 p99=771 worldHash=e2c80fbddfdce1f9 pkts=435/455276
+[siege] Outer Gate breached by t139__01
+[soak] tick=3000 online=5 entities=204 tickUs p50=393 p99=706 worldHash=5dcbc75bb01466b4 pkts=515/480965
+[siege] Inner Gate breached by t139__01
+[zone] t139__04 -> map 1 at (32,16)
+[zone] t139__04 -> map 1 at (32,16)
+[soak] tick=3600 online=5 entities=206 tickUs p50=430 p99=756 worldHash=fe5ad6b37a6fd719 pkts=611/513711
+[zone] t139__02 -> map 1 at (32,16)
+[zone] t139__02 -> map 1 at (32,16)
+[zone] t139__00 -> map 1 at (32,16)
+[zone] t139__00 -> map 1 at (32,16)
+[siege] heartstone attuned at tick 3896
+[soak] tick=4200 online=5 entities=196 tickUs p50=470 p99=833 worldHash=4e188803b7bfac98 pkts=707/582747
+[soak] tick=4800 online=5 entities=196 tickUs p50=466 p99=809 worldHash=309ac4a4826e29e5 pkts=775/656885
+[zone] t139__04 -> map 6 at (20,27)
+[zone] t139__04 -> map 6 at (20,27)
+[zone] t139__02 -> map 6 at (20,27)
+[zone] t139__02 -> map 6 at (20,27)
+[zone] t139__04 -> map 1 at (32,16)
+[zone] t139__04 -> map 1 at (32,16)
+[siege] crowned: t139__01 holds the castle
+[soak] tick=5400 online=5 entities=192 tickUs p50=474 p99=812 worldHash=7007990cf6b17887 pkts=900/723423
+[zone] t139__00 -> map 6 at (20,27)
+[zone] t139__00 -> map 6 at (20,27)
+[soak] tick=6000 online=5 entities=192 tickUs p50=404 p99=727 worldHash=8628b61c2ea63ee8 pkts=997/768591
+[zone] t139__04 -> map 6 at (20,27)
+[zone] t139__04 -> map 6 at (20,27)
+[soak] tick=6600 online=5 entities=195 tickUs p50=389 p99=661 worldHash=d720123413a1b77c pkts=1087/798648
+[zone] t139__02 -> map 1 at (32,16)
+[zone] t139__02 -> map 1 at (32,16)

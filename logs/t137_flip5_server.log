@@ -1,0 +1,68 @@
+[boot] zone 2 (assets/maps/fields_overflow.bhmap: 64x48) online
+[boot] zone 3 (assets/maps/thornwall_crypt.bhmap: 48x36) online
+[boot] zone 4 (assets/maps/bonehowl_mine.bhmap: 56x40) online
+[boot] zone 5 (assets/maps/drowned_crypt.bhmap: 48x36) online
+[boot] zone 6 (assets/maps/weeping_castle.bhmap: 40x30) online
+[rehearsal] siege window OPEN unconditionally (drill posture)
+[auth] registration OPEN (prototype posture; --no-register to gate); limiter: 60 logins + 30 new accounts per 60s per IP, 10 consecutive bad-password fails -> 60s lockout
+[journal] recording world to logs/t137_flip5.bwj (epoch 25)
+[boot] bh_server on 0.0.0.0:7838 | map 'assets/maps/thornwall.bhmap' | db '/tmp/t137_flip5.db' | tick 20Hz | aoi 26
+[net] t137a__00        entered the world (entity 207, online 1)
+[net] t137a__01        entered the world (entity 208, online 2)
+[net] t137a__02        entered the world (entity 209, online 3)
+[net] t137a__03        entered the world (entity 210, online 4)
+[net] t137a__04        entered the world (entity 211, online 5)
+[net] t137a__05        entered the world (entity 212, online 6)
+[net] t137a__06        entered the world (entity 213, online 7)
+[net] t137a__07        entered the world (entity 214, online 8)
+[net] t137a__08        entered the world (entity 215, online 9)
+[net] t137a__09        entered the world (entity 216, online 10)
+[net] t137a__10        entered the world (entity 217, online 11)
+[net] t137a__11        entered the world (entity 218, online 12)
+[zone] t137a__04 -> map 6 at (20,27)
+[zone] t137a__04 -> map 6 at (20,27)
+[zone] t137a__05 -> map 6 at (20,27)
+[zone] t137a__05 -> map 6 at (20,27)
+[zone] t137a__11 -> map 6 at (20,27)
+[zone] t137a__11 -> map 6 at (20,27)
+[zone] t137a__10 -> map 6 at (20,27)
+[zone] t137a__10 -> map 6 at (20,27)
+[zone] t137a__03 -> map 6 at (20,27)
+[zone] t137a__03 -> map 6 at (20,27)
+[zone] t137a__01 -> map 6 at (20,27)
+[zone] t137a__01 -> map 6 at (20,27)
+[zone] t137a__08 -> map 6 at (20,27)
+[zone] t137a__08 -> map 6 at (20,27)
+[zone] t137a__09 -> map 6 at (20,27)
+[zone] t137a__09 -> map 6 at (20,27)
+[zone] t137a__06 -> map 6 at (20,27)
+[zone] t137a__06 -> map 6 at (20,27)
+[zone] t137a__00 -> map 6 at (20,27)
+[zone] t137a__00 -> map 6 at (20,27)
+[zone] t137a__02 -> map 6 at (20,27)
+[zone] t137a__02 -> map 6 at (20,27)
+[zone] t137a__07 -> map 6 at (20,27)
+[zone] t137a__07 -> map 6 at (20,27)
+[siege] battle joined until tick 1980000 (8 bands)
+[soak] tick=600 online=12 entities=211 tickUs p50=652 p99=1548 worldHash=a69b7241f2fe9f00 pkts=231/153364
+[soak] tick=1200 online=12 entities=211 tickUs p50=649 p99=1258 worldHash=4abbadc1fc3cff7a pkts=401/262313
+[siege] Outer Gate breached by 
+[soak] tick=1800 online=12 entities=213 tickUs p50=628 p99=1137 worldHash=3e264145f9e799ba pkts=593/372454
+[siege] Inner Gate breached by Feral Ghoul
+[soak] tick=2400 online=12 entities=209 tickUs p50=622 p99=1127 worldHash=fab84fdc81256523 pkts=778/482244
+[soak] tick=3000 online=12 entities=209 tickUs p50=586 p99=1039 worldHash=a6ff2810cddce814 pkts=802/577978
+[soak] tick=3600 online=12 entities=209 tickUs p50=561 p99=1040 worldHash=4298e7d2cd2f3aeb pkts=826/673602
+[soak] tick=4200 online=12 entities=209 tickUs p50=583 p99=1045 worldHash=f39bd5017f6f1b8d pkts=838/768144
+[soak] tick=4800 online=12 entities=209 tickUs p50=565 p99=1072 worldHash=75494a37f85e0933 pkts=854/863172
+[soak] tick=5400 online=12 entities=209 tickUs p50=557 p99=968 worldHash=e3f352379a6758e4 pkts=870/958200
+[soak] tick=6000 online=12 entities=210 tickUs p50=583 p99=1130 worldHash=3c78dfa356da88fd pkts=923/1053598
+[soak] tick=6600 online=12 entities=210 tickUs p50=563 p99=974 worldHash=f1c22c70cec89ee3 pkts=1007/1150280
+[soak] tick=7200 online=12 entities=209 tickUs p50=577 p99=1072 worldHash=aeca9a0ff4fbeb8f pkts=1075/1245580
+[soak] tick=7800 online=12 entities=209 tickUs p50=581 p99=1104 worldHash=6242d19676b180db pkts=1168/1341396
+[soak] tick=8400 online=12 entities=209 tickUs p50=559 p99=1006 worldHash=a918ff84f5041a1f pkts=1248/1437298
+[soak] tick=9000 online=12 entities=209 tickUs p50=590 p99=1050 worldHash=4a52f7b716fa20bd pkts=1312/1532360
+[soak] tick=9600 online=12 entities=210 tickUs p50=558 p99=968 worldHash=70377584bb8f31fc pkts=1376/1627332
+[soak] tick=10200 online=12 entities=209 tickUs p50=563 p99=931 worldHash=aad253ae157180c5 pkts=1432/1721998
+[soak] tick=10800 online=12 entities=209 tickUs p50=572 p99=939 worldHash=ef78389b77267f26 pkts=1499/1817276
+[soak] tick=11400 online=12 entities=210 tickUs p50=567 p99=1036 worldHash=825d6f9e43324876 pkts=1582/1912684
+[soak] tick=12000 online=12 entities=209 tickUs p50=576 p99=1003 worldHash=95d8b0c1a15f9e0e pkts=1673/2008650

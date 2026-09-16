@@ -1,0 +1,63 @@
+{
+ "anims": {
+  "walk": {
+   "frames": 1,
+   "fps": 10,
+   "max_colours": 28
+  },
+  "attack": {
+   "frames": 1,
+   "fps": 12,
+   "max_colours": 31
+  },
+  "cast": {
+   "frames": 1,
+   "fps": 10,
+   "max_colours": 31
+  },
+  "die": {
+   "frames": 1,
+   "fps": 8,
+   "max_colours": 29
+  }
+ },
+ "padded": [
+  "walk/SW <- S",
+  "walk/W <- S",
+  "walk/NW <- E",
+  "walk/N <- E",
+  "walk/NE <- E",
+  "attack/S <- SE",
+  "attack/SW <- SE",
+  "attack/W <- SE",
+  "attack/NW <- E",
+  "attack/N <- E",
+  "attack/NE <- E",
+  "cast/S <- SE",
+  "cast/SW <- SE",
+  "cast/W <- SE",
+  "cast/NW <- E",
+  "cast/N <- E",
+  "cast/NE <- E",
+  "die/SW <- S",
+  "die/W <- S",
+  "die/NW <- E",
+  "die/N <- E",
+  "die/NE <- E"
+ ],
+ "feet_warnings": [
+  "attack/SE/0: lowest body row 37 vs anchorY 42",
+  "attack/S/0: lowest body row 37 vs anchorY 42",
+  "attack/SW/0: lowest body row 37 vs anchorY 42",
+  "attack/W/0: lowest body row 37 vs anchorY 42",
+  "die/SE/0: lowest body row 36 vs anchorY 42"
+ ],
+ "errors": [],
+ "loader_rule_replica": "clean",
+ "sheet_px": [
+  128,
+  384
+ ],
+ "colour_gate": true,
+ "engine_validated": false
+}

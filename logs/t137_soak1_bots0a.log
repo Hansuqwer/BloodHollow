@@ -1,0 +1,28 @@
+[bots] CRYPT bossSeen=0 bossKills=0 curse=0 slam=0
+[bots] SIEGE reg=0 breach=0 crown=0
+[bots] SUMMARY welcomed=24/24 moved=24/24 minDeltas=300 kills=0 pots=0 swings=0 deaths=8 shops=0 anvilTries=0 levelDrops=0 regear=0 maxLevel=1 pkts=600932 bytes=14418828 gates b/g/p/a/r=0/0/0/0/0 mGold=0 mPelts=0 bless=0 mend=0 noSee=0 hurt=0 choir c6=0 c7=0 c8=0
+[bots] t137a__00    kit=1 lvl=1 hp=94/94 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t137a__01    kit=1 lvl=1 hp=94/94 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t137a__02    kit=1 lvl=1 hp=94/94 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t137a__03    kit=1 lvl=1 hp=94/94 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t137a__04    kit=1 lvl=1 hp=94/94 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t137a__05    kit=1 lvl=1 hp=94/94 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t137a__06    kit=1 lvl=1 hp=94/94 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t137a__07    kit=1 lvl=1 hp=94/94 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t137a__08    kit=1 lvl=1 hp=49/94 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t137a__09    kit=1 lvl=1 hp=94/94 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t137a__10    kit=1 lvl=1 hp=94/94 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t137a__11    kit=1 lvl=1 hp=0/94 party=0 deaths=2 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(16,37) killerByLvl=L5:2
+[bots] t137a__12    kit=1 lvl=1 hp=0/94 party=0 deaths=2 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(26,5) killerByLvl=L2:2
+[bots] t137a__13    kit=1 lvl=1 hp=94/94 party=0 deaths=2 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(25,7) killerByLvl=L2:2
+[bots] t137a__14    kit=1 lvl=1 hp=4/94 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t137a__15    kit=1 lvl=1 hp=94/94 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t137a__16    kit=1 lvl=1 hp=94/94 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t137a__17    kit=1 lvl=1 hp=49/94 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t137a__18    kit=1 lvl=1 hp=0/94 party=0 deaths=2 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(28,14) killerByLvl=L2:2
+[bots] t137a__19    kit=1 lvl=1 hp=76/94 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t137a__20    kit=1 lvl=1 hp=94/94 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t137a__21    kit=1 lvl=1 hp=94/94 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t137a__22    kit=1 lvl=1 hp=94/94 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t137a__23    kit=1 lvl=1 hp=69/94 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] OK

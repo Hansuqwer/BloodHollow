@@ -31,4 +31,8 @@ Full prompt = PREFIX + ", " + SUBJECT + ", palette: " + PALETTE + " --neg " + NE
 32×48 (body ≤ 43 px; D2 ruled) · idle1+walk6+attack3+cast4+hurt2+die4+gib3 → 23 cols × 8 rows = 736×384
 
 ## Runs
-_(none yet — one line per generation: date · model or "undisclosed" · seed if known · which dirs · accepted y/n)_
+- 2026-09-15 · black-forest-labs/flux.1-schnell via gen.pollinations.ai · seed auto · m_S · accepted y
+- 2026-09-15 · black-forest-labs/flux.1-schnell via gen.pollinations.ai · seed auto · m_SE · accepted y
+- 2026-09-15 · black-forest-labs/flux.1-schnell via gen.pollinations.ai · seed auto · m_E · accepted y
+- 2026-09-15 · black-forest-labs/flux.1-schnell via gen.pollinations.ai · seed auto · m_attack_f1_S · accepted y
+- 2026-09-15 · black-forest-labs/flux.1-schnell via gen.pollinations.ai · seed auto · m_cast_f2_S · accepted y
