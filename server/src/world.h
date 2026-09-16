@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <deque>
+#include <tuple>
 #include <unordered_map>
 #include <optional>
 #include <string>
@@ -95,6 +96,10 @@ struct Entity {
   sim::Tick firstHurtTick = -1;   // mob TTK probe (balancer, T-031)
   std::uint32_t anvilMercyMask = 0;
   std::int32_t karma = 0;  // moral economy (T-046): >0 = +15% XP, <0 = +15% gold loot  // bit per tier: used/not-used (S9 T-043 persist)
+  // T-130 town war: 0 unsworn, 1 Thornwall, 2 Marrowgate (content/towns.h);
+  // ek = enemy-kill fame (persisted, board-read in Phase O).
+  std::uint8_t townId = 0;
+  std::uint32_t ek = 0;
   std::uint16_t zoneId = 1;        // T-036: which zone this entity lives in
   sim::Tick lastPortalTick = -1000;  // arrival grace against portal ping-pong
 
@@ -176,6 +181,12 @@ class World {
   bool duelForfeit(Entity& e);                            // T-056
   void bumpKarma(Entity& e, std::int32_t delta);          // clamp + crossing line
   static std::uint8_t karmaBandOf(std::int32_t karma);    // 0 lawful 1 neutral 2 chaotic
+  bool oath(Entity& e, std::uint8_t town);  // T-130: L19 one-time town swear
+  // T-130 EK board (session view; the site page reads the DB in Phase O):
+  // (name, ek, town) desc by ek, capped at n, ek > 0 only.
+  std::vector<std::tuple<std::string, std::uint32_t, std::uint8_t>> ekBoard(
+      std::size_t n) const;
+  void ekReadout(Entity& requester);  // T-130: directed top-5 EK lines
   sim::TilePos gallowsTile(std::uint16_t zoneId) const;   // chaotic bindstone
 
   // T-036 zones-in-process (public: also used by test harnesses)

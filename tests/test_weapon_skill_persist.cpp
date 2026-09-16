@@ -66,11 +66,12 @@ TEST_CASE("weapon skill persist: v10 -> v11 migration adds columns with defaults
     nullptr, nullptr, &msg) == SQLITE_OK);
   sqlite3_close(raw);
 
-  // Open via Db::open — should migrate to v11
+  // Open via Db::open — should migrate to latest (v12 as of T-130; v11
+  // columns sword_skill/swing_lands land along the way)
   Db db;
   std::string err;
   REQUIRE(db.open(path, &err));
-  // Check user_version now 11 and columns exist
+  // Check user_version now latest and columns exist
   sqlite3* check = nullptr;
   REQUIRE(sqlite3_open(path.c_str(), &check) == SQLITE_OK);
   sqlite3_stmt* st = nullptr;
@@ -78,7 +79,7 @@ TEST_CASE("weapon skill persist: v10 -> v11 migration adds columns with defaults
   REQUIRE(sqlite3_step(st) == SQLITE_ROW);
   int uv = sqlite3_column_int(st, 0);
   sqlite3_finalize(st);
-  CHECK(uv == 11);
+  CHECK(uv == 12);
 
   bool hasSword = false, hasLands = false;
   REQUIRE(sqlite3_prepare_v2(check, "PRAGMA table_info(characters);", -1, &st, nullptr) == SQLITE_OK);
@@ -114,7 +115,7 @@ TEST_CASE("weapon skill persist: saveProgress + loginOrCreate round-trips skill"
   // Simulate gaining skill: 20 skill, 500 lands
   db.saveProgress(row.id, row.level, row.xp, row.str, row.vit, row.dex,
                   row.statPoints, row.gold, row.invBlob, row.anvilMercy,
-                  row.karma, row.classId, 20, 500);
+                  row.karma, row.classId, 20, 500, row.townId, row.ek);
 
   // Reload via new Db instance
   Db db2;
@@ -127,7 +128,7 @@ TEST_CASE("weapon skill persist: saveProgress + loginOrCreate round-trips skill"
   // Update again: 25 skill, 625 lands
   db2.saveProgress(row2.id, row2.level, row2.xp, row2.str, row2.vit, row2.dex,
                    row2.statPoints, row2.gold, row2.invBlob, row2.anvilMercy,
-                   row2.karma, row2.classId, 25, 625);
+                   row2.karma, row2.classId, 25, 625, row2.townId, row2.ek);
 
   Db db3;
   REQUIRE(db3.open(path, &err));

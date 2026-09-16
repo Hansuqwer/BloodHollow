@@ -832,6 +832,16 @@ while red; scheduler/tint/gating filed as follow-ups. 6 new tests incl.
 paired-worlds ratio. `t128.bwj` re-replays mm=0 (neutrality proof). Devlog
 0090 · card `done/T-129.md`. Next: T-130 EK ledger + L19 oath.
 
+## Done — T-130 (2026-09-15): EK ledger + L19 town oath (H4 night war, 2–3/3)
+
+T-130 CONTENT (no epoch bump, stays 24, schema v12): `/oath` (L19+,
+one-time, journaled kOath) + `towns.h` (Thornwall/Ashen, Marrowgate/Synod)
++ war-kill EK fame instead of stain/wanted (duels + guard-murder excluded)
++ `w`-line journal sidecar (v3 l-line untouched) + `ekBoard`/`gm ek`
+readout (site page = Phase O). 8 new tests; T-118 migration pin updated
+to v12 (expected cascade). `t128.bwj` re-replays mm=0. Devlog 0091 · card
+`done/T-130.md`. Next: Phase S siege battle logic.
+
 
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
