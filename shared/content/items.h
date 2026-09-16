@@ -32,6 +32,17 @@ inline constexpr ItemDef kItems[] = {
     {2201, "Mawsplitter",          0, 22, 0,  0,   600,  1},
     {2103, "Gullet Plate",         1, 0,  13, 0,   700,  1},
     {2202, "Mawfang Shiv",         0, 15, 0,  0,   450,  1},
+    // T-128 trio uniques: Widow 2301/2104/2302, Cantor 2303/2105/2304,
+    // Gravemother 2401/2106/2402.
+    {2301, "Widow's Needle",       0, 20, 0,  0,   900,  1},
+    {2104, "Silkwoven Shroud",     1, 0,  12, 0,   850,  1},
+    {2302, "Red Widow's Kiss",     0, 17, 0,  0,   800,  1},
+    {2303, "Cantor's Quill",       0, 19, 0,  0,   1100, 1},
+    {2105, "Vigil Cope",           1, 0,  12, 0,   1050, 1},
+    {2304, "Vex Nail",             0, 16, 0,  0,   1000, 1},
+    {2401, "Tithehook",            0, 28, 0,  0,   1800, 1},
+    {2106, "Sepulcher Plate",      1, 0,  16, 0,   1700, 1},
+    {2402, "Caulblade",            0, 24, 0,  0,   1600, 1},
     {3001, "Blood Vial",           2, 0,  0,  40,  30,   16},
     {3002, "Smuggled Vial",        2, 0,  0,  55,  45,   16},
     // T-071 night light: torches burn out (timed), the lantern never does
@@ -73,7 +84,9 @@ inline const GearDropDef* findGearDrop(std::uint32_t mobId) {
 // ---- T-127 boss uniques ------------------------------------------------
 // Fixed item + fixed affix + title; elites roll each row independently at
 // chancePct (night rides +25% like all drops, T-062). T-127 seeds Old Maw
-// (1012); T-128..T-130 append Widow (1013) / Cantor (1014) / Gravemother.
+// (1012); T-128 appends Widow (1013) / Cantor (1014) / Gravemother (1009).
+// Slot law: armor rows use 2/4/5/8/10, weapon rows 1/3/6/7/9 (a mismatched
+// fixed affix would be mute text — checked by test_uniques slot pins).
 struct UniqueDropDef {
   std::uint32_t mobId;
   std::uint32_t itemId;
@@ -85,6 +98,18 @@ inline constexpr UniqueDropDef kUniqueDrops[] = {
     {1012, 2201, 7, 4, "Tooth of the Pit"},
     {1012, 2103, 5, 4, "The Maw That Keeps"},
     {1012, 2202, 9, 4, "Tithetaker"},
+    // T-128 Red Widow (1013, mine nest) @4%
+    {1013, 2301, 6, 4, "The Huntress Answers"},
+    {1013, 2104, 10, 4, "Woven From Hunger"},
+    {1013, 2302, 3, 4, "Drink, Dear"},
+    // T-128 Cantor Vex (1014, crypt choir) @4%
+    {1014, 2303, 7, 4, "The Last Verse Burns"},
+    {1014, 2105, 8, 4, "The Choir Keeps Watch"},
+    {1014, 2304, 1, 4, "Keen As Doctrine"},
+    // T-128 Gravemother (1009, L14 boss) @6% (boss judgment call)
+    {1009, 2401, 9, 6, "The Mother Collects"},
+    {1009, 2106, 4, 6, "Born Heavy"},
+    {1009, 2402, 3, 6, "First Blood, Again"},
 };
 inline constexpr std::uint32_t kUniqueDropCount =
     sizeof(kUniqueDrops) / sizeof(kUniqueDrops[0]);
