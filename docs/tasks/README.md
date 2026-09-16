@@ -1001,6 +1001,16 @@ criteria + go/no-go list (`docs/ops/friday-night-readiness.md`). Legs 1–3
 runnable on current stack; leg 4 director survey. Devlog 0106 · card
 `T-145.md` (→ done on merge). Queue head: T-142 wiring implementation.
 
+## Done — T-159 (2026-09-16): loot depth — 4 tiers + 5 slots + 20 affixes
+
+T-159 LOOT (epoch 28→29, wire 241→242): rarity 0..3 rolled 78/17/4.6/0.4 in
+killMob; helm/amulet/ring slots (ItemDef 0..6, +9 rows); affixes 11..20 all
+hooked (Pall +acc/+evd via effEvd, Boneyard +5% crit, Last Rites +8 <20% hp in
+equippedWeaponDmg); 8-field blob; ItemSlot rarity wire (protogen base 202).
+314/314 headless · `logs/t159.bwj` (8×30s, ticks=641 cmds=417 hashes=6,
+replay mm=0) · epoch28 guard exit 4. Deviations + T-159f1 in card.
+Devlog 0109 · card `T-159-loot-depth.md` (→ done on merge). Next: T-154/T-168.
+
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
 | Card | Title | Notes |
