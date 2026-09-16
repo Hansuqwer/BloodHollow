@@ -36,6 +36,7 @@ struct OwnStatsWire {
   std::uint32_t xpNext = 100;
   std::uint8_t statPoints = 0;
   std::uint8_t str = 8, vit = 8, dex = 8;
+  std::uint8_t intg = 0, mag = 0;  // T-160: carried by OwnStats since kits
   std::uint16_t swordSkill = 0;
   std::uint32_t gold = 0;
   std::int32_t karma = 0;
@@ -54,14 +55,41 @@ struct PartyMemberWire {
   std::uint16_t zoneId = 0;
 };
 
+struct SiegeStateWire {
+  std::uint32_t holderPledgeId = 0;
+  std::string holderPledgeName;
+  std::string holderName;
+  std::uint32_t windowEndTick = 0;
+  std::uint32_t battleEndTick = 0;
+  std::uint16_t gateHp0 = 0;
+  std::uint16_t gateHp1 = 0;
+  std::uint16_t heartProgress = 0;
+  std::uint8_t heartAttuned = 0;
+  std::uint32_t crownOwnerId = 0;
+  std::string crownOwnerName;
+  std::uint32_t crownDeadline = 0;
+  std::uint8_t bandCount = 0;
+  std::uint8_t phase = 0;
+  std::uint32_t vaultGold = 0;
+  std::uint32_t crowns = 0;
+};
+
+struct PledgeMemberWire {
+  std::string name;
+  std::uint8_t rank = 0;
+  std::uint16_t level = 1;
+  std::uint8_t online = 0;
+};
+
 struct InvSlotWire {
   std::uint32_t itemId = 0;
   std::uint16_t qty = 0;
   bool equipped = false;
   std::uint8_t aura = 0;  // 0..5 (tint in inventory rows)
   std::uint8_t durability = 100;  // T-058: 0 = dormant
-  std::uint8_t affix = 0;  // T-059: 0 none, 1 whet, 2 ward, 3 leech
+  std::uint8_t affix = 0;  // T-059: 0 none, 1 whet, 2 ward, 3 leech; T-159 adds 11..20
   std::uint8_t refine = 0;  // T-060: 0..3, T-079: to +7 (T-ART-11 glows at 5+)
+  std::uint8_t rarity = 0;  // T-159: 0 common, 1 magic, 2 rare, 3 unique
 };
 
 // One combat pulse (hits, misses, kills) for floaters/flash.
@@ -97,6 +125,8 @@ class NetClient {
   void sendUseItem(std::uint8_t slot);
   void sendToggleEquip(std::uint8_t slot);
   void sendSkill(std::uint8_t skill, std::uint32_t targetId);
+  // T-167 creation answer (pre-world: allowed while needsCreate, not inWorld)
+  void sendCharCreate(std::uint8_t classId, std::uint8_t sex);
   void sendBuy(std::uint32_t itemId, std::uint16_t qty);
   void sendSellJunk();
   // anvil (T-041)
@@ -112,6 +142,7 @@ class NetClient {
   State state = State::kConnecting;
   std::string failReason{};
   bool welcomed = false;
+  bool needsCreate = false;  // T-167: CharCreatePrompt arrived, answer once
   std::uint32_t ownId = 0;
   // trade UI state (best-effort mirror; server chat lines are the truth)
   std::uint32_t tradeWithId = 0;
@@ -131,6 +162,12 @@ class NetClient {
   std::uint32_t partyId = 0;
   std::uint32_t partyLeaderId = 0;
   std::vector<PartyMemberWire> party{};  // T-052 party frame data
+  SiegeStateWire siege{};  // T-151 castle memory
+  std::uint32_t pledgeId = 0;
+  std::string pledgeName;
+  std::uint8_t pledgeEmblem = 0;
+  std::uint32_t pledgeVault = 0;
+  std::vector<PledgeMemberWire> pledgeMembers{};
   std::uint32_t online = 0;
   std::uint32_t serverP99Us = 0;
   int pingMs = -1;

@@ -97,7 +97,10 @@ bool Game::chatTyping() {
   if (IsKeyPressed(KEY_ENTER)) {
     chatFocus_ = false;
     if (!chatBuf_.empty()) {
-      if (net_ != nullptr && net_->state == NetClient::State::kInWorld) {
+      // T-169: intercept /help locally — never send to server
+      if (chatBuf_ == "/help" || chatBuf_ == "help") {
+        showHelp_ = !showHelp_;
+      } else if (net_ != nullptr && net_->state == NetClient::State::kInWorld) {
         net_->sendChat(chatBuf_[0] == '.' ? 0 : 1, chatBuf_.substr(chatBuf_[0] == '.' ? 1 : 0));
       } else {
         chatLog_.push_back(ChatLine{2, "system", "chat needs --server; you're offline."});
@@ -117,6 +120,7 @@ void Game::handleInput() {
   }
   if (IsKeyPressed(KEY_F3)) showGrid_ = !showGrid_;
   if (IsKeyPressed(KEY_F4)) showPath_ = !showPath_;
+  if (IsKeyPressed(KEY_F1)) showHelp_ = !showHelp_;  // T-169
   if (IsKeyPressed(KEY_H)) debugHourOffset_ += 1.0f;
   if (IsKeyPressed(KEY_N)) debugHourOffset_ -= 1.0f;
 
@@ -150,12 +154,25 @@ void Game::handleInput() {
 
 void Game::handleInputOnline() {
   if (chatTyping()) return;
+  // T-167 creation panel (pre-world): 1/2/3 kit, M/F sex, Enter to answer.
+  // Runs BEFORE chat-ENTER so Enter confirms instead of opening chat.
+  if (net_->needsCreate && !net_->welcomed) {
+    if (IsKeyPressed(KEY_ONE)) createClass_ = 1;
+    if (IsKeyPressed(KEY_TWO)) createClass_ = 2;
+    if (IsKeyPressed(KEY_THREE)) createClass_ = 3;
+    if (IsKeyPressed(KEY_M)) createSex_ = 1;
+    if (IsKeyPressed(KEY_F)) createSex_ = 2;
+    if (IsKeyPressed(KEY_ENTER) && createClass_ != 0 && createSex_ != 0)
+      net_->sendCharCreate(createClass_, createSex_);
+    return;
+  }
   if (IsKeyPressed(KEY_ENTER)) {
     chatFocus_ = true;
     return;
   }
   if (IsKeyPressed(KEY_F3)) showGrid_ = !showGrid_;
   if (IsKeyPressed(KEY_F4)) showPath_ = !showPath_;
+  if (IsKeyPressed(KEY_F1)) showHelp_ = !showHelp_;  // T-169
   if (net_->state != NetClient::State::kInWorld) return;
 
   if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
@@ -173,8 +190,8 @@ void Game::handleInputOnline() {
             if (net_->tradeWithId != 0) {
               net_->sendTradeOfferItem(it->second.itemId, 1);  // click offers one
             } else {
-              if (d->slot == 2) net_->sendUseItem(it->first);
-              if (d->slot <= 1) net_->sendToggleEquip(it->first);
+              if (d->slot == 5) net_->sendUseItem(it->first);
+              if (d->slot <= 4) net_->sendToggleEquip(it->first);
             }
           }
         }
@@ -210,10 +227,13 @@ void Game::handleInputOnline() {
       cmdMarkerAt_ = GetTime();
     }
   }
-  if (net_->ownStats.statPoints > 0) {
+  if (net_->ownStats.statPoints > 0 && !showVendor_) {
     if (IsKeyPressed(KEY_F5)) net_->sendStat(0);
     if (IsKeyPressed(KEY_F6)) net_->sendStat(1);
     if (IsKeyPressed(KEY_F7)) net_->sendStat(2);
+    // T-160 five-stat model: F8 INT, F9 MAG (vendor guard: F-keys buy there).
+    if (IsKeyPressed(KEY_F8)) net_->sendStat(3);
+    if (IsKeyPressed(KEY_F9)) net_->sendStat(4);
   }
   if (IsKeyPressed(KEY_I)) showInv_ = !showInv_;
   // ---- trade (T-029): T opens with nearest player; P commits; X cancels. ----
@@ -251,6 +271,9 @@ void Game::handleInputOnline() {
   if (IsKeyPressed(KEY_THREE)) net_->sendSkill(3, chanTarget());
   if (IsKeyPressed(KEY_FOUR)) net_->sendSkill(4, chanTarget());
   if (IsKeyPressed(KEY_FIVE)) net_->sendSkill(5, targetId_);
+  // T-161: 6 = Resurrect at the click-selected fallen (server validates
+  // cultist/L20/range/window/rebate; 7+ reserved for the ch11/12 follow-ups).
+  if (IsKeyPressed(KEY_SIX) && targetId_ != 0) net_->sendSkill(10, targetId_);
   if (IsKeyPressed(KEY_Q)) {
     // quick-sip: first Blood Vial stack
     for (const auto& kv : net_->inventory) {
@@ -911,9 +934,17 @@ void Game::drawRemoteEnt(const RenderEnt& e, bool isOwn) {
         }
       }
       DrawText(label.c_str(), static_cast<int>(w.x) - tw / 2,
-               static_cast<int>(w.y) - 52, 10, nc);
-    }
-  }
+                 static_cast<int>(w.y) - 52, 10, nc);
+      if (isPledgeMemberName(e.snap.name)) {
+        const int bx = static_cast<int>(w.x) + tw / 2 + 4;
+        const int by = static_cast<int>(w.y) - 62;
+        DrawRectangle(bx, by, 10, 10, Color{160, 140, 90, 230});
+        DrawRectangleLines(bx, by, 10, 10, Color{200, 180, 120, 255});
+        char eb[4]; std::snprintf(eb, sizeof eb, "%u", net_->pledgeEmblem % 10);
+        DrawText(eb, bx + 2, by + 1, 10, Color{40, 30, 20, 255});
+      }
+     }
+   }
   if (e.snap.hpMax > 0 && e.snap.hp < e.snap.hpMax) {
     const float frac = static_cast<float>(e.snap.hp) / static_cast<float>(e.snap.hpMax);
     DrawRectangle(static_cast<int>(w.x) - 14, static_cast<int>(w.y) - 46, 28, 3,
@@ -995,6 +1026,7 @@ const char* Game::mapFileFor(std::uint16_t mapId) {
     case 3: return "assets/maps/thornwall_crypt.bhmap";
     case 4: return "assets/maps/bonehowl_mine.bhmap";   // T-ART-08
     case 5: return "assets/maps/drowned_crypt.bhmap";   // T-ART-08
+    case 6: return "assets/maps/weeping_castle.bhmap";  // T-150: Weeping Castle
     default: return "assets/maps/thornwall.bhmap";
   }
 }
@@ -1198,7 +1230,7 @@ void Game::drawStatPanel() const {
   const bool showBuffs = st.blessTicksLeft > 0 || st.ironskinTicksLeft > 0;
   const bool showCurse = st.curseTicksLeft > 0;  // T-070: own row, violet
   const int ph =
-      (st.statPoints > 0 ? 92 : 74) + 40 + (showBuffs ? 12 : 0) + (showCurse ? 12 : 0);
+      (st.statPoints > 0 ? 106 : 88) + 40 + (showBuffs ? 12 : 0) + (showCurse ? 12 : 0);
   DrawRectangle(px, 8, 182, ph, Color{0, 0, 0, 170});
   DrawRectangleLinesEx(Rectangle{static_cast<float>(px), 8, 182,
                                  static_cast<float>(ph)},
@@ -1217,12 +1249,14 @@ void Game::drawStatPanel() const {
   DrawText(buf, px + 8, 40, 10, LIGHTGRAY);
   std::snprintf(buf, sizeof buf, "STR %u  VIT %u  DEX %u", st.str, st.vit, st.dex);
   DrawText(buf, px + 8, 54, 10, LIGHTGRAY);
+  std::snprintf(buf, sizeof buf, "INT %u  MAG %u", st.intg, st.mag);  // T-160
+  DrawText(buf, px + 8, 66, 10, LIGHTGRAY);
   if (st.statPoints > 0) {
-    std::snprintf(buf, sizeof buf, "+%u pts: F5 STR F6 VIT F7 DEX", st.statPoints);
-    DrawText(buf, px + 8, 70, 10, Color{255, 200, 80, 255});
+    std::snprintf(buf, sizeof buf, "+%u pts: F5 STR F6 VIT F7 DEX F8 INT F9 MAG", st.statPoints);
+    DrawText(buf, px + 8, 80, 10, Color{255, 200, 80, 255});
   }
   // T-053/54: mana bar + buff countdowns (kit resource legibility)
-  const int by = (st.statPoints > 0 ? 86 : 70) + 2;
+  const int by = (st.statPoints > 0 ? 100 : 84) + 2;
   const float mfrac = st.mpMax > 0 ? static_cast<float>(st.mp) / static_cast<float>(st.mpMax) : 0.0f;
   DrawRectangle(px + 8, by, 166, 6, Color{20, 20, 30, 255});
   DrawRectangle(px + 8, by, static_cast<int>(166.0f * mfrac), 6, Color{60, 70, 160, 255});
@@ -1285,6 +1319,72 @@ void Game::drawPartyFrame() const {
     DrawRectangle(px + 8, ry + 12, static_cast<int>(134.0f * frac), 5, Color{150, 30, 30, 255});
     ++row;
   }
+}
+
+bool Game::isPledgeMemberName(const std::string& n) const {
+  if (net_ == nullptr || net_->pledgeId == 0 || n.empty()) return false;
+  for (const auto& m : net_->pledgeMembers) if (m.name == n) return true;
+  return false;
+}
+void Game::drawSiegePanel() const {
+  if (net_ == nullptr || !net_->welcomed) return;
+  const auto& s = net_->siege;
+  const int px = 1024 - 190;
+  const int py = 380; // below inventory (774,150 240x220 ends 370) — avoids overlap
+  const int ph = 110;
+  DrawRectangle(px, py, 182, ph, Color{28, 22, 14, 215});
+  DrawRectangleLinesEx(Rectangle{static_cast<float>(px), static_cast<float>(py), 182, static_cast<float>(ph)}, 1.0f, Color{160, 140, 90, 220});
+  DrawText("WEEPING CASTLE", px + 8, py + 6, 10, Color{235, 220, 190, 255});
+  char buf[96];
+  const char* holder = s.holderName.empty() ? "unclaimed" : s.holderName.c_str();
+  std::string hp = s.holderPledgeName.empty() ? std::string(holder) : std::string(holder) + " [" + s.holderPledgeName + "]";
+  std::snprintf(buf, sizeof buf, "castle: %s", hp.c_str());
+  DrawText(buf, px + 8, py + 22, 10, Color{200, 200, 180, 255});
+  std::snprintf(buf, sizeof buf, "vault: %ug (%u crowns)", s.vaultGold, s.crowns);
+  DrawText(buf, px + 8, py + 36, 10, Color{210, 190, 150, 255});
+  const char* phs = s.phase == 4 ? "crowning" : s.phase == 3 ? "attuned" : s.phase == 2 ? "battle" : s.phase == 1 ? "window" : "quiet";
+  std::snprintf(buf, sizeof buf, "battle: %s  bands %u/8", phs, s.bandCount);
+  DrawText(buf, px + 8, py + 50, 10, s.phase >= 2 ? Color{235, 160, 120, 255} : Color{180, 170, 160, 255});
+  std::snprintf(buf, sizeof buf, "gates %u/%u  heart %u/1200%s", s.gateHp0, s.gateHp1, s.heartProgress, s.heartAttuned ? " attuned" : "");
+  DrawText(buf, px + 8, py + 64, 10, Color{180, 200, 190, 255});
+  if (s.crownOwnerId != 0) {
+    std::snprintf(buf, sizeof buf, "crown: %s (%u)", s.crownOwnerName.c_str(), s.crownDeadline);
+    DrawText(buf, px + 8, py + 78, 10, Color{255, 210, 120, 255});
+  } else {
+    std::snprintf(buf, sizeof buf, "window ends %u  battle %u", s.windowEndTick, s.battleEndTick);
+    DrawText(buf, px + 8, py + 78, 10, Color{140, 140, 140, 255});
+  }
+  DrawText("gm siege readout — wire 117", px + 8, py + 92, 10, Color{120, 110, 100, 255});
+}
+void Game::drawPledgePanel() const {
+  if (net_ == nullptr || !net_->welcomed) return;
+  const int px = 1024 - 190;
+  const int py = 500;
+  const int pw = 182;
+  const int rows = static_cast<int>(net_->pledgeMembers.size());
+  const int ph = net_->pledgeId == 0 ? 54 : 42 + std::min(rows, 8) * 14 + 18;
+  DrawRectangle(px, py, pw, ph, Color{28, 22, 14, 215});
+  DrawRectangleLinesEx(Rectangle{static_cast<float>(px), static_cast<float>(py), static_cast<float>(pw), static_cast<float>(ph)}, 1.0f, Color{160, 140, 90, 220});
+  if (net_->pledgeId == 0) {
+    DrawText("OATH: Unsworn.", px + 8, py + 8, 10, Color{200, 200, 190, 255});
+    DrawText("/pledge create <name>", px + 8, py + 22, 10, Color{140, 140, 140, 255});
+    DrawText("at the registrar", px + 8, py + 36, 10, Color{140, 140, 140, 255});
+    return;
+  }
+  char buf[96];
+  std::snprintf(buf, sizeof buf, "%s  emblem %u", net_->pledgeName.c_str(), net_->pledgeEmblem);
+  DrawText(buf, px + 8, py + 6, 10, Color{235, 220, 190, 255});
+  std::snprintf(buf, sizeof buf, "vault %ug  %zu members", net_->pledgeVault, net_->pledgeMembers.size());
+  DrawText(buf, px + 8, py + 20, 10, Color{210, 190, 150, 255});
+  int y = py + 36;
+  const char* rankN[4] = {"", "Initiate", "Bloodsworn", "Liege"};
+  for (size_t i = 0; i < net_->pledgeMembers.size() && i < 8; ++i) {
+    const auto& m = net_->pledgeMembers[i];
+    std::snprintf(buf, sizeof buf, "%s %s L%u%s", m.name.c_str(), rankN[m.rank < 4 ? m.rank : 1], m.level, m.online ? "" : " (off)");
+    DrawText(buf, px + 8, y, 10, m.online ? Color{200, 235, 170, 255} : Color{120, 120, 120, 255});
+    y += 14;
+  }
+  if (rows > 8) DrawText("...", px + 8, y, 10, Color{140, 140, 140, 255});
 }
 
 void Game::drawTradeBanner() const {
@@ -1604,9 +1704,9 @@ void Game::drawHud() const {
                     net_->ownStats.gold);
       DrawText(buf, 240, 62, 10, kCol);
     }
-    DrawText("LMB walk/fight - 1 PowerSwing - Q sip - I bag - T trade (P commit/X cancel) - Enter chat", 16,
+    DrawText("LMB walk/fight - 1 PowerSwing - Q sip - I bag - T trade (P commit/X cancel) - Enter chat - F1 help", 16,
              82, 10, GRAY);
-    DrawText("I inventory - V vendor - Space recenter - F3 grid - ESC quit", 16, 98, 10,
+    DrawText("I inventory - V vendor - Space recenter - F3 grid - F1 help", 16, 98, 10,
              Color{120, 110, 100, 255});
   } else {
     const char* mode = replay_ != nullptr ? "REPLAY" : (rec_ != nullptr ? "RECORDING" : "LIVE");
@@ -1676,12 +1776,123 @@ void Game::render(double /*interpAlpha*/) {
   drawHud();
   drawStatPanel();
   drawPartyFrame();
+  drawSiegePanel();
+  drawPledgePanel();
   drawInventoryPanel();
   drawVendorPanel();
   drawAnvilPanel();
   drawTradeBanner();
   drawDeathOverlay();
+  if (showHelp_) drawHelpPanel();  // T-169: F1 or /help
+  if (net_ != nullptr && net_->needsCreate && !net_->welcomed) drawCreatePanel();  // T-167
   EndDrawing();
+}
+
+// T-167: pre-world creation picker — keyboard only, era parchment, no art
+// dependency beyond text. 1/2/3 kit, M/F sex, Enter answers once.
+void Game::drawCreatePanel() const {
+  const int pw = 420, ph = 210, px = (1024 - pw) / 2, py = 200;
+  DrawRectangle(px, py, pw, ph, Color{28, 22, 14, 235});
+  DrawRectangleLinesEx(Rectangle{static_cast<float>(px), static_cast<float>(py),
+                                 static_cast<float>(pw), static_cast<float>(ph)},
+                       1.0f, Color{160, 140, 90, 220});
+  DrawText("WHO ENTERS THE HOLLOW?", px + 16, py + 12, 12, Color{235, 220, 190, 255});
+  const char* kits[3] = {"1  Ravager      (steel first)",
+                         "2  Gravecaller  (plague and fire)",
+                         "3  Cultist      (mend and rite)"};
+  for (int i = 0; i < 3; ++i) {
+    const bool sel = createClass_ == i + 1;
+    DrawText(kits[i], px + 16, py + 44 + i * 20, 10,
+             sel ? Color{255, 210, 120, 255} : Color{180, 170, 160, 255});
+  }
+  DrawText(createSex_ == 1 ? "> M  male" : "  M  male", px + 16, py + 112, 10,
+           createSex_ == 1 ? Color{255, 210, 120, 255} : Color{180, 170, 160, 255});
+  DrawText(createSex_ == 2 ? "> F  female" : "  F  female", px + 130, py + 112, 10,
+           createSex_ == 2 ? Color{255, 210, 120, 255} : Color{180, 170, 160, 255});
+  const bool ready = createClass_ != 0 && createSex_ != 0;
+  DrawText(ready ? "Enter  to step through the gate" : "1/2/3 + M/F, then Enter",
+           px + 16, py + 150, 10,
+           ready ? Color{200, 235, 170, 255} : Color{140, 140, 140, 255});
+  DrawText("one soul per account for alpha (T-167)", px + 16, py + 172, 10,
+           Color{120, 110, 100, 255});
+}
+
+// T-169: in-client discoverability — F1 or /help toggles this panel.
+void Game::drawHelpPanel() const {
+  const int px = 200, py = 80, pw = 624, ph = 608;
+  DrawRectangle(px, py, pw, ph, Color{12, 10, 8, 220});
+  DrawRectangleLinesEx(Rectangle{(float)px, (float)py, (float)pw, (float)ph},
+                       1.0f, Color{180, 150, 90, 220});
+  int y = py + 10;
+  auto line = [&](const char* txt, Color c) {
+    DrawText(txt, px + 12, y, 10, c);
+    y += 14;
+  };
+  auto header = [&](const char* txt) {
+    DrawText(txt, px + 12, y, 11, Color{220, 180, 120, 255});
+    y += 16;
+  };
+  auto blank = [&]() { y += 6; };
+
+  header("BLOODHOLLOW — COMMAND REFERENCE");
+  line("(close: F1 or type /help again)", Color{100, 90, 80, 255});
+  blank();
+
+  header("COMBAT / MOVEMENT");
+  line("LMB click    walk / attack", GRAY);
+  line("WASD         instant step", GRAY);
+  line("1-5          hotbar skills (6 = Resurrect @selected)", GRAY);
+  line("Q            sip potion", GRAY);
+  line("F5/F6/F7     +STR/+VIT/+DEX (stat point)", GRAY);
+  line("F8/F9        +INT/+MAG (stat point)", GRAY);
+  line("F            open anvil (near anvil NPC)", GRAY);
+  blank();
+
+  header("CHAT / SOCIAL");
+  line("Enter        open chat", GRAY);
+  line("/invite      invite to party", GRAY);
+  line("/accept      accept party invite", GRAY);
+  line("/leave       leave party", GRAY);
+  line("/kick <name> kick from party", GRAY);
+  line("/duel <name> consent duel", GRAY);
+  line("/forfeit     end duel", GRAY);
+  line("/confess     pay gold to repent (clear karma)", GRAY);
+  blank();
+
+  header("PROGRESSION / CRAFT");
+  line("/kit <name>  choose class (ravager/gravecaller/cultist)", GRAY);
+  line("/refine <slot> upgrade gear at anvil", GRAY);
+  line("/repair      repair all equipped gear", GRAY);
+  line("/mine        harvest ore (near node, pick equipped)", GRAY);
+  blank();
+
+  header("PLEDGE / SIEGE");
+  line("/pledge      create bloodpledge (L>=10, 10k gold)", GRAY);
+  line("/oath        swear town loyalty (L19+)", GRAY);
+  line("/siege-reg   register for siege", GRAY);
+  line("/breach      attack siege gate", GRAY);
+  line("/crown       channel the throne (crown phase)", GRAY);
+  blank();
+
+  header("VENDOR / TRADE");
+  line("I            inventory", GRAY);
+  line("V            vendor (near NPC)", GRAY);
+  line("T            trade offer (click player)", GRAY);
+  line("P            commit trade", GRAY);
+  line("X            cancel trade", GRAY);
+  line("G            sell junk (near NPC)", GRAY);
+  line("F1-F12       buy from vendor slot", GRAY);
+  blank();
+
+  header("SYSTEM");
+  line("Space        recenter camera", GRAY);
+  line("F3           toggle grid", GRAY);
+  line("F4           toggle path overlay", GRAY);
+  line("H/N          shift hour (debug)", GRAY);
+  line("ESC          quit", GRAY);
+  blank();
+
+  line("Type /help in chat or press F1 to toggle this panel.", Color{140, 130, 120, 255});
 }
 
 }  // namespace bh

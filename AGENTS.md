@@ -84,6 +84,10 @@ redesign.
 - Journal round-trip: `bh_server --record-world` a bot session, then
   `--replay-world` it → `mismatches=0`; when sim semantics changed under old
   journals, bump `kJournalEpoch` and commit a fresh gate leg (see `logs/`).
+  Never stage a leg with `--bless` (T-155: it breaks replay determinism).
+- Headless is a first-class gate (T-154): `cmake --preset headless &&
+  ctest --preset headless` must be green with no X11/GL packages; raylib-gated
+  test TUs stay excluded without raylib — never weaken a pin to fit headless.
 - Docs updated; task card moved to `docs/tasks/done/`.
 
 ## What you must NOT do

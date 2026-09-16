@@ -81,6 +81,24 @@ TEST_CASE("protogen: generated messages roundtrip") {
     CHECK(out.glowTier == 2u);
     CHECK(out.light == 0u);  // neighbours default, not clobbered
   }
+  SUBCASE("ItemSlot carries rarity (T-159)") {
+    ItemSlot in;
+    in.slot = 3;
+    in.itemId = 2502;
+    in.qty = 1;
+    in.equipped = 1;
+    in.affix = 16;
+    in.refine = 2;
+    in.rarity = 2;
+    const auto bytes = pack(in);
+    const auto pv = view(bytes.data(), bytes.size());
+    REQUIRE(pv.ok);
+    ItemSlot out;
+    REQUIRE(out.deserialize(pv.body));
+    CHECK(out.itemId == 2502u);
+    CHECK(out.affix == 16u);
+    CHECK(out.rarity == 2u);
+  }
 }
 
 TEST_CASE("protogen: every truncated prefix fails to deserialize") {

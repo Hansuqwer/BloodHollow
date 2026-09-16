@@ -1001,6 +1001,91 @@ criteria + go/no-go list (`docs/ops/friday-night-readiness.md`). Legs 1–3
 runnable on current stack; leg 4 director survey. Devlog 0106 · card
 `T-145.md` (→ done on merge). Queue head: T-142 wiring implementation.
 
+## Done — T-159 (2026-09-16): loot depth — 4 tiers + 5 slots + 20 affixes
+
+T-159 LOOT (epoch 28→29, wire 241→242): rarity 0..3 rolled 78/17/4.6/0.4 in
+killMob; helm/amulet/ring slots (ItemDef 0..6, +9 rows); affixes 11..20 all
+hooked (Pall +acc/+evd via effEvd, Boneyard +5% crit, Last Rites +8 <20% hp in
+equippedWeaponDmg); 8-field blob; ItemSlot rarity wire (protogen base 202).
+314/314 headless · `logs/t159.bwj` (8×30s, ticks=641 cmds=417 hashes=6,
+replay mm=0) · epoch28 guard exit 4. Deviations + T-159f1 in card.
+Devlog 0109 · card `T-159-loot-depth.md` (→ done on merge). Next: T-154/T-168.
+
+## Done — T-154/T-168 (2026-09-16): headless gate + one build-dir law
+T-154 core (raylib-gated test TUs) already in tree — verified headless
+314/314, not redone. Shipped: 9 legs honour `BH_BUILD_DIR` (default
+`build/linux-gcc` unchanged); `--out` on 4 mapgens (byte-identical diffs);
+CI mapgen gate 1/6→6/6 + `headless` job (no X11) + t159 replay guard;
+`tools/clean_clone_check.sh` → PASS on fresh clone. Caught: unquoted `:`
+broke ci.yml (fixed, yaml-parsed). Devlog 0110 · card
+`T-154-headless-build-law.md` (→ done on merge). Next: T-156 T-ART-12..15.
+
+## Audit wave T-150..T-169 (2026-09-16 playable-audit; drafts in PR #53 / commit a1bd867)
+
+Shipped → `done/`: T-150 (zone6 client map), T-151 (siege/pledge wire+HUD),
+T-152 (GM allowlist+/ban/announce), T-153 (argon2id, ADR-0012),
+T-154/T-168 (headless gate + build-dir law), T-155 (--bless guard),
+T-157 verdicts + F3(a) (M4 FAIL, cause + attune gap carded),
+T-158 (GDD truth-up, ADR-0013/14), T-159 (loot depth), T-169 (/help+F1),
+T-165-Wave0, wave-2 (creation/five-stat/Resurrect/roster/war/bounty,
+epoch 30). Open: T-156 T-ART-12..15 · T-157-F2 bands · T-157-F3 attune
+(director call) · T-159f1 loot follow-ups · T-161b kit spine part 2 ·
+T-164 night light · T-165 remainder (director merges).
+Human-only T-146..T-149 stay director-owned.
+
+## Done — T-158 (2026-09-16): GDD law truth-up + ADRs (docs-only)
+
+T-158 TRUTH-UP: 7 deviation rows all adopt-shipped (ADR-0013 enhancement/
+economy, ADR-0014 siege/moon + change-control); GDD §6/§7/§8/§9 amended;
+README epoch-18/t107/Phase-4 lines → epoch 29/t159/wave-2; AGENTS.md DoD
++--bless ban +headless gate; T-138..T-145 → done/, stale opens T-104/T-112/
+T-142 removed. No code/wire/epoch. Devlog 0111 · card `done/T-158.md`.
+
+## Done — T-157 (2026-09-16): evidence refresh — M4 verdict FAIL, cause found, fixes carded
+
+`m4e29` (12v6 × 750 s @ epoch 29, `logs/t137_m4e29.bwj` force-added): flips 0
+→ M4 FAIL; p99 3.0 ms PASS; replay 15042/2155/150 mm=0 PASS. Root cause:
+`[gm-denied] tick=1494` — T-152's allowlist denied bot0's single-shot horn,
+battle never started (drill-vs-tree, not a sim bug). Open: `T-157-F1`
+(horn: BH_GM_NAMES + retry + abort-fast, blocker), `T-157-F2` (7 fragmented
+bands, quality). Readiness doc → epoch 29. F1 re-run owes re-verdict; M1 soak
++ M2/M3 scheduled. Devlog 0112 · card `done/T-157.md`.
+
+## Done — T-157 re-verdict (2026-09-16): horn fixed, gates 2/2, flips 0
+
+F1(a) landed in drill; `m4e29b`: battle joined (12 bands), both gates ~tick
+5400, attuned 0, flips 0 → M4 still FAIL, gap now contest-side (60 s window
+never opened vs 6 holders). p99 2.8 ms PASS, replay mm=0 PASS (leg kept).
+Open: `T-157-F3` (attune levers, recommend 16v6/900 s first). Devlog 0113.
+
+## Done — T-157 F3(a) (2026-09-16): 16v6 tried, attune still denied
+
+`m4f3a` (16v6 × 900 s): battle 1, gates 2/2, attuned 0, flips 0 → M4 still
+FAIL. p99 4.8 ms PASS, replay mm=0 PASS (leg kept). (a) exhausted — sim
+constants unchanged since epoch-25 3/3, smells structural. `T-157-F3` now a
+director call: (b) tune attune law or (c) accept gate shape. Devlog 0114.
+
+## Done — Wave-2 epoch 30 (2026-09-16): creation, rebate, roster, war, bounty
+
+Six cards, one bump (epoch 29→30, wire 242→244, schema v15): T-167 creation
+(prompt/panel/CharCreate, bots answer, 8/8 live), T-160 five-stat (ADR-0015,
+F8/F9), T-161 Resurrect rebate (ch10, deviation recorded), T-162 roster +
+night premium (11 rows, D9 rename, validate 0/6), T-163 field-war + /ek,
+T-166 bounty persistence (y-sidecar, hash widened). 325/325 (11 new) ·
+`logs/wave2.bwj` replay mm=0 + epoch-29 guard exit 4 · CI leg swapped. Gaps:
+T-161b, T-159f1, patrol red-name tint, live Resurrect staging. Client compiles
+via CI matrix. Devlog 0115 · card `done/T-WAVE2.md`. Open wave-2 follow-ups:
+T-161b, T-159f1.
+
+## Done — T-153 (2026-09-16): argon2id password hashing (schema v16)
+
+Vendored argon2-20190702 (pinned hash, `bh_argon2`), m=19MiB/t=2/p=1:
+hash 47 ms / verify 44 ms measured. Stub rows rehash silently on login
+(proven incl. second-login-uses-argon); garbage refuses reason-1, no crash;
+new accounts hash at birth. Single-threaded tick impact stated + bounded.
+Runbook §7 wave-1 `--no-register` default. 5 new tests, suite 330/330.
+Devlog 0116 · card `done/T-153.md` · ADR-0012.
+
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
 | Card | Title | Notes |

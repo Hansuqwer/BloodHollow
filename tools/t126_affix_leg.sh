@@ -15,7 +15,8 @@ rm -f logs/t126.bwj logs/t126_server.log logs/t126_bots.log
 mkdir -p logs
 # NOTE (T-126): older *_leg.sh scripts assume ./build/<target>; the
 # linux-gcc preset nests binaries under build/linux-gcc/.
-BUILD_DIR=build/linux-gcc
+# T-154/T-168 one-build-dir law: BH_BUILD_DIR overrides (headless CI).
+BUILD_DIR=${BH_BUILD_DIR:-build/linux-gcc}
 
 echo "[t126] server up, recording epoch 22..."
 ./$BUILD_DIR/server/bh_server --db $DB --port $PORT --soak-secs $((SECS + 20)) --record-world logs/t126.bwj > logs/t126_server.log 2>&1 &

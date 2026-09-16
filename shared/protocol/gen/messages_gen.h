@@ -11,7 +11,11 @@
 
 namespace bh::proto {
 
-inline constexpr std::uint16_t kProtocolVersion = 237;
+inline constexpr std::uint16_t kProtocolVersion = 241;
+// T-142: base 201 (was 200): EntitySpawn/Delta gained classId+sex,
+// an incompatible change the count-derived version would not move.
+// Field additions MUST bump the base again; message additions bump
+// via the count. (Follow-up: derive from a schema hash.)
 
 inline constexpr std::uint16_t kIdHello = 1;
 inline constexpr std::uint16_t kIdInputPath = 3;
@@ -50,6 +54,9 @@ inline constexpr std::uint16_t kIdInventoryReset = 111;
 inline constexpr std::uint16_t kIdItemSlot = 112;
 inline constexpr std::uint16_t kIdPartyReset = 115;
 inline constexpr std::uint16_t kIdPartyMember = 116;
+inline constexpr std::uint16_t kIdSiegeState = 117;
+inline constexpr std::uint16_t kIdPledgeRoster = 118;
+inline constexpr std::uint16_t kIdPledgeMember = 119;
 
 struct Hello {
   static constexpr std::uint16_t kId = kIdHello;
@@ -269,6 +276,10 @@ struct EntitySpawn {
   std::uint8_t level = 0;
   std::string name;
   std::uint8_t karmaBand = 0;
+  std::uint8_t light = 0;
+  std::uint8_t glowTier = 0;
+  std::uint8_t classId = 0;
+  std::uint8_t sex = 0;
 
   void serialize(Writer& w) const;
   bool deserialize(Reader r);
@@ -282,6 +293,10 @@ struct EntityDelta {
   std::uint8_t dir = 0;
   std::uint8_t moving = 0;
   std::uint32_t hp = 0;
+  std::uint8_t light = 0;
+  std::uint8_t glowTier = 0;
+  std::uint8_t classId = 0;
+  std::uint8_t sex = 0;
 
   void serialize(Writer& w) const;
   bool deserialize(Reader r);
@@ -361,6 +376,7 @@ struct OwnStats {
   std::uint32_t mpMax = 0;
   std::uint16_t blessTicksLeft = 0;
   std::uint16_t ironskinTicksLeft = 0;
+  std::uint16_t curseTicksLeft = 0;
 
   void serialize(Writer& w) const;
   bool deserialize(Reader r);
@@ -407,6 +423,52 @@ struct PartyMember {
   std::uint32_t hp = 0;
   std::uint32_t hpMax = 0;
   std::uint16_t zoneId = 0;
+
+  void serialize(Writer& w) const;
+  bool deserialize(Reader r);
+};
+
+struct SiegeState {
+  static constexpr std::uint16_t kId = kIdSiegeState;
+  std::uint32_t holderPledgeId = 0;
+  std::string holderPledgeName;
+  std::string holderName;
+  std::uint32_t windowEndTick = 0;
+  std::uint32_t battleEndTick = 0;
+  std::uint16_t gateHp0 = 0;
+  std::uint16_t gateHp1 = 0;
+  std::uint16_t heartProgress = 0;
+  std::uint8_t heartAttuned = 0;
+  std::uint32_t crownOwnerId = 0;
+  std::string crownOwnerName;
+  std::uint32_t crownDeadline = 0;
+  std::uint8_t bandCount = 0;
+  std::uint8_t phase = 0;
+  std::uint32_t vaultGold = 0;
+  std::uint32_t crowns = 0;
+
+  void serialize(Writer& w) const;
+  bool deserialize(Reader r);
+};
+
+struct PledgeRoster {
+  static constexpr std::uint16_t kId = kIdPledgeRoster;
+  std::uint32_t pledgeId = 0;
+  std::string name;
+  std::uint8_t emblem = 0;
+  std::uint8_t count = 0;
+  std::uint32_t vaultGold = 0;
+
+  void serialize(Writer& w) const;
+  bool deserialize(Reader r);
+};
+
+struct PledgeMember {
+  static constexpr std::uint16_t kId = kIdPledgeMember;
+  std::string name;
+  std::uint8_t rank = 0;
+  std::uint16_t level = 0;
+  std::uint8_t online = 0;
 
   void serialize(Writer& w) const;
   bool deserialize(Reader r);

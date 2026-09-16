@@ -3,6 +3,7 @@
 // 20 Hz fixed tick. Protocol v0 (shared/protocol/messages.md).
 // Sprint 5 (P2): stats/XP/levels, melee resolve, mobs from map spawners.
 #include <algorithm>
+#include <cctype>
 #include <map>
 #include <chrono>
 #include <cinttypes>
@@ -11,6 +12,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <deque>
+#include <filesystem>
 #include <optional>
 #include <set>
 #include <string>
@@ -23,6 +25,7 @@
 #include "persist.h"
 #include "loginlimit.h"
 #include "protocol/messages_gen.h"
+#include "content/wirekind.h"
 #include "sim/combat.h"
 #include "sim/clock.h"
 #include "sim/tick.h"
@@ -41,6 +44,7 @@ struct Session {
   ENetPeer* peer = nullptr;
   bool authed = false;
   bool inWorld = false;
+  bool awaitingCreate = false;  // T-167: fresh row held at creation panel
   std::string user{};
   std::int64_t charRowId = 0;
   std::uint32_t entityId = 0;
@@ -78,6 +82,10 @@ struct Server {
   // loginlimit.h (pure logic, unit-tested); these are its wiring points.
   LoginLimiter loginLimiter{};
   bool allowRegister = true;
+  // T-152 GM authority
+  std::unordered_set<std::string> gmAllow{};  // lowercased names from BH_GM_NAMES + gm_accounts
+  std::string gmLogPath = "logs/gm.log";
+  std::string banLogPath = "logs/bans.log";
 };
 
 // Monotonic milliseconds for the login limiter (never wall-clock: NTP steps
@@ -90,6 +98,63 @@ std::int64_t steadyNowMs() {
 
 void pushOwnStats(Server& s, Session& sess);
 void pushInventory(Server& s, Session& sess);
+void pushSiegeState(Server& s, Session& sess);
+void pushPledgeRoster(Server& s, Session& sess);
+
+// ---- T-152 GM helpers ----------------------------------------------------
+inline std::string gmToLower(const std::string& in) {
+  std::string r = in;
+  std::transform(r.begin(), r.end(), r.begin(),
+                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  return r;
+}
+inline bool gmIsOperator(const Server& s, const std::string& name) {
+  return s.gmAllow.find(gmToLower(name)) != s.gmAllow.end();
+}
+inline void gmAppendLog(const std::string& path, const std::string& line) {
+  std::error_code ec;
+  auto parent = std::filesystem::path(path).parent_path();
+  if (!parent.empty()) std::filesystem::create_directories(parent, ec);
+  if (FILE* f = std::fopen(path.c_str(), "a")) {
+    std::fputs(line.c_str(), f);
+    std::fclose(f);
+  }
+}
+inline void gmLoadAllowlist(Server& s) {
+  std::unordered_set<std::string> allow;
+  if (const char* env = std::getenv("BH_GM_NAMES")) {
+    std::string v(env);
+    size_t pos = 0;
+    while (pos < v.size()) {
+      size_t comma = v.find(',', pos);
+      std::string tok = v.substr(pos, comma == std::string::npos ? std::string::npos
+                                                                  : comma - pos);
+      // trim
+      size_t a = tok.find_first_not_of(" \t\r\n");
+      size_t b = tok.find_last_not_of(" \t\r\n");
+      if (a != std::string::npos && b != std::string::npos)
+        tok = tok.substr(a, b - a + 1);
+      else
+        tok.clear();
+      if (!tok.empty()) allow.insert(gmToLower(tok));
+      if (comma == std::string::npos) break;
+      pos = comma + 1;
+    }
+  }
+  std::vector<std::string> fromDb;
+  std::string err;
+  if (s.db.loadGmAccounts(&fromDb, &err)) {
+    for (auto& n : fromDb) allow.insert(gmToLower(n));
+  }
+  s.gmAllow = std::move(allow);
+  std::printf("[gm] allowlist %zu entries", s.gmAllow.size());
+  if (!s.gmAllow.empty()) {
+    std::printf(":");
+    for (auto& n : s.gmAllow) std::printf(" %s", n.c_str());
+  }
+  std::printf("\n");
+  std::fflush(stdout);
+}
 
 void send(ENetPeer* peer, const std::vector<std::uint8_t>& bytes, Server& s) {
   ENetPacket* p = enet_packet_create(bytes.data(), bytes.size(), ENET_PACKET_FLAG_RELIABLE);
@@ -123,8 +188,15 @@ void sendMsg(ENetPeer* peer, const Msg& m, Server& s) {
 // Castle Steward map 6) merged under epoch-26 journals shifts the entity
 // set (T-068 precedent) — t138/t140 re-replay 12-14/14 mismatches: 27.
 // Replay refuses non-matching epoch journals instead of lying with them.
-constexpr int kJournalEpoch = 27;  // merge repair. Fresh gate leg:
-// logs/t146.bwj (5 wander bots x 10 s, replay mm=0)
+// T-151: siege+pledge wire + HUD (messages 117..119, no sim change but wire
+// incompatible — kProtocolVersion 237→241): epoch 28, fresh leg epoch28.bwj.
+// T-159: loot depth (rarity roll + 5 slots + affixes 11..20 hooks + ItemSlot
+// rarity wire 241→242): sim + RNG-stream change → epoch 29.
+// Wave-2 (T-161/T-162/T-163/T-166/T-167): resurrect stamps + night premium +
+// warband/EK law + bounty persistence + creation/sex + roster composition
+// shift (entity-set, T-068 precedent) + worldHash widening → epoch 30.
+// Wire 242→244 (CharCreate 25 + CharCreatePrompt 120 via message count).
+constexpr int kJournalEpoch = 30;  // Wave-2. Fresh gate leg: logs/wave2.bwj (8 fighters x60s + relog, replay mm=0)
 
 // ---- world journal record helpers (M2) ------------------------------------
 void journalTickHash(Server& s) {
@@ -219,6 +291,16 @@ void journalLogin(Server& s, const Session& sess, const CharacterRow& row,
                static_cast<long long>(s.tick + 1), idx,
                static_cast<unsigned>(row.pledgeId > 0 ? row.pledgeId : 0),
                static_cast<unsigned>(row.pledgeRank));
+  // Wave-2 identity sidecar (same precedent — absent in pre-30 journals):
+  // sex + rebate stamps + bounty mark. Replay restores them in applyLogin.
+  std::fprintf(s.journal, "y %lld %u %u %lld %lld %lld %u %u\n",
+               static_cast<long long>(s.tick + 1), idx,
+               static_cast<unsigned>(row.sex),
+               static_cast<long long>(row.lastDeathTick),
+               static_cast<long long>(row.lastDebtXp),
+               static_cast<long long>(row.lastResTick),
+               static_cast<unsigned>(row.bountyMob),
+               static_cast<unsigned>(row.bountyCycle));
 }
 
 void journalDisconnect(Server& s, const Session& sess) {
@@ -295,7 +377,7 @@ void dropSession(Server& s, Session& sess) {
       const sim::TilePos p = e->walker.tile();
       s.db.savePosition(e->charRowId, e->zoneId, p.x, p.y);  // T-039: zone travels
       {
-        // T-049x: canonical 7-field serializer shared with the probes
+        // T-049x: canonical 8-field serializer shared with the probes
         const std::string blob = canonicalInvBlob(e->inv);
         s.db.saveProgress(e->charRowId, e->level, e->xp, e->str, e->vit, e->dex,
                           e->statPoints, static_cast<int>(e->gold), blob,
@@ -305,7 +387,13 @@ void dropSession(Server& s, Session& sess) {
                           static_cast<int>(e->townId),
                           static_cast<int>(e->ek),
                           static_cast<int>(e->pledgeId),
-                          static_cast<int>(e->pledgeRank));
+                          static_cast<int>(e->pledgeRank),
+                          static_cast<int>(e->sex),
+                          static_cast<std::int64_t>(e->lastDeathTick),
+                          static_cast<std::int64_t>(e->lastDebtXp),
+                          static_cast<std::int64_t>(e->lastResTick),
+                          static_cast<int>(e->bountyMobId),
+                          static_cast<int>(e->bountyCycle));
       }
       // T-122: mirror registry changes (create/invite/leave/kick/disband)
       // into SQLite. Posture matches gold: unsaved changes die with a kill.
@@ -320,8 +408,111 @@ void dropSession(Server& s, Session& sess) {
   s.sessions.erase(sess.peer);
 }
 
-void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
-  using namespace proto;
+// T-167 wave-2: shared spawn-from-row (Hello for returning rows, CharCreate
+// for fresh rows after the creation panel). Spawns, journals, restores all
+// persisted progression incl. v15 identity/rebate/bounty, then Welcomes.
+static void enterWorldFromRow(Server& s, Session& sess, CharacterRow& row) {
+  sess.inWorld = true;
+  sess.user = row.name;
+  sess.charRowId = row.id;
+  std::optional<sim::TilePos> at;
+  if (row.x != 0 || row.y != 0) at = sim::TilePos{row.x, row.y};
+  const std::uint16_t loginZone =
+      static_cast<std::uint16_t>(row.mapId > 0 ? row.mapId : 1);
+  Entity& e = s.world.spawn(row.name, row.id, at, loginZone,
+                            static_cast<std::uint8_t>(row.classId),
+                            static_cast<std::uint8_t>(row.sex));
+  sess.entityId = e.id;
+  journalLogin(s, sess, row, e);
+  Entity* pe = s.world.find(e.id);
+  pe->level = static_cast<std::uint8_t>(row.level < 1 ? 1 : (row.level > 25 ? 25 : row.level));
+  pe->xp = static_cast<std::uint32_t>(row.xp < 0 ? 0 : row.xp);
+  pe->str = static_cast<std::uint8_t>(row.str);
+  pe->vit = static_cast<std::uint8_t>(row.vit);
+  pe->dex = static_cast<std::uint8_t>(row.dex);
+  pe->statPoints = static_cast<std::uint8_t>(row.statPoints);
+  pe->gold = static_cast<std::uint32_t>(row.gold < 0 ? 0 : row.gold);
+  pe->hpMax = sim::playerHpMax(pe->level, pe->vit);
+  pe->hp = pe->hpMax;
+  if (!row.invBlob.empty()) parseInvBlob(row.invBlob, pe->inv);
+  pe->anvilMercyMask = static_cast<std::uint32_t>(row.anvilMercy);
+  pe->karma = row.karma;
+  pe->swordSkill = static_cast<std::uint8_t>(row.swordSkill < 0 ? 0 : (row.swordSkill > 100 ? 100 : row.swordSkill));
+  pe->swingLands = static_cast<std::uint32_t>(row.swingLands < 0 ? 0 : row.swingLands);
+  if (pe->swingLands > 0 && pe->swordSkill == 0) {
+    pe->swordSkill = static_cast<std::uint8_t>(pe->swingLands / 25u);
+  }
+  pe->townId = static_cast<std::uint8_t>(row.townId < 0 ? 0 : (row.townId > 2 ? 0 : row.townId));
+  pe->ek = static_cast<std::uint32_t>(row.ek < 0 ? 0 : row.ek);
+  pe->pledgeId = static_cast<std::uint32_t>(row.pledgeId < 0 ? 0 : row.pledgeId);
+  pe->pledgeRank = static_cast<std::uint8_t>(row.pledgeRank);
+  // wave-2 v15: identity + rebate stamps + bounty mark (clamped, era-safe)
+  pe->sex = static_cast<std::uint8_t>(row.sex < 1 ? 0 : (row.sex > 2 ? 0 : row.sex));
+  pe->lastDeathTick = static_cast<sim::Tick>(row.lastDeathTick);
+  pe->lastDebtXp = static_cast<std::uint32_t>(row.lastDebtXp < 0 ? 0 : row.lastDebtXp);
+  pe->lastResTick = static_cast<sim::Tick>(row.lastResTick);
+  pe->bountyMobId = static_cast<std::uint32_t>(row.bountyMob < 0 ? 0 : row.bountyMob);
+  pe->bountyCycle = static_cast<std::uint32_t>(row.bountyCycle < 0 ? 0 : row.bountyCycle);
+  const auto bit = s.bless.find(row.name);  if (bit != s.bless.end()) {
+    // parse "id:qty,id:qty"
+    size_t bpos = 0;
+    while (bpos < bit->second.size()) {
+      const size_t bend = bit->second.find(',', bpos);
+      const std::string pr = bit->second.substr(
+          bpos, bend == std::string::npos ? std::string::npos : bend - bpos);
+      bpos = (bend == std::string::npos) ? bit->second.size() : bend + 1;
+      const size_t colon = pr.find(':');
+      if (colon == std::string::npos) continue;
+      if (pr.substr(0, colon) == "skill") {
+        const std::uint32_t sk =
+            static_cast<std::uint32_t>(std::stoul(pr.substr(colon + 1)));
+        // combat derives swordSkill from swingLands/kSkillLandsPerPoint: seed the counter
+        pe->swingLands = sk * 20u;
+        pe->swordSkill = sk;
+        continue;
+      }
+      if (pr.substr(0, colon) == "gold") {
+        pe->gold = static_cast<std::uint32_t>(std::stoul(pr.substr(colon + 1)));
+        continue;
+      }
+      s.world.debugGive(*pe,
+                        static_cast<std::uint32_t>(std::stoul(pr.substr(0, colon))),
+                        static_cast<std::uint16_t>(std::stoul(pr.substr(colon + 1))));
+    }
+    std::printf("[bless] %s <- %s (skill now %u, gold %u)\n", row.name.c_str(),
+                bit->second.c_str(), static_cast<unsigned>(pe->swordSkill),
+                static_cast<unsigned>(pe->gold));
+    for (const auto& sl : pe->inv)
+      std::printf("[bless]   inv %u:%u eq=%u aura=%u\n", sl.itemId, sl.qty,
+                  sl.equipped ? 1u : 0u, static_cast<unsigned>(sl.aura));
+    if (s.journal != nullptr) {
+      std::fprintf(s.journal, "b %lld %s %s\n",
+                   static_cast<long long>(s.tick + 1), row.name.c_str(),
+                   bit->second.c_str());
+    }
+  }
+  // T-049x probe: post-application login fingerprint (pairs with
+  // [replay-login] — the relog-launderer canary).
+  if (std::getenv("BH_DUMP_ENTS") != nullptr) {
+    std::fprintf(stderr,
+                 "[live-login] name=%s lvl=%u xp=%u gold=%u hp=%u/%u "
+                 "skill=%u mercy=%u karma=%d inv=%s\n",
+                 row.name.c_str(), static_cast<unsigned>(pe->level), pe->xp,
+                 pe->gold, pe->hp, pe->hpMax,
+                 static_cast<unsigned>(pe->swordSkill), pe->anvilMercyMask,
+                 pe->karma, canonicalInvBlob(pe->inv).c_str());
+  }
+  proto::Welcome w;
+  w.entityId = e.id;
+  w.mapId = loginZone;
+  w.x = e.walker.x;
+  w.y = e.walker.y;
+  w.tick = static_cast<std::uint32_t>(s.tick % 0xFFFFFFFFu);
+  w.hourCenti = static_cast<std::uint32_t>(sim::hourAt(s.tick) * 100.0f);
+  sendMsg(sess.peer, w, s);
+}
+
+void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {  using namespace proto;
   switch (pv.id) {
     case kIdHello: {
       Hello h;
@@ -336,7 +527,7 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
       }
       // T-109: throttle + registration gate BEFORE any DB work. Reason codes:
       // 5 = rate-limited / bad-credentials lockout, 6 = registration disabled.
-      // (1=bad credentials, 2=invalid name, 3=db error, 4=protocol mismatch.)
+      // (1=bad credentials, 2=invalid name, 3=db error, 4=protocol mismatch, 7=banned.)
       const std::uint32_t ip = sess.peer->address.host;
       const std::int64_t nowMs = steadyNowMs();
       if (s.loginLimiter.lockedOut(ip, nowMs) ||
@@ -346,6 +537,44 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
         r.reason = 5;
         sendMsg(sess.peer, r, s);
         return;
+      }
+      // T-152: banned users refused before any account creation.
+      {
+        bool banned = false;
+        std::string banReason;
+        std::int64_t banExp = 0;
+        std::string banErr;
+        if (s.db.isBanned(h.username, &banned, &banReason, &banExp, &banErr) && banned) {
+          const std::int64_t nowSec = ::time(nullptr);
+          if (banExp == 0 || banExp > nowSec) {
+            LoginResult r;
+            r.ok = 0;
+            r.reason = 7;  // banned
+            sendMsg(sess.peer, r, s);
+            KickNotice kn;
+            kn.reason = std::string("banned") +
+                        (banReason.empty() ? "" : std::string(": ") + banReason) +
+                        (banExp == 0 ? " (permanent)"
+                                     : " (until " + std::to_string(banExp) + ")");
+            sendMsg(sess.peer, kn, s);
+            std::printf("[ban] login denied banned=%s by_exp=%lld reason='%s'\n",
+                        h.username.c_str(), static_cast<long long>(banExp),
+                        banReason.c_str());
+            std::fflush(stdout);
+            gmAppendLog(s.banLogPath,
+                        "[ban-denied] user=" + h.username +
+                            " expires=" + std::to_string(banExp) +
+                            " reason='" + banReason + "'\n");
+            gmAppendLog(s.gmLogPath,
+                        "[ban-denied] user=" + h.username +
+                            " expires=" + std::to_string(banExp) +
+                            " reason='" + banReason + "'\n");
+            return;
+          } else {
+            std::string delErr;
+            s.db.deleteBan(h.username, &delErr);
+          }
+        }
       }
       bool acctExists = false;
       std::string acctErr;
@@ -367,7 +596,8 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
       CharacterRow row;
       std::uint8_t reason = 0;
       std::string err;
-      if (!s.db.loginOrCreate(h.username, h.password, &row, &reason, &err)) {
+      bool fresh = false;  // T-167: fresh rows hold at the creation panel
+      if (!s.db.loginOrCreate(h.username, h.password, &row, &reason, &err, &fresh)) {
         if (reason == 1) s.loginLimiter.noteFailure(ip, nowMs);  // bad creds
         LoginResult r;
         r.ok = 0;
@@ -382,115 +612,56 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
       sendMsg(sess.peer, r, s);
 
       sess.authed = true;
-      sess.inWorld = true;
       sess.user = row.name;
       sess.charRowId = row.id;
-
-      std::optional<sim::TilePos> at;
-      if (row.x != 0 || row.y != 0) at = sim::TilePos{row.x, row.y};
-      const std::uint16_t loginZone =
-          static_cast<std::uint16_t>(row.mapId > 0 ? row.mapId : 1);
-      Entity& e = s.world.spawn(row.name, row.id, at, loginZone,
-                                static_cast<std::uint8_t>(row.classId));
-      sess.entityId = e.id;
-      journalLogin(s, sess, row, e);
-      {
-        // apply persisted progression (schema v2..v11)
-        Entity* pe = s.world.find(e.id);
-        pe->level = static_cast<std::uint8_t>(row.level < 1 ? 1 : (row.level > 25 ? 25 : row.level));
-        pe->xp = static_cast<std::uint32_t>(row.xp < 0 ? 0 : row.xp);
-        pe->str = static_cast<std::uint8_t>(row.str);
-        pe->vit = static_cast<std::uint8_t>(row.vit);
-        pe->dex = static_cast<std::uint8_t>(row.dex);
-        pe->statPoints = static_cast<std::uint8_t>(row.statPoints);
-        pe->gold = static_cast<std::uint32_t>(row.gold < 0 ? 0 : row.gold);
-        // hpMax follows level/VIT; heal in full on login
-        pe->hpMax = sim::playerHpMax(pe->level, pe->vit);
-        pe->hp = pe->hpMax;
-        // inventory blob "iid:qty:equipped:aura:durability:affix:refine;..."
-        // T-049x: one shared grammar with the replay path (parseInvBlob),
-        // slots appended in blob order — nothing laundered on relog.
-        if (!row.invBlob.empty()) parseInvBlob(row.invBlob, pe->inv);
-        pe->anvilMercyMask = static_cast<std::uint32_t>(row.anvilMercy);
-        pe->karma = row.karma;
-        // T-120: weapon-skill persistence (sword_skill + swing_lands)
-        pe->swordSkill = static_cast<std::uint8_t>(row.swordSkill < 0 ? 0 : (row.swordSkill > 100 ? 100 : row.swordSkill));
-        pe->swingLands = static_cast<std::uint32_t>(row.swingLands < 0 ? 0 : row.swingLands);
-        // if lands present but skill 0 (old row with lands >0), recompute skill
-        if (pe->swingLands > 0 && pe->swordSkill == 0) {
-          pe->swordSkill = static_cast<std::uint8_t>(pe->swingLands / 25u);
-        }
-        // T-130: town war identity + EK fame (schema v12; clamped, era-safe)
-        pe->townId = static_cast<std::uint8_t>(row.townId < 0 ? 0 : (row.townId > 2 ? 0 : row.townId));
-        pe->ek = static_cast<std::uint32_t>(row.ek < 0 ? 0 : row.ek);
-        // T-122: pledge membership (schema v12; defaults 0 for old rows).
-        // Registry itself was loaded at boot; this restores the cache.
-        pe->pledgeId = static_cast<std::uint32_t>(row.pledgeId < 0 ? 0 : row.pledgeId);
-        pe->pledgeRank = static_cast<std::uint8_t>(row.pledgeRank);
-        const auto bit = s.bless.find(row.name);
-        if (bit != s.bless.end()) {
-          // parse "id:qty,id:qty"
-          size_t bpos = 0;
-          while (bpos < bit->second.size()) {
-            const size_t bend = bit->second.find(',', bpos);
-            const std::string pr = bit->second.substr(
-                bpos, bend == std::string::npos ? std::string::npos : bend - bpos);
-            bpos = (bend == std::string::npos) ? bit->second.size() : bend + 1;
-            const size_t colon = pr.find(':');
-            if (colon == std::string::npos) continue;
-            if (pr.substr(0, colon) == "skill") {
-              const std::uint32_t sk =
-                  static_cast<std::uint32_t>(std::stoul(pr.substr(colon + 1)));
-              // combat derives swordSkill from swingLands/kSkillLandsPerPoint: seed the counter
-              pe->swingLands = sk * 20u;
-              pe->swordSkill = sk;
-              continue;
-            }
-            if (pr.substr(0, colon) == "gold") {
-              pe->gold = static_cast<std::uint32_t>(std::stoul(pr.substr(colon + 1)));
-              continue;
-            }
-            s.world.debugGive(*pe,
-                              static_cast<std::uint32_t>(std::stoul(pr.substr(0, colon))),
-                              static_cast<std::uint16_t>(std::stoul(pr.substr(colon + 1))));
-          }
-          std::printf("[bless] %s <- %s (skill now %u, gold %u)\n", row.name.c_str(),
-                      bit->second.c_str(), static_cast<unsigned>(pe->swordSkill),
-                      static_cast<unsigned>(pe->gold));
-          for (const auto& sl : pe->inv)
-            std::printf("[bless]   inv %u:%u eq=%u aura=%u\n", sl.itemId, sl.qty,
-                        sl.equipped ? 1u : 0u, static_cast<unsigned>(sl.aura));
-          if (s.journal != nullptr) {
-            std::fprintf(s.journal, "b %lld %s %s\n",
-                         static_cast<long long>(s.tick + 1), row.name.c_str(),
-                         bit->second.c_str());
-          }
-        }
-        // T-049x probe: post-application login fingerprint (pairs with
-        // [replay-login] — the relog-launderer canary).
-        if (std::getenv("BH_DUMP_ENTS") != nullptr) {
-          std::fprintf(stderr,
-                       "[live-login] name=%s lvl=%u xp=%u gold=%u hp=%u/%u "
-                       "skill=%u mercy=%u karma=%d inv=%s\n",
-                       row.name.c_str(), static_cast<unsigned>(pe->level), pe->xp,
-                       pe->gold, pe->hp, pe->hpMax,
-                       static_cast<unsigned>(pe->swordSkill), pe->anvilMercyMask,
-                       pe->karma, canonicalInvBlob(pe->inv).c_str());
-        }
+      if (fresh) {
+        // T-167 (1-char alpha): fresh row — hold at the creation panel.
+        // LoginResult ok=1 already sent; the prompt follows, spawn waits
+        // for CharCreate (class 1..3, sex 1..2, validated there).
+        sess.awaitingCreate = true;
+        sess.inWorld = false;
+        CharCreatePrompt p;
+        p.unused = 0;
+        sendMsg(sess.peer, p, s);
+        break;
       }
-
-      Welcome w;
-      w.entityId = e.id;
-      w.mapId = loginZone;
-      w.x = e.walker.x;
-      w.y = e.walker.y;
-      w.tick = static_cast<std::uint32_t>(s.tick % 0xFFFFFFFFu);
-      w.hourCenti = static_cast<std::uint32_t>(sim::hourAt(s.tick) * 100.0f);
-      sendMsg(sess.peer, w, s);
+      enterWorldFromRow(s, sess, row);
       pushOwnStats(s, sess);
       pushInventory(s, sess);
+      pushSiegeState(s, sess);
+      pushPledgeRoster(s, sess);
       std::printf("[net] %-16s entered the world (entity %u, online %zu)\n",
                   row.name.c_str(), sess.entityId, s.sessions.size());
+      broadcastChat(s, 2, "", row.name + " has entered Thornwall.");
+      break;
+    }
+    case kIdCharCreate: {
+      // T-167: creation answer — authed + held only, exactly once.
+      CharCreate m;
+      if (!m.deserialize(pv.body)) return;
+      if (!sess.authed || !sess.awaitingCreate || sess.inWorld) return;
+      if ((m.classId < 1 || m.classId > 3) || (m.sex < 1 || m.sex > 2)) {
+        KickNotice kn;  // malformed creation: refuse loudly, keep the row fresh
+        kn.reason = "creation refused (class 1..3, sex 1..2)";
+        sendMsg(sess.peer, kn, s);
+        return;
+      }
+      std::string err;
+      if (!s.db.setCreation(sess.charRowId, m.classId, m.sex, &err)) return;
+      CharacterRow row;
+      std::uint8_t reason = 0;
+      // reload by name (no password re-check on an authed session): the row
+      // now carries class+sex; fresh=false so no second prompt, ever.
+      if (!s.db.loginByRowId(sess.charRowId, &row, &reason, &err)) return;
+      sess.awaitingCreate = false;
+      enterWorldFromRow(s, sess, row);
+      pushOwnStats(s, sess);
+      pushInventory(s, sess);
+      pushSiegeState(s, sess);
+      pushPledgeRoster(s, sess);
+      std::printf("[net] %-16s created (kit %u sex %u, entity %u)\n",
+                  row.name.c_str(), static_cast<unsigned>(m.classId),
+                  static_cast<unsigned>(m.sex), sess.entityId);
       broadcastChat(s, 2, "", row.name + " has entered Thornwall.");
       break;
     }
@@ -517,19 +688,373 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
     case kIdChatSend: {
       ChatSend m;
       if (!m.deserialize(pv.body) || !sess.inWorld) return;
+      // T-152 GM authority gate
+      auto gmDenyTmp = [&](const std::string& verb) {
+        proto::ChatMsg dm;
+        dm.channel = 2;
+        dm.from = "";
+        dm.text = "gm denied: operator only (" + verb + ")";
+        sendMsg(sess.peer, dm, s);
+        std::printf("[gm-denied] tick=%lld name=%s verb=%s\n",
+                    static_cast<long long>(s.tick), sess.user.c_str(), verb.c_str());
+        std::fflush(stdout);
+        gmAppendLog(s.gmLogPath,
+                    "[gm-denied] tick=" + std::to_string(s.tick) + " name=" +
+                        sess.user + " verb=" + verb + "\n");
+      };
+      auto isGmTmp = [&]() -> bool { return gmIsOperator(s, sess.user); };
       if (m.text == "gm blood-moon") {  // T-129: journaled, replay-exact (H1 shape)
+        if (!isGmTmp()) {
+          gmDenyTmp("gm blood-moon");
+          break;
+        }
+        std::printf("[gm] %s executes gm blood-moon\n", sess.user.c_str());
+        std::fflush(stdout);
+        gmAppendLog(s.gmLogPath, "[gm] tick=" + std::to_string(s.tick) +
+                                     " by=" + sess.user + " verb=gm blood-moon\n");
         Command c;
         c.kind = Command::kBloodMoon;
         if (sess.cmdq.size() < 32) sess.cmdq.push_back(std::move(c));
         break;
       }
       if (m.text == "gm siege-start") {  // T-131: in-window + bands, else quiet
+        if (!isGmTmp()) {
+          gmDenyTmp("gm siege-start");
+          break;
+        }
+        std::printf("[gm] %s executes gm siege-start\n", sess.user.c_str());
+        std::fflush(stdout);
+        gmAppendLog(s.gmLogPath, "[gm] tick=" + std::to_string(s.tick) +
+                                     " by=" + sess.user + " verb=gm siege-start\n");
         Command c;
         c.kind = Command::kSiegeStart;
         if (sess.cmdq.size() < 32) sess.cmdq.push_back(std::move(c));
         break;
       }
+      if (m.text == "gm ek") {  // T-130 board readout (directed) — FIXED: was dead inside slash block
+        if (!isGmTmp()) {
+          gmDenyTmp("gm ek");
+          break;
+        }
+        if (Entity* me = s.world.find(sess.entityId)) s.world.ekReadout(*me);
+        gmAppendLog(s.gmLogPath, "[gm] tick=" + std::to_string(s.tick) +
+                                     " by=" + sess.user + " verb=gm ek\n");
+        break;
+      }
+      // T-163 wave-2: /ek is the player-facing twin (self + top-5, same text).
+      if (m.text == "/ek") {
+        if (Entity* me = s.world.find(sess.entityId)) s.world.ekReadout(*me);
+        break;
+      }
+      if (m.text == "gm siege") {  // T-134 castle readout (directed) — FIXED: was dead inside slash block
+        if (!isGmTmp()) {
+          gmDenyTmp("gm siege");
+          break;
+        }
+        if (Entity* me = s.world.find(sess.entityId)) s.world.siegeReadout(*me);
+        gmAppendLog(s.gmLogPath, "[gm] tick=" + std::to_string(s.tick) +
+                                     " by=" + sess.user + " verb=gm siege\n");
+        break;
+      }
+      if (m.text.rfind("gm announce ", 0) == 0) {  // T-152 announce: ch2 broadcast, journaled as y-line
+        if (!isGmTmp()) {
+          gmDenyTmp("gm announce");
+          break;
+        }
+        std::string raw = m.text.substr(12);
+        std::string ann = sanitizeChat(raw);
+        if (ann.empty()) break;
+        std::string out = std::string("[ANNOUNCE] ") + ann;
+        broadcastChat(s, 2, "", out);
+        std::printf("[gm-announce] tick=%lld by=%s text='%s'\n",
+                    static_cast<long long>(s.tick), sess.user.c_str(), ann.c_str());
+        std::fflush(stdout);
+        gmAppendLog(s.gmLogPath, "[gm-announce] tick=" + std::to_string(s.tick) +
+                                     " by=" + sess.user + " text='" + ann + "'\n");
+        gmAppendLog(s.banLogPath, "[gm-announce] tick=" + std::to_string(s.tick) +
+                                      " by=" + sess.user + " text='" + ann + "'\n");
+        if (s.journal != nullptr) {
+          auto it = s.loginIndexPerPeer.find(sess.peer);
+          if (it != s.loginIndexPerPeer.end()) {
+            std::fprintf(s.journal, "y %lld %u %s\n", static_cast<long long>(s.tick),
+                         it->second, ann.c_str());
+            std::fflush(s.journal);
+          }
+        }
+        break;
+      }
       if (!m.text.empty() && m.text[0] == '/') {  // party verbs (era commands)
+        // T-152 operator bans/kicks (must be before party /kick so GM's verb is session-level)
+        if (m.text.rfind("/ban ", 0) == 0) {
+          if (!isGmTmp()) {
+            gmDenyTmp("/ban");
+            break;
+          }
+          std::string rest = m.text.substr(5);
+          size_t p0 = rest.find_first_not_of(" \t");
+          if (p0 != std::string::npos) rest = rest.substr(p0);
+          else rest.clear();
+          if (rest.empty()) {
+            proto::ChatMsg um;
+            um.channel = 2;
+            um.from = "";
+            um.text = "usage: /ban <name> <minutes> [reason]";
+            sendMsg(sess.peer, um, s);
+            break;
+          }
+          size_t sp1 = rest.find_first_of(" \t");
+          std::string tname;
+          std::string after;
+          if (sp1 == std::string::npos) {
+            tname = rest;
+            after = "";
+          } else {
+            tname = rest.substr(0, sp1);
+            after = rest.substr(sp1);
+            size_t q = after.find_first_not_of(" \t");
+            if (q != std::string::npos) after = after.substr(q);
+            else after.clear();
+          }
+          bool nameOk = tname.size() >= 3 && tname.size() <= 16;
+          for (char c : tname) {
+            bool ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+                      (c >= '0' && c <= '9') || c == '_' || c == '-';
+            if (!ok) nameOk = false;
+          }
+          if (!nameOk) {
+            proto::ChatMsg um;
+            um.channel = 2;
+            um.from = "";
+            um.text = "invalid name for /ban";
+            sendMsg(sess.peer, um, s);
+            break;
+          }
+          if (after.empty()) {
+            proto::ChatMsg um;
+            um.channel = 2;
+            um.from = "";
+            um.text = "usage: /ban <name> <minutes> [reason]";
+            sendMsg(sess.peer, um, s);
+            break;
+          }
+          size_t sp2 = after.find_first_of(" \t");
+          std::string minsStr;
+          std::string reason;
+          if (sp2 == std::string::npos) {
+            minsStr = after;
+            reason = "";
+          } else {
+            minsStr = after.substr(0, sp2);
+            reason = after.substr(sp2);
+            size_t r = reason.find_first_not_of(" \t");
+            if (r != std::string::npos) reason = reason.substr(r);
+            else reason.clear();
+            if (reason.size() > 120) reason = reason.substr(0, 120);
+            std::string cleaned;
+            for (unsigned char c : reason)
+              if (c >= 32 && c <= 126) cleaned.push_back((char)c);
+            reason = cleaned;
+          }
+          bool minsOk = !minsStr.empty() && minsStr.size() <= 7;
+          std::int64_t minutes = 0;
+          for (char c : minsStr)
+            if (c < '0' || c > '9') minsOk = false;
+          if (minsOk) {
+            for (char c : minsStr) minutes = minutes * 10 + (c - '0');
+            if (minutes <= 0 || minutes > 5256000) minsOk = false;
+          }
+          if (!minsOk) {
+            proto::ChatMsg um;
+            um.channel = 2;
+            um.from = "";
+            um.text = "invalid minutes (1..5256000)";
+            sendMsg(sess.peer, um, s);
+            break;
+          }
+          std::int64_t nowSec = ::time(nullptr);
+          std::int64_t expires = nowSec + minutes * 60;
+          std::string dbErr;
+          if (!s.db.upsertBan(tname, expires, reason, sess.user, &dbErr)) {
+            proto::ChatMsg um;
+            um.channel = 2;
+            um.from = "";
+            um.text = "ban failed: " + dbErr;
+            sendMsg(sess.peer, um, s);
+            break;
+          }
+          std::printf(
+              "[ban] tick=%lld by=%s target=%s minutes=%lld reason='%s' "
+              "expires=%lld\n",
+              static_cast<long long>(s.tick), sess.user.c_str(), tname.c_str(),
+              static_cast<long long>(minutes), reason.c_str(),
+              static_cast<long long>(expires));
+          std::fflush(stdout);
+          gmAppendLog(s.banLogPath,
+                      "[ban] tick=" + std::to_string(s.tick) + " by=" +
+                          sess.user + " target=" + tname +
+                          " minutes=" + std::to_string(minutes) + " reason='" +
+                          reason + "' expires=" + std::to_string(expires) + "\n");
+          gmAppendLog(s.gmLogPath,
+                      "[ban] tick=" + std::to_string(s.tick) + " by=" +
+                          sess.user + " target=" + tname +
+                          " minutes=" + std::to_string(minutes) + " reason='" +
+                          reason + "' expires=" + std::to_string(expires) + "\n");
+          ENetPeer* targetPeer = nullptr;
+          for (auto& kv : s.sessions) {
+            if (gmToLower(kv.second.user) == gmToLower(tname)) {
+              targetPeer = kv.first;
+              break;
+            }
+          }
+          if (targetPeer != nullptr) {
+            proto::KickNotice kn;
+            kn.reason = "banned for " + std::to_string(minutes) + "m" +
+                        (reason.empty() ? "" : std::string(": ") + reason);
+            sendMsg(targetPeer, kn, s);
+            broadcastChat(
+                s, 2, "",
+                tname + " was banned for " + std::to_string(minutes) + "m by " +
+                    sess.user + (reason.empty() ? "" : " (" + reason + ")"));
+            enet_peer_disconnect_later(targetPeer, 0);
+          } else {
+            broadcastChat(
+                s, 2, "",
+                tname + " was banned for " + std::to_string(minutes) + "m by " +
+                    sess.user + (reason.empty() ? "" : " (" + reason + ")"));
+          }
+          {
+            proto::ChatMsg cm;
+            cm.channel = 2;
+            cm.from = "";
+            cm.text = "banned " + tname + " for " + std::to_string(minutes) + "m.";
+            sendMsg(sess.peer, cm, s);
+          }
+          break;
+        }
+        if (m.text.rfind("/unban ", 0) == 0) {
+          if (!isGmTmp()) {
+            gmDenyTmp("/unban");
+            break;
+          }
+          std::string rest = m.text.substr(7);
+          size_t p0 = rest.find_first_not_of(" \t");
+          if (p0 != std::string::npos) rest = rest.substr(p0);
+          else rest.clear();
+          size_t sp = rest.find_first_of(" \t");
+          std::string tname = sp == std::string::npos ? rest : rest.substr(0, sp);
+          size_t a = tname.find_first_not_of(" \t\r\n");
+          size_t b = tname.find_last_not_of(" \t\r\n");
+          if (a != std::string::npos && b != std::string::npos)
+            tname = tname.substr(a, b - a + 1);
+          else
+            tname.clear();
+          bool nameOk = tname.size() >= 3 && tname.size() <= 16;
+          for (char c : tname) {
+            bool ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+                      (c >= '0' && c <= '9') || c == '_' || c == '-';
+            if (!ok) nameOk = false;
+          }
+          if (!nameOk) {
+            proto::ChatMsg um;
+            um.channel = 2;
+            um.from = "";
+            um.text = "invalid name for /unban";
+            sendMsg(sess.peer, um, s);
+            break;
+          }
+          std::string dbErr;
+          if (!s.db.deleteBan(tname, &dbErr)) {
+            proto::ChatMsg um;
+            um.channel = 2;
+            um.from = "";
+            um.text = "unban failed: " + dbErr;
+            sendMsg(sess.peer, um, s);
+            break;
+          }
+          std::printf("[unban] tick=%lld by=%s target=%s\n",
+                      static_cast<long long>(s.tick), sess.user.c_str(),
+                      tname.c_str());
+          std::fflush(stdout);
+          gmAppendLog(s.banLogPath, "[unban] tick=" + std::to_string(s.tick) +
+                                        " by=" + sess.user + " target=" + tname + "\n");
+          gmAppendLog(s.gmLogPath, "[unban] tick=" + std::to_string(s.tick) +
+                                       " by=" + sess.user + " target=" + tname + "\n");
+          broadcastChat(s, 2, "", tname + " was unbanned by " + sess.user);
+          {
+            proto::ChatMsg cm;
+            cm.channel = 2;
+            cm.from = "";
+            cm.text = "unbanned " + tname;
+            sendMsg(sess.peer, cm, s);
+          }
+          break;
+        }
+        if (m.text.rfind("/kick ", 0) == 0 && isGmTmp()) {
+          std::string rest = m.text.substr(6);
+          size_t p0 = rest.find_first_not_of(" \t");
+          if (p0 != std::string::npos) rest = rest.substr(p0);
+          else rest.clear();
+          size_t sp = rest.find_first_of(" \t");
+          std::string tname = sp == std::string::npos ? rest : rest.substr(0, sp);
+          size_t a = tname.find_first_not_of(" \t\r\n");
+          size_t b = tname.find_last_not_of(" \t\r\n");
+          if (a != std::string::npos && b != std::string::npos)
+            tname = tname.substr(a, b - a + 1);
+          else
+            tname.clear();
+          bool nameOk = tname.size() >= 3 && tname.size() <= 16;
+          for (char c : tname) {
+            bool ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+                      (c >= '0' && c <= '9') || c == '_' || c == '-';
+            if (!ok) nameOk = false;
+          }
+          if (!nameOk) {
+            proto::ChatMsg um;
+            um.channel = 2;
+            um.from = "";
+            um.text = "invalid name for /kick";
+            sendMsg(sess.peer, um, s);
+            break;
+          }
+          ENetPeer* targetPeer = nullptr;
+          std::string actualName;
+          for (auto& kv : s.sessions) {
+            if (gmToLower(kv.second.user) == gmToLower(tname)) {
+              targetPeer = kv.first;
+              actualName = kv.second.user;
+              break;
+            }
+          }
+          if (targetPeer == nullptr) {
+            proto::ChatMsg um;
+            um.channel = 2;
+            um.from = "";
+            um.text = tname + " is not online";
+            sendMsg(sess.peer, um, s);
+            break;
+          }
+          std::printf("[kick] tick=%lld by=%s target=%s\n",
+                      static_cast<long long>(s.tick), sess.user.c_str(),
+                      actualName.c_str());
+          std::fflush(stdout);
+          gmAppendLog(s.banLogPath, "[kick] tick=" + std::to_string(s.tick) +
+                                        " by=" + sess.user + " target=" + actualName + "\n");
+          gmAppendLog(s.gmLogPath, "[kick] tick=" + std::to_string(s.tick) +
+                                       " by=" + sess.user + " target=" + actualName + "\n");
+          proto::KickNotice kn;
+          kn.reason = "kicked by operator " + sess.user;
+          sendMsg(targetPeer, kn, s);
+          broadcastChat(s, 2, "", actualName + " was kicked by " + sess.user);
+          enet_peer_disconnect_later(targetPeer, 0);
+          {
+            proto::ChatMsg cm;
+            cm.channel = 2;
+            cm.from = "";
+            cm.text = "kicked " + actualName;
+            sendMsg(sess.peer, cm, s);
+          }
+          break;
+        }
         // T-122 pledge chat + roster: chat-class (no sim effect, never
         // journaled — replay regenerates nothing it needs).
         if (m.text.rfind("/p ", 0) == 0) {
@@ -632,12 +1157,6 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
         }
         else if (m.text == "/crown") {  // T-133: kneel at the attuned stone
           c.kind = Command::kCrown;
-        } else if (m.text == "gm ek") {  // T-130 board readout (directed)
-          okCmd = false;  // shell output, never journaled
-          if (Entity* me = s.world.find(sess.entityId)) s.world.ekReadout(*me);
-        } else if (m.text == "gm siege") {  // T-134 castle readout (directed)
-          okCmd = false;  // shell output, never journaled
-          if (Entity* me = s.world.find(sess.entityId)) s.world.siegeReadout(*me);
         } else if (m.text.rfind("/pledge ", 0) == 0) {  // T-122 pledge-lite
           const std::string arg = m.text.substr(8);
           // name->id resolution happens here, pre-journal (kDuel pattern):
@@ -919,6 +1438,7 @@ void pushInventory(Server& s, Session& sess) {
     m.durability = e->inv[i].durability;  // T-058
     m.affix = e->inv[i].affix;            // T-059
     m.refine = e->inv[i].refine;          // T-060
+    m.rarity = e->inv[i].rarity;          // T-159
     sendMsg(sess.peer, m, s);
   }
 }
@@ -975,6 +1495,74 @@ void pushPartyRoster(Server& s, Session& sess) {
     pm.hp = m->hp;
     pm.hpMax = m->hpMax;
     pm.zoneId = m->zoneId;
+    sendMsg(sess.peer, pm, s);
+  }
+}
+
+// T-151: siege + pledge HUD (wire 117..119, parchment era)
+void pushSiegeState(Server& s, Session& sess) {
+  // holder pledge lookup (pledge that contains the holder's name)
+  std::uint32_t hpId = 0;
+  std::string hpName;
+  const std::string& holder = s.world.siegeHolderName();
+  if (!holder.empty()) {
+    for (const auto& p : s.world.pledges()) {
+      for (const auto& m : p.members) if (m == holder) { hpId = p.id; hpName = p.name; break; }
+      if (hpId != 0) break;
+    }
+  }
+  std::uint16_t gh0 = 0, gh1 = 0;
+  std::vector<std::uint32_t> gh;
+  for (const auto& e : s.world.entities()) if (e.wireKind == content::kWireKindSiegeGate) gh.push_back(e.hp);
+  std::sort(gh.begin(), gh.end()); // stable by hp isn't id-stable, but gate count ≤2 so sort by hp is deterministic for display
+  // recover ordered by id for client: collect gates sorted by id
+  std::vector<const Entity*> gates;
+  for (const auto& e : s.world.entities()) if (e.wireKind == content::kWireKindSiegeGate) gates.push_back(&e);
+  std::sort(gates.begin(), gates.end(), [](const Entity* a, const Entity* b){ return a->id < b->id; });
+  if (gates.size() > 0) gh0 = static_cast<std::uint16_t>(gates[0]->hp);
+  if (gates.size() > 1) gh1 = static_cast<std::uint16_t>(gates[1]->hp);
+  (void)gh;
+  std::uint32_t cOwner = 0; std::string cName; std::uint32_t cDead = 0;
+  for (const auto& e : s.world.entities()) {
+    if (e.kind != EntityKind::kPlayer || e.dead) continue;
+    if (e.crownUntil >= 0 && s.world.tickCount() < e.crownUntil) { cOwner = e.id; cName = e.name; cDead = static_cast<std::uint32_t>(e.crownUntil); break; }
+  }
+  std::uint8_t phase = 0;
+  if (cOwner != 0) phase = 4;
+  else if (s.world.heartAttuned()) phase = 3;
+  else if (s.world.siegeBattleActive()) phase = 2;
+  else if (s.world.inSiegeWindow()) phase = 1;
+  else phase = 0;
+  proto::SiegeState st;
+  st.holderPledgeId = hpId;
+  st.holderPledgeName = hpName;
+  st.holderName = holder;
+  st.windowEndTick = static_cast<std::uint32_t>(s.world.siegeWindowEnd());
+  st.battleEndTick = s.world.siegeBattleActive() ? static_cast<std::uint32_t>(s.world.siegeBattleEndsAt()) : 0;
+  st.gateHp0 = gh0; st.gateHp1 = gh1;
+  st.heartProgress = static_cast<std::uint16_t>(s.world.heartProgress());
+  st.heartAttuned = s.world.heartAttuned() ? 1 : 0;
+  st.crownOwnerId = cOwner; st.crownOwnerName = cName; st.crownDeadline = cDead;
+  st.bandCount = static_cast<std::uint8_t>(s.world.siegeBandsUsed());
+  st.phase = phase;
+  st.vaultGold = s.world.siegeVault(); st.crowns = s.world.siegeCrowns();
+  sendMsg(sess.peer, st, s);
+}
+void pushPledgeRoster(Server& s, Session& sess) {
+  Entity* me = s.world.find(sess.entityId);
+  const World::Pledge* p = nullptr;
+  if (me != nullptr && me->pledgeId != 0) p = s.world.pledgeById(me->pledgeId);
+  proto::PledgeRoster hdr;
+  if (p != nullptr) { hdr.pledgeId = p->id; hdr.name = p->name; hdr.emblem = p->emblem; hdr.count = static_cast<std::uint8_t>(p->members.size()); hdr.vaultGold = p->vault; }
+  else { hdr.pledgeId = 0; hdr.name = ""; hdr.emblem = 0; hdr.count = 0; hdr.vaultGold = 0; }
+  sendMsg(sess.peer, hdr, s);
+  if (p == nullptr) return;
+  for (const std::string& mname : p->members) {
+    const Entity* found = nullptr;
+    for (const auto& e : s.world.entities()) if (e.kind == EntityKind::kPlayer && e.name == mname) { found = &e; break; }
+    proto::PledgeMember pm; pm.name = mname;
+    if (found != nullptr && found->pledgeId == p->id) { pm.rank = found->pledgeRank; pm.level = found->level; pm.online = 1; }
+    else { pm.rank = (mname == p->liege ? 3 : 1); pm.level = 1; pm.online = 0; }
     sendMsg(sess.peer, pm, s);
   }
 }
@@ -1038,10 +1626,10 @@ void distributeEvents(Server& s) {
           m.light = e->lightRadius;  // T-071 night light
           m.glowTier = s.world.equippedGlowTier(*e);  // T-092 refine glow
           // T-142: players ride class+sex so the client sheets them.
-          // Mobs carry none (0 = hero fallback). Sex is 0 (unknown) until
-          // T-142b captures it at creation (no source of truth exists yet).
+          // Mobs carry none (0 = hero fallback). T-167 captures sex at
+          // creation; legacy rows stay 0 (unknown → hero fallback).
           m.classId = e->kind == EntityKind::kPlayer ? e->classId : std::uint8_t(0);
-          m.sex = std::uint8_t(0);
+          m.sex = e->kind == EntityKind::kPlayer ? e->sex : std::uint8_t(0);
           sendMsg(kv.first, m, s);
         }
       }
@@ -1154,9 +1742,9 @@ void tickServer(Server& s) {
                           : std::uint8_t(1);  // mobs: neutral band
         m.light = e->lightRadius;  // T-071 night light
         m.glowTier = s.world.equippedGlowTier(*e);  // T-092 refine glow
-        // T-142: players ride class+sex (mobs 0; sex 0 unknown until T-142b).
+        // T-142: players ride class+sex (mobs 0; sex 0 unknown legacy).
         m.classId = e->kind == EntityKind::kPlayer ? e->classId : std::uint8_t(0);
-        m.sex = std::uint8_t(0);
+        m.sex = e->kind == EntityKind::kPlayer ? e->sex : std::uint8_t(0);
         sendMsg(sess.peer, m, s);
       }
       proto::EntityDelta d;
@@ -1170,7 +1758,7 @@ void tickServer(Server& s) {
       d.glowTier = s.world.equippedGlowTier(*e);  // T-092 (refine swaps ride too)
       // T-142: class rides the delta so a /kit oath re-sheets remotes live.
       d.classId = e->kind == EntityKind::kPlayer ? e->classId : std::uint8_t(0);
-      d.sex = std::uint8_t(0);
+      d.sex = e->kind == EntityKind::kPlayer ? e->sex : std::uint8_t(0);
       sendMsg(sess.peer, d, s);
     }
     for (const std::uint32_t id : sess.interest) {
@@ -1194,6 +1782,8 @@ void tickServer(Server& s) {
       for (auto& kv : s.sessions)
         if (kv.second.inWorld) pushPartyRoster(s, kv.second);
     }
+    // T-151: siege + pledge HUD every second (wire 117..119)
+    for (auto& kv : s.sessions) if (kv.second.inWorld) { pushSiegeState(s, kv.second); pushPledgeRoster(s, kv.second); }
     std::vector<std::int64_t> sorted = s.tickMicros;
     std::sort(sorted.begin(), sorted.end());
     const std::int64_t p99 = sorted.empty() ? 0 : sorted[sorted.size() * 99 / 100];
@@ -1314,6 +1904,12 @@ int runReplayWorld(const std::string& path, const std::string& mapPath,
       loginTowns;  // w-lines: town+ek sidecar (T-130; absent => 0,0)
   std::unordered_map<std::uint32_t, std::pair<std::uint32_t, std::uint32_t>>
       loginPledges;  // g-lines (T-122/T-138): idx -> {pledgeId, rank}
+  struct Wave2Login {  // y-lines (wave-2 identity; absent pre-30 => defaults)
+    std::uint8_t sex = 0;
+    long long deathTick = -1, debtXp = 0, resTick = -7000;
+    unsigned bountyMob = 0, bountyCycle = 0;
+  };
+  std::unordered_map<std::uint32_t, Wave2Login> loginWave2;
 
   struct QueuedCmd {
     sim::Tick tick;
@@ -1379,6 +1975,13 @@ int runReplayWorld(const std::string& path, const std::string& mapPath,
       long long gtick; unsigned gidx, gpid, grank;
       if (std::sscanf(line, "g %lld %u %u %u", &gtick, &gidx, &gpid, &grank) == 4)
         loginPledges[gidx] = {gpid, grank};
+    } else if (line[0] == 'y') {  // wave-2 identity sidecar (absent pre-30)
+      long long ytick, ydeath, ydebt, yres;
+      unsigned yidx, ysex, ybmob, ybcyc;
+      if (std::sscanf(line, "y %lld %u %u %lld %lld %lld %u %u", &ytick, &yidx,
+                      &ysex, &ydeath, &ydebt, &yres, &ybmob, &ybcyc) == 8)
+        loginWave2[yidx] = Wave2Login{static_cast<std::uint8_t>(ysex), ydeath,
+                                      ydebt, yres, ybmob, ybcyc};
     } else if (line[0] == 'b') {
       long long tick;
       char nm[64], spec[256];
@@ -1466,6 +2069,17 @@ int runReplayWorld(const std::string& path, const std::string& mapPath,
     if (const auto gi = loginPledges.find(L.idx); gi != loginPledges.end())
       world.pledgeReplayRestore(*pe, gi->second.first,
                                 static_cast<std::uint8_t>(gi->second.second));
+    // Wave-2 identity from the y-sidecar (absent => pre-30 journal, defaults
+    // match fresh Entity fields exactly so old legs are unaffected).
+    if (const auto yi = loginWave2.find(L.idx); yi != loginWave2.end()) {
+      const Wave2Login& yl = yi->second;
+      pe->sex = yl.sex > 2 ? std::uint8_t(0) : yl.sex;
+      pe->lastDeathTick = static_cast<sim::Tick>(yl.deathTick);
+      pe->lastDebtXp = static_cast<std::uint32_t>(yl.debtXp < 0 ? 0 : yl.debtXp);
+      pe->lastResTick = static_cast<sim::Tick>(yl.resTick);
+      pe->bountyMobId = yl.bountyMob;
+      pe->bountyCycle = yl.bountyCycle;
+    }
     // replay bless grants (debug lane recorded as b-lines) — AFTER the
     // persisted blob, exactly like the live login order, so debugGive
     // stacking/appending lands identically on both sides.
@@ -1625,6 +2239,13 @@ int run(int argc, char** argv) {
     }
   }
 
+  if (!s.bless.empty() && (!s.recordWorldPath.empty() || !s.replayWorldPath.empty())) {
+    std::fprintf(stderr,
+                 "[fatal] --bless is incompatible with --record-world/--replay-world "
+                 "(breaks replay determinism)\n");
+    return 1;
+  }
+
   std::string err;
   if (!s.world.load(mapPath, &err)) {
     std::fprintf(stderr, "bh_server: %s\n", err.c_str());
@@ -1651,6 +2272,12 @@ int run(int argc, char** argv) {
   if (!s.db.open(dbPath, &err)) {
     std::fprintf(stderr, "bh_server: %s\n", err.c_str());
     return 1;
+  }
+  // T-152 GM authority + ban prune (out-of-band, epoch-neutral)
+  {
+    std::string pruneErr;
+    s.db.pruneExpiredBans(&pruneErr);
+    gmLoadAllowlist(s);
   }
   // T-134: the castle remembers its master across reboots (empty => zeros).
   {

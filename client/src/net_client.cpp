@@ -139,6 +139,17 @@ void NetClient::sendSkill(std::uint8_t skill, std::uint32_t targetId) {
   const auto b = proto::pack(m);
   enet_peer_send(peer_, 0, enet_packet_create(b.data(), b.size(), ENET_PACKET_FLAG_RELIABLE));
 }
+// T-167: pre-world creation answer — gated on the prompt flag, not on kInWorld.
+void NetClient::sendCharCreate(std::uint8_t classId, std::uint8_t sex) {
+  if (peer_ == nullptr || !needsCreate) return;
+  if (classId < 1 || classId > 3 || sex < 1 || sex > 2) return;
+  proto::CharCreate m;
+  m.classId = classId;
+  m.sex = sex;
+  const auto b = proto::pack(m);
+  enet_peer_send(peer_, 0, enet_packet_create(b.data(), b.size(), ENET_PACKET_FLAG_RELIABLE));
+  needsCreate = false;  // answered once; server enforces the rest
+}
 void NetClient::sendBuy(std::uint32_t itemId, std::uint16_t qty) {
   if (peer_ == nullptr || state != State::kInWorld) return;
   proto::BuyRequest m;
@@ -237,6 +248,12 @@ void NetClient::poll() {
               }
               break;
             }
+            case kIdCharCreatePrompt: {
+              // T-167: fresh account — answer once via the creation panel.
+              CharCreatePrompt p;
+              if (p.deserialize(pv.body)) needsCreate = true;
+              break;
+            }
             case kIdWelcome: {
               Welcome w;
               if (!w.deserialize(pv.body)) break;
@@ -323,6 +340,8 @@ void NetClient::poll() {
               ownStats.str = m.str;
               ownStats.vit = m.vit;
               ownStats.dex = m.dex;
+              ownStats.intg = m.intg;  // T-160 five-stat model
+              ownStats.mag = m.mag;
               ownStats.swordSkill = m.swordSkill;
               ownStats.gold = m.gold;
               ownStats.karma = m.karma;
@@ -332,6 +351,44 @@ void NetClient::poll() {
               ownStats.blessTicksLeft = m.blessTicksLeft;
               ownStats.ironskinTicksLeft = m.ironskinTicksLeft;
               ownStats.curseTicksLeft = m.curseTicksLeft;  // T-070
+              break;
+            }
+            case kIdSiegeState: {
+              SiegeState m;
+              if (!m.deserialize(pv.body)) break;
+              siege.holderPledgeId = m.holderPledgeId;
+              siege.holderPledgeName = m.holderPledgeName;
+              siege.holderName = m.holderName;
+              siege.windowEndTick = m.windowEndTick;
+              siege.battleEndTick = m.battleEndTick;
+              siege.gateHp0 = m.gateHp0;
+              siege.gateHp1 = m.gateHp1;
+              siege.heartProgress = m.heartProgress;
+              siege.heartAttuned = m.heartAttuned;
+              siege.crownOwnerId = m.crownOwnerId;
+              siege.crownOwnerName = m.crownOwnerName;
+              siege.crownDeadline = m.crownDeadline;
+              siege.bandCount = m.bandCount;
+              siege.phase = m.phase;
+              siege.vaultGold = m.vaultGold;
+              siege.crowns = m.crowns;
+              break;
+            }
+            case kIdPledgeRoster: {
+              PledgeRoster m;
+              if (!m.deserialize(pv.body)) break;
+              pledgeId = m.pledgeId;
+              pledgeName = m.name;
+              pledgeEmblem = m.emblem;
+              pledgeVault = m.vaultGold;
+              pledgeMembers.clear();
+              (void)m.count; // count is authoritative from server header, but members drive rows
+              break;
+            }
+            case kIdPledgeMember: {
+              PledgeMember m;
+              if (!m.deserialize(pv.body)) break;
+              pledgeMembers.push_back(PledgeMemberWire{m.name, m.rank, m.level, m.online});
               break;
             }
             case kIdPartyReset: {
@@ -360,7 +417,7 @@ void NetClient::poll() {
               if (!m.deserialize(pv.body)) break;
               inventory[m.slot] = InvSlotWire{m.itemId, m.qty, m.equipped != 0,
                                               m.aura, m.durability, m.affix,
-                                              m.refine};
+                                              m.refine, m.rarity};
               break;
             }
             case kIdPong: {

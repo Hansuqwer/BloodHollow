@@ -110,11 +110,12 @@ velocity ran ~5 months ahead of plan. What is in the tree today: full combat law
 (Old Maw, Red Widow, Cantor Vex), parties + XP share, class kits (Ravager/Gravecaller/
 Cultist), anvil enhance/refine + durability, vendors + fence economy, trades with
 commit-time validation, karma/alignment + duels + wanted law, day/night + light +
-torch/lantern, 5 zones in one process (town, fields, crypt, mine, drowned crypt) with
-portals, journal **epoch 18** with the gate leg `logs/t107.bwj`
-(`ticks=12801 cmds=7830 hashes=513 mismatches=0`). Task board and per-card devlogs are
-the authoritative status: [`docs/tasks/`](docs/tasks/) · latest devlog
-[`0072`](docs/devlog/) (T-103).
+torch/lantern, 6 zones in one process (town, fields, crypt, mine, drowned crypt,
+weeping castle) with portals, pledges/siege spine (wire 242: siege+pledge HUD),
+loot depth (4 rarity tiers, 5 gear slots, 20 affixes), journal **epoch 29**
+with the gate leg `logs/t159.bwj` (`ticks=641 cmds=417 hashes=6 mismatches=0`).
+Task board and per-card devlogs are the authoritative status:
+[`docs/tasks/`](docs/tasks/) · audit wave T-150..T-169.
 
 **Hardening wave T-104..T-110:** landed in-tree (input parse, trade symmetry,
 deque-lifetime snapshots, hash-oracle widen epoch 18 + `logs/t107.bwj`,
@@ -126,5 +127,6 @@ inv-blob ints, bounded mob-seed retries. Prompt
 [`docs/prompts/critical-code-review-2026-09-12.md`](docs/prompts/critical-code-review-2026-09-12.md)
 · devlog [`0073`](docs/devlog/0073-critical-review-t111.md).
 
-**Next:** Phase-4 pledges/siege spine, EntityStore SoA debt, human trade-pass
-slice (T-033/T-099), optional logistics card for L9 pace.
+**Next:** Friday-Night Test + full M5 soak (director-scheduled), wave-2 epoch-30
+batch (kit spine, roster, field-war, bounty, char-create), EntityStore SoA debt,
+human trade-pass slice (T-033/T-099).

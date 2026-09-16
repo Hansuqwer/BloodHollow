@@ -5,6 +5,7 @@
 harder camps westward; single west portal returns to thornwall.
 Deterministic (fixed LCG) like the other gens.
 """
+import argparse
 import json
 from pathlib import Path
 
@@ -15,6 +16,8 @@ ZONE_FIELDS = 2
 MOB_PLAGUE_BAT, MOB_BONEPICKER_GNOLL = 1004, 1005
 MOB_CHARNEL_WIDOW, MOB_GRAVECALLER = 1006, 1007
 MOB_OLD_MAW = 1012  # T-101 fields elite (Gnoll base, 30-min rotation)
+# T-162 wave-2: Pale Cultist + night Wraith. T-163: Synod war patrol (town 2).
+MOB_PALE_CULTIST, MOB_WRAITH, MOB_SYNOD_PATROL = 1021, 1022, 1024
 
 
 def rect(g, x0, y0, x1, y1, v):
@@ -25,8 +28,11 @@ def rect(g, x0, y0, x1, y1, v):
 
 
 def main() -> int:
+    ap = argparse.ArgumentParser()
     repo = Path(__file__).resolve().parents[2]
-    out = repo / "data" / "maps-src" / "fields_overflow.tmj"
+    ap.add_argument("--out", default=str(repo / "data" / "maps-src" / "fields_overflow.tmj"))
+    args = ap.parse_args()
+    out = Path(args.out)
 
     ground = [[GRASS] * W for _ in range(H)]
 
@@ -81,10 +87,11 @@ def main() -> int:
 
     spawns, portals = [], []
     oid = 1
-    def spawn(name, tx, ty, tw, th, mob, alive, respawn_ticks):
+    def spawn(name, tx, ty, tw, th, mob, alive, respawn_ticks, nightOnly=0):
         nonlocal oid
         spawns.append(obj(oid, name, "spawner", tx, ty, tw, th,
-                          [("mobId", mob), ("maxAlive", alive), ("respawnTicks", respawn_ticks)]))
+                          [("mobId", mob), ("maxAlive", alive), ("respawnTicks", respawn_ticks),
+                           ("nightOnly", nightOnly)]))
         oid += 1
     def portal(name, tx, ty, tw, th, target_map, tx2, ty2):
         nonlocal oid
@@ -99,6 +106,11 @@ def main() -> int:
     # T-101 Old Maw pit: open south-center grass, off the roads and camps.
     # maxAlive 1, 30-min rotation (36000t — GDD 15-60 band, deterministic).
     spawn("old_maw_pit", 28, 38, 6, 4, MOB_OLD_MAW, 1, 36000)
+    # T-162: Pale Cultist preaches the east field; Wraith haunts the circle
+    # by night only. T-163: Synod war patrol walks the east road (town 2).
+    spawn("cultist_east_field", 32, 32, 6, 4, MOB_PALE_CULTIST, 3, 1100)
+    spawn("wraith_stone_circle", 38, 30, 6, 4, MOB_WRAITH, 4, 900, 1)
+    spawn("synod_east_road", 56, 16, 5, 3, MOB_SYNOD_PATROL, 2, 1500)
     portal("west_gate_back", 0, 14, 1, 2, 1, 61, 14)
     portal("mine_mouth_in", 63, 20, 1, 2, 4, 4, 31)   # Bonehowl Mine mouth (S18)
 

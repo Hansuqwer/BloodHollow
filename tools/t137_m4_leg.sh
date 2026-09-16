@@ -16,7 +16,8 @@ DB=/tmp/t137_${TAG}.db
 rm -f $DB $DB-wal $DB-shm
 rm -f logs/t137_${TAG}.bwj logs/t137_${TAG}_server.log logs/t137_${TAG}_bots*.log
 mkdir -p logs
-BUILD_DIR=build/linux-gcc
+# T-154/T-168 one-build-dir law: BH_BUILD_DIR overrides (headless CI).
+BUILD_DIR=${BH_BUILD_DIR:-build/linux-gcc}
 
 echo "[t137] login wave A ($ATK attackers)..."
 ./$BUILD_DIR/server/bh_server --db $DB --port $PORT --soak-secs 120 > logs/t137_${TAG}_server.log 2>&1 &
@@ -48,16 +49,29 @@ con.commit()
 print(f"[t137] topped up {len(want)}: {want[:3]}...")
 PY
 
-echo "[t137] rehearsal run recording epoch 25 ($ATK atk + $DEF def, ${SECS}s)..."
+echo "[t137] rehearsal run recording epoch 29 ($ATK atk + $DEF def, ${SECS}s)..."
+# T-157-F1(a): the drill horns via gm siege-start (bot0), which T-152 gates on
+# the operator allowlist — seat bot0 as drill GM (disclosed staging, same class
+# as the server-down top-up above). BH_GM_NAMES is allowlist additive.
+export BH_GM_NAMES=t137a__00
 ./$BUILD_DIR/server/bh_server --db $DB --port $PORT --soak-secs $((SECS + 30)) --siege-rehearsal --record-world logs/t137_${TAG}.bwj > logs/t137_${TAG}_server.log 2>&1 &
 SRV=$!
 sleep 2
 ./$BUILD_DIR/tools/bots/bh_bots --port $PORT --count $ATK --secs $SECS --profile siege --prefix t137a_ > logs/t137_${TAG}_botsA.log 2>&1 &
 BOTA=$!
 ./$BUILD_DIR/tools/bots/bh_bots --port $PORT --count $DEF --secs $SECS --profile siege --prefix t137d_ --defenders $DEF > logs/t137_${TAG}_botsD.log 2>&1 || true
+# T-157-F1(b) abort-fast: the horn must land shortly after muster (~60s) + march;
+# a missing "battle joined" at 240s means another quiet refusal — fail in 4 min.
+sleep 240
+if ! grep -q "battle joined" logs/t137_${TAG}_server.log; then
+  echo "[t137:$TAG] ABORT: no battle joined at 240s (horn refused again?)"
+  kill $BOTA 2>/dev/null; kill $SRV 2>/dev/null; wait 2>/dev/null || true
+  exit 1
+fi
+echo "[t137:$TAG] horn OK: battle joined, running out the clock..."
 wait $BOTA 2>/dev/null || true
 sleep 2
-kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true
+kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true  # || true: soak may beat us here (set -e)
 
 echo "[t137:$TAG] assertions:"
 grep -c "battle joined" logs/t137_${TAG}_server.log | xargs -I{} echo "battles: {}"

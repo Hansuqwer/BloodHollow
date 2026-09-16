@@ -48,7 +48,7 @@ u32 targetId
 ```
 
 Spend one unassigned stat point (kStatPointsPerLevel per level-up).
-stat: 0=STR, 1=VIT, 2=DEX (INT/MAG land with casters in a later phase).
+stat: 0=STR, 1=VIT, 2=DEX, 3=INT, 4=MAG (T-160 five-stat model, wave-2).
 
 ```proto
 message StatAssign = 8
@@ -145,6 +145,17 @@ u8 unused
 ```proto
 message PartyKick = 24
 u32 targetId
+```
+
+T-167 creation (1-char alpha): a fresh account's first Hello gets LoginResult
+ok=1 AND a CharCreatePrompt instead of a spawn; the client answers CharCreate
+once (class 1..3, sex 1=m/2=f) and the server spawns. New messages bump the
+version via the count (no base change needed for additions).
+
+```proto
+message CharCreate = 25
+u8 classId
+u8 sex
 ```
 
 ## Server -> Client
@@ -279,6 +290,7 @@ u8 aura
 u8 durability
 u8 affix
 u8 refine
+u8 rarity  // T-159: 0 common, 1 magic, 2 rare, 3 unique (bag-row marker + name colour)
 ```
 
 All i32 positions are Q10 fixed-point tile coordinates (sim::kUnitsPerTile=1024).
@@ -300,10 +312,57 @@ u8 count
 
 ```proto
 message PartyMember = 116
-u32 entityId
-string name
-u16 level
-u32 hp
-u32 hpMax
-u16 zoneId
+ u32 entityId
+ string name
+ u16 level
+ u32 hp
+ u32 hpMax
+ u16 zoneId
+```
+
+Siege + pledge wire (T-151, epoch 28): SiegeState carries the castle memory
+(window/battle ticks, gate HP[2] max 300, heart progress/attuned, crown channel,
+band count, phase, vault/crowns, holder pledge). PledgeRoster is the guild
+sheet (header + per-member rows, inventory-style).
+
+```proto
+message SiegeState = 117
+ u32 holderPledgeId
+ string holderPledgeName
+ string holderName
+ u32 windowEndTick
+ u32 battleEndTick
+ u16 gateHp0
+ u16 gateHp1
+ u16 heartProgress
+ u8 heartAttuned
+ u32 crownOwnerId
+ string crownOwnerName
+ u32 crownDeadline
+ u8 bandCount
+ u8 phase
+ u32 vaultGold
+ u32 crowns
+```
+
+```proto
+message PledgeRoster = 118
+ u32 pledgeId
+ string name
+ u8 emblem
+ u8 count
+ u32 vaultGold
+```
+
+```proto
+message PledgeMember = 119
+ string name
+ u8 rank
+ u16 level
+ u8 online
+```
+
+```proto
+message CharCreatePrompt = 120
+u8 unused
 ```
