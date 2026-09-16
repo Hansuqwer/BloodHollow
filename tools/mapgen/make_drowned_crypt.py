@@ -7,6 +7,7 @@ Sepulcher Elite camps ring the boss apse; the Gravemother presides last,
 alone at the font. One portal pair (depths stairs <-> crypt bone vault).
 Deterministic LCG like the other gens.
 """
+import argparse
 import json
 from pathlib import Path
 
@@ -28,8 +29,11 @@ def rect(g, x0, y0, x1, y1, v):
 
 
 def main() -> int:
+    ap = argparse.ArgumentParser()
     repo = Path(__file__).resolve().parents[2]
-    out = repo / "data" / "maps-src" / "drowned_crypt.tmj"
+    ap.add_argument("--out", default=str(repo / "data" / "maps-src" / "drowned_crypt.tmj"))
+    args = ap.parse_args()
+    out = Path(args.out)
 
     # flooded bones: whole dungeon drowned except carved stone
     ground = [[WATER] * W for _ in range(H)]

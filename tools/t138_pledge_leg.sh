@@ -18,7 +18,8 @@ DB=/tmp/t138.db
 rm -f $DB $DB-wal $DB-shm
 rm -f logs/t138.bwj logs/t138_server.log logs/t138_bots1.log logs/t138_bots2.log logs/t138_bots3.log
 mkdir -p logs
-BUILD_DIR=build/linux-gcc
+# T-154/T-168 one-build-dir law: BH_BUILD_DIR overrides (headless CI).
+BUILD_DIR=${BH_BUILD_DIR:-build/linux-gcc}
 
 echo "[t138] Server up (record epoch 26)..."
 ./$BUILD_DIR/server/bh_server --db $DB --port $PORT --soak-secs 100 --record-world logs/t138.bwj > logs/t138_server.log 2>&1 &

@@ -5,6 +5,7 @@
 harder camps westward; single west portal returns to thornwall.
 Deterministic (fixed LCG) like the other gens.
 """
+import argparse
 import json
 from pathlib import Path
 
@@ -25,8 +26,11 @@ def rect(g, x0, y0, x1, y1, v):
 
 
 def main() -> int:
+    ap = argparse.ArgumentParser()
     repo = Path(__file__).resolve().parents[2]
-    out = repo / "data" / "maps-src" / "fields_overflow.tmj"
+    ap.add_argument("--out", default=str(repo / "data" / "maps-src" / "fields_overflow.tmj"))
+    args = ap.parse_args()
+    out = Path(args.out)
 
     ground = [[GRASS] * W for _ in range(H)]
 
