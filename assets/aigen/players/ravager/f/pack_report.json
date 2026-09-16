@@ -2,22 +2,38 @@
  "anims": {
   "walk": {
    "frames": 1,
+<<<<<<< HEAD
    "fps": 10,
+=======
+   "fps": 10.0,
+>>>>>>> origin/task/T-145-friday-ready
    "max_colours": 28
   },
   "attack": {
    "frames": 1,
+<<<<<<< HEAD
    "fps": 12,
+=======
+   "fps": 12.0,
+>>>>>>> origin/task/T-145-friday-ready
    "max_colours": 31
   },
   "cast": {
    "frames": 1,
+<<<<<<< HEAD
    "fps": 10,
+=======
+   "fps": 10.0,
+>>>>>>> origin/task/T-145-friday-ready
    "max_colours": 31
   },
   "die": {
    "frames": 1,
+<<<<<<< HEAD
    "fps": 8,
+=======
+   "fps": 8.0,
+>>>>>>> origin/task/T-145-friday-ready
    "max_colours": 29
   }
  },

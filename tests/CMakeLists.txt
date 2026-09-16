@@ -13,6 +13,7 @@ add_executable(bh_tests
   test_combat.cpp
   test_cmdparity.cpp
   test_party.cpp
+  test_pledges.cpp
   test_kits.cpp
   test_alignment.cpp
   test_fence.cpp
@@ -48,6 +49,15 @@ add_executable(bh_tests
   test_affix_v2.cpp
   test_siege_stub.cpp
   test_mine.cpp
+  test_uniques.cpp
+  test_blood_moon.cpp
+  test_ek_oath.cpp
+  test_siege_sched.cpp
+  test_siege_gates.cpp
+  test_siege_crown.cpp
+  test_siege_taxes.cpp
+  test_pledge_bands.cpp
+  test_pledge_vault.cpp
 )
 target_link_libraries(bh_tests PRIVATE bh_shared bh_protocol bh_server_world bh_doctest bh_warnings)
 # T-ART-02: snapZoom lives in raylib-including camera_rig.h — link raylib for

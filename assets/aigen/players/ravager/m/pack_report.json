@@ -2,22 +2,38 @@
  "anims": {
   "walk": {
    "frames": 1,
+<<<<<<< HEAD
    "fps": 10,
+=======
+   "fps": 10.0,
+>>>>>>> origin/task/T-145-friday-ready
    "max_colours": 31
   },
   "attack": {
    "frames": 1,
+<<<<<<< HEAD
    "fps": 12,
+=======
+   "fps": 12.0,
+>>>>>>> origin/task/T-145-friday-ready
    "max_colours": 32
   },
   "cast": {
    "frames": 1,
+<<<<<<< HEAD
    "fps": 10,
+=======
+   "fps": 10.0,
+>>>>>>> origin/task/T-145-friday-ready
    "max_colours": 30
   },
   "die": {
    "frames": 1,
+<<<<<<< HEAD
    "fps": 8,
+=======
+   "fps": 8.0,
+>>>>>>> origin/task/T-145-friday-ready
    "max_colours": 32
   }
  },
@@ -45,9 +61,13 @@
   "die/N <- E",
   "die/NE <- E"
  ],
+<<<<<<< HEAD
  "feet_warnings": [
   "walk/SE/0: lowest body row 38 vs anchorY 42"
  ],
+=======
+ "feet_warnings": [],
+>>>>>>> origin/task/T-145-friday-ready
  "errors": [],
  "loader_rule_replica": "clean",
  "sheet_px": [

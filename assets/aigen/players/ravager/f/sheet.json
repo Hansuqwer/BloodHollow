@@ -5,7 +5,11 @@
    "frameH": 48,
    "frames": 1,
    "dirs": 8,
+<<<<<<< HEAD
    "fps": 10,
+=======
+   "fps": 10.0,
+>>>>>>> origin/task/T-145-friday-ready
    "offsetX": 0,
    "offsetY": 0,
    "anchorY": 42
@@ -15,7 +19,11 @@
    "frameH": 48,
    "frames": 1,
    "dirs": 8,
+<<<<<<< HEAD
    "fps": 12,
+=======
+   "fps": 12.0,
+>>>>>>> origin/task/T-145-friday-ready
    "offsetX": 32,
    "offsetY": 0,
    "anchorY": 42
@@ -25,7 +33,11 @@
    "frameH": 48,
    "frames": 1,
    "dirs": 8,
+<<<<<<< HEAD
    "fps": 10,
+=======
+   "fps": 10.0,
+>>>>>>> origin/task/T-145-friday-ready
    "offsetX": 64,
    "offsetY": 0,
    "anchorY": 42
@@ -35,7 +47,11 @@
    "frameH": 48,
    "frames": 1,
    "dirs": 8,
+<<<<<<< HEAD
    "fps": 8,
+=======
+   "fps": 8.0,
+>>>>>>> origin/task/T-145-friday-ready
    "offsetX": 96,
    "offsetY": 0,
    "anchorY": 42
