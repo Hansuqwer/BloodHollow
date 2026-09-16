@@ -125,12 +125,9 @@ done:
   if (mapId == 6) spawnSteward(zone);  // H1: the castle keeper (kind 73)
   initialMobSpawns(zone, mapId);
   if (mapId == 1 || mapId == 3) spawnAnvils();   // plaza + bone barrow
-<<<<<<< HEAD
   if (mapId == 4) spawnOreNodes();  // H2: blackiron ore in the mine
-=======
   if (mapId == 6) spawnSiegeGates(zone);  // T-132: breach objectives
   if (mapId == 6) spawnHeartstone(zone);  // T-133: capture + crown
->>>>>>> origin/task/T-145-friday-ready
   if (mapId == 1) spawnNpcs();  // T-094: twins + post guards (after anvil)
   return true;
 }
@@ -1518,26 +1515,6 @@ void World::spawnConfessor(Zone& zone) {
   }
 }
 
-<<<<<<< HEAD
-// H1 siege stub: `gm siege-now` opens the impromptu rehearsal the MVP
-// Friday-Night Test assumes — registration flag + active flag + fiction
-// line, 90 min on the 20 Hz clock (108000 ticks, Saturday-law placeholder).
-// One rehearsal at a time; dead callers and mid-siege repeats fail quiet
-// (era law: the horn is already sounding). No scheduler, gates, Heartstone,
-// crown, taxes, or holder buff — those are H2-H4.
-bool World::siegeNow(Entity& e) {
-  if (e.kind != EntityKind::kPlayer || e.dead) return false;
-  if (siegeActive_) return false;
-  siegeRegistered_ = true;
-  siegeActive_ = true;
-  siegeEndsAt_ = tick_ + 108000;
-  WorldEvent ev;
-  ev.aboutId = e.id;
-  ev.statsChanged = true;
-  ev.chatCh = 2;
-  ev.chatText = e.name +
-                " sounds the war-horn: the Weeping Castle rehearsal begins (90 min).";
-=======
 // ---- Blood Moon (T-129, H4 night war) --------------------------------------
 // Session flag to next dawn: curse lasts 60 s and the night bite lands
 // x1.30 while red. GM-raised for now (open to all callers like H1's
@@ -1845,12 +1822,10 @@ bool World::crown(Entity& e) {
   ev.aboutId = e.id;
   ev.chatCh = 255;
   ev.chatText = "you kneel before the Heartstone... (hold still)";
->>>>>>> origin/task/T-145-friday-ready
   events_.push_back(std::move(ev));
   return true;
 }
 
-<<<<<<< HEAD
 // H1: the Castle Steward keeps the weeping keep (kind 73, T-ART-06 reserved).
 // First walkable tile with no furniture inside the keep interior
 // (17,5)-(22,8 per tools/mapgen/make_weeping_castle.py), session-seeded
@@ -1880,7 +1855,10 @@ void World::spawnSteward(Zone& zone) {
       f.walker.place(sim::TilePos{x, y});
       insertEntity(std::move(f));
       return;
-=======
+    }
+  }
+}
+
 void World::heartTick() {
   if (!siegeBattleActive() || heartAttuned_) return;
   const Entity* stone = nullptr;
@@ -1961,13 +1939,10 @@ void World::crownTick() {
       ev.chatText = e.name + " takes the Weeping Crown!";
       events_.push_back(std::move(ev));
       std::printf("[siege] crowned: %s holds the castle\n", e.name.c_str());
->>>>>>> origin/task/T-145-friday-ready
     }
   }
 }
 
-<<<<<<< HEAD
-=======
 // ---- siege economy (T-134, Phase S 3/4) ------------------------------------
 // Tax-only vault (spending integrates with the pledge vault in Phase P).
 // Holder acts blessed (+10% hit&dmg). All deterministic, zero draws.
@@ -2000,7 +1975,6 @@ void World::siegeReadout(Entity& requester) {
   }
 }
 
->>>>>>> origin/task/T-145-friday-ready
 // ---- anvil & aura spine (T-041/T-042, RFC 0001) ----------------------------
 
 void World::spawnAnvils() {

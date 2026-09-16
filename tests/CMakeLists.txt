@@ -47,7 +47,6 @@ add_executable(bh_tests
   test_t112_spawn_epoch.cpp
   test_weapon_skill_persist.cpp
   test_affix_v2.cpp
-  test_siege_stub.cpp
   test_mine.cpp
   test_uniques.cpp
   test_blood_moon.cpp

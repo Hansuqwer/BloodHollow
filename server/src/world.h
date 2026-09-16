@@ -392,14 +392,6 @@ class World {
                       std::uint32_t vault, std::uint32_t crowns);
   void siegeReadout(Entity& requester);  // T-134: gm siege directed lines
   void spawnConfessor(Zone& zone);  // zone 1 chapel only
-  // H1 siege stub (MVP Friday-Night Test leg 3): impromptu rehearsal flag.
-  // Journaled via kSiegeNow so replay stays exact; scheduler/gates/crown/
-  // taxes/buff are H2-H4. GM gating waits on accounts (H2) — open to all
-  // callers for rehearsals, like the Friday-night script assumes.
-  bool siegeNow(Entity& e);  // registers + activates a 90-min rehearsal
-  bool siegeActive() const { return siegeActive_; }
-  bool siegeRegistered() const { return siegeRegistered_; }
-  sim::Tick siegeEndsAt() const { return siegeEndsAt_; }
   void spawnSteward(Zone& zone);  // zone 6 keep only (Castle Steward, kind 73)
   void spawnAnvils();                        // plaza (z1) + bone barrow (z3)
   void spawnOreNodes();                       // H2: blackiron ore in zone 4 (mine)
@@ -603,14 +595,6 @@ class World {
   // T-101 named-elite first blood (session-scoped: vanishes at reboot like
   // the bounty sheet — persistent ledgers wait on Marrowgate/EK design).
   bool namedEliteSlain_[3] = {false, false, false};
-<<<<<<< HEAD
-  // H1 siege stub: session-scoped rehearsal flags (never persisted; replay
-  // reproduces them from the journaled kSiegeNow command). Kept OUT of
-  // worldHash by design — hash-neutral, so no journal epoch bump.
-  bool siegeActive_ = false;
-  bool siegeRegistered_ = false;
-  sim::Tick siegeEndsAt_ = -1;
-=======
   // T-129 Blood Moon: session flags (never persisted; replay reproduces them
   // from the journaled kBloodMoon command, H1 pattern).
   bool bloodMoonActive_ = false;
@@ -637,7 +621,6 @@ class World {
   std::string siegeHolderName_{};
   bool siegeDirty_ = false;
   sim::Tick siegeSavedAt_ = -10000;
->>>>>>> origin/task/T-145-friday-ready
   sim::Tick tick_ = 0;
   std::vector<WorldEvent> events_{};
 

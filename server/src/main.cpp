@@ -118,10 +118,13 @@ void sendMsg(ENetPeer* peer, const Msg& m, Server& s) {
 // (1013/1014/1009) extend the same draws: 24; T-135 Weeping Castle boots
 // as zone 6 (spawners + gates + heartstone shift the entity set): 25;
 // T-138 rebase of T-122: pledge registrar post (world composition, T-112
-// precedent) + pledge kinds 34-40 + g-sidecar + schema v13: 26.
+// precedent) + pledge kinds 34-40 + g-sidecar + schema v13: 26; merge
+// repair (2026-09-16): the H1/H2 mine+steward lane (ore nodes map 4,
+// Castle Steward map 6) merged under epoch-26 journals shifts the entity
+// set (T-068 precedent) — t138/t140 re-replay 12-14/14 mismatches: 27.
 // Replay refuses non-matching epoch journals instead of lying with them.
-constexpr int kJournalEpoch = 26;  // T-138: pledge-lite rebased. Fresh
-                                   // gate leg: logs/t138.bwj
+constexpr int kJournalEpoch = 27;  // merge repair. Fresh gate leg:
+// logs/t146.bwj (5 wander bots x 10 s, replay mm=0)
 
 // ---- world journal record helpers (M2) ------------------------------------
 void journalTickHash(Server& s) {
@@ -514,11 +517,6 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
     case kIdChatSend: {
       ChatSend m;
       if (!m.deserialize(pv.body) || !sess.inWorld) return;
-<<<<<<< HEAD
-      if (m.text == "gm siege-now") {  // H1 rehearsal stub: journaled, replay-exact
-        Command c;
-        c.kind = Command::kSiegeNow;
-=======
       if (m.text == "gm blood-moon") {  // T-129: journaled, replay-exact (H1 shape)
         Command c;
         c.kind = Command::kBloodMoon;
@@ -528,7 +526,6 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
       if (m.text == "gm siege-start") {  // T-131: in-window + bands, else quiet
         Command c;
         c.kind = Command::kSiegeStart;
->>>>>>> origin/task/T-145-friday-ready
         if (sess.cmdq.size() < 32) sess.cmdq.push_back(std::move(c));
         break;
       }

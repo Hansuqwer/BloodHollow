@@ -24,23 +24,21 @@ struct Command {
                              kTradeCancel, kAnvil,
                              kPartyInvite, kPartyAccept, kPartyLeave,
                              kPartyKick, kKitChoose, kDuel, kForfeit, kRepair, kRefine,
-<<<<<<< HEAD
-                              kConfess, kRepent, kSiegeNow, kMine } kind;
-  // T-053: a = kit id; T-056: kDuel a = target id (resolved pre-journal)
-=======
                              kConfess, kRepent, kBloodMoon, kOath,
                              kSiegeReg, kSiegeStart, kBreach, kCrown,
                              kPledgeCreate, kPledgeInvite, kPledgeAccept,
                              kPledgeLeave, kPledgeKick, kPledgeRank,
-                             kPledgeDisband, kPledgeTithe } kind;
+                             kPledgeDisband, kPledgeTithe, kMine } kind;
   // T-053: a = kit id; T-056: kDuel a = target id (resolved pre-journal);
   // T-122/T-138: pledge a = target id (invite/kick/rank; resolved
   // pre-journal), channel = rank for kPledgeRank; kPledgeCreate carries
   // the name in text live-only (the c-line journal carries no strings —
   // replay synthesizes "pledge-<id>", hash-neutral: pledge state is not
   // in worldHash). Pledge kinds sit at 34-40 (post-T-133 append);
-  // kPledgeTithe is 41 (T-140, a = gold amount).
->>>>>>> origin/task/T-145-friday-ready
+  // kPledgeTithe is 41 (T-140, a = gold amount). kMine is appended LAST
+  // (H2 mine lane merged after the siege stack — appending keeps every
+  // prior kind number stable so pre-mine journals replay; never insert
+  // mid-enum).
   std::int32_t a = 0, b = 0;
   std::uint8_t channel = 0;
   std::string text{};
@@ -180,13 +178,6 @@ inline void applyWorldCommand(World& w, Entity& e, const Command& c) {
     case Command::kRepent:
       w.repent(e);  // T-075 chapel grace
       break;
-<<<<<<< HEAD
-    case Command::kSiegeNow:
-      w.siegeNow(e);  // H1 rehearsal stub (journaled: replay-exact)
-      break;
-    case Command::kMine:
-      w.tryMine(e);  // H2: mine blackiron ore at ore nodes
-=======
     case Command::kBloodMoon:
       w.bloodMoon(e);  // T-129 red-moon flag (journaled: replay-exact)
       break;
@@ -230,7 +221,9 @@ inline void applyWorldCommand(World& w, Entity& e, const Command& c) {
       break;
     case Command::kPledgeTithe:
       w.pledgeTithe(e, static_cast<std::uint32_t>(c.a));  // T-140 tithe
->>>>>>> origin/task/T-145-friday-ready
+      break;
+    case Command::kMine:
+      w.tryMine(e);  // H2: mine blackiron ore at ore nodes
       break;
     case Command::kChat:
     case Command::kPing:
