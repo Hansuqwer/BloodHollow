@@ -1,0 +1,40 @@
+[Unit]
+Description=BloodHollow headless game server (alpha)
+Documentation=https://github.com/Hansuqwer/BloodHollow/blob/master/docs/ops/gm-runbook.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Alpha layout: repo checked out at /srv/bloodhollow, DB on local disk.
+# Adjust User= / paths to the host. The server is single-process,
+# single-threaded sim (20 Hz); one unit per world.
+User=bloodhollow
+Group=bloodhollow
+WorkingDirectory=/srv/bloodhollow
+ExecStart=/srv/bloodhollow/build/linux-gcc/server/bh_server --db /var/lib/bloodhollow/world.bhdb --port 7777 --soak-secs 0
+# Crash reporting: stdout/stderr (net markers, siege markers, replay verdicts)
+# go to the journal; core dumps via coredumpctl (see gm-runbook §5).
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=bh-server
+# Auto-restart: always (clean exits too — a clean exit outside a maintenance
+# window means the soak timer fired or the operator stopped it by hand;
+# check the journal before assuming a crash).
+Restart=always
+RestartSec=10
+# Disk/alert cron lives beside this unit (see tools/ops/bh_backup.sh and the
+# runbook §4): out-of-disk kills SQLite mid-transaction, so the cron pages
+# BEFORE the restart loop starts spinning.
+# Resource guardrails (tune after the M5 200-bot soak):
+MemoryMax=2G
+CPUQuota=200%
+# Hardening (alpha host is a single-purpose VM; tighten before public wave):
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/bloodhollow /srv/bloodhollow/logs
+
+[Install]
+WantedBy=multi-user.target

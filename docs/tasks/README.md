@@ -977,6 +977,15 @@ wire change + server pack + client map + screenshots + contrast call.
 Turn-1 Gravecaller gens (seeds 2001–2010) REJECTED 10/10, quarantined;
 probe-before-batch rule. Devlog 0103 · card `T-142.md`. In progress.
 
+## Done — T-143 (2026-09-15): ops boxes, agent-closable set (Phase O, 1/2)
+
+T-143 OPS (no code): systemd unit (verify clean) + backup script + REAL
+drill (accounts=5 chars=5 pledges=1 uv=14, integrity ok) + GM runbook
+(verified verbs only; /ban + broadcast carded as gaps) + crash posture
+(journald/coredumpctl). Handshake refusal pre-existing (reason=4).
+Director keeps: launcher, site, legal, clean-boot, surveys. Devlog 0104 ·
+card `T-143.md` (→ done on merge). Next: M5 pre-soak + T-142 wiring.
+
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
 | Card | Title | Notes |
