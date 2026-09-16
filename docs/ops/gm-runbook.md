@@ -3,27 +3,46 @@
 Every command below is verified against the tree (chat-verb switch in
 `server/src/main.cpp`, World methods in `server/src/world.cpp`). Anything
 not listed here does not exist — do not invent slash commands on a live
-server. Audit weekly: `logs/trades.log` (dupe trail, T-080) + the unit
-journal (`journalctl -u bh-server`).
+server. Audit weekly: `logs/trades.log` (dupe trail, T-080) + `logs/gm.log`
+(T-152 GM audit) + `logs/bans.log` (T-152 bans) + the unit journal
+(`journalctl -u bh-server`).
 
 ## 1. Who is a GM
 
-There is no GM flag on accounts (prototype posture). GM verbs are chat
-lines typed by the operator's own logged-in character on the live server.
-Keep the operator character logged out unless operating; all GM chat is
-visible to players in range (say) or world (broadcasts).
+GM verbs are **gated** (T-152). Only accounts on the operator allowlist may
+execute them; everyone else receives a directed `gm denied: operator only`
+line and a `[gm-denied]` audit entry.
+
+- **Allowlist sources (union, case-insensitive):**
+  - Env `BH_GM_NAMES` — comma-separated, trimmed. Example:
+    `BH_GM_NAMES=alice,bob,carol` (`alice` == `Alice`). Restart to reload.
+  - Table `gm_accounts(name)` — `INSERT INTO gm_accounts(name) VALUES('alice')`
+    (COLLATE NOCASE). Loaded at boot; no restart needed beyond `sqlite3` edit
+    + `systemctl reload` (or restart). `SELECT name FROM gm_accounts;` lists.
+- Empty allowlist = no GM (every `gm *` is denied). Set at least one for ops.
+- All `gm *` verbs must be typed by the operator's **logged-in character**;
+  keep that character logged out unless operating. Audit: `logs/gm.log`.
+
+**Gated GM verbs (all require GM):**
+- `gm blood-moon` — raise Blood Moon until next 05:00 (journaled c-line, replay-exact; hash-neutral like siege)
+- `gm siege-start` — open the siege battle (in-window + ≥1 band, else quiet; journaled)
+- `gm ek` — direct EK board readout (directed ch 255, unjournaled)
+- `gm siege` — direct castle readout holder/vault/crowns/bands (directed, unjournaled)
+- `gm announce <text>` — world-wide ch 2 broadcast `[ANNOUNCE] <text>` to every in-world session; **journaled** as `y` line (world-visible history) but hash-neutral (like other ch2 broadcasts). 160-char sanitized.
+
+Non-GM typing any of the above gets `gm denied: operator only (verb)` and
+`[gm-denied] tick=… name=… verb=…` in `logs/gm.log` and stdout.
 
 ## 2. Kick / ban
 
-- **Party kick (any player):** `/kick <name>` — removes from party only.
+- **Party kick (any player, party leader only):** `/kick <name>` — removes from party only. Stays as before; GM's `/kick` is session-level (below) and takes precedence when the sender is a GM.
 - **Pledge kick (Liege):** `/pledge kick <name>`.
-- **No `/ban` verb exists** (verified 2026-09-15 — follow-up carded).
-  Live procedure: `--no-register` restart to stop fresh accounts, then at
-  the host: `sqlite3 world.bhdb "DELETE FROM accounts WHERE name='<x>'"` +
-  firewall-drop the IP + note it in the audit log. Unban = remove the rule.
-- **Throttle shield (T-109):** 30 new accounts/60 s/IP + 60 logins/60 s/IP
-  + 10 bad-password fails → 60 s lockout. Leave it on for every public
-  window; mass-login waves must stagger (bots do, players must be told).
+- **Operator kick (GM only):** `/kick <name>` — session drop (if online). Sends `KickNotice` + disconnect, `logs/gm.log` + `logs/bans.log` line `[kick] tick=… by=… target=…`, world ch2 `was kicked by`.
+- **Operator ban (GM only):** `/ban <name> <minutes> [reason]` — persists in `bans` table (`name` PK COLLATE NOCASE, `expires` unix secs, `reason`, `banned_by`), survives restart, `pruneExpiredBans` at boot. Also kicks if online. Audit: `[ban] tick=… by=… target=… minutes=… reason='…' expires=…` to `logs/gm.log` + `logs/bans.log`, world ch2 `was banned for …m`. Login with an active ban is refused `LoginResult(ok=0, reason=7)` + `KickNotice(banned…)` and `[ban-denied]` log. Expiry is wall-clock (`time(2)`); `expires==0` would be permanent (not used by `/ban` which requires ≥1 min, max 5256000 ≈10y).
+- **Operator unban (GM only):** `/unban <name>` — deletes `bans` row, `logs/gm.log` + `logs/bans.log` `[unban]`, world ch2 `was unbanned by`.
+- **Throttle shield (T-109):** 30 new accounts/60 s/IP + 60 logins/60 s/IP + 10 bad-password fails → 60 s lockout. Leave it on for every public window; mass-login waves must stagger (bots do, players must be told).
+
+Legacy live procedure without `/ban` (pre-T-152: `DELETE FROM accounts` + firewall-drop) is **obsolete** — use `/ban`.
 
 ## 3. Rollback
 
@@ -40,11 +59,12 @@ visible to players in range (say) or world (broadcasts).
 
 ## 4. Siege (weekly 90-min, Saturday 20:00–21:30 game time)
 
-- `gm siege-start` (in-window + ≥1 band, else quiet) opens the battle;
-  `gm siege` reads holder/vault/crowns/bands; `/siege-reg` enlists the
+- `gm siege-start` (GM, in-window + ≥1 band, else quiet) opens the battle;
+  `gm siege` (GM) reads holder/vault/crowns/bands; `/siege-reg` enlists the
   speaker's band (pledge-sworn = whole war-host, T-139); `/breach` rams;
   `/crown` kneels 10 s at the attuned stone.
-- Rehearsal override: `gm siege-now` (H1 stub) / `--siege-rehearsal` flag.
+- Rehearsal override: `--siege-rehearsal` flag (journal epoch-rehearsal).
+  `gm siege-now` was removed in the 2026-09-16 merge repair — use the flag.
   Never rehearse on the alpha DB — rehearsals write journals + holder
   state. Drill on a scratch `--db /tmp/...`.
 - Markers to grep, not stdout: `breached by`, `attuned at tick`, `crowned:`,
@@ -52,12 +72,7 @@ visible to players in range (say) or world (broadcasts).
 
 ## 5. Announce / crash reporting
 
-- **Announce:** plain channel-0 say reaches AoI only. There is NO free-text
-  GM broadcast verb (verified 2026-09-15 — follow-up carded). The only
-  world-wide (ch-2) lines the server emits are event-driven (`gm
-  blood-moon`, `gm siege-start`, first blood, war-horn) — all carry sim
-  side effects, so none is usable as a pure announcement. Workaround:
-  say it in Thornwall plaza at peak, or card a `gm announce` verb.
+- **Announce (GM):** `gm announce <text>` — world ch 2 `[ANNOUNCE]`, journaled as `y` line (replay-ignored, hash-neutral). Do **not** use plain ch-0 say for ops (AoI only). All other ch-2 world lines are event-driven (`gm blood-moon`, `gm siege-start`, first blood, war-horn).
 - **Crash reporting:** unit captures stdout/stderr to the journal
   (`StandardOutput/StandardError=journal`); cores via
   `coredumpctl -u bh-server`. Weekly: `coredumpctl --since "1 week ago"`
@@ -71,4 +86,4 @@ visible to players in range (say) or world (broadcasts).
 Refused at handshake by construction: `Hello.protoVersion` mismatch →
 `LoginResult(ok=0, reason=4)` (messages.md). Launcher duty is to fetch the
 manifest first so players never see reason=4. There is NO launcher in the
-repo (director-owned, MVP §7 box open).
+repo (director-owned, MVP §7 box open). **New reason 7** = banned (T-152).

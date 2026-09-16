@@ -59,6 +59,7 @@ add_executable(bh_tests
   test_siege_taxes.cpp
   test_pledge_bands.cpp
   test_pledge_vault.cpp
+  test_gm_authority.cpp
 )
 target_link_libraries(bh_tests PRIVATE bh_shared bh_protocol bh_server_world bh_doctest bh_warnings)
 # T-ART-02: snapZoom lives in raylib-including camera_rig.h — link raylib for

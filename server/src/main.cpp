@@ -3,6 +3,7 @@
 // 20 Hz fixed tick. Protocol v0 (shared/protocol/messages.md).
 // Sprint 5 (P2): stats/XP/levels, melee resolve, mobs from map spawners.
 #include <algorithm>
+#include <cctype>
 #include <map>
 #include <chrono>
 #include <cinttypes>
@@ -11,6 +12,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <deque>
+#include <filesystem>
 #include <optional>
 #include <set>
 #include <string>
@@ -79,6 +81,10 @@ struct Server {
   // loginlimit.h (pure logic, unit-tested); these are its wiring points.
   LoginLimiter loginLimiter{};
   bool allowRegister = true;
+  // T-152 GM authority
+  std::unordered_set<std::string> gmAllow{};  // lowercased names from BH_GM_NAMES + gm_accounts
+  std::string gmLogPath = "logs/gm.log";
+  std::string banLogPath = "logs/bans.log";
 };
 
 // Monotonic milliseconds for the login limiter (never wall-clock: NTP steps
@@ -93,6 +99,61 @@ void pushOwnStats(Server& s, Session& sess);
 void pushInventory(Server& s, Session& sess);
 void pushSiegeState(Server& s, Session& sess);
 void pushPledgeRoster(Server& s, Session& sess);
+
+// ---- T-152 GM helpers ----------------------------------------------------
+inline std::string gmToLower(const std::string& in) {
+  std::string r = in;
+  std::transform(r.begin(), r.end(), r.begin(),
+                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  return r;
+}
+inline bool gmIsOperator(const Server& s, const std::string& name) {
+  return s.gmAllow.find(gmToLower(name)) != s.gmAllow.end();
+}
+inline void gmAppendLog(const std::string& path, const std::string& line) {
+  std::error_code ec;
+  auto parent = std::filesystem::path(path).parent_path();
+  if (!parent.empty()) std::filesystem::create_directories(parent, ec);
+  if (FILE* f = std::fopen(path.c_str(), "a")) {
+    std::fputs(line.c_str(), f);
+    std::fclose(f);
+  }
+}
+inline void gmLoadAllowlist(Server& s) {
+  std::unordered_set<std::string> allow;
+  if (const char* env = std::getenv("BH_GM_NAMES")) {
+    std::string v(env);
+    size_t pos = 0;
+    while (pos < v.size()) {
+      size_t comma = v.find(',', pos);
+      std::string tok = v.substr(pos, comma == std::string::npos ? std::string::npos
+                                                                  : comma - pos);
+      // trim
+      size_t a = tok.find_first_not_of(" \t\r\n");
+      size_t b = tok.find_last_not_of(" \t\r\n");
+      if (a != std::string::npos && b != std::string::npos)
+        tok = tok.substr(a, b - a + 1);
+      else
+        tok.clear();
+      if (!tok.empty()) allow.insert(gmToLower(tok));
+      if (comma == std::string::npos) break;
+      pos = comma + 1;
+    }
+  }
+  std::vector<std::string> fromDb;
+  std::string err;
+  if (s.db.loadGmAccounts(&fromDb, &err)) {
+    for (auto& n : fromDb) allow.insert(gmToLower(n));
+  }
+  s.gmAllow = std::move(allow);
+  std::printf("[gm] allowlist %zu entries", s.gmAllow.size());
+  if (!s.gmAllow.empty()) {
+    std::printf(":");
+    for (auto& n : s.gmAllow) std::printf(" %s", n.c_str());
+  }
+  std::printf("\n");
+  std::fflush(stdout);
+}
 
 void send(ENetPeer* peer, const std::vector<std::uint8_t>& bytes, Server& s) {
   ENetPacket* p = enet_packet_create(bytes.data(), bytes.size(), ENET_PACKET_FLAG_RELIABLE);
@@ -341,7 +402,7 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
       }
       // T-109: throttle + registration gate BEFORE any DB work. Reason codes:
       // 5 = rate-limited / bad-credentials lockout, 6 = registration disabled.
-      // (1=bad credentials, 2=invalid name, 3=db error, 4=protocol mismatch.)
+      // (1=bad credentials, 2=invalid name, 3=db error, 4=protocol mismatch, 7=banned.)
       const std::uint32_t ip = sess.peer->address.host;
       const std::int64_t nowMs = steadyNowMs();
       if (s.loginLimiter.lockedOut(ip, nowMs) ||
@@ -351,6 +412,44 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
         r.reason = 5;
         sendMsg(sess.peer, r, s);
         return;
+      }
+      // T-152: banned users refused before any account creation.
+      {
+        bool banned = false;
+        std::string banReason;
+        std::int64_t banExp = 0;
+        std::string banErr;
+        if (s.db.isBanned(h.username, &banned, &banReason, &banExp, &banErr) && banned) {
+          const std::int64_t nowSec = ::time(nullptr);
+          if (banExp == 0 || banExp > nowSec) {
+            LoginResult r;
+            r.ok = 0;
+            r.reason = 7;  // banned
+            sendMsg(sess.peer, r, s);
+            KickNotice kn;
+            kn.reason = std::string("banned") +
+                        (banReason.empty() ? "" : std::string(": ") + banReason) +
+                        (banExp == 0 ? " (permanent)"
+                                     : " (until " + std::to_string(banExp) + ")");
+            sendMsg(sess.peer, kn, s);
+            std::printf("[ban] login denied banned=%s by_exp=%lld reason='%s'\n",
+                        h.username.c_str(), static_cast<long long>(banExp),
+                        banReason.c_str());
+            std::fflush(stdout);
+            gmAppendLog(s.banLogPath,
+                        "[ban-denied] user=" + h.username +
+                            " expires=" + std::to_string(banExp) +
+                            " reason='" + banReason + "'\n");
+            gmAppendLog(s.gmLogPath,
+                        "[ban-denied] user=" + h.username +
+                            " expires=" + std::to_string(banExp) +
+                            " reason='" + banReason + "'\n");
+            return;
+          } else {
+            std::string delErr;
+            s.db.deleteBan(h.username, &delErr);
+          }
+        }
       }
       bool acctExists = false;
       std::string acctErr;
@@ -524,19 +623,368 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
     case kIdChatSend: {
       ChatSend m;
       if (!m.deserialize(pv.body) || !sess.inWorld) return;
+      // T-152 GM authority gate
+      auto gmDenyTmp = [&](const std::string& verb) {
+        proto::ChatMsg dm;
+        dm.channel = 2;
+        dm.from = "";
+        dm.text = "gm denied: operator only (" + verb + ")";
+        sendMsg(sess.peer, dm, s);
+        std::printf("[gm-denied] tick=%lld name=%s verb=%s\n",
+                    static_cast<long long>(s.tick), sess.user.c_str(), verb.c_str());
+        std::fflush(stdout);
+        gmAppendLog(s.gmLogPath,
+                    "[gm-denied] tick=" + std::to_string(s.tick) + " name=" +
+                        sess.user + " verb=" + verb + "\n");
+      };
+      auto isGmTmp = [&]() -> bool { return gmIsOperator(s, sess.user); };
       if (m.text == "gm blood-moon") {  // T-129: journaled, replay-exact (H1 shape)
+        if (!isGmTmp()) {
+          gmDenyTmp("gm blood-moon");
+          break;
+        }
+        std::printf("[gm] %s executes gm blood-moon\n", sess.user.c_str());
+        std::fflush(stdout);
+        gmAppendLog(s.gmLogPath, "[gm] tick=" + std::to_string(s.tick) +
+                                     " by=" + sess.user + " verb=gm blood-moon\n");
         Command c;
         c.kind = Command::kBloodMoon;
         if (sess.cmdq.size() < 32) sess.cmdq.push_back(std::move(c));
         break;
       }
       if (m.text == "gm siege-start") {  // T-131: in-window + bands, else quiet
+        if (!isGmTmp()) {
+          gmDenyTmp("gm siege-start");
+          break;
+        }
+        std::printf("[gm] %s executes gm siege-start\n", sess.user.c_str());
+        std::fflush(stdout);
+        gmAppendLog(s.gmLogPath, "[gm] tick=" + std::to_string(s.tick) +
+                                     " by=" + sess.user + " verb=gm siege-start\n");
         Command c;
         c.kind = Command::kSiegeStart;
         if (sess.cmdq.size() < 32) sess.cmdq.push_back(std::move(c));
         break;
       }
+      if (m.text == "gm ek") {  // T-130 board readout (directed) — FIXED: was dead inside slash block
+        if (!isGmTmp()) {
+          gmDenyTmp("gm ek");
+          break;
+        }
+        if (Entity* me = s.world.find(sess.entityId)) s.world.ekReadout(*me);
+        gmAppendLog(s.gmLogPath, "[gm] tick=" + std::to_string(s.tick) +
+                                     " by=" + sess.user + " verb=gm ek\n");
+        break;
+      }
+      if (m.text == "gm siege") {  // T-134 castle readout (directed) — FIXED: was dead inside slash block
+        if (!isGmTmp()) {
+          gmDenyTmp("gm siege");
+          break;
+        }
+        if (Entity* me = s.world.find(sess.entityId)) s.world.siegeReadout(*me);
+        gmAppendLog(s.gmLogPath, "[gm] tick=" + std::to_string(s.tick) +
+                                     " by=" + sess.user + " verb=gm siege\n");
+        break;
+      }
+      if (m.text.rfind("gm announce ", 0) == 0) {  // T-152 announce: ch2 broadcast, journaled as y-line
+        if (!isGmTmp()) {
+          gmDenyTmp("gm announce");
+          break;
+        }
+        std::string raw = m.text.substr(12);
+        std::string ann = sanitizeChat(raw);
+        if (ann.empty()) break;
+        std::string out = std::string("[ANNOUNCE] ") + ann;
+        broadcastChat(s, 2, "", out);
+        std::printf("[gm-announce] tick=%lld by=%s text='%s'\n",
+                    static_cast<long long>(s.tick), sess.user.c_str(), ann.c_str());
+        std::fflush(stdout);
+        gmAppendLog(s.gmLogPath, "[gm-announce] tick=" + std::to_string(s.tick) +
+                                     " by=" + sess.user + " text='" + ann + "'\n");
+        gmAppendLog(s.banLogPath, "[gm-announce] tick=" + std::to_string(s.tick) +
+                                      " by=" + sess.user + " text='" + ann + "'\n");
+        if (s.journal != nullptr) {
+          auto it = s.loginIndexPerPeer.find(sess.peer);
+          if (it != s.loginIndexPerPeer.end()) {
+            std::fprintf(s.journal, "y %lld %u %s\n", static_cast<long long>(s.tick),
+                         it->second, ann.c_str());
+            std::fflush(s.journal);
+          }
+        }
+        break;
+      }
       if (!m.text.empty() && m.text[0] == '/') {  // party verbs (era commands)
+        // T-152 operator bans/kicks (must be before party /kick so GM's verb is session-level)
+        if (m.text.rfind("/ban ", 0) == 0) {
+          if (!isGmTmp()) {
+            gmDenyTmp("/ban");
+            break;
+          }
+          std::string rest = m.text.substr(5);
+          size_t p0 = rest.find_first_not_of(" \t");
+          if (p0 != std::string::npos) rest = rest.substr(p0);
+          else rest.clear();
+          if (rest.empty()) {
+            proto::ChatMsg um;
+            um.channel = 2;
+            um.from = "";
+            um.text = "usage: /ban <name> <minutes> [reason]";
+            sendMsg(sess.peer, um, s);
+            break;
+          }
+          size_t sp1 = rest.find_first_of(" \t");
+          std::string tname;
+          std::string after;
+          if (sp1 == std::string::npos) {
+            tname = rest;
+            after = "";
+          } else {
+            tname = rest.substr(0, sp1);
+            after = rest.substr(sp1);
+            size_t q = after.find_first_not_of(" \t");
+            if (q != std::string::npos) after = after.substr(q);
+            else after.clear();
+          }
+          bool nameOk = tname.size() >= 3 && tname.size() <= 16;
+          for (char c : tname) {
+            bool ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+                      (c >= '0' && c <= '9') || c == '_' || c == '-';
+            if (!ok) nameOk = false;
+          }
+          if (!nameOk) {
+            proto::ChatMsg um;
+            um.channel = 2;
+            um.from = "";
+            um.text = "invalid name for /ban";
+            sendMsg(sess.peer, um, s);
+            break;
+          }
+          if (after.empty()) {
+            proto::ChatMsg um;
+            um.channel = 2;
+            um.from = "";
+            um.text = "usage: /ban <name> <minutes> [reason]";
+            sendMsg(sess.peer, um, s);
+            break;
+          }
+          size_t sp2 = after.find_first_of(" \t");
+          std::string minsStr;
+          std::string reason;
+          if (sp2 == std::string::npos) {
+            minsStr = after;
+            reason = "";
+          } else {
+            minsStr = after.substr(0, sp2);
+            reason = after.substr(sp2);
+            size_t r = reason.find_first_not_of(" \t");
+            if (r != std::string::npos) reason = reason.substr(r);
+            else reason.clear();
+            if (reason.size() > 120) reason = reason.substr(0, 120);
+            std::string cleaned;
+            for (unsigned char c : reason)
+              if (c >= 32 && c <= 126) cleaned.push_back((char)c);
+            reason = cleaned;
+          }
+          bool minsOk = !minsStr.empty() && minsStr.size() <= 7;
+          std::int64_t minutes = 0;
+          for (char c : minsStr)
+            if (c < '0' || c > '9') minsOk = false;
+          if (minsOk) {
+            for (char c : minsStr) minutes = minutes * 10 + (c - '0');
+            if (minutes <= 0 || minutes > 5256000) minsOk = false;
+          }
+          if (!minsOk) {
+            proto::ChatMsg um;
+            um.channel = 2;
+            um.from = "";
+            um.text = "invalid minutes (1..5256000)";
+            sendMsg(sess.peer, um, s);
+            break;
+          }
+          std::int64_t nowSec = ::time(nullptr);
+          std::int64_t expires = nowSec + minutes * 60;
+          std::string dbErr;
+          if (!s.db.upsertBan(tname, expires, reason, sess.user, &dbErr)) {
+            proto::ChatMsg um;
+            um.channel = 2;
+            um.from = "";
+            um.text = "ban failed: " + dbErr;
+            sendMsg(sess.peer, um, s);
+            break;
+          }
+          std::printf(
+              "[ban] tick=%lld by=%s target=%s minutes=%lld reason='%s' "
+              "expires=%lld\n",
+              static_cast<long long>(s.tick), sess.user.c_str(), tname.c_str(),
+              static_cast<long long>(minutes), reason.c_str(),
+              static_cast<long long>(expires));
+          std::fflush(stdout);
+          gmAppendLog(s.banLogPath,
+                      "[ban] tick=" + std::to_string(s.tick) + " by=" +
+                          sess.user + " target=" + tname +
+                          " minutes=" + std::to_string(minutes) + " reason='" +
+                          reason + "' expires=" + std::to_string(expires) + "\n");
+          gmAppendLog(s.gmLogPath,
+                      "[ban] tick=" + std::to_string(s.tick) + " by=" +
+                          sess.user + " target=" + tname +
+                          " minutes=" + std::to_string(minutes) + " reason='" +
+                          reason + "' expires=" + std::to_string(expires) + "\n");
+          ENetPeer* targetPeer = nullptr;
+          for (auto& kv : s.sessions) {
+            if (gmToLower(kv.second.user) == gmToLower(tname)) {
+              targetPeer = kv.first;
+              break;
+            }
+          }
+          if (targetPeer != nullptr) {
+            proto::KickNotice kn;
+            kn.reason = "banned for " + std::to_string(minutes) + "m" +
+                        (reason.empty() ? "" : std::string(": ") + reason);
+            sendMsg(targetPeer, kn, s);
+            broadcastChat(
+                s, 2, "",
+                tname + " was banned for " + std::to_string(minutes) + "m by " +
+                    sess.user + (reason.empty() ? "" : " (" + reason + ")"));
+            enet_peer_disconnect_later(targetPeer, 0);
+          } else {
+            broadcastChat(
+                s, 2, "",
+                tname + " was banned for " + std::to_string(minutes) + "m by " +
+                    sess.user + (reason.empty() ? "" : " (" + reason + ")"));
+          }
+          {
+            proto::ChatMsg cm;
+            cm.channel = 2;
+            cm.from = "";
+            cm.text = "banned " + tname + " for " + std::to_string(minutes) + "m.";
+            sendMsg(sess.peer, cm, s);
+          }
+          break;
+        }
+        if (m.text.rfind("/unban ", 0) == 0) {
+          if (!isGmTmp()) {
+            gmDenyTmp("/unban");
+            break;
+          }
+          std::string rest = m.text.substr(7);
+          size_t p0 = rest.find_first_not_of(" \t");
+          if (p0 != std::string::npos) rest = rest.substr(p0);
+          else rest.clear();
+          size_t sp = rest.find_first_of(" \t");
+          std::string tname = sp == std::string::npos ? rest : rest.substr(0, sp);
+          size_t a = tname.find_first_not_of(" \t\r\n");
+          size_t b = tname.find_last_not_of(" \t\r\n");
+          if (a != std::string::npos && b != std::string::npos)
+            tname = tname.substr(a, b - a + 1);
+          else
+            tname.clear();
+          bool nameOk = tname.size() >= 3 && tname.size() <= 16;
+          for (char c : tname) {
+            bool ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+                      (c >= '0' && c <= '9') || c == '_' || c == '-';
+            if (!ok) nameOk = false;
+          }
+          if (!nameOk) {
+            proto::ChatMsg um;
+            um.channel = 2;
+            um.from = "";
+            um.text = "invalid name for /unban";
+            sendMsg(sess.peer, um, s);
+            break;
+          }
+          std::string dbErr;
+          if (!s.db.deleteBan(tname, &dbErr)) {
+            proto::ChatMsg um;
+            um.channel = 2;
+            um.from = "";
+            um.text = "unban failed: " + dbErr;
+            sendMsg(sess.peer, um, s);
+            break;
+          }
+          std::printf("[unban] tick=%lld by=%s target=%s\n",
+                      static_cast<long long>(s.tick), sess.user.c_str(),
+                      tname.c_str());
+          std::fflush(stdout);
+          gmAppendLog(s.banLogPath, "[unban] tick=" + std::to_string(s.tick) +
+                                        " by=" + sess.user + " target=" + tname + "\n");
+          gmAppendLog(s.gmLogPath, "[unban] tick=" + std::to_string(s.tick) +
+                                       " by=" + sess.user + " target=" + tname + "\n");
+          broadcastChat(s, 2, "", tname + " was unbanned by " + sess.user);
+          {
+            proto::ChatMsg cm;
+            cm.channel = 2;
+            cm.from = "";
+            cm.text = "unbanned " + tname;
+            sendMsg(sess.peer, cm, s);
+          }
+          break;
+        }
+        if (m.text.rfind("/kick ", 0) == 0 && isGmTmp()) {
+          std::string rest = m.text.substr(6);
+          size_t p0 = rest.find_first_not_of(" \t");
+          if (p0 != std::string::npos) rest = rest.substr(p0);
+          else rest.clear();
+          size_t sp = rest.find_first_of(" \t");
+          std::string tname = sp == std::string::npos ? rest : rest.substr(0, sp);
+          size_t a = tname.find_first_not_of(" \t\r\n");
+          size_t b = tname.find_last_not_of(" \t\r\n");
+          if (a != std::string::npos && b != std::string::npos)
+            tname = tname.substr(a, b - a + 1);
+          else
+            tname.clear();
+          bool nameOk = tname.size() >= 3 && tname.size() <= 16;
+          for (char c : tname) {
+            bool ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+                      (c >= '0' && c <= '9') || c == '_' || c == '-';
+            if (!ok) nameOk = false;
+          }
+          if (!nameOk) {
+            proto::ChatMsg um;
+            um.channel = 2;
+            um.from = "";
+            um.text = "invalid name for /kick";
+            sendMsg(sess.peer, um, s);
+            break;
+          }
+          ENetPeer* targetPeer = nullptr;
+          std::string actualName;
+          for (auto& kv : s.sessions) {
+            if (gmToLower(kv.second.user) == gmToLower(tname)) {
+              targetPeer = kv.first;
+              actualName = kv.second.user;
+              break;
+            }
+          }
+          if (targetPeer == nullptr) {
+            proto::ChatMsg um;
+            um.channel = 2;
+            um.from = "";
+            um.text = tname + " is not online";
+            sendMsg(sess.peer, um, s);
+            break;
+          }
+          std::printf("[kick] tick=%lld by=%s target=%s\n",
+                      static_cast<long long>(s.tick), sess.user.c_str(),
+                      actualName.c_str());
+          std::fflush(stdout);
+          gmAppendLog(s.banLogPath, "[kick] tick=" + std::to_string(s.tick) +
+                                        " by=" + sess.user + " target=" + actualName + "\n");
+          gmAppendLog(s.gmLogPath, "[kick] tick=" + std::to_string(s.tick) +
+                                       " by=" + sess.user + " target=" + actualName + "\n");
+          proto::KickNotice kn;
+          kn.reason = "kicked by operator " + sess.user;
+          sendMsg(targetPeer, kn, s);
+          broadcastChat(s, 2, "", actualName + " was kicked by " + sess.user);
+          enet_peer_disconnect_later(targetPeer, 0);
+          {
+            proto::ChatMsg cm;
+            cm.channel = 2;
+            cm.from = "";
+            cm.text = "kicked " + actualName;
+            sendMsg(sess.peer, cm, s);
+          }
+          break;
+        }
         // T-122 pledge chat + roster: chat-class (no sim effect, never
         // journaled — replay regenerates nothing it needs).
         if (m.text.rfind("/p ", 0) == 0) {
@@ -639,12 +1087,6 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
         }
         else if (m.text == "/crown") {  // T-133: kneel at the attuned stone
           c.kind = Command::kCrown;
-        } else if (m.text == "gm ek") {  // T-130 board readout (directed)
-          okCmd = false;  // shell output, never journaled
-          if (Entity* me = s.world.find(sess.entityId)) s.world.ekReadout(*me);
-        } else if (m.text == "gm siege") {  // T-134 castle readout (directed)
-          okCmd = false;  // shell output, never journaled
-          if (Entity* me = s.world.find(sess.entityId)) s.world.siegeReadout(*me);
         } else if (m.text.rfind("/pledge ", 0) == 0) {  // T-122 pledge-lite
           const std::string arg = m.text.substr(8);
           // name->id resolution happens here, pre-journal (kDuel pattern):
@@ -1728,6 +2170,12 @@ int run(int argc, char** argv) {
   if (!s.db.open(dbPath, &err)) {
     std::fprintf(stderr, "bh_server: %s\n", err.c_str());
     return 1;
+  }
+  // T-152 GM authority + ban prune (out-of-band, epoch-neutral)
+  {
+    std::string pruneErr;
+    s.db.pruneExpiredBans(&pruneErr);
+    gmLoadAllowlist(s);
   }
   // T-134: the castle remembers its master across reboots (empty => zeros).
   {

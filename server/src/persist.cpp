@@ -218,6 +218,23 @@ bool Db::open(const std::string& path, std::string* err) {
     if (!exec("PRAGMA user_version=14;", err)) return false;
     uv = 14;
   }
+  // T-152: bans + gm_accounts (version-free, IF NOT EXISTS — like siege_state —
+  // so old journals keep epoch 28; no user_version bump required).
+  if (!exec("CREATE TABLE IF NOT EXISTS bans ("
+            "  name TEXT PRIMARY KEY COLLATE NOCASE,"
+            "  expires INTEGER NOT NULL,"
+            "  reason TEXT NOT NULL DEFAULT '',"
+            "  banned_by TEXT NOT NULL DEFAULT '',"
+            "  created INTEGER NOT NULL DEFAULT (strftime('%s','now'))"
+            ");"
+            "CREATE TABLE IF NOT EXISTS gm_accounts ("
+            "  name TEXT PRIMARY KEY COLLATE NOCASE,"
+            "  added_by TEXT NOT NULL DEFAULT '',"
+            "  created INTEGER NOT NULL DEFAULT (strftime('%s','now'))"
+            ");",
+            err)) {
+    return false;
+  }
   return true;
 }
 
@@ -573,6 +590,148 @@ void Db::savePosition(std::int64_t characterId, int mapId, int x, int y) {
   sqlite3_bind_int64(st, 4, characterId);
   sqlite3_step(st);
   sqlite3_finalize(st);
+}
+
+// ---- T-152 bans + gm_accounts (version-free, like siege_state) -------------
+
+bool Db::loadBans(std::vector<BanRec>* out, std::string* err) {
+  if (db_ == nullptr) return false;
+  sqlite3_stmt* st = nullptr;
+  if (sqlite3_prepare_v2(db_, "SELECT name, expires, reason, banned_by, created FROM bans ORDER BY name;", -1, &st, nullptr) != SQLITE_OK) {
+    if (err) *err = "prepare failed (bans load)";
+    return false;
+  }
+  while (sqlite3_step(st) == SQLITE_ROW) {
+    BanRec b;
+    b.name = reinterpret_cast<const char*>(sqlite3_column_text(st, 0));
+    b.expires = sqlite3_column_int64(st, 1);
+    const unsigned char* rs = sqlite3_column_text(st, 2);
+    b.reason = rs != nullptr ? reinterpret_cast<const char*>(rs) : "";
+    const unsigned char* by = sqlite3_column_text(st, 3);
+    b.bannedBy = by != nullptr ? reinterpret_cast<const char*>(by) : "";
+    b.created = sqlite3_column_int64(st, 4);
+    out->push_back(std::move(b));
+  }
+  sqlite3_finalize(st);
+  return true;
+}
+
+bool Db::isBanned(const std::string& name, bool* out, std::string* reason,
+                  std::int64_t* expires, std::string* err) {
+  if (db_ == nullptr || out == nullptr) return false;
+  *out = false;
+  sqlite3_stmt* st = nullptr;
+  if (sqlite3_prepare_v2(db_, "SELECT expires, reason FROM bans WHERE name=? COLLATE NOCASE LIMIT 1;", -1, &st, nullptr) != SQLITE_OK) {
+    if (err) *err = "prepare failed (isBanned)";
+    return false;
+  }
+  sqlite3_bind_text(st, 1, name.c_str(), -1, SQLITE_TRANSIENT);
+  if (sqlite3_step(st) == SQLITE_ROW) {
+    const std::int64_t exp = sqlite3_column_int64(st, 0);
+    const unsigned char* rs = sqlite3_column_text(st, 1);
+    const std::int64_t now = ::time(nullptr);
+    if (exp == 0 || exp > now) {
+      *out = true;
+      if (reason != nullptr) reason->assign(rs != nullptr ? reinterpret_cast<const char*>(rs) : "");
+      if (expires != nullptr) *expires = exp;
+    } else {
+      // expired: treat as not banned (caller may prune)
+      *out = false;
+    }
+  }
+  sqlite3_finalize(st);
+  return true;
+}
+
+bool Db::upsertBan(const std::string& name, std::int64_t expires,
+                   const std::string& reason, const std::string& by,
+                   std::string* err) {
+  if (db_ == nullptr) return false;
+  sqlite3_stmt* st = nullptr;
+  if (sqlite3_prepare_v2(db_, "INSERT INTO bans(name, expires, reason, banned_by) VALUES(?,?,?,?) "
+                              "ON CONFLICT(name) DO UPDATE SET expires=excluded.expires, reason=excluded.reason, banned_by=excluded.banned_by, created=strftime('%s','now');",
+                         -1, &st, nullptr) != SQLITE_OK) {
+    if (err) *err = "prepare failed (upsertBan)";
+    return false;
+  }
+  sqlite3_bind_text(st, 1, name.c_str(), -1, SQLITE_TRANSIENT);
+  sqlite3_bind_int64(st, 2, expires);
+  sqlite3_bind_text(st, 3, reason.c_str(), -1, SQLITE_TRANSIENT);
+  sqlite3_bind_text(st, 4, by.c_str(), -1, SQLITE_TRANSIENT);
+  const bool ok = sqlite3_step(st) == SQLITE_DONE;
+  if (!ok && err) *err = "write failed (upsertBan)";
+  sqlite3_finalize(st);
+  return ok;
+}
+
+bool Db::deleteBan(const std::string& name, std::string* err) {
+  if (db_ == nullptr) return false;
+  sqlite3_stmt* st = nullptr;
+  if (sqlite3_prepare_v2(db_, "DELETE FROM bans WHERE name=? COLLATE NOCASE;", -1, &st, nullptr) != SQLITE_OK) {
+    if (err) *err = "prepare failed (deleteBan)";
+    return false;
+  }
+  sqlite3_bind_text(st, 1, name.c_str(), -1, SQLITE_TRANSIENT);
+  const bool ok = sqlite3_step(st) == SQLITE_DONE;
+  if (!ok && err) *err = "delete failed (deleteBan)";
+  sqlite3_finalize(st);
+  return ok;
+}
+
+bool Db::pruneExpiredBans(std::string* err) {
+  if (db_ == nullptr) return false;
+  char* msg = nullptr;
+  const std::int64_t now = ::time(nullptr);
+  std::string sql = "DELETE FROM bans WHERE expires != 0 AND expires <= " + std::to_string(now) + ";";
+  if (sqlite3_exec(db_, sql.c_str(), nullptr, nullptr, &msg) != SQLITE_OK) {
+    if (err) *err = msg != nullptr ? msg : "prune failed";
+    sqlite3_free(msg);
+    return false;
+  }
+  return true;
+}
+
+bool Db::loadGmAccounts(std::vector<std::string>* out, std::string* err) {
+  if (db_ == nullptr) return false;
+  sqlite3_stmt* st = nullptr;
+  if (sqlite3_prepare_v2(db_, "SELECT name FROM gm_accounts ORDER BY name;", -1, &st, nullptr) != SQLITE_OK) {
+    if (err) *err = "prepare failed (gm_accounts)";
+    return false;
+  }
+  while (sqlite3_step(st) == SQLITE_ROW) {
+    const unsigned char* txt = sqlite3_column_text(st, 0);
+    if (txt != nullptr) out->push_back(reinterpret_cast<const char*>(txt));
+  }
+  sqlite3_finalize(st);
+  return true;
+}
+
+bool Db::upsertGmAccount(const std::string& name, std::string* err) {
+  if (db_ == nullptr) return false;
+  sqlite3_stmt* st = nullptr;
+  if (sqlite3_prepare_v2(db_, "INSERT INTO gm_accounts(name) VALUES(?) ON CONFLICT(name) DO NOTHING;", -1, &st, nullptr) != SQLITE_OK) {
+    if (err) *err = "prepare failed (gm upsert)";
+    return false;
+  }
+  sqlite3_bind_text(st, 1, name.c_str(), -1, SQLITE_TRANSIENT);
+  const bool ok = sqlite3_step(st) == SQLITE_DONE;
+  if (!ok && err) *err = "write failed (gm upsert)";
+  sqlite3_finalize(st);
+  return ok;
+}
+
+bool Db::deleteGmAccount(const std::string& name, std::string* err) {
+  if (db_ == nullptr) return false;
+  sqlite3_stmt* st = nullptr;
+  if (sqlite3_prepare_v2(db_, "DELETE FROM gm_accounts WHERE name=? COLLATE NOCASE;", -1, &st, nullptr) != SQLITE_OK) {
+    if (err) *err = "prepare failed (gm delete)";
+    return false;
+  }
+  sqlite3_bind_text(st, 1, name.c_str(), -1, SQLITE_TRANSIENT);
+  const bool ok = sqlite3_step(st) == SQLITE_DONE;
+  if (!ok && err) *err = "delete failed (gm delete)";
+  sqlite3_finalize(st);
+  return ok;
 }
 
 }  // namespace bh::server

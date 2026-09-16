@@ -87,6 +87,26 @@ class Db {
       std::string* err);
   bool upsertPledge(const PledgeRec& p, std::string* err);
   bool deletePledge(std::uint32_t id, std::string* err);
+  // T-152 GM authority + ban persistence (bans + gm_accounts, IF NOT EXISTS,
+  // version-free like siege_state so old journals keep epoch 28).
+  struct BanRec {
+    std::string name;
+    std::int64_t expires = 0;  // unix epoch secs, 0 = permanent
+    std::string reason;
+    std::string bannedBy;
+    std::int64_t created = 0;
+  };
+  bool loadBans(std::vector<BanRec>* out, std::string* err);
+  bool isBanned(const std::string& name, bool* out, std::string* reason,
+                std::int64_t* expires, std::string* err);
+  bool upsertBan(const std::string& name, std::int64_t expires,
+                 const std::string& reason, const std::string& by,
+                 std::string* err);
+  bool deleteBan(const std::string& name, std::string* err);
+  bool pruneExpiredBans(std::string* err);
+  bool loadGmAccounts(std::vector<std::string>* out, std::string* err);
+  bool upsertGmAccount(const std::string& name, std::string* err);
+  bool deleteGmAccount(const std::string& name, std::string* err);
 
  private:
   sqlite3* db_ = nullptr;
