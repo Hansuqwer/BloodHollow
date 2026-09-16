@@ -6,6 +6,7 @@ edge, three galleries off a central drift, bone-pile middens and an old
 ore spur. Mid-tier packs (hounds, gnolls, one widow vein). Deterministic
 LCG exactly like the other gens. One portal pair (mine_mouth <-> fields).
 """
+import argparse
 import json
 from pathlib import Path
 
@@ -27,8 +28,11 @@ def rect(g, x0, y0, x1, y1, v):
 
 
 def main() -> int:
+    ap = argparse.ArgumentParser()
     repo = Path(__file__).resolve().parents[2]
-    out = repo / "data" / "maps-src" / "bonehowl_mine.tmj"
+    ap.add_argument("--out", default=str(repo / "data" / "maps-src" / "bonehowl_mine.tmj"))
+    args = ap.parse_args()
+    out = Path(args.out)
 
     # cave pitch-dark canvas: everything starts as rock, we carve rooms
     ground = [[WALL] * W for _ in range(H)]

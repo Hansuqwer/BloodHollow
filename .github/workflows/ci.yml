@@ -19,10 +19,20 @@ jobs:
           sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev \
             libxcursor-dev libxi-dev libgl1-mesa-dev libasound2-dev pkg-config
 
-      - name: Map generator is deterministic (regenerate + diff)
+      - name: "Map generators are deterministic 6/6 (T-168 --out + diff)"
         run: |
           python3 tools/mapgen/make_thornwall.py --out /tmp/thornwall_check.tmj
           diff -q /tmp/thornwall_check.tmj data/maps-src/thornwall.tmj
+          python3 tools/mapgen/make_fields_overflow.py --out /tmp/fields_check.tmj
+          diff -q /tmp/fields_check.tmj data/maps-src/fields_overflow.tmj
+          python3 tools/mapgen/make_thornwall_crypt.py --out /tmp/tcrypt_check.tmj
+          diff -q /tmp/tcrypt_check.tmj data/maps-src/thornwall_crypt.tmj
+          python3 tools/mapgen/make_bonehowl_mine.py --out /tmp/mine_check.tmj
+          diff -q /tmp/mine_check.tmj data/maps-src/bonehowl_mine.tmj
+          python3 tools/mapgen/make_drowned_crypt.py --out /tmp/dcrypt_check.tmj
+          diff -q /tmp/dcrypt_check.tmj data/maps-src/drowned_crypt.tmj
+          python3 tools/mapgen/make_weeping_castle.py --out /tmp/castle_check.tmj
+          diff -q /tmp/castle_check.tmj data/maps-src/weeping_castle.tmj
 
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
@@ -35,3 +45,25 @@ jobs:
 
       - name: Validate converted map (T-005 gate)
         run: ./build/tools/mapconv/bh_mapconv data/maps-src/thornwall.tmj /tmp/bhcheck/thornwall.bhmap --map-id 1 --validate
+
+  # T-154: headless gate — the sandbox/agent configuration (no X11/GL).
+  # BH_BUILD_CLIENT=OFF drops raylib; raylib-gated test TUs are excluded
+  # (tests/CMakeLists.txt) so this job proves the sim suite with zero
+  # client dependencies. Also replays the committed leg of record so a
+  # future epoch bump cannot silently orphan it (T-157).
+  headless:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure (headless preset, no X11 packages)
+        run: cmake --preset headless
+
+      - name: Build
+        run: cmake --build --preset headless --parallel
+
+      - name: Tests
+        run: ctest --preset headless --output-on-failure
+
+      - name: Replay leg of record (epoch guard)
+        run: ./build/headless/server/bh_server --replay-world logs/t159.bwj

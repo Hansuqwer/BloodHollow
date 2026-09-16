@@ -1011,6 +1011,16 @@ equippedWeaponDmg); 8-field blob; ItemSlot rarity wire (protogen base 202).
 replay mm=0) · epoch28 guard exit 4. Deviations + T-159f1 in card.
 Devlog 0109 · card `T-159-loot-depth.md` (→ done on merge). Next: T-154/T-168.
 
+## Done — T-154/T-168 (2026-09-16): headless gate + one build-dir law
+
+T-154 core (raylib-gated test TUs) already in tree — verified headless
+314/314, not redone. Shipped: 9 legs honour `BH_BUILD_DIR` (default
+`build/linux-gcc` unchanged); `--out` on 4 mapgens (byte-identical diffs);
+CI mapgen gate 1/6→6/6 + `headless` job (no X11) + t159 replay guard;
+`tools/clean_clone_check.sh` → PASS on fresh clone. Caught: unquoted `:`
+broke ci.yml (fixed, yaml-parsed). Devlog 0110 · card
+`T-154-headless-build-law.md` (→ done on merge). Next: T-156 T-ART-12..15.
+
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
 | Card | Title | Notes |
