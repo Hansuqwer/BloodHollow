@@ -995,6 +995,7 @@ const char* Game::mapFileFor(std::uint16_t mapId) {
     case 3: return "assets/maps/thornwall_crypt.bhmap";
     case 4: return "assets/maps/bonehowl_mine.bhmap";   // T-ART-08
     case 5: return "assets/maps/drowned_crypt.bhmap";   // T-ART-08
+    case 6: return "assets/maps/weeping_castle.bhmap";  // T-150: Weeping Castle
     default: return "assets/maps/thornwall.bhmap";
   }
 }
