@@ -565,6 +565,9 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
         }
         else if (m.text == "/breach") {  // T-132: ram work on a near gate
           c.kind = Command::kBreach;
+        }
+        else if (m.text == "/crown") {  // T-133: kneel at the attuned stone
+          c.kind = Command::kCrown;
         } else if (m.text == "gm ek") {  // T-130 board readout (directed)
           okCmd = false;  // shell output, never journaled
           if (Entity* me = s.world.find(sess.entityId)) s.world.ekReadout(*me);

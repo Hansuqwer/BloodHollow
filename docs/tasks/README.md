@@ -860,6 +860,16 @@ refuses furniture; killMob would drag loot). 4 new tests. `t128.bwj`
 re-replays mm=0. Devlog 0093 · card `done/T-132.md`. Next: T-133
 Heartstone + crown.
 
+## Done — T-133 (2026-09-15): Heartstone + crown (Phase S, 2b/4)
+
+T-133 CONTENT (no epoch bump, stays 24): kind-76 stone on zone-6 load +
+presence attunement (1200 uncontested ticks, contest freezes, no decay) +
+`/crown` → journaled kCrown → 200-tick kneel (move/hit/death/leave/end
+breaks) → holder set + battle end + broadcast. `Entity.crownUntil`
+session-only. 6 new tests (incl. the movement-validation lesson). `t128.bwj`
+re-replays mm=0. Devlog 0094 · card `done/T-133.md`. Next: S3 taxes +
+holder persist.
+
 
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
