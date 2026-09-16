@@ -116,14 +116,16 @@ TEST_CASE("T-128: per-boss row counts and rates") {
     CHECK(u.affix <= content::kAffixCount);
     REQUIRE(content::findItem(u.itemId) != nullptr);
     CHECK(std::string(u.title).size() > 0);
-    // slot law: armor rows 2/4/5/8/10, weapon rows 1/3/6/7/9
+    // slot law: armor rows 2/4/5/8/10/12/13/15/18, weapon rows 1/3/6/7/9/11/14/16/17/19/20
     const content::ItemDef* id = content::findItem(u.itemId);
     if (id->slot == 1) {
       CHECK((u.affix == 2u || u.affix == 4u || u.affix == 5u || u.affix == 8u ||
-             u.affix == 10u));
+             u.affix == 10u || u.affix == 12u || u.affix == 13u ||
+             u.affix == 15u || u.affix == 18u));
     } else {
       CHECK((u.affix == 1u || u.affix == 3u || u.affix == 6u || u.affix == 7u ||
-             u.affix == 9u));
+             u.affix == 9u || u.affix == 11u || u.affix == 14u ||
+             u.affix == 16u || u.affix == 17u || u.affix == 19u || u.affix == 20u));
     }
     if (u.mobId == 1013) {
       ++widow;
@@ -161,6 +163,55 @@ TEST_CASE("T-128: trio items resolve with boss-tier weights") {
     for (const std::uint32_t id : content::kVendorStock) CHECK(id != want);
     for (const std::uint32_t id : content::kFenceStock) CHECK(id != want);
   }
+}
+
+TEST_CASE("T-159: helm items resolve with correct slots and def") {
+  CHECK(content::findItem(2501)->slot == 2u);   // Scrap Helm: helm
+  CHECK(content::findItem(2501)->def == 3u);
+  CHECK(content::findItem(2502)->slot == 2u);   // Graveguard Helm: helm
+  CHECK(content::findItem(2502)->def == 7u);
+  CHECK(content::findItem(2503)->slot == 2u);   // Hollow Warden: helm
+  CHECK(content::findItem(2503)->def == 10u);
+}
+
+TEST_CASE("T-159: amulet items resolve with correct slots") {
+  CHECK(content::findItem(2601)->slot == 3u);   // Bone Charm: amulet
+  CHECK(content::findItem(2602)->slot == 3u);   // Grave Lodestone: amulet
+  CHECK(content::findItem(2603)->slot == 3u);   // Marrow Talisman: amulet
+}
+
+TEST_CASE("T-159: ring items resolve with correct slots") {
+  CHECK(content::findItem(2701)->slot == 4u);   // Iron Band: ring
+  CHECK(content::findItem(2702)->slot == 4u);   // Ossuary Ring: ring
+  CHECK(content::findItem(2703)->slot == 4u);   // Seal of the Hollow: ring
+}
+
+TEST_CASE("T-159: helm/amulet/ring are vendor-stocked") {
+  bool hasHelm = false, hasAmulet = false, hasRing = false;
+  for (const std::uint32_t id : content::kVendorStock) {
+    const content::ItemDef* d = content::findItem(id);
+    if (d != nullptr && d->slot == 2) hasHelm = true;
+    if (d != nullptr && d->slot == 3) hasAmulet = true;
+    if (d != nullptr && d->slot == 4) hasRing = true;
+  }
+  CHECK(hasHelm);
+  CHECK(hasAmulet);
+  CHECK(hasRing);
+}
+
+TEST_CASE("T-159: helm equip/unequip works and aggregates def") {
+  server::World w;
+  REQUIRE(w.loadFrom(makeArena()));
+  server::Entity* p = spawnP(w, "helmed", 5, 5);
+  REQUIRE(w.debugGive(*p, 2502, 1));  // Graveguard Helm, def=7
+  const std::uint32_t defBefore = w.equippedArmorDef(*p);
+  for (std::uint8_t i = 0; i < p->inv.size(); ++i)
+    if (p->inv[i].itemId == 2502) { REQUIRE(w.toggleEquip(*p, i)); break; }
+  CHECK(w.equippedArmorDef(*p) == defBefore + 7u);
+  // unequip restores
+  for (std::uint8_t i = 0; i < p->inv.size(); ++i)
+    if (p->inv[i].itemId == 2502 && p->inv[i].equipped) { REQUIRE(w.toggleEquip(*p, i)); break; }
+  CHECK(w.equippedArmorDef(*p) == defBefore);
 }
 
 TEST_CASE("T-128: one grant spot-check per trio boss") {

@@ -189,8 +189,9 @@ void sendMsg(ENetPeer* peer, const Msg& m, Server& s) {
 // Replay refuses non-matching epoch journals instead of lying with them.
 // T-151: siege+pledge wire + HUD (messages 117..119, no sim change but wire
 // incompatible — kProtocolVersion 237→241): epoch 28, fresh leg epoch28.bwj.
-constexpr int kJournalEpoch = 28;  // T-151 wire+HUD. Fresh gate leg:
-// logs/epoch28.bwj (rehearsal+sige, replay mm=0)
+// T-159: loot depth (rarity roll + 5 slots + affixes 11..20 hooks + ItemSlot
+// rarity wire 241→242): sim + RNG-stream change → epoch 29.
+constexpr int kJournalEpoch = 29;  // T-159 loot depth. Fresh gate leg: logs/t159.bwj (8 fighters x30s, replay mm=0)
 
 // ---- world journal record helpers (M2) ------------------------------------
 void journalTickHash(Server& s) {
@@ -1368,6 +1369,7 @@ void pushInventory(Server& s, Session& sess) {
     m.durability = e->inv[i].durability;  // T-058
     m.affix = e->inv[i].affix;            // T-059
     m.refine = e->inv[i].refine;          // T-060
+    m.rarity = e->inv[i].rarity;          // T-159
     sendMsg(sess.peer, m, s);
   }
 }
