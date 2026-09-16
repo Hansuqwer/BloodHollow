@@ -861,7 +861,12 @@ void Game::drawRemoteEnt(const RenderEnt& e, bool isOwn) {
   if (st != EntAnimState::kNone) animClock = now - e.animStateAt;
   // T-ART-05: per-kind atlas (mob sheets; hero fallback). T-ART-10: feet
   // anchor rides the used anim (42.0 legacy default inside animAnchorY).
-  const Atlas& at = atlasFor(e.snap.kind);
+  // T-142: players (kind 0) re-sheet from classId/sex; mobs/furniture use
+  // the mob atlases. Unknown class/sex falls back to hero (T-142b).
+  const Atlas& at = [&]() -> const Atlas& {
+    if (e.snap.kind == 0) return atlasForPlayer(e.snap.classId, e.snap.sex);
+    return atlasFor(e.snap.kind);
+  }();
   const char* fallback = e.snap.moving ? "walk" : "idle";
   Rectangle src = animFrame(at, anim, static_cast<int>(e.snap.dir), animClock);
   const char* used = anim;
@@ -965,6 +970,22 @@ const Atlas& Game::atlasFor(std::uint8_t kind) {
   }
   // No shipped sheet (or headless asset dir): hero fallback. The red-circle
   // QA marker path is unchanged for frames missing everywhere.
+  return heroAtlas_;
+}
+
+const Atlas& Game::atlasForPlayer(std::uint8_t classId, std::uint8_t sex) {
+  // T-142: per-(class,sex) player atlas. Ravager m/f ship today; unknown
+  // class/sex or missing sheet falls back to hero (T-142b captures sex).
+  char png[160], js[160];
+  if (!playerSheetPaths(classId, sex, png, sizeof png, js, sizeof js)) return heroAtlas_;
+  const std::uint16_t key = (static_cast<std::uint16_t>(classId) << 8) | sex;
+  auto cached = playerAtlases_.find(key);
+  if (cached != playerAtlases_.end()) return cached->second;
+  Atlas a;
+  if (loadAtlas(png, js, a) && a.ok) {
+    playerAtlases_.emplace(key, std::move(a));
+    return playerAtlases_.at(key);
+  }
   return heroAtlas_;
 }
 

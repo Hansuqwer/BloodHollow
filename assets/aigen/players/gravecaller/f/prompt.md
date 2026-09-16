@@ -32,3 +32,4 @@ Full prompt = PREFIX + ", " + SUBJECT + ", palette: " + PALETTE + " --neg " + NE
 
 ## Runs
 _(none yet — one line per generation: date · model or "undisclosed" · seed if known · which dirs · accepted y/n)_
+- 2026-09-15 · flux (black-forest-labs/flux.1-schnell via gen.pollinations.ai, 512x768) · seeds 2004/2005/2006 (S/SE/E idle) + 2008 (attack_f1_S) + 2010 (cast_f2_S) · REJECTED all 5: 0.00 green bg (black instead of #00FF00), painterly 3D-render, ground disc + shadow, elf ears (2004), mirrored knife (figure's left), glow/bloom; quarantined to /tmp/opencode/rejected-plates/turn1-gravecaller/ + MANIFEST.txt

@@ -1,0 +1,7 @@
+[boot] zone 2 (assets/maps/fields_overflow.bhmap: 64x48) online
+[boot] zone 3 (assets/maps/thornwall_crypt.bhmap: 48x36) online
+[boot] zone 4 (assets/maps/bonehowl_mine.bhmap: 56x40) online
+[boot] zone 5 (assets/maps/drowned_crypt.bhmap: 48x36) online
+[boot] zone 6 (assets/maps/weeping_castle.bhmap: 40x30) online
+[journal] recording world to logs/siege_h1.bwj (epoch 17)
+[boot] bh_server on 0.0.0.0:7831 | map 'assets/maps/thornwall.bhmap' | db '/tmp/siege_h1.db' | tick 20Hz | aoi 26

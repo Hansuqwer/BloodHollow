@@ -1,0 +1,10 @@
+[campaign] sgh1__01 reached L1 at t=0.1s (map 1)
+[campaign] sgh1__00 reached L1 at t=0.1s (map 1)
+[campaign] sgh1__02 reached L1 at t=0.0s (map 1)
+[campaign] sgh1__00 reached L2 at t=6.3s (map 1)
+[campaign] sgh1__01 reached L2 at t=12.7s (map 1)
+[bots] SUMMARY welcomed=3/3 moved=3/3 minDeltas=501 kills=15 pots=2 swings=25 deaths=0 shops=0 anvilTries=0 levelDrops=0 regear=0 maxLevel=2 pkts=66619 bytes=1594593 gates b/g/p/a/r=0/0/0/0/0 mGold=0 mPelts=0 bless=0 mend=0 noSee=0 hurt=0 choir c6=0 c7=0 c8=0
+[bots] sgh1__00     kit=1 lvl=2 hp=91/94 party=2 deaths=0 rxR=32 rxM=36 lastPid=1 casts c6=0 c7=0 c8=0 lastDeath=(-1,-1) killerByLvl=
+[bots] sgh1__01     kit=3 lvl=2 hp=60/94 party=2 deaths=0 rxR=27 rxM=10 lastPid=1 casts c6=0 c7=0 c8=0 lastDeath=(-1,-1) killerByLvl=
+[bots] sgh1__02     kit=1 lvl=1 hp=47/94 party=0 deaths=0 rxR=23 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 lastDeath=(-1,-1) killerByLvl=
+[bots] OK

@@ -128,6 +128,11 @@ class Game {
   // furniture never reaches it (placeholder branch draws first).
   std::unordered_map<std::uint8_t, Atlas> mobAtlases_{};
   const Atlas& atlasFor(std::uint8_t kind);
+  // T-142: per-(class,sex) player atlas table (lazy, cached). Ravager m/f
+  // ship today; Gravecaller/Cultist resolve once their sheets land; sex 0
+  // or unknown class falls back to hero (T-142b captures sex at creation).
+  std::unordered_map<std::uint16_t, Atlas> playerAtlases_{};
+  const Atlas& atlasForPlayer(std::uint8_t classId, std::uint8_t sex);
 
   // offline sim
   sim::Walker walker_{};

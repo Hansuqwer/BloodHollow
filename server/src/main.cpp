@@ -12,6 +12,7 @@
 #include <cstring>
 #include <deque>
 #include <optional>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -61,8 +62,10 @@ struct Server {
   // world journal (M2 gate): record every world-mutating interaction + hashes
   std::string recordWorldPath{};
   std::string replayWorldPath{};
-  FILE* journal = nullptr;
-  std::unordered_map<ENetPeer*, std::uint32_t> loginIndexPerPeer{};
+  // T-136 rehearsal posture: opens the siege window unconditionally (loud,
+  // never default). Journal-guarded: cross-mode replays refuse (exit 4).
+  bool siegeRehearsal = false;
+  FILE* journal = nullptr;  std::unordered_map<ENetPeer*, std::uint32_t> loginIndexPerPeer{};
   std::vector<std::string> loginOrder{};  // name per index (stable)
   // soak metrics
   std::vector<std::int64_t> tickMicros{};
@@ -109,11 +112,19 @@ void sendMsg(ENetPeer* peer, const Msg& m, Server& s) {
 // T-103 Cantor Vex = 17; T-107 worldHash widened to economy/progression = 18;
 // T-104 review fixes + T-111 fixes = 19 (both lineages, independently
 // numbered); T-115 reconciliation re-bumps: 20; T-120 weapon-skill
-// persistence: 21.
+// persistence: 21; T-126 affix roll widens 1..3 -> 1..10 (shifts every
+// downstream draw in journals containing gear drops): 22; T-127 Old Maw
+// unique rows draw per-row range(1,100) on 1012 kills: 23; T-128 trio rows
+// (1013/1014/1009) extend the same draws: 24; T-135 Weeping Castle boots
+// as zone 6 (spawners + gates + heartstone shift the entity set): 25;
+// T-138 rebase of T-122: pledge registrar post (world composition, T-112
+// precedent) + pledge kinds 34-40 + g-sidecar + schema v13: 26; merge
+// repair (2026-09-16): the H1/H2 mine+steward lane (ore nodes map 4,
+// Castle Steward map 6) merged under epoch-26 journals shifts the entity
+// set (T-068 precedent) — t138/t140 re-replay 12-14/14 mismatches: 27.
 // Replay refuses non-matching epoch journals instead of lying with them.
-constexpr int kJournalEpoch = 21;  // T-120: sword_skill + swing_lands persisted,
-                                   // journal l-line now carries skill. Fresh
-                                   // gate leg: logs/t120.bwj
+constexpr int kJournalEpoch = 27;  // merge repair. Fresh gate leg:
+// logs/t146.bwj (5 wander bots x 10 s, replay mm=0)
 
 // ---- world journal record helpers (M2) ------------------------------------
 void journalTickHash(Server& s) {
@@ -151,6 +162,27 @@ void journalTickHash(Server& s) {
                static_cast<unsigned long long>(s.world.worldHash()));
 }
 
+// T-122: write the live pledge registry through to SQLite. Upserts current
+// rows, deletes ids that vanished (disband) since we last saw them.
+void flushPledges(Server& s) {
+  static std::set<std::uint32_t> known;  // ids seen this boot
+  std::set<std::uint32_t> live;
+  for (const auto& p : s.world.pledges()) {
+    live.insert(p.id);
+    PledgeRec r;
+    r.id = p.id;
+    r.name = p.name;
+    r.emblem = p.emblem;
+    r.liege = p.liege;
+    r.vault = p.vault;  // T-140 tax-only pool
+    s.db.upsertPledge(r, nullptr);
+    known.insert(p.id);
+  }
+  for (std::uint32_t id : known)
+    if (live.count(id) == 0) s.db.deletePledge(id, nullptr);
+  s.world.pledgesDirty = false;
+}
+
 void journalLogin(Server& s, const Session& sess, const CharacterRow& row,
                   const Entity& e) {
   if (s.journal == nullptr) return;
@@ -176,6 +208,17 @@ void journalLogin(Server& s, const Session& sess, const CharacterRow& row,
   std::fprintf(s.journal, "k %lld %u %u\n",
                static_cast<long long>(s.tick + 1), idx,
                static_cast<unsigned>(row.classId > 0 ? row.classId : 1));
+  // T-130: town/EK sidecar (same precedent — missing line replays as 0,0).
+  std::fprintf(s.journal, "w %lld %u %u %u\n",
+               static_cast<long long>(s.tick + 1), idx,
+               static_cast<unsigned>(row.townId), static_cast<unsigned>(row.ek));
+  // T-122/T-138: pledge membership sidecar (k-line pattern). Pre-v13
+  // journals have no g-lines and parse/replay unchanged. Uses the row
+  // (the entity's fields are restored right AFTER journalLogin).
+  std::fprintf(s.journal, "g %lld %u %u %u\n",
+               static_cast<long long>(s.tick + 1), idx,
+               static_cast<unsigned>(row.pledgeId > 0 ? row.pledgeId : 0),
+               static_cast<unsigned>(row.pledgeRank));
 }
 
 void journalDisconnect(Server& s, const Session& sess) {
@@ -258,8 +301,15 @@ void dropSession(Server& s, Session& sess) {
                           e->statPoints, static_cast<int>(e->gold), blob,
                           e->anvilMercyMask, e->karma, e->classId,
                           static_cast<int>(e->swordSkill),
-                          static_cast<std::int64_t>(e->swingLands));
+                          static_cast<std::int64_t>(e->swingLands),
+                          static_cast<int>(e->townId),
+                          static_cast<int>(e->ek),
+                          static_cast<int>(e->pledgeId),
+                          static_cast<int>(e->pledgeRank));
       }
+      // T-122: mirror registry changes (create/invite/leave/kick/disband)
+      // into SQLite. Posture matches gold: unsaved changes die with a kill.
+      if (s.world.pledgesDirty) flushPledges(s);
       std::printf("[net] %-16s saved at (%d,%d)\n", e->name.c_str(), p.x, p.y);
     }
     s.world.despawn(sess.entityId);
@@ -370,6 +420,13 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
         if (pe->swingLands > 0 && pe->swordSkill == 0) {
           pe->swordSkill = static_cast<std::uint8_t>(pe->swingLands / 25u);
         }
+        // T-130: town war identity + EK fame (schema v12; clamped, era-safe)
+        pe->townId = static_cast<std::uint8_t>(row.townId < 0 ? 0 : (row.townId > 2 ? 0 : row.townId));
+        pe->ek = static_cast<std::uint32_t>(row.ek < 0 ? 0 : row.ek);
+        // T-122: pledge membership (schema v12; defaults 0 for old rows).
+        // Registry itself was loaded at boot; this restores the cache.
+        pe->pledgeId = static_cast<std::uint32_t>(row.pledgeId < 0 ? 0 : row.pledgeId);
+        pe->pledgeRank = static_cast<std::uint8_t>(row.pledgeRank);
         const auto bit = s.bless.find(row.name);
         if (bit != s.bless.end()) {
           // parse "id:qty,id:qty"
@@ -460,7 +517,36 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
     case kIdChatSend: {
       ChatSend m;
       if (!m.deserialize(pv.body) || !sess.inWorld) return;
+      if (m.text == "gm blood-moon") {  // T-129: journaled, replay-exact (H1 shape)
+        Command c;
+        c.kind = Command::kBloodMoon;
+        if (sess.cmdq.size() < 32) sess.cmdq.push_back(std::move(c));
+        break;
+      }
+      if (m.text == "gm siege-start") {  // T-131: in-window + bands, else quiet
+        Command c;
+        c.kind = Command::kSiegeStart;
+        if (sess.cmdq.size() < 32) sess.cmdq.push_back(std::move(c));
+        break;
+      }
       if (!m.text.empty() && m.text[0] == '/') {  // party verbs (era commands)
+        // T-122 pledge chat + roster: chat-class (no sim effect, never
+        // journaled — replay regenerates nothing it needs).
+        if (m.text.rfind("/p ", 0) == 0) {
+          Entity* pe = s.world.find(sess.entityId);
+          if (pe != nullptr) s.world.pledgeChat(*pe, m.text.substr(3));
+          break;
+        }
+        if (m.text == "/pledge who") {
+          Entity* pe = s.world.find(sess.entityId);
+          if (pe != nullptr) s.world.pledgeWho(*pe);
+          break;
+        }
+        if (m.text == "/pledge vault") {  // T-140 readout (directed, unjournaled)
+          Entity* pe = s.world.find(sess.entityId);
+          if (pe != nullptr) s.world.pledgeVaultReadout(*pe);
+          break;
+        }
         Command c;
         bool okCmd = true;
         if (m.text.rfind("/invite ", 0) == 0) {
@@ -502,6 +588,7 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
         else if (m.text == "/repair") { c.kind = Command::kRepair; }
         else if (m.text == "/confess") { c.kind = Command::kConfess; }
         else if (m.text == "/repent") { c.kind = Command::kRepent; }
+        else if (m.text == "/mine") { c.kind = Command::kMine; }
         else if (m.text.rfind("/refine ", 0) == 0) {  // T-060 anvil upgrade
           // T-104: throw-free parse (was std::stoi on client digits — any
           // all-digit argument wider than int aborted the server).
@@ -523,6 +610,101 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
             c.a = kit;
           } else {
             okCmd = false;  // unknown oath name: say it aloud, era-right
+          }
+        }
+        else if (m.text.rfind("/oath ", 0) == 0) {  // T-130 town swear (L19+)
+          const std::string k = m.text.substr(6);
+          std::uint8_t town = 0;
+          if (k == "thornwall" || k == "ashen") town = 1;
+          else if (k == "marrowgate" || k == "synod") town = 2;
+          if (town != 0) {
+            c.kind = Command::kOath;
+            c.a = town;
+          } else {
+            okCmd = false;  // unknown town: say it aloud, era-right
+          }
+        }
+        else if (m.text == "/siege-reg") {  // T-131: speaker captains a band
+          c.kind = Command::kSiegeReg;
+        }
+        else if (m.text == "/breach") {  // T-132: ram work on a near gate
+          c.kind = Command::kBreach;
+        }
+        else if (m.text == "/crown") {  // T-133: kneel at the attuned stone
+          c.kind = Command::kCrown;
+        } else if (m.text == "gm ek") {  // T-130 board readout (directed)
+          okCmd = false;  // shell output, never journaled
+          if (Entity* me = s.world.find(sess.entityId)) s.world.ekReadout(*me);
+        } else if (m.text == "gm siege") {  // T-134 castle readout (directed)
+          okCmd = false;  // shell output, never journaled
+          if (Entity* me = s.world.find(sess.entityId)) s.world.siegeReadout(*me);
+        } else if (m.text.rfind("/pledge ", 0) == 0) {  // T-122 pledge-lite
+          const std::string arg = m.text.substr(8);
+          // name->id resolution happens here, pre-journal (kDuel pattern):
+          // the c-line carries ints only.
+          auto resolve = [&](const std::string& nm) -> bool {
+            for (const auto& e : s.world.entities()) {
+              if (e.kind == EntityKind::kPlayer && e.name == nm) {
+                c.a = static_cast<std::int32_t>(e.id);
+                return true;
+              }
+            }
+            return false;
+          };
+          if (arg.rfind("create ", 0) == 0) {
+            const std::string nm = arg.substr(7);
+            // shape check here so typos fall through as an ordinary say;
+            // the World method re-checks everything (replay safety)
+            const int n = static_cast<int>(nm.size());
+            bool shaped = n >= World::kPledgeNameMin && n <= World::kPledgeNameMax;
+            for (int i = 0; shaped && i < n; ++i) {
+              const char ch = nm[i];
+              shaped = (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') ||
+                       (ch >= '0' && ch <= '9') || ch == '_' || ch == '-';
+            }
+            if (shaped) {
+              c.kind = Command::kPledgeCreate;
+              c.text = nm;  // live-only: the c-line journal drops it
+            } else {
+              okCmd = false;
+            }
+          } else if (arg.rfind("invite ", 0) == 0) {
+            c.kind = Command::kPledgeInvite;
+            okCmd = resolve(arg.substr(7));
+          } else if (arg == "accept") {
+            c.kind = Command::kPledgeAccept;
+          } else if (arg == "leave") {
+            c.kind = Command::kPledgeLeave;
+          } else if (arg.rfind("kick ", 0) == 0) {
+            c.kind = Command::kPledgeKick;
+            okCmd = resolve(arg.substr(5));
+          } else if (arg.rfind("promote ", 0) == 0) {
+            c.kind = Command::kPledgeRank;
+            c.channel = 2;  // Bloodsworn
+            okCmd = resolve(arg.substr(8));
+          } else if (arg.rfind("demote ", 0) == 0) {
+            c.kind = Command::kPledgeRank;
+            c.channel = 1;  // Initiate
+            okCmd = resolve(arg.substr(7));
+          } else if (arg == "disband") {
+            c.kind = Command::kPledgeDisband;
+          } else if (arg.rfind("tithe ", 0) == 0) {  // T-140 voluntary tithe
+            // digits-only, capped: typos fall through as an ordinary say.
+            const std::string digits = arg.substr(6);
+            std::int32_t amount = 0;
+            bool shaped = !digits.empty() && digits.size() <= 7;
+            for (char ch : digits) {
+              if (!shaped || ch < '0' || ch > '9') { shaped = false; break; }
+              amount = amount * 10 + (ch - '0');
+            }
+            if (shaped && amount > 0) {
+              c.kind = Command::kPledgeTithe;
+              c.a = amount;
+            } else {
+              okCmd = false;
+            }
+          } else {
+            okCmd = false;
           }
         } else { okCmd = false; }
         if (okCmd && sess.cmdq.size() < 32) { sess.cmdq.push_back(std::move(c)); break; }
@@ -855,6 +1037,11 @@ void distributeEvents(Server& s) {
           m.karmaBand = World::karmaBandOf(e->karma);
           m.light = e->lightRadius;  // T-071 night light
           m.glowTier = s.world.equippedGlowTier(*e);  // T-092 refine glow
+          // T-142: players ride class+sex so the client sheets them.
+          // Mobs carry none (0 = hero fallback). Sex is 0 (unknown) until
+          // T-142b captures it at creation (no source of truth exists yet).
+          m.classId = e->kind == EntityKind::kPlayer ? e->classId : std::uint8_t(0);
+          m.sex = std::uint8_t(0);
           sendMsg(kv.first, m, s);
         }
       }
@@ -926,6 +1113,18 @@ void tickServer(Server& s) {
   s.world.tick();
   distributeEvents(s);
 
+  // T-134: throttled castle-memory write (vault accrues per taxed kill).
+  if (s.world.siegeSaveDue(s.tick)) {
+    std::string siegeErr;
+    if (s.db.saveSiege(s.world.siegeHolder(), s.world.siegeHolderName(),
+                       s.world.siegeVault(), s.world.siegeCrowns(),
+                       &siegeErr)) {
+      s.world.markSiegeSaved(s.tick);
+    } else {
+      std::fprintf(stderr, "bh_server: siege save: %s\n", siegeErr.c_str());
+    }
+  }
+
   // 3) AoI deltas per session
   for (auto& kv : s.sessions) {
     Session& sess = kv.second;
@@ -955,6 +1154,9 @@ void tickServer(Server& s) {
                           : std::uint8_t(1);  // mobs: neutral band
         m.light = e->lightRadius;  // T-071 night light
         m.glowTier = s.world.equippedGlowTier(*e);  // T-092 refine glow
+        // T-142: players ride class+sex (mobs 0; sex 0 unknown until T-142b).
+        m.classId = e->kind == EntityKind::kPlayer ? e->classId : std::uint8_t(0);
+        m.sex = std::uint8_t(0);
         sendMsg(sess.peer, m, s);
       }
       proto::EntityDelta d;
@@ -966,6 +1168,9 @@ void tickServer(Server& s) {
       d.hp = e->hp;
       d.light = e->lightRadius;  // T-071 (torch expiry/toggle rides the delta)
       d.glowTier = s.world.equippedGlowTier(*e);  // T-092 (refine swaps ride too)
+      // T-142: class rides the delta so a /kit oath re-sheets remotes live.
+      d.classId = e->kind == EntityKind::kPlayer ? e->classId : std::uint8_t(0);
+      d.sex = std::uint8_t(0);
       sendMsg(sess.peer, d, s);
     }
     for (const std::uint32_t id : sess.interest) {
@@ -1030,19 +1235,32 @@ void tickServer(Server& s) {
 // c=command(tick,loginIdx,kind,a,b,channel); h=tick hash markers every 100.
 // Replays entity creation + world commands on a fresh world (fixed seed), then
 // verifies every hash marker. Exit 0 = perfect replay (wipe+all), 3 = mismatch.
-int runReplayWorld(const std::string& path, const std::string& mapPath) {
+int runReplayWorld(const std::string& path, const std::string& mapPath,
+                   bool rehearsal) {
   {
     FILE* pf = std::fopen(path.c_str(), "r");
     if (pf != nullptr) {
       char vline[32];
       if (std::fgets(vline, sizeof vline, pf) != nullptr && vline[0] == 'v') {
         int ep = 1;
-        std::sscanf(vline, "v %d", &ep);
+        char mode[16] = "";
+        std::sscanf(vline, "v %d %15s", &ep, mode);
         if (ep != kJournalEpoch) {
           std::fprintf(stderr,
               "[replay] journal epoch %d vs build epoch %d — sim semantics "
               "changed since; record a fresh gate leg (old leg retained as "
               "history)\n", ep, kJournalEpoch);
+          std::fclose(pf);
+          return 4;
+        }
+        // T-136: rehearsal journals replay only under the flag and vice versa.
+        const bool journalRehearsal = std::string(mode) == "rehearsal";
+        if (journalRehearsal != rehearsal) {
+          std::fprintf(stderr,
+              "[replay] rehearsal-mode mismatch (journal %s rehearsal, "
+              "--siege-rehearsal %s) — refusing to lie with it\n",
+              journalRehearsal ? "is" : "is not",
+              rehearsal ? "set" : "unset");
           std::fclose(pf);
           return 4;
         }
@@ -1057,6 +1275,7 @@ int runReplayWorld(const std::string& path, const std::string& mapPath) {
   }
   std::string err;
   World world;
+  world.setRehearsal(rehearsal);  // T-136: window opens in rehearsal journals
   if (!world.load(mapPath, &err)) {
     std::fprintf(stderr, "bh_server: %s\n", err.c_str());
     std::fclose(f);
@@ -1066,7 +1285,8 @@ int runReplayWorld(const std::string& path, const std::string& mapPath) {
     for (const auto& [zid, zpath] : {std::pair<std::uint16_t, const char*>{2, "assets/maps/fields_overflow.bhmap"},
                                      {3, "assets/maps/thornwall_crypt.bhmap"},
                                      {4, "assets/maps/bonehowl_mine.bhmap"},
-                                     {5, "assets/maps/drowned_crypt.bhmap"}}) {
+                                     {5, "assets/maps/drowned_crypt.bhmap"},
+                                     {6, "assets/maps/weeping_castle.bhmap"}}) {
       std::string zerr;
       (void)world.loadZone(zid, zpath, &zerr);
     }
@@ -1090,7 +1310,11 @@ int runReplayWorld(const std::string& path, const std::string& mapPath) {
   };
   struct QueuedBless { sim::Tick tick; std::string name; std::string spec; };
   std::unordered_map<std::uint32_t, std::uint32_t> loginKits;  // k-lines (T-053)
-  
+  std::unordered_map<std::uint32_t, std::pair<std::uint32_t, std::uint32_t>>
+      loginTowns;  // w-lines: town+ek sidecar (T-130; absent => 0,0)
+  std::unordered_map<std::uint32_t, std::pair<std::uint32_t, std::uint32_t>>
+      loginPledges;  // g-lines (T-122/T-138): idx -> {pledgeId, rank}
+
   struct QueuedCmd {
     sim::Tick tick;
     std::uint32_t idx;
@@ -1147,6 +1371,14 @@ int runReplayWorld(const std::string& path, const std::string& mapPath) {
       long long ktick; unsigned kidx, kit;
       if (std::sscanf(line, "k %lld %u %u", &ktick, &kidx, &kit) == 3)
         loginKits[kidx] = kit;
+    } else if (line[0] == 'w') {  // T-130 town/EK sidecar: w tick idx town ek
+      long long wtick; unsigned widx, town, ek;
+      if (std::sscanf(line, "w %lld %u %u %u", &wtick, &widx, &town, &ek) == 4)
+        loginTowns[widx] = {town, ek};
+    } else if (line[0] == 'g') {  // T-122/T-138 pledge sidecar: g tick idx pledgeId rank
+      long long gtick; unsigned gidx, gpid, grank;
+      if (std::sscanf(line, "g %lld %u %u %u", &gtick, &gidx, &gpid, &grank) == 4)
+        loginPledges[gidx] = {gpid, grank};
     } else if (line[0] == 'b') {
       long long tick;
       char nm[64], spec[256];
@@ -1201,8 +1433,7 @@ int runReplayWorld(const std::string& path, const std::string& mapPath) {
       kit = static_cast<std::uint8_t>(ki->second);
     Entity& e = world.spawn(L.name, 0, sim::TilePos{L.x, L.y},
                             static_cast<std::uint16_t>(L.zoneId), kit);
-    Entity* pe = world.find(e.id);
-    pe->level = static_cast<std::uint8_t>(L.level < 1 ? 1 : (L.level > 25 ? 25 : L.level));
+    Entity* pe = world.find(e.id);    pe->level = static_cast<std::uint8_t>(L.level < 1 ? 1 : (L.level > 25 ? 25 : L.level));
     pe->xp = L.xp;
     pe->str = static_cast<std::uint8_t>(L.st_);
     pe->vit = static_cast<std::uint8_t>(L.vit);
@@ -1224,6 +1455,17 @@ int runReplayWorld(const std::string& path, const std::string& mapPath) {
     if (pe->swingLands > 0 && pe->swordSkill == 0) {
       pe->swordSkill = static_cast<std::uint8_t>(pe->swingLands / 25u);
     }
+    // T-130: town/EK sidecar (absent in pre-T-130 journals => 0,0)
+    if (const auto wi = loginTowns.find(L.idx); wi != loginTowns.end()) {
+      pe->townId =
+          static_cast<std::uint8_t>(wi->second.first > 2 ? 0 : wi->second.first);
+      pe->ek = wi->second.second;
+    }
+    // T-122/T-138: pledge membership from the g-sidecar (absent => pre-v13
+    // journal, unsworn). Stubs keep the replay registry consistent.
+    if (const auto gi = loginPledges.find(L.idx); gi != loginPledges.end())
+      world.pledgeReplayRestore(*pe, gi->second.first,
+                                static_cast<std::uint8_t>(gi->second.second));
     // replay bless grants (debug lane recorded as b-lines) — AFTER the
     // persisted blob, exactly like the live login order, so debugGive
     // stacking/appending lands identically on both sides.
@@ -1372,12 +1614,13 @@ int run(int argc, char** argv) {
       if (eq != std::string::npos) s.bless[spec.substr(0, eq)] = spec.substr(eq + 1);
     }
     else if (a == "--replay-world") s.replayWorldPath = next("");
+    else if (a == "--siege-rehearsal") s.siegeRehearsal = true;  // T-136
     else if (a == "--p99-budget-ms") s.p99BudgetMs = std::atof(next("10").c_str());
     else if (a == "--no-register") s.allowRegister = false;  // T-109 gate
     else {
       std::fprintf(stderr,
                    "usage: bh_server [--map M] [--db D] [--port P] [--soak-secs S] "
-                   "[--p99-budget-ms N] [--no-register]\n");
+                   "[--p99-budget-ms N] [--no-register] [--siege-rehearsal]\n");
       return 2;
     }
   }
@@ -1388,10 +1631,12 @@ int run(int argc, char** argv) {
     return 1;
   }
   // T-036/T-035: load every zone that's present (optional on old deployments)
+  // T-135: Weeping Castle (zone 6) joins the boot set.
   for (const auto& [zid, zpath] : {std::pair<std::uint16_t, const char*>{2, "assets/maps/fields_overflow.bhmap"},
                                    {3, "assets/maps/thornwall_crypt.bhmap"},
                                    {4, "assets/maps/bonehowl_mine.bhmap"},
-                                   {5, "assets/maps/drowned_crypt.bhmap"}}) {
+                                   {5, "assets/maps/drowned_crypt.bhmap"},
+                                   {6, "assets/maps/weeping_castle.bhmap"}}) {
     std::string zerr;
     if (s.world.loadZone(zid, zpath, &zerr)) {
       const sim::Map* zm = s.world.zoneMap(zid);
@@ -1407,6 +1652,24 @@ int run(int argc, char** argv) {
     std::fprintf(stderr, "bh_server: %s\n", err.c_str());
     return 1;
   }
+  // T-134: the castle remembers its master across reboots (empty => zeros).
+  {
+    Db::SiegeRow siege{};
+    std::string siegeErr;
+    if (s.db.loadSiege(&siege, &siegeErr)) {
+      s.world.loadSiegeState(static_cast<std::uint32_t>(siege.holderId),
+                             siege.holderName,
+                             static_cast<std::uint32_t>(siege.vaultGold),
+                             static_cast<std::uint32_t>(siege.crowns));
+    } else {
+      std::fprintf(stderr, "bh_server: siege load: %s\n", siegeErr.c_str());
+    }
+  }
+  // T-136 rehearsal posture (loud, never default).
+  if (s.siegeRehearsal) {
+    s.world.setRehearsal(true);
+    std::printf("[rehearsal] siege window OPEN unconditionally (drill posture)\n");
+  }
   // T-109: make the auth posture visible in every server log.
   std::printf("[auth] registration %s; limiter: %d logins + %d new accounts "
               "per %llds per IP, %d consecutive bad-password fails -> %llds lockout\n",
@@ -1419,7 +1682,8 @@ int run(int argc, char** argv) {
               static_cast<long long>(LoginLimiter::kLockoutMs / 1000));
   std::fflush(stdout);
   if (!s.replayWorldPath.empty()) {
-    return runReplayWorld(s.replayWorldPath, mapPath);  // offline deterministic mode
+    return runReplayWorld(s.replayWorldPath, mapPath,
+                          s.siegeRehearsal);  // offline deterministic mode
   }
   if (!s.recordWorldPath.empty()) {
     s.journal = std::fopen(s.recordWorldPath.c_str(), "w");
@@ -1434,10 +1698,48 @@ int run(int argc, char** argv) {
     // ("h 875 a52a7e3"), and the replay dutifully failed on the garbage
     // expected hash. Complete lines must survive an ungraceful kill.
     std::setvbuf(s.journal, nullptr, _IOLBF, 0);
-    std::fprintf(s.journal, "v %d\n", kJournalEpoch);
+    if (s.siegeRehearsal)
+      std::fprintf(s.journal, "v %d rehearsal\n", kJournalEpoch);
+    else
+      std::fprintf(s.journal, "v %d\n", kJournalEpoch);
     std::fflush(s.journal);
     std::fprintf(stderr, "[journal] recording world to %s (epoch %d)\n",
                  s.recordWorldPath.c_str(), kJournalEpoch);
+  }
+  // T-122: pledge registry — live path only (replay rebuilds from the
+  // journal g-sidecar; record mode starts with an empty registry).
+  {
+    std::vector<PledgeRec> recs;
+    std::string perr;
+    if (s.db.loadPledges(&recs, &perr)) {
+      std::vector<std::pair<std::string, std::pair<int, int>>> mems;
+      s.db.loadPledgeMembers(&mems, &perr);
+      std::vector<World::Pledge> loaded;
+      for (const PledgeRec& r : recs) {
+        World::Pledge p;
+        p.id = r.id;
+        p.name = r.name;
+        p.emblem = static_cast<std::uint8_t>(r.emblem);
+        p.liege = r.liege;
+        p.vault = r.vault;  // T-140 tax-only pool
+        loaded.push_back(std::move(p));
+      }
+      for (const auto& m : mems) {  // (name, {pledgeId, rank})
+        for (auto& p : loaded) {
+          if (p.id == static_cast<std::uint32_t>(m.second.first)) {
+            p.members.push_back(m.first);
+            break;
+          }
+        }
+      }
+      s.world.setPledges(std::move(loaded));
+      std::printf("[boot] pledges: %zu registered, %zu sworn members\n",
+                  recs.size(), mems.size());
+      std::fflush(stdout);
+    } else {
+      std::printf("[boot] pledge registry unavailable: %s (continuing)\n",
+                  perr.c_str());
+    }
   }
   if (enet_initialize() != 0) {
     std::fprintf(stderr, "bh_server: enet_initialize failed\n");

@@ -1,0 +1,8 @@
+[bots] CRYPT bossSeen=0 bossKills=0 curse=0 slam=0
+[bots] SUMMARY welcomed=5/5 moved=5/5 minDeltas=1200 kills=40 pots=2 swings=103 deaths=0 shops=0 anvilTries=0 levelDrops=0 regear=0 maxLevel=3 pkts=203274 bytes=4844477 gates b/g/p/a/r=0/0/0/0/0 mGold=0 mPelts=0 bless=0 mend=0 noSee=0 hurt=0 choir c6=0 c7=0 c8=0
+[bots] t126__00     kit=1 lvl=3 hp=106/94 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t126__01     kit=1 lvl=2 hp=9/94 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t126__02     kit=1 lvl=2 hp=76/94 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t126__03     kit=1 lvl=3 hp=69/94 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] t126__04     kit=1 lvl=1 hp=65/94 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] OK
