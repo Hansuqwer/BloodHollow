@@ -1027,10 +1027,10 @@ wire+HUD epoch 28, `04a60b8`), T-152 (GM allowlist+/ban/announce, `9f3b43e`),
 T-155 (--bless replay guard, `ef618a5`), T-169 (/help+F1, `ca3e71a`),
 T-165-Wave0 (castle test salvage, `eeee6e0`); T-154/T-168 (PR #55), T-159
 (PR #54) → done on merge. Open (filed this wave, implement per queue):
-T-153 argon2id · T-156 T-ART-12..15 · T-157 evidence refresh · T-158 GDD
-truth-up · T-160 stat model · T-161 kit spine · T-162 roster · T-163 field-war
+T-153 argon2id · T-156 T-ART-12..15 · T-157-F1 horn (blocker) · T-157-F2 bands ·
+T-160 stat model · T-161 kit spine · T-162 roster · T-163 field-war
 · T-164 night light · T-165 remainder (director merges) · T-166 bounty ·
-T-167 char-create. Wave-2 epoch-30 batch proposal: `T-WAVE2-EPOCH30.md`.
+T-167 char-create. T-157 verdict (M4 FAIL, cause carded) + T-158 are done. Wave-2 epoch-30 batch proposal: `T-WAVE2-EPOCH30.md`.
 Human-only T-146..T-149 stay director-owned.
 
 ## Done — T-158 (2026-09-16): GDD law truth-up + ADRs (docs-only)
@@ -1040,6 +1040,16 @@ economy, ADR-0014 siege/moon + change-control); GDD §6/§7/§8/§9 amended;
 README epoch-18/t107/Phase-4 lines → epoch 29/t159/wave-2; AGENTS.md DoD
 +--bless ban +headless gate; T-138..T-145 → done/, stale opens T-104/T-112/
 T-142 removed. No code/wire/epoch. Devlog 0111 · card `done/T-158.md`.
+
+## Done — T-157 (2026-09-16): evidence refresh — M4 verdict FAIL, cause found, fixes carded
+
+`m4e29` (12v6 × 750 s @ epoch 29, `logs/t137_m4e29.bwj` force-added): flips 0
+→ M4 FAIL; p99 3.0 ms PASS; replay 15042/2155/150 mm=0 PASS. Root cause:
+`[gm-denied] tick=1494` — T-152's allowlist denied bot0's single-shot horn,
+battle never started (drill-vs-tree, not a sim bug). Open: `T-157-F1`
+(horn: BH_GM_NAMES + retry + abort-fast, blocker), `T-157-F2` (7 fragmented
+bands, quality). Readiness doc → epoch 29. F1 re-run owes re-verdict; M1 soak
++ M2/M3 scheduled. Devlog 0112 · card `done/T-157.md`.
 
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
