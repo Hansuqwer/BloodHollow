@@ -54,6 +54,32 @@ struct PartyMemberWire {
   std::uint16_t zoneId = 0;
 };
 
+struct SiegeStateWire {
+  std::uint32_t holderPledgeId = 0;
+  std::string holderPledgeName;
+  std::string holderName;
+  std::uint32_t windowEndTick = 0;
+  std::uint32_t battleEndTick = 0;
+  std::uint16_t gateHp0 = 0;
+  std::uint16_t gateHp1 = 0;
+  std::uint16_t heartProgress = 0;
+  std::uint8_t heartAttuned = 0;
+  std::uint32_t crownOwnerId = 0;
+  std::string crownOwnerName;
+  std::uint32_t crownDeadline = 0;
+  std::uint8_t bandCount = 0;
+  std::uint8_t phase = 0;
+  std::uint32_t vaultGold = 0;
+  std::uint32_t crowns = 0;
+};
+
+struct PledgeMemberWire {
+  std::string name;
+  std::uint8_t rank = 0;
+  std::uint16_t level = 1;
+  std::uint8_t online = 0;
+};
+
 struct InvSlotWire {
   std::uint32_t itemId = 0;
   std::uint16_t qty = 0;
@@ -131,6 +157,12 @@ class NetClient {
   std::uint32_t partyId = 0;
   std::uint32_t partyLeaderId = 0;
   std::vector<PartyMemberWire> party{};  // T-052 party frame data
+  SiegeStateWire siege{};  // T-151 castle memory
+  std::uint32_t pledgeId = 0;
+  std::string pledgeName;
+  std::uint8_t pledgeEmblem = 0;
+  std::uint32_t pledgeVault = 0;
+  std::vector<PledgeMemberWire> pledgeMembers{};
   std::uint32_t online = 0;
   std::uint32_t serverP99Us = 0;
   int pingMs = -1;

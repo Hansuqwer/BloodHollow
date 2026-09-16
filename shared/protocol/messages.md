@@ -300,10 +300,52 @@ u8 count
 
 ```proto
 message PartyMember = 116
-u32 entityId
-string name
-u16 level
-u32 hp
-u32 hpMax
-u16 zoneId
+ u32 entityId
+ string name
+ u16 level
+ u32 hp
+ u32 hpMax
+ u16 zoneId
+```
+
+Siege + pledge wire (T-151, epoch 28): SiegeState carries the castle memory
+(window/battle ticks, gate HP[2] max 300, heart progress/attuned, crown channel,
+band count, phase, vault/crowns, holder pledge). PledgeRoster is the guild
+sheet (header + per-member rows, inventory-style).
+
+```proto
+message SiegeState = 117
+ u32 holderPledgeId
+ string holderPledgeName
+ string holderName
+ u32 windowEndTick
+ u32 battleEndTick
+ u16 gateHp0
+ u16 gateHp1
+ u16 heartProgress
+ u8 heartAttuned
+ u32 crownOwnerId
+ string crownOwnerName
+ u32 crownDeadline
+ u8 bandCount
+ u8 phase
+ u32 vaultGold
+ u32 crowns
+```
+
+```proto
+message PledgeRoster = 118
+ u32 pledgeId
+ string name
+ u8 emblem
+ u8 count
+ u32 vaultGold
+```
+
+```proto
+message PledgeMember = 119
+ string name
+ u8 rank
+ u16 level
+ u8 online
 ```

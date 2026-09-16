@@ -1,3 +1,7 @@
+set(_bh_tests_raylib_srcs test_zoom.cpp test_animstate.cpp test_clientlaw.cpp)
+if(NOT TARGET raylib)
+  set(_bh_tests_raylib_srcs "")
+endif()
 add_executable(bh_tests
   tests_main.cpp
   test_grid.cpp
@@ -20,9 +24,7 @@ add_executable(bh_tests
   test_curse.cpp
   test_light.cpp
   test_guards.cpp
-  test_zoom.cpp
-  test_animstate.cpp
-  test_clientlaw.cpp
+  ${_bh_tests_raylib_srcs}
   test_repent.cpp
   test_tradelog.cpp
   test_purify.cpp
@@ -61,7 +63,9 @@ add_executable(bh_tests
 target_link_libraries(bh_tests PRIVATE bh_shared bh_protocol bh_server_world bh_doctest bh_warnings)
 # T-ART-02: snapZoom lives in raylib-including camera_rig.h — link raylib for
 # the headers (test TU never opens a display; pure float math under test).
-target_link_libraries(bh_tests PRIVATE raylib)
+if(TARGET raylib)
+  target_link_libraries(bh_tests PRIVATE raylib)
+endif()
 # T-071: light-mask law pins live in raylib-free engine/render/lightmask.h.
 target_include_directories(bh_tests PRIVATE ${CMAKE_SOURCE_DIR}/engine)
 add_test(NAME bh_tests COMMAND bh_tests)

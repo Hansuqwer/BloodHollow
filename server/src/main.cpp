@@ -23,6 +23,7 @@
 #include "persist.h"
 #include "loginlimit.h"
 #include "protocol/messages_gen.h"
+#include "content/wirekind.h"
 #include "sim/combat.h"
 #include "sim/clock.h"
 #include "sim/tick.h"
@@ -90,6 +91,8 @@ std::int64_t steadyNowMs() {
 
 void pushOwnStats(Server& s, Session& sess);
 void pushInventory(Server& s, Session& sess);
+void pushSiegeState(Server& s, Session& sess);
+void pushPledgeRoster(Server& s, Session& sess);
 
 void send(ENetPeer* peer, const std::vector<std::uint8_t>& bytes, Server& s) {
   ENetPacket* p = enet_packet_create(bytes.data(), bytes.size(), ENET_PACKET_FLAG_RELIABLE);
@@ -123,8 +126,10 @@ void sendMsg(ENetPeer* peer, const Msg& m, Server& s) {
 // Castle Steward map 6) merged under epoch-26 journals shifts the entity
 // set (T-068 precedent) — t138/t140 re-replay 12-14/14 mismatches: 27.
 // Replay refuses non-matching epoch journals instead of lying with them.
-constexpr int kJournalEpoch = 27;  // merge repair. Fresh gate leg:
-// logs/t146.bwj (5 wander bots x 10 s, replay mm=0)
+// T-151: siege+pledge wire + HUD (messages 117..119, no sim change but wire
+// incompatible — kProtocolVersion 237→241): epoch 28, fresh leg epoch28.bwj.
+constexpr int kJournalEpoch = 28;  // T-151 wire+HUD. Fresh gate leg:
+// logs/epoch28.bwj (rehearsal+sige, replay mm=0)
 
 // ---- world journal record helpers (M2) ------------------------------------
 void journalTickHash(Server& s) {
@@ -489,6 +494,8 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
       sendMsg(sess.peer, w, s);
       pushOwnStats(s, sess);
       pushInventory(s, sess);
+      pushSiegeState(s, sess);
+      pushPledgeRoster(s, sess);
       std::printf("[net] %-16s entered the world (entity %u, online %zu)\n",
                   row.name.c_str(), sess.entityId, s.sessions.size());
       broadcastChat(s, 2, "", row.name + " has entered Thornwall.");
@@ -979,6 +986,74 @@ void pushPartyRoster(Server& s, Session& sess) {
   }
 }
 
+// T-151: siege + pledge HUD (wire 117..119, parchment era)
+void pushSiegeState(Server& s, Session& sess) {
+  // holder pledge lookup (pledge that contains the holder's name)
+  std::uint32_t hpId = 0;
+  std::string hpName;
+  const std::string& holder = s.world.siegeHolderName();
+  if (!holder.empty()) {
+    for (const auto& p : s.world.pledges()) {
+      for (const auto& m : p.members) if (m == holder) { hpId = p.id; hpName = p.name; break; }
+      if (hpId != 0) break;
+    }
+  }
+  std::uint16_t gh0 = 0, gh1 = 0;
+  std::vector<std::uint32_t> gh;
+  for (const auto& e : s.world.entities()) if (e.wireKind == content::kWireKindSiegeGate) gh.push_back(e.hp);
+  std::sort(gh.begin(), gh.end()); // stable by hp isn't id-stable, but gate count ≤2 so sort by hp is deterministic for display
+  // recover ordered by id for client: collect gates sorted by id
+  std::vector<const Entity*> gates;
+  for (const auto& e : s.world.entities()) if (e.wireKind == content::kWireKindSiegeGate) gates.push_back(&e);
+  std::sort(gates.begin(), gates.end(), [](const Entity* a, const Entity* b){ return a->id < b->id; });
+  if (gates.size() > 0) gh0 = static_cast<std::uint16_t>(gates[0]->hp);
+  if (gates.size() > 1) gh1 = static_cast<std::uint16_t>(gates[1]->hp);
+  (void)gh;
+  std::uint32_t cOwner = 0; std::string cName; std::uint32_t cDead = 0;
+  for (const auto& e : s.world.entities()) {
+    if (e.kind != EntityKind::kPlayer || e.dead) continue;
+    if (e.crownUntil >= 0 && s.world.tickCount() < e.crownUntil) { cOwner = e.id; cName = e.name; cDead = static_cast<std::uint32_t>(e.crownUntil); break; }
+  }
+  std::uint8_t phase = 0;
+  if (cOwner != 0) phase = 4;
+  else if (s.world.heartAttuned()) phase = 3;
+  else if (s.world.siegeBattleActive()) phase = 2;
+  else if (s.world.inSiegeWindow()) phase = 1;
+  else phase = 0;
+  proto::SiegeState st;
+  st.holderPledgeId = hpId;
+  st.holderPledgeName = hpName;
+  st.holderName = holder;
+  st.windowEndTick = static_cast<std::uint32_t>(s.world.siegeWindowEnd());
+  st.battleEndTick = s.world.siegeBattleActive() ? static_cast<std::uint32_t>(s.world.siegeBattleEndsAt()) : 0;
+  st.gateHp0 = gh0; st.gateHp1 = gh1;
+  st.heartProgress = static_cast<std::uint16_t>(s.world.heartProgress());
+  st.heartAttuned = s.world.heartAttuned() ? 1 : 0;
+  st.crownOwnerId = cOwner; st.crownOwnerName = cName; st.crownDeadline = cDead;
+  st.bandCount = static_cast<std::uint8_t>(s.world.siegeBandsUsed());
+  st.phase = phase;
+  st.vaultGold = s.world.siegeVault(); st.crowns = s.world.siegeCrowns();
+  sendMsg(sess.peer, st, s);
+}
+void pushPledgeRoster(Server& s, Session& sess) {
+  Entity* me = s.world.find(sess.entityId);
+  const World::Pledge* p = nullptr;
+  if (me != nullptr && me->pledgeId != 0) p = s.world.pledgeById(me->pledgeId);
+  proto::PledgeRoster hdr;
+  if (p != nullptr) { hdr.pledgeId = p->id; hdr.name = p->name; hdr.emblem = p->emblem; hdr.count = static_cast<std::uint8_t>(p->members.size()); hdr.vaultGold = p->vault; }
+  else { hdr.pledgeId = 0; hdr.name = ""; hdr.emblem = 0; hdr.count = 0; hdr.vaultGold = 0; }
+  sendMsg(sess.peer, hdr, s);
+  if (p == nullptr) return;
+  for (const std::string& mname : p->members) {
+    const Entity* found = nullptr;
+    for (const auto& e : s.world.entities()) if (e.kind == EntityKind::kPlayer && e.name == mname) { found = &e; break; }
+    proto::PledgeMember pm; pm.name = mname;
+    if (found != nullptr && found->pledgeId == p->id) { pm.rank = found->pledgeRank; pm.level = found->level; pm.online = 1; }
+    else { pm.rank = (mname == p->liege ? 3 : 1); pm.level = 1; pm.online = 0; }
+    sendMsg(sess.peer, pm, s);
+  }
+}
+
 void distributeEvents(Server& s) {
   for (const WorldEvent& ev : s.world.events()) {
     if (ev.chatCh == 255 && !ev.chatText.empty()) {
@@ -1194,6 +1269,8 @@ void tickServer(Server& s) {
       for (auto& kv : s.sessions)
         if (kv.second.inWorld) pushPartyRoster(s, kv.second);
     }
+    // T-151: siege + pledge HUD every second (wire 117..119)
+    for (auto& kv : s.sessions) if (kv.second.inWorld) { pushSiegeState(s, kv.second); pushPledgeRoster(s, kv.second); }
     std::vector<std::int64_t> sorted = s.tickMicros;
     std::sort(sorted.begin(), sorted.end());
     const std::int64_t p99 = sorted.empty() ? 0 : sorted[sorted.size() * 99 / 100];

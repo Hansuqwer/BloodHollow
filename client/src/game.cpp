@@ -911,9 +911,17 @@ void Game::drawRemoteEnt(const RenderEnt& e, bool isOwn) {
         }
       }
       DrawText(label.c_str(), static_cast<int>(w.x) - tw / 2,
-               static_cast<int>(w.y) - 52, 10, nc);
-    }
-  }
+                 static_cast<int>(w.y) - 52, 10, nc);
+      if (isPledgeMemberName(e.snap.name)) {
+        const int bx = static_cast<int>(w.x) + tw / 2 + 4;
+        const int by = static_cast<int>(w.y) - 62;
+        DrawRectangle(bx, by, 10, 10, Color{160, 140, 90, 230});
+        DrawRectangleLines(bx, by, 10, 10, Color{200, 180, 120, 255});
+        char eb[4]; std::snprintf(eb, sizeof eb, "%u", net_->pledgeEmblem % 10);
+        DrawText(eb, bx + 2, by + 1, 10, Color{40, 30, 20, 255});
+      }
+     }
+   }
   if (e.snap.hpMax > 0 && e.snap.hp < e.snap.hpMax) {
     const float frac = static_cast<float>(e.snap.hp) / static_cast<float>(e.snap.hpMax);
     DrawRectangle(static_cast<int>(w.x) - 14, static_cast<int>(w.y) - 46, 28, 3,
@@ -1286,6 +1294,72 @@ void Game::drawPartyFrame() const {
     DrawRectangle(px + 8, ry + 12, static_cast<int>(134.0f * frac), 5, Color{150, 30, 30, 255});
     ++row;
   }
+}
+
+bool Game::isPledgeMemberName(const std::string& n) const {
+  if (net_ == nullptr || net_->pledgeId == 0 || n.empty()) return false;
+  for (const auto& m : net_->pledgeMembers) if (m.name == n) return true;
+  return false;
+}
+void Game::drawSiegePanel() const {
+  if (net_ == nullptr || !net_->welcomed) return;
+  const auto& s = net_->siege;
+  const int px = 1024 - 190;
+  const int py = 380; // below inventory (774,150 240x220 ends 370) — avoids overlap
+  const int ph = 110;
+  DrawRectangle(px, py, 182, ph, Color{28, 22, 14, 215});
+  DrawRectangleLinesEx(Rectangle{static_cast<float>(px), static_cast<float>(py), 182, static_cast<float>(ph)}, 1.0f, Color{160, 140, 90, 220});
+  DrawText("WEEPING CASTLE", px + 8, py + 6, 10, Color{235, 220, 190, 255});
+  char buf[96];
+  const char* holder = s.holderName.empty() ? "unclaimed" : s.holderName.c_str();
+  std::string hp = s.holderPledgeName.empty() ? std::string(holder) : std::string(holder) + " [" + s.holderPledgeName + "]";
+  std::snprintf(buf, sizeof buf, "castle: %s", hp.c_str());
+  DrawText(buf, px + 8, py + 22, 10, Color{200, 200, 180, 255});
+  std::snprintf(buf, sizeof buf, "vault: %ug (%u crowns)", s.vaultGold, s.crowns);
+  DrawText(buf, px + 8, py + 36, 10, Color{210, 190, 150, 255});
+  const char* phs = s.phase == 4 ? "crowning" : s.phase == 3 ? "attuned" : s.phase == 2 ? "battle" : s.phase == 1 ? "window" : "quiet";
+  std::snprintf(buf, sizeof buf, "battle: %s  bands %u/8", phs, s.bandCount);
+  DrawText(buf, px + 8, py + 50, 10, s.phase >= 2 ? Color{235, 160, 120, 255} : Color{180, 170, 160, 255});
+  std::snprintf(buf, sizeof buf, "gates %u/%u  heart %u/1200%s", s.gateHp0, s.gateHp1, s.heartProgress, s.heartAttuned ? " attuned" : "");
+  DrawText(buf, px + 8, py + 64, 10, Color{180, 200, 190, 255});
+  if (s.crownOwnerId != 0) {
+    std::snprintf(buf, sizeof buf, "crown: %s (%u)", s.crownOwnerName.c_str(), s.crownDeadline);
+    DrawText(buf, px + 8, py + 78, 10, Color{255, 210, 120, 255});
+  } else {
+    std::snprintf(buf, sizeof buf, "window ends %u  battle %u", s.windowEndTick, s.battleEndTick);
+    DrawText(buf, px + 8, py + 78, 10, Color{140, 140, 140, 255});
+  }
+  DrawText("gm siege readout — wire 117", px + 8, py + 92, 10, Color{120, 110, 100, 255});
+}
+void Game::drawPledgePanel() const {
+  if (net_ == nullptr || !net_->welcomed) return;
+  const int px = 1024 - 190;
+  const int py = 500;
+  const int pw = 182;
+  const int rows = static_cast<int>(net_->pledgeMembers.size());
+  const int ph = net_->pledgeId == 0 ? 54 : 42 + std::min(rows, 8) * 14 + 18;
+  DrawRectangle(px, py, pw, ph, Color{28, 22, 14, 215});
+  DrawRectangleLinesEx(Rectangle{static_cast<float>(px), static_cast<float>(py), static_cast<float>(pw), static_cast<float>(ph)}, 1.0f, Color{160, 140, 90, 220});
+  if (net_->pledgeId == 0) {
+    DrawText("OATH: Unsworn.", px + 8, py + 8, 10, Color{200, 200, 190, 255});
+    DrawText("/pledge create <name>", px + 8, py + 22, 10, Color{140, 140, 140, 255});
+    DrawText("at the registrar", px + 8, py + 36, 10, Color{140, 140, 140, 255});
+    return;
+  }
+  char buf[96];
+  std::snprintf(buf, sizeof buf, "%s  emblem %u", net_->pledgeName.c_str(), net_->pledgeEmblem);
+  DrawText(buf, px + 8, py + 6, 10, Color{235, 220, 190, 255});
+  std::snprintf(buf, sizeof buf, "vault %ug  %zu members", net_->pledgeVault, net_->pledgeMembers.size());
+  DrawText(buf, px + 8, py + 20, 10, Color{210, 190, 150, 255});
+  int y = py + 36;
+  const char* rankN[4] = {"", "Initiate", "Bloodsworn", "Liege"};
+  for (size_t i = 0; i < net_->pledgeMembers.size() && i < 8; ++i) {
+    const auto& m = net_->pledgeMembers[i];
+    std::snprintf(buf, sizeof buf, "%s %s L%u%s", m.name.c_str(), rankN[m.rank < 4 ? m.rank : 1], m.level, m.online ? "" : " (off)");
+    DrawText(buf, px + 8, y, 10, m.online ? Color{200, 235, 170, 255} : Color{120, 120, 120, 255});
+    y += 14;
+  }
+  if (rows > 8) DrawText("...", px + 8, y, 10, Color{140, 140, 140, 255});
 }
 
 void Game::drawTradeBanner() const {
@@ -1677,6 +1751,8 @@ void Game::render(double /*interpAlpha*/) {
   drawHud();
   drawStatPanel();
   drawPartyFrame();
+  drawSiegePanel();
+  drawPledgePanel();
   drawInventoryPanel();
   drawVendorPanel();
   drawAnvilPanel();

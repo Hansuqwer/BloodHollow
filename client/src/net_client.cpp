@@ -334,6 +334,44 @@ void NetClient::poll() {
               ownStats.curseTicksLeft = m.curseTicksLeft;  // T-070
               break;
             }
+            case kIdSiegeState: {
+              SiegeState m;
+              if (!m.deserialize(pv.body)) break;
+              siege.holderPledgeId = m.holderPledgeId;
+              siege.holderPledgeName = m.holderPledgeName;
+              siege.holderName = m.holderName;
+              siege.windowEndTick = m.windowEndTick;
+              siege.battleEndTick = m.battleEndTick;
+              siege.gateHp0 = m.gateHp0;
+              siege.gateHp1 = m.gateHp1;
+              siege.heartProgress = m.heartProgress;
+              siege.heartAttuned = m.heartAttuned;
+              siege.crownOwnerId = m.crownOwnerId;
+              siege.crownOwnerName = m.crownOwnerName;
+              siege.crownDeadline = m.crownDeadline;
+              siege.bandCount = m.bandCount;
+              siege.phase = m.phase;
+              siege.vaultGold = m.vaultGold;
+              siege.crowns = m.crowns;
+              break;
+            }
+            case kIdPledgeRoster: {
+              PledgeRoster m;
+              if (!m.deserialize(pv.body)) break;
+              pledgeId = m.pledgeId;
+              pledgeName = m.name;
+              pledgeEmblem = m.emblem;
+              pledgeVault = m.vaultGold;
+              pledgeMembers.clear();
+              (void)m.count; // count is authoritative from server header, but members drive rows
+              break;
+            }
+            case kIdPledgeMember: {
+              PledgeMember m;
+              if (!m.deserialize(pv.body)) break;
+              pledgeMembers.push_back(PledgeMemberWire{m.name, m.rank, m.level, m.online});
+              break;
+            }
             case kIdPartyReset: {
               PartyReset m;
               if (!m.deserialize(pv.body)) break;

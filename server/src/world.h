@@ -364,6 +364,8 @@ class World {
   bool siegeBattleActive() const;
   const std::vector<std::uint32_t>& siegeAttackers() const { return siegeAttackers_; }
   std::uint32_t siegeHolder() const { return siegeHolder_; }
+  std::uint32_t siegeBandsUsed() const { return siegeBandsUsed_; }  // T-151 wire
+  sim::Tick siegeBattleEndsAt() const { return siegeBattleEndsAt_; }  // T-151 wire
   // T-132 gates: breach objectives (kind 75) on zone 6, felled by /breach.
   static constexpr std::uint32_t kSiegeGateHp = 300;
   static constexpr std::uint32_t kBreachDmg = 10;  // ~30 ram-actions per gate

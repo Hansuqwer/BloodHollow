@@ -111,6 +111,9 @@ class Game {
   bool anvilNear() const;
   void drawAnvilPanel() const;
   void drawTradeBanner() const;
+  void drawSiegePanel() const;   // T-151 parchment siege readout
+  void drawPledgePanel() const;  // T-151 pledge roster / emblem / vault
+  bool isPledgeMemberName(const std::string& n) const;
   Color terrainColor(std::uint16_t type) const;
   float gameHour() const;
   Vector2 entRenderPos(const RenderEnt& e) const;

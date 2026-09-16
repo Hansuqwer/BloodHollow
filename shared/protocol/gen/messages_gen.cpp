@@ -258,6 +258,10 @@ void EntitySpawn::serialize(Writer& w) const {
   w.u8(level);
   w.str(name);
   w.u8(karmaBand);
+  w.u8(light);
+  w.u8(glowTier);
+  w.u8(classId);
+  w.u8(sex);
 }
 
 bool EntitySpawn::deserialize(Reader r) {
@@ -271,6 +275,10 @@ bool EntitySpawn::deserialize(Reader r) {
   if (!r.u8(level)) return false;
   if (!r.str(name)) return false;
   if (!r.u8(karmaBand)) return false;
+  if (!r.u8(light)) return false;
+  if (!r.u8(glowTier)) return false;
+  if (!r.u8(classId)) return false;
+  if (!r.u8(sex)) return false;
   return true;
 }
 
@@ -281,6 +289,10 @@ void EntityDelta::serialize(Writer& w) const {
   w.u8(dir);
   w.u8(moving);
   w.u32(hp);
+  w.u8(light);
+  w.u8(glowTier);
+  w.u8(classId);
+  w.u8(sex);
 }
 
 bool EntityDelta::deserialize(Reader r) {
@@ -290,6 +302,10 @@ bool EntityDelta::deserialize(Reader r) {
   if (!r.u8(dir)) return false;
   if (!r.u8(moving)) return false;
   if (!r.u32(hp)) return false;
+  if (!r.u8(light)) return false;
+  if (!r.u8(glowTier)) return false;
+  if (!r.u8(classId)) return false;
+  if (!r.u8(sex)) return false;
   return true;
 }
 
@@ -379,6 +395,7 @@ void OwnStats::serialize(Writer& w) const {
   w.u32(mpMax);
   w.u16(blessTicksLeft);
   w.u16(ironskinTicksLeft);
+  w.u16(curseTicksLeft);
 }
 
 bool OwnStats::deserialize(Reader r) {
@@ -399,6 +416,7 @@ bool OwnStats::deserialize(Reader r) {
   if (!r.u32(mpMax)) return false;
   if (!r.u16(blessTicksLeft)) return false;
   if (!r.u16(ironskinTicksLeft)) return false;
+  if (!r.u16(curseTicksLeft)) return false;
   return true;
 }
 
@@ -466,6 +484,77 @@ bool PartyMember::deserialize(Reader r) {
   return true;
 }
 
+void SiegeState::serialize(Writer& w) const {
+  w.u32(holderPledgeId);
+  w.str(holderPledgeName);
+  w.str(holderName);
+  w.u32(windowEndTick);
+  w.u32(battleEndTick);
+  w.u16(gateHp0);
+  w.u16(gateHp1);
+  w.u16(heartProgress);
+  w.u8(heartAttuned);
+  w.u32(crownOwnerId);
+  w.str(crownOwnerName);
+  w.u32(crownDeadline);
+  w.u8(bandCount);
+  w.u8(phase);
+  w.u32(vaultGold);
+  w.u32(crowns);
+}
+
+bool SiegeState::deserialize(Reader r) {
+  if (!r.u32(holderPledgeId)) return false;
+  if (!r.str(holderPledgeName)) return false;
+  if (!r.str(holderName)) return false;
+  if (!r.u32(windowEndTick)) return false;
+  if (!r.u32(battleEndTick)) return false;
+  if (!r.u16(gateHp0)) return false;
+  if (!r.u16(gateHp1)) return false;
+  if (!r.u16(heartProgress)) return false;
+  if (!r.u8(heartAttuned)) return false;
+  if (!r.u32(crownOwnerId)) return false;
+  if (!r.str(crownOwnerName)) return false;
+  if (!r.u32(crownDeadline)) return false;
+  if (!r.u8(bandCount)) return false;
+  if (!r.u8(phase)) return false;
+  if (!r.u32(vaultGold)) return false;
+  if (!r.u32(crowns)) return false;
+  return true;
+}
+
+void PledgeRoster::serialize(Writer& w) const {
+  w.u32(pledgeId);
+  w.str(name);
+  w.u8(emblem);
+  w.u8(count);
+  w.u32(vaultGold);
+}
+
+bool PledgeRoster::deserialize(Reader r) {
+  if (!r.u32(pledgeId)) return false;
+  if (!r.str(name)) return false;
+  if (!r.u8(emblem)) return false;
+  if (!r.u8(count)) return false;
+  if (!r.u32(vaultGold)) return false;
+  return true;
+}
+
+void PledgeMember::serialize(Writer& w) const {
+  w.str(name);
+  w.u8(rank);
+  w.u16(level);
+  w.u8(online);
+}
+
+bool PledgeMember::deserialize(Reader r) {
+  if (!r.str(name)) return false;
+  if (!r.u8(rank)) return false;
+  if (!r.u16(level)) return false;
+  if (!r.u8(online)) return false;
+  return true;
+}
+
 const char* msgName(std::uint16_t id) {
   switch (id) {
     case kIdHello: return "Hello";
@@ -505,6 +594,9 @@ const char* msgName(std::uint16_t id) {
     case kIdItemSlot: return "ItemSlot";
     case kIdPartyReset: return "PartyReset";
     case kIdPartyMember: return "PartyMember";
+    case kIdSiegeState: return "SiegeState";
+    case kIdPledgeRoster: return "PledgeRoster";
+    case kIdPledgeMember: return "PledgeMember";
     default: return "unknown";
   }
 }
