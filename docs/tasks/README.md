@@ -993,6 +993,13 @@ T-144 SOAK (no code, scratch DB): 60 fighters × 600 s live — clean exit,
 online. Full M5 (200×12 h + MBA fps) stays director-scheduled. Devlog
 0105 · card `T-144.md` (→ done on merge). Next: Friday-Night readiness.
 
+## Done — T-145 (2026-09-15): Friday-Night readiness map (human-run)
+
+T-145 READY (no code): 4 acceptance legs → runnable tools + entry
+criteria + go/no-go list (`docs/ops/friday-night-readiness.md`). Legs 1–3
+runnable on current stack; leg 4 director survey. Devlog 0106 · card
+`T-145.md` (→ done on merge). Queue head: T-142 wiring implementation.
+
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
 | Card | Title | Notes |
