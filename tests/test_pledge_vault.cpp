@@ -177,7 +177,7 @@ TEST_CASE("T-140: v13 -> v14 migration adds vault_gold defaulting 0") {
   REQUIRE(sqlite3_prepare_v2(check, "PRAGMA user_version;", -1, &st, nullptr) ==
           SQLITE_OK);
   REQUIRE(sqlite3_step(st) == SQLITE_ROW);
-  CHECK(sqlite3_column_int(st, 0) == 14);
+  CHECK(sqlite3_column_int(st, 0) == 15);  // wave-2: schema v15
   sqlite3_finalize(st);
   REQUIRE(sqlite3_prepare_v2(check,
                              "SELECT vault_gold FROM pledges WHERE id=7;",

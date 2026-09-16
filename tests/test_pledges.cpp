@@ -429,9 +429,11 @@ TEST_CASE("T-122/T-138: schema migration to head — registry + membership round
   server::CharacterRow row;
   std::uint8_t fail = 0;
   REQUIRE(db.loginOrCreate("liege", "pw", &row, &fail, &err));
-  db.saveProgress(row.id, 12, 0, 8, 8, 8, 0, 100, "", 0, 0, 1, 0, 0, 0, 0, 7, 3);
+  db.saveProgress(row.id, 12, 0, 8, 8, 8, 0, 100, "", 0, 0, 1, 0, 0, 0, 0, 7, 3,
+                    0, -1, 0, -7000, 0, 0);
   REQUIRE(db.loginOrCreate("serf", "pw", &row, &fail, &err));
-  db.saveProgress(row.id, 10, 0, 8, 8, 8, 0, 100, "", 0, 0, 1, 0, 0, 0, 0, 7, 1);
+  db.saveProgress(row.id, 10, 0, 8, 8, 8, 0, 100, "", 0, 0, 1, 0, 0, 0, 0, 7, 1,
+                    0, -1, 0, -7000, 0, 0);
 
   std::vector<std::pair<std::string, std::pair<int, int>>> mems;
   REQUIRE(db.loadPledgeMembers(&mems, &err));
@@ -459,7 +461,7 @@ TEST_CASE("T-122/T-138: schema migration to head — registry + membership round
   sqlite3_stmt* st = nullptr;
   REQUIRE(sqlite3_prepare_v2(check, "PRAGMA user_version;", -1, &st, nullptr) == SQLITE_OK);
   REQUIRE(sqlite3_step(st) == SQLITE_ROW);
-  CHECK(sqlite3_column_int(st, 0) == 14);  // T-140: schema v14 (was v13 in T-138)
+  CHECK(sqlite3_column_int(st, 0) == 15);  // wave-2: schema v15 (was v14)
   sqlite3_finalize(st);
   sqlite3_close(check);
   rmDb(path);

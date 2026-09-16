@@ -18,6 +18,9 @@ MOB_HOLLOW_HOUND = 1003
 MOB_PLAGUE_BAT, MOB_BONEPICKER_GNOLL = 1004, 1005
 MOB_CHARNEL_WIDOW = 1006
 MOB_RED_WIDOW = 1013  # T-102 mine elite (Widow base, 45-min rotation)
+# T-162 wave-2 roster: Wretch/Spider/Golem + night Bloodfiend + Ashen patrol
+MOB_MINE_WRETCH, MOB_LANTERN_SPIDER, MOB_MUD_GOLEM = 1015, 1016, 1017
+MOB_BLOODFIEND, MOB_ASHEN_PATROL = 1023, 1025
 
 
 def rect(g, x0, y0, x1, y1, v):
@@ -77,10 +80,11 @@ def main() -> int:
 
     spawns, portals = [], []
     oid = 1
-    def spawn(name, tx, ty, tw, th, mob, alive, respawn_ticks):
+    def spawn(name, tx, ty, tw, th, mob, alive, respawn_ticks, nightOnly=0):
         nonlocal oid
         spawns.append(obj(oid, name, "spawner", tx, ty, tw, th,
-                          [("mobId", mob), ("maxAlive", alive), ("respawnTicks", respawn_ticks)]))
+                          [("mobId", mob), ("maxAlive", alive), ("respawnTicks", respawn_ticks),
+                           ("nightOnly", nightOnly)]))
         oid += 1
     def portal(name, tx, ty, tw, th, target_map, tx2, ty2):
         nonlocal oid
@@ -100,6 +104,14 @@ def main() -> int:
     # against the widow-vein darkgrass. maxAlive 1, 45-min rotation (54000t).
     spawn("red_widow_nest", 44, 19, 4, 3, MOB_RED_WIDOW, 1, 54000)
     spawn("hounds_ore_spur", 41, 33, 6, 3, MOB_HOLLOW_HOUND, 6, 420)
+    # T-162: Wretch works the NE damp, Spider the west mouth dark, Golem the
+    # SE ore; Bloodfiend hunts gallery 2 by night only; Ashen patrol walks
+    # the mouth (rects probed walkable against the generated rock).
+    spawn("wretch_gallery1", 46, 18, 5, 4, MOB_MINE_WRETCH, 5, 700)
+    spawn("spider_south_drift", 3, 30, 4, 3, MOB_LANTERN_SPIDER, 4, 650)
+    spawn("golem_se_ore", 40, 33, 5, 2, MOB_MUD_GOLEM, 3, 900)
+    spawn("bloodfiend_gallery2", 24, 18, 5, 4, MOB_BLOODFIEND, 4, 800, 1)
+    spawn("ashen_mouth_patrol", 3, 33, 4, 2, MOB_ASHEN_PATROL, 2, 1500)
 
     # mine mouth back to Bleak Fields east edge (pair lives on that map)
     portal("mine_mouth_out", 2, 31, 1, 3, 2, 62, 20)

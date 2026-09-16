@@ -6203,6 +6203,11 @@
        "name": "respawnTicks",
        "type": "int",
        "value": 360
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
       }
      ]
     },
@@ -6231,6 +6236,11 @@
        "name": "respawnTicks",
        "type": "int",
        "value": 650
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
       }
      ]
     },
@@ -6259,6 +6269,11 @@
        "name": "respawnTicks",
        "type": "int",
        "value": 800
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
       }
      ]
     },
@@ -6287,6 +6302,11 @@
        "name": "respawnTicks",
        "type": "int",
        "value": 1000
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
       }
      ]
     },
@@ -6315,6 +6335,110 @@
        "name": "respawnTicks",
        "type": "int",
        "value": 36000
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "cultist_east_field",
+     "type": "spawner",
+     "x": 2048,
+     "y": 1024,
+     "width": 384,
+     "height": 128,
+     "rotation": 0,
+     "visible": true,
+     "properties": [
+      {
+       "name": "mobId",
+       "type": "int",
+       "value": 1021
+      },
+      {
+       "name": "maxAlive",
+       "type": "int",
+       "value": 3
+      },
+      {
+       "name": "respawnTicks",
+       "type": "int",
+       "value": 1100
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "wraith_stone_circle",
+     "type": "spawner",
+     "x": 2432,
+     "y": 960,
+     "width": 384,
+     "height": 128,
+     "rotation": 0,
+     "visible": true,
+     "properties": [
+      {
+       "name": "mobId",
+       "type": "int",
+       "value": 1022
+      },
+      {
+       "name": "maxAlive",
+       "type": "int",
+       "value": 4
+      },
+      {
+       "name": "respawnTicks",
+       "type": "int",
+       "value": 900
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 1
+      }
+     ]
+    },
+    {
+     "id": 8,
+     "name": "synod_east_road",
+     "type": "spawner",
+     "x": 3584,
+     "y": 512,
+     "width": 320,
+     "height": 96,
+     "rotation": 0,
+     "visible": true,
+     "properties": [
+      {
+       "name": "mobId",
+       "type": "int",
+       "value": 1024
+      },
+      {
+       "name": "maxAlive",
+       "type": "int",
+       "value": 2
+      },
+      {
+       "name": "respawnTicks",
+       "type": "int",
+       "value": 1500
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
       }
      ]
     }
@@ -6331,7 +6455,7 @@
    "name": "portals",
    "objects": [
     {
-     "id": 6,
+     "id": 9,
      "name": "west_gate_back",
      "type": "portal",
      "x": 0,
@@ -6359,7 +6483,7 @@
      ]
     },
     {
-     "id": 7,
+     "id": 10,
      "name": "mine_mouth_in",
      "type": "portal",
      "x": 4032,
@@ -6395,7 +6519,7 @@
   }
  ],
  "nextlayerid": 6,
- "nextobjectid": 8,
+ "nextobjectid": 11,
  "orientation": "isometric",
  "renderorder": "right-down",
  "tiledversion": "1.10.2",

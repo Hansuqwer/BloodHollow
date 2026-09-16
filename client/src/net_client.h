@@ -36,6 +36,7 @@ struct OwnStatsWire {
   std::uint32_t xpNext = 100;
   std::uint8_t statPoints = 0;
   std::uint8_t str = 8, vit = 8, dex = 8;
+  std::uint8_t intg = 0, mag = 0;  // T-160: carried by OwnStats since kits
   std::uint16_t swordSkill = 0;
   std::uint32_t gold = 0;
   std::int32_t karma = 0;
@@ -124,6 +125,8 @@ class NetClient {
   void sendUseItem(std::uint8_t slot);
   void sendToggleEquip(std::uint8_t slot);
   void sendSkill(std::uint8_t skill, std::uint32_t targetId);
+  // T-167 creation answer (pre-world: allowed while needsCreate, not inWorld)
+  void sendCharCreate(std::uint8_t classId, std::uint8_t sex);
   void sendBuy(std::uint32_t itemId, std::uint16_t qty);
   void sendSellJunk();
   // anvil (T-041)
@@ -139,6 +142,7 @@ class NetClient {
   State state = State::kConnecting;
   std::string failReason{};
   bool welcomed = false;
+  bool needsCreate = false;  // T-167: CharCreatePrompt arrived, answer once
   std::uint32_t ownId = 0;
   // trade UI state (best-effort mirror; server chat lines are the truth)
   std::uint32_t tradeWithId = 0;

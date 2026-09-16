@@ -30,10 +30,10 @@ TEST_CASE("T-063: both new zones load, portal graph closes (asset gate)") {
     if (pd.targetMapId == 3) depthsUp = true;
   CHECK(mineOut);
   CHECK(depthsUp);
-  // spawn count: 7 mine camp spawners + Widow nest (T-102); 11 crypt
-  // spawners incl 8 elites + boss
-  CHECK(mine->spawners.size() == 8);
-  CHECK(crypt->spawners.size() == 11);
+  // spawn count: 7 mine camp spawners + Widow nest (T-102) + 5 wave-2
+  // (T-162/163); 11 crypt spawners incl 8 elites + boss + 2 wave-2 (T-162)
+  CHECK(mine->spawners.size() == 13);
+  CHECK(crypt->spawners.size() == 13);
 }
 
 TEST_CASE("T-064: Gravemother table law — boss bit, bolt, x20 purse") {

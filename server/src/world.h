@@ -86,6 +86,12 @@ struct Entity {
   sim::Tick lastHurtTick = -1000;
   bool dead = false;
   sim::Tick respawnAt = 0;
+  // T-161 wave-2: debt-rebate stamps (rebate within 6000 ticks of death).
+  sim::Tick lastDeathTick = -1;
+  std::uint32_t lastDebtXp = 0;
+  // T-161: 5-min CD (6000t) — init clears it with margin (the -1000
+  // convention only covers sub-1000 CDs; a fresh cultist must answer).
+  sim::Tick lastResTick = -7000;
 
   // inventory / economy (players)
   std::vector<InvSlot> inv{};
@@ -115,6 +121,7 @@ struct Entity {
 
   // class kit (T-053/T-054): kit id (content/kits.h), mana, buff stamps, cast CDs
   std::uint8_t classId = 1;     // kKitRavager default: pre-kit chars unchanged
+  std::uint8_t sex = 0;         // T-167 wave-2: 0 unknown legacy, 1 m, 2 f
   std::uint8_t intg = 0, mag = 0;
   std::uint32_t mp = 0, mpMax = 30;
   sim::Tick blessUntil = -1;    // +10% hit&dmg (T-054)
@@ -165,6 +172,7 @@ struct Entity {
   std::uint8_t leashRadius = 0;
   std::uint16_t atkCdTicks = 16;
   std::uint32_t xpValue = 0;
+  bool nightSpawned = false;  // T-162: nightOnly-spawner child (+50% at night)
   std::uint8_t mobLevel = 1;
   std::uint8_t wireKind = 0;  // on the wire: 0 player, 1..63 mob, 64 vendor
   size_t spawnerIdx = SIZE_MAX;
@@ -226,7 +234,8 @@ class World {
 
   Entity& spawn(const std::string& name, std::int64_t charRowId,
                 std::optional<sim::TilePos> at, std::uint16_t zoneId = 1,
-                std::uint8_t classId = 1);  // kKitRavager default (freeze)
+                std::uint8_t classId = 1,  // kKitRavager default (freeze)
+                std::uint8_t sex = 0);     // T-167: 0 unknown legacy
   void despawn(std::uint32_t id);
 
   Entity* find(std::uint32_t id);
@@ -258,6 +267,7 @@ class World {
   void tryMassMend(Entity& e);                  // T-054b (chan 7)
   void tryHaste(Entity& e);                     // T-054b (chan 8)
   void tryPurify(Entity& e, std::uint32_t targetId);  // T-082 (chan 9)
+  void tryResurrect(Entity& e, std::uint32_t targetId);  // T-161 (chan 10)
   void tryFirebolt(Entity& e, std::uint32_t targetId);  // T-054 (chan 5)
 
  public:
