@@ -5,6 +5,7 @@ Deterministic like make_thornwall.py (ADR-007 spawn + regen diff check).
 48x36 stone interior: entry hall -> ossuary -> candle crypt -> bone barrow.
 Exit portal on the entry-hall west edge returns to thornwall (map 1).
 """
+import argparse
 import json
 from pathlib import Path
 
@@ -19,6 +20,8 @@ MOB_CHARNEL_WIDOW = 1006
 MOB_GRAVECALLER = 1007
 MOB_REVENANT_SEXTON = 1008
 MOB_CANTOR_VEX = 1014  # T-103 crypt elite (Sexton base + bolt, 60-min rotation)
+# T-162 wave-2: Revenant/Banshee/Ringer (summoning deferred, T-162 notes it)
+MOB_CRYPT_REVENANT, MOB_GRAVE_BANSHEE, MOB_BELL_RINGER = 1018, 1019, 1020
 
 
 def rect(g, x0, y0, x1, y1, v):
@@ -29,8 +32,11 @@ def rect(g, x0, y0, x1, y1, v):
 
 
 def main() -> int:
+    ap = argparse.ArgumentParser()
     repo = Path(__file__).resolve().parents[2]
-    out = repo / "data" / "maps-src" / "thornwall_crypt.tmj"
+    ap.add_argument("--out", default=str(repo / "data" / "maps-src" / "thornwall_crypt.tmj"))
+    args = ap.parse_args()
+    out = Path(args.out)
 
     ground = [[STONE] * W for _ in range(H)]
 
@@ -95,10 +101,11 @@ def main() -> int:
     portals = []
     oid = 1
 
-    def spawn(name, tx, ty, tw, th, mob, alive, respawn_ticks):
+    def spawn(name, tx, ty, tw, th, mob, alive, respawn_ticks, nightOnly=0):
         nonlocal oid
         spawns.append(obj(oid, name, "spawner", tx, ty, tw, th,
-                          [("mobId", mob), ("maxAlive", alive), ("respawnTicks", respawn_ticks)]))
+                          [("mobId", mob), ("maxAlive", alive), ("respawnTicks", respawn_ticks),
+                           ("nightOnly", nightOnly)]))
         oid += 1
 
     def portal(name, tx, ty, tw, th, target_map, tx2, ty2):
@@ -114,6 +121,11 @@ def main() -> int:
     # T-103 Cantor choir: bone-barrow west end, opposite the pulpit.
     # maxAlive 1, 60-min rotation (72000t — staggered past Maw/Widow).
     spawn("cantor_choir", 34, 6, 4, 3, MOB_CANTOR_VEX, 1, 72000)
+    # T-162: Revenant walks the ossuary, Banshee the south middle, Ringer
+    # rings by the choir (caster; summoning deferred). Rects probed walkable.
+    spawn("revenant_ossuary", 8, 20, 5, 4, MOB_CRYPT_REVENANT, 4, 950)
+    spawn("banshee_south_barrow", 20, 30, 4, 3, MOB_GRAVE_BANSHEE, 2, 1400)
+    spawn("ringer_loft", 34, 9, 4, 2, MOB_BELL_RINGER, 2, 1600)
     portal("stairs_up", 0, 17, 1, 2, 1, 10, 11)  # back to Thornwall chapel hatch (tiles)
     portal("depths_stairs_down", 44, 6, 2, 1, 5, 3, 30)   # Drowned Crypt (S18)
 

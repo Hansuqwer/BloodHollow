@@ -1,0 +1,3 @@
+# 0115 — Wave-2 epoch 30 shipped (creation, rebate, roster, war, bounty)
+
+2026-09-16. Six cards, one bump: T-167 creation (prompt/panel/CharCreate, bots answer, 8/8 live), T-160 five-stat (ADR-0015, F8/F9), T-161 Resurrect rebate (ch10, recorded deviation), T-162 roster + night premium (11 rows, D9 rename, spawners probed, validate 0/6), T-163 field-war + /ek, T-166 bounty persistence. Schema v15, wire 244, hash widened, y-sidecar. Evidence: 325/325 (11 new), `logs/wave2.bwj` replay mm=0 + epoch-29 guard exit 4, CI leg swapped. Gaps filed: T-161b (rest of kit spine), T-159f1 (multi-affix etc.), patrol red-name tint, live Resurrect staging. Card `done/T-WAVE2.md`. Client compiles via CI matrix (flagged).

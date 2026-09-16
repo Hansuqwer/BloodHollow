@@ -115,12 +115,12 @@ TEST_CASE("T-062: night loot widens odds 25% relative (empirical, paired strata)
       (void)q0;
       int junk0 = 0;
       for (const auto& sl : w.find(p->id)->inv)
-        if (content::findItem(sl.itemId) && content::findItem(sl.itemId)->slot == 3)
+        if (content::findItem(sl.itemId) && content::findItem(sl.itemId)->slot == 6)
           junk0 += sl.qty;
       w.debugKillMob(*rat, w.find(p->id));
       int junk1 = 0;
       for (const auto& sl : w.find(p->id)->inv)
-        if (content::findItem(sl.itemId) && content::findItem(sl.itemId)->slot == 3)
+        if (content::findItem(sl.itemId) && content::findItem(sl.itemId)->slot == 6)
           junk1 += sl.qty;
       total += junk1 - junk0;
     }

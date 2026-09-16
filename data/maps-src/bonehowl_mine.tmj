@@ -4539,6 +4539,11 @@
        "name": "respawnTicks",
        "type": "int",
        "value": 300
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
       }
      ]
     },
@@ -4567,6 +4572,11 @@
        "name": "respawnTicks",
        "type": "int",
        "value": 420
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
       }
      ]
     },
@@ -4595,6 +4605,11 @@
        "name": "respawnTicks",
        "type": "int",
        "value": 420
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
       }
      ]
     },
@@ -4623,6 +4638,11 @@
        "name": "respawnTicks",
        "type": "int",
        "value": 600
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
       }
      ]
     },
@@ -4651,6 +4671,11 @@
        "name": "respawnTicks",
        "type": "int",
        "value": 600
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
       }
      ]
     },
@@ -4679,6 +4704,11 @@
        "name": "respawnTicks",
        "type": "int",
        "value": 800
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
       }
      ]
     },
@@ -4707,6 +4737,11 @@
        "name": "respawnTicks",
        "type": "int",
        "value": 54000
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
       }
      ]
     },
@@ -4735,6 +4770,176 @@
        "name": "respawnTicks",
        "type": "int",
        "value": 420
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
+      }
+     ]
+    },
+    {
+     "id": 9,
+     "name": "wretch_gallery1",
+     "type": "spawner",
+     "x": 2944,
+     "y": 576,
+     "width": 320,
+     "height": 128,
+     "rotation": 0,
+     "visible": true,
+     "properties": [
+      {
+       "name": "mobId",
+       "type": "int",
+       "value": 1015
+      },
+      {
+       "name": "maxAlive",
+       "type": "int",
+       "value": 5
+      },
+      {
+       "name": "respawnTicks",
+       "type": "int",
+       "value": 700
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
+      }
+     ]
+    },
+    {
+     "id": 10,
+     "name": "spider_south_drift",
+     "type": "spawner",
+     "x": 192,
+     "y": 960,
+     "width": 256,
+     "height": 96,
+     "rotation": 0,
+     "visible": true,
+     "properties": [
+      {
+       "name": "mobId",
+       "type": "int",
+       "value": 1016
+      },
+      {
+       "name": "maxAlive",
+       "type": "int",
+       "value": 4
+      },
+      {
+       "name": "respawnTicks",
+       "type": "int",
+       "value": 650
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
+      }
+     ]
+    },
+    {
+     "id": 11,
+     "name": "golem_se_ore",
+     "type": "spawner",
+     "x": 2560,
+     "y": 1056,
+     "width": 320,
+     "height": 64,
+     "rotation": 0,
+     "visible": true,
+     "properties": [
+      {
+       "name": "mobId",
+       "type": "int",
+       "value": 1017
+      },
+      {
+       "name": "maxAlive",
+       "type": "int",
+       "value": 3
+      },
+      {
+       "name": "respawnTicks",
+       "type": "int",
+       "value": 900
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
+      }
+     ]
+    },
+    {
+     "id": 12,
+     "name": "bloodfiend_gallery2",
+     "type": "spawner",
+     "x": 1536,
+     "y": 576,
+     "width": 320,
+     "height": 128,
+     "rotation": 0,
+     "visible": true,
+     "properties": [
+      {
+       "name": "mobId",
+       "type": "int",
+       "value": 1023
+      },
+      {
+       "name": "maxAlive",
+       "type": "int",
+       "value": 4
+      },
+      {
+       "name": "respawnTicks",
+       "type": "int",
+       "value": 800
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 1
+      }
+     ]
+    },
+    {
+     "id": 13,
+     "name": "ashen_mouth_patrol",
+     "type": "spawner",
+     "x": 192,
+     "y": 1056,
+     "width": 256,
+     "height": 64,
+     "rotation": 0,
+     "visible": true,
+     "properties": [
+      {
+       "name": "mobId",
+       "type": "int",
+       "value": 1025
+      },
+      {
+       "name": "maxAlive",
+       "type": "int",
+       "value": 2
+      },
+      {
+       "name": "respawnTicks",
+       "type": "int",
+       "value": 1500
+      },
+      {
+       "name": "nightOnly",
+       "type": "int",
+       "value": 0
       }
      ]
     }
@@ -4751,7 +4956,7 @@
    "name": "portals",
    "objects": [
     {
-     "id": 9,
+     "id": 14,
      "name": "mine_mouth_out",
      "type": "portal",
      "x": 128,
@@ -4787,7 +4992,7 @@
   }
  ],
  "nextlayerid": 6,
- "nextobjectid": 10,
+ "nextobjectid": 15,
  "orientation": "isometric",
  "renderorder": "right-down",
  "tiledversion": "1.10.2",

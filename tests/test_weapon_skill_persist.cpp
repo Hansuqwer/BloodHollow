@@ -118,7 +118,8 @@ TEST_CASE("weapon skill persist: saveProgress + loginOrCreate round-trips skill"
   db.saveProgress(row.id, row.level, row.xp, row.str, row.vit, row.dex,
                   row.statPoints, row.gold, row.invBlob, row.anvilMercy,
                   row.karma, row.classId, 20, 500, row.townId, row.ek,
-                  row.pledgeId, row.pledgeRank);
+                  row.pledgeId, row.pledgeRank, row.sex, row.lastDeathTick,
+                  row.lastDebtXp, row.lastResTick, row.bountyMob, row.bountyCycle);
 
   // Reload via new Db instance
   Db db2;
@@ -132,7 +133,8 @@ TEST_CASE("weapon skill persist: saveProgress + loginOrCreate round-trips skill"
   db2.saveProgress(row2.id, row2.level, row2.xp, row2.str, row2.vit, row2.dex,
                    row2.statPoints, row2.gold, row2.invBlob, row2.anvilMercy,
                    row2.karma, row2.classId, 25, 625, row2.townId, row2.ek,
-                   row2.pledgeId, row2.pledgeRank);
+                   row2.pledgeId, row2.pledgeRank, row2.sex, row2.lastDeathTick,
+                   row2.lastDebtXp, row2.lastResTick, row2.bountyMob, row2.bountyCycle);
 
   Db db3;
   REQUIRE(db3.open(path, &err));

@@ -111,6 +111,11 @@ class Game {
   bool anvilNear() const;
   void drawAnvilPanel() const;
   void drawTradeBanner() const;
+  void drawSiegePanel() const;   // T-151 parchment siege readout
+  void drawPledgePanel() const;  // T-151 pledge roster / emblem / vault
+  void drawHelpPanel() const;    // T-169: /help verb + hotkey reference
+  void drawCreatePanel() const;  // T-167: pre-world class+sex picker
+  bool isPledgeMemberName(const std::string& n) const;
   Color terrainColor(std::uint16_t type) const;
   float gameHour() const;
   Vector2 entRenderPos(const RenderEnt& e) const;
@@ -166,6 +171,9 @@ class Game {
   int invHover_ = -1;
   bool showVendor_ = false;
   bool showAnvil_ = false;
+  bool showHelp_ = false;  // T-169: /help overlay
+  // T-167 creation panel selection (1..3 kit, 1..2 sex, 0 = unpicked)
+  std::uint8_t createClass_ = 0, createSex_ = 0;
 
   NetClient* net_ = nullptr;
   sim::JournalWriter* rec_ = nullptr;

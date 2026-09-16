@@ -18,7 +18,7 @@ struct MobDef {
   std::uint32_t dmg;      // raw weapon-equivalent before STR scaling (mobs don't scale)
   std::uint32_t def;
   std::uint8_t dex;       // drives ACC=2*dex / EVD=dex like players
-  std::uint32_t xp;       // flat kill XP (GDD: elites x8 etc. layered later)
+  std::uint32_t xp;       // flat kill XP — rows ARE the law (T-158 retired multipliers)
   std::uint8_t aggroRadius;   // tiles; 0 = passive (retaliate only)
   std::uint16_t atkCdTicks;   // swing cooldown @ 20 Hz
   std::uint8_t wanderRadius;  // tiles around anchor
@@ -32,6 +32,9 @@ struct MobDef {
   std::uint16_t boltCdTicks;  // Blood Bolt cooldown @ 20 Hz
   // T-073 gate guard (default 0: every existing row stays a normal mob)
   std::uint8_t guard = 0;     // 1 = wanted-only aggro inside leash reach
+  // T-163 wave-2: town affiliation for field-war EK (0 none, 1 Thornwall,
+  // 2 Marrowgate). Unaffiliated rows omit it (default 0, source-compatible).
+  std::uint8_t town = 0;
 };
 
 // Sprint 7 additions: gnoll (L7) anchors mid fields, plague bat swarm (L2 fast,
@@ -45,7 +48,7 @@ inline constexpr MobDef kMobs[] = {
     {1004, "Plague Bat",       2,  22,  5,   1,   14,  55,   8,    12, 12,  18,  4001, 25,  4,   12,  0, 0, 0},
     {1005, "Bonepicker Gnoll", 7,  160, 17,  10,  12,  300,  7,    20, 8,   14,  4003, 55,  60,  110,  0, 0, 0},
     {1006, "Charnel Widow",    9,  220, 22,  12,  14,  420,  6,    18, 6,   10,  4004, 35,  90,  160,  0, 0, 0},
-    {1007, "Gravecaller",      11, 260, 30,  14,  15,  560,  7,    22, 5,   12,  4004, 40,  130, 220,  0, 0, 0},
+    {1007, "Waxen Celebrant",  11, 260, 30,  14,  15,  560,  7,    22, 5,   12,  4004, 40,  130, 220,  0, 0, 0},
     {1008, "Revenant Sexton",  12, 420, 34,  16,  15,  820,  8,    20, 4,   10,  4005, 100, 160, 260,  0, 0, 0},
     // T-064 S18 content drop: crypt elites (x8 of a same-level base) + the
     // Gravemother L14 boss (x20). Blood Bolt: ranged single-target cast at
@@ -65,6 +68,26 @@ inline constexpr MobDef kMobs[] = {
     // the 1010 pattern, plus boss-lite casting (boltRange 6, half Mother's
     // rate, instant — telegraphs stay the Mother's). xp 5x for the threat.
     {1014, "Cantor Vex",       12, 380, 36,  18,  15, 4100,  8,    20, 4,   12,  4005, 100, 200, 320,  1, 6, 52},
+    // T-162 wave-2 roster completion (append-only: wireKind indices 1..14
+    // stable). Mine: Wretch (bat-base scavenger), Lantern Spider (fast),
+    // Mud Golem (ghoul-base tank). Crypt: Revenant (sexton-lite), Banshee
+    // (1010-pattern elite), Bell Ringer (1014-lite caster — summoning
+    // deferred, recorded). Fields: Pale Cultist caster (bolt). Night-only
+    // (nightOnly spawners): Wraith (fields), Bloodfiend (mine) — day-base xp,
+    // the +50% night premium lands in killMob (GDD §9, epoch 30).
+    // T-163 field-war: Synod Patrol (fields, town 2), Ashen Patrol (mine,
+    // town 1) — reachable EK without a second city.
+    {1015, "Mine Wretch",       8, 170, 18,  10,  12,  340,  7,    20, 8,   14,  4001, 40,  70,  130,  0, 0, 0},
+    {1016, "Lantern Spider",    6, 120, 14,  8,   16,  200,  8,    16, 10,  16,  4002, 40,  30,  60,   0, 0, 0},
+    {1017, "Mud Golem",         9, 300, 20,  16,  6,   480,  6,    22, 6,   12,  4003, 50,  100, 180,  0, 0, 0},
+    {1018, "Crypt Revenant",    11, 380, 32,  15,  14,  760,  8,    20, 4,   10,  4005, 80,  140, 240,  0, 0, 0},
+    {1019, "Grave Banshee",     12, 340, 38,  18,  16, 3400,  8,    20, 4,   12,  4005, 100, 200, 320,  0, 0, 0},
+    {1020, "Bell Ringer",       12, 360, 34,  17,  15, 3900,  8,    20, 4,   12,  4005, 100, 200, 320,  1, 6, 52},
+    {1021, "Pale Cultist",      10, 240, 28,  12,  15,  520,  7,    20, 8,   14,  4004, 40,  120, 200,  1, 6, 60},
+    {1022, "Wraith",            8, 180, 22,  10,  18,  340,  8,    18, 10,  16,  4005, 30,  80,  140,  0, 0, 0},
+    {1023, "Bloodfiend",        9, 220, 24,  12,  16,  420,  8,    18, 10,  16,  4005, 40,  90,  160,  0, 0, 0},
+    {1024, "Synod Patrol",      10, 260, 26,  14,  14,  560,  8,    20, 8,   14,  4002, 50,  130, 210,  0, 0, 0,  0, 2},
+    {1025, "Ashen Patrol",      9, 240, 24,  13,  13,  500,  8,    20, 8,   14,  4002, 50,  120, 200,  0, 0, 0,  0, 1},
 };
 inline constexpr size_t kMobKindCount = sizeof(kMobs) / sizeof(kMobs[0]);
 
@@ -82,7 +105,7 @@ inline int namedEliteIdx(std::uint32_t mobId) {
 struct BountyDef { std::uint32_t mobId; std::uint32_t payoutGold; };
 inline constexpr BountyDef kBountyQuarry[] = {
     {1009, 1500},  // the Gravemother — the big purse
-    {1007, 400},   // Gravecaller
+    {1007, 400},   // Waxen Celebrant (D9 rename, T-162)
     {1006, 300},   // Charnel Widow
     {1005, 250},   // Bonepicker Gnoll
 };

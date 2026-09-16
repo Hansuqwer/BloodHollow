@@ -7,6 +7,7 @@ Sepulcher Elite camps ring the boss apse; the Gravemother presides last,
 alone at the font. One portal pair (depths stairs <-> crypt bone vault).
 Deterministic LCG like the other gens.
 """
+import argparse
 import json
 from pathlib import Path
 
@@ -18,6 +19,8 @@ MOB_GRAVECALLER = 1007
 MOB_REVENANT_SEXTON = 1008
 MOB_GRAVEMOTHER = 1009
 MOB_SEPULCHER_ELITE = 1010
+# T-162 wave-2: Revenant + Banshee join the depths (crypt overflow)
+MOB_CRYPT_REVENANT, MOB_GRAVE_BANSHEE = 1018, 1019
 
 
 def rect(g, x0, y0, x1, y1, v):
@@ -28,8 +31,11 @@ def rect(g, x0, y0, x1, y1, v):
 
 
 def main() -> int:
+    ap = argparse.ArgumentParser()
     repo = Path(__file__).resolve().parents[2]
-    out = repo / "data" / "maps-src" / "drowned_crypt.tmj"
+    ap.add_argument("--out", default=str(repo / "data" / "maps-src" / "drowned_crypt.tmj"))
+    args = ap.parse_args()
+    out = Path(args.out)
 
     # flooded bones: whole dungeon drowned except carved stone
     ground = [[WATER] * W for _ in range(H)]
@@ -78,10 +84,11 @@ def main() -> int:
 
     spawns, portals = [], []
     oid = 1
-    def spawn(name, tx, ty, tw, th, mob, alive, respawn_ticks):
+    def spawn(name, tx, ty, tw, th, mob, alive, respawn_ticks, nightOnly=0):
         nonlocal oid
         spawns.append(obj(oid, name, "spawner", tx, ty, tw, th,
-                          [("mobId", mob), ("maxAlive", alive), ("respawnTicks", respawn_ticks)]))
+                          [("mobId", mob), ("maxAlive", alive), ("respawnTicks", respawn_ticks),
+                           ("nightOnly", nightOnly)]))
         oid += 1
     def portal(name, tx, ty, tw, th, target_map, tx2, ty2):
         nonlocal oid
@@ -103,6 +110,9 @@ def main() -> int:
     spawn("apse_sexton", 21, 5, 3, 3, MOB_REVENANT_SEXTON, 1, 1400)
     # the Gravemother presides: single spawn, long breath (T-064 boss x20)
     spawn("gravemother_font", 21, 2, 4, 3, MOB_GRAVEMOTHER, 1, 4000)
+    # T-162: Revenant drifts the west chapel, Banshee the east row (probed)
+    spawn("revenant_west_chapel", 13, 22, 4, 3, MOB_CRYPT_REVENANT, 3, 1100)
+    spawn("banshee_east_row", 33, 18, 4, 3, MOB_GRAVE_BANSHEE, 2, 1500)
 
     # stairs back up to thornwall_crypt (zone 3) bone vault
     portal("depths_stairs_up", 2, 30, 1, 2, 3, 44, 6)

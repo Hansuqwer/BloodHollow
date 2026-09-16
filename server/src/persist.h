@@ -31,6 +31,12 @@ struct CharacterRow {
   int ek = 0;      // schema v12: enemy-kill fame (persisted, board-read)
   int pledgeId = 0;   // schema v13 (T-138 rebase of T-122): pledge membership
   int pledgeRank = 0;  // 0 none / 1 Initiate / 2 Bloodsworn / 3 Liege
+  int sex = 0;         // schema v15 (T-167 wave-2): 0 unknown legacy, 1 m, 2 f
+  std::int64_t lastDeathTick = -1;  // v15 (T-161): victim death stamp for rebate
+  std::int64_t lastDebtXp = 0;      // v15 (T-161): nominal debt of last death
+  std::int64_t lastResTick = -7000;  // v15 (T-161): caster CD (cleared+margin)
+  int bountyMob = 0;    // v15 (T-166): held quarry mark (0 = none posted)
+  int bountyCycle = 0;  // v15 (T-166): cycle stamp of the held mark
   std::string invBlob{};  // "itemId:qty:equipped;..." (schema v3)
 };
 
@@ -53,8 +59,16 @@ class Db {
 
   // Login with auto-registration: unknown user => account + character created.
   // failReason: 1=bad credentials, 2=invalid name, 3=server/db error.
+  // T-167: freshOut (optional) reports a newly-created character row so the
+  // shell can hold the session at the creation panel instead of spawning.
   bool loginOrCreate(const std::string& user, const std::string& pass,
-                     CharacterRow* out, std::uint8_t* failReason, std::string* err);
+                     CharacterRow* out, std::uint8_t* failReason, std::string* err,
+                     bool* freshOut = nullptr);
+  // T-167 wave-2: creation answer (validated class 1..3, sex 1..2) + row
+  // reload for an authed held session (no password re-check).
+  bool setCreation(std::int64_t characterId, int classId, int sex, std::string* err);
+  bool loginByRowId(std::int64_t characterId, CharacterRow* out,
+                    std::uint8_t* failReason, std::string* err);
   // T-109: registration-gate pre-check — is there already an account for this
   // name? The shell routes unknown names through --no-register and the
   // registration rate limiter BEFORE loginOrCreate can create anything.
@@ -65,7 +79,9 @@ class Db {
                     const std::string& invBlob, std::int64_t anvilMercy,
                     std::int32_t karma, int classId, int swordSkill,
                     std::int64_t swingLands, int townId, int ek,
-                    int pledgeId, int pledgeRank);
+                    int pledgeId, int pledgeRank,
+                    int sex, std::int64_t lastDeathTick, std::int64_t lastDebtXp,
+                    std::int64_t lastResTick, int bountyMob, int bountyCycle);
   // T-134 siege_state (id=1 row): castle holder + tax vault + crown count.
   // Created IF NOT EXISTS on open (no user_version change — characters
   // ladder untouched). Empty table loads as all-zeros.
@@ -87,6 +103,26 @@ class Db {
       std::string* err);
   bool upsertPledge(const PledgeRec& p, std::string* err);
   bool deletePledge(std::uint32_t id, std::string* err);
+  // T-152 GM authority + ban persistence (bans + gm_accounts, IF NOT EXISTS,
+  // version-free like siege_state so old journals keep epoch 28).
+  struct BanRec {
+    std::string name;
+    std::int64_t expires = 0;  // unix epoch secs, 0 = permanent
+    std::string reason;
+    std::string bannedBy;
+    std::int64_t created = 0;
+  };
+  bool loadBans(std::vector<BanRec>* out, std::string* err);
+  bool isBanned(const std::string& name, bool* out, std::string* reason,
+                std::int64_t* expires, std::string* err);
+  bool upsertBan(const std::string& name, std::int64_t expires,
+                 const std::string& reason, const std::string& by,
+                 std::string* err);
+  bool deleteBan(const std::string& name, std::string* err);
+  bool pruneExpiredBans(std::string* err);
+  bool loadGmAccounts(std::vector<std::string>* out, std::string* err);
+  bool upsertGmAccount(const std::string& name, std::string* err);
+  bool deleteGmAccount(const std::string& name, std::string* err);
 
  private:
   sqlite3* db_ = nullptr;
