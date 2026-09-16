@@ -794,6 +794,17 @@ r17 journal preserved byte-identical (md5 `b4c0cf3f…`). Devlog 0086 · card
 `logs/m3_gate_r{18,19,20,21,22,22b}.bwj` force-added. Next card **T-126**,
 next devlog **0087**.
 
+next devlog **0087**.
+
+## Done — T-126b (2026-09-14): M3 gate finalizer — 5/5 reach at 150s
+
+(Renumbered on merge per the T-121 precedent: in-tree T-126 is affix v2.)
+T-126b BOT-ONLY (raider; epoch stays 21). Two legs same binary (extra node (19,10) + kiter band re-land with runner guard): **300s smoke 5/5 at 147-152s elites 3-4 trash 8-9**, **900s gate 5/5 at 145.8/150.3/150.0/152.3/153.8s elites 1,5,5,5,2 trash 5-8**, replay mm=0 both. **Reach now 5/5, not 4/5, ~35% faster than r21's 4/5 at 232s**. Node (19,10) walkable (gid 2) splits apse climb, breaks triple-aggro staging; kiter band now exercised on map5 (was unmeasured in r22) with front-runner guard (never band runner — route machine). Boss verdict still open — no kills, party dies last 7 tiles at x=15 triple (16,4)/(21,5)/(21,2). Next: re-run r23 900s to confirm 5/5 mode, then extra node (22,6) or pre-mark ordering. Suite 209/209 · 329,058, duel pin `b273be661b54673a`, m3_gate.bwj (18042 ticks) and t120.bwj (1500 ticks) mm=0. Devlog `0087-t126-m3-finalizer.md` · card `done/T-126b-m3-finalizer.md` · handover `docs/handover/T-126-r23.md`. Next card **T-127b**, next devlog **0088**.
+
+## Done — T-127b (2026-09-14): M3 gate boss verdict — staged font climb + healer kiter + font focus
+
+(Renumbered on merge per the T-121 precedent: in-tree T-127 is Old Maw uniques.)
+T-127b BOT-ONLY (raider; epoch stays 21). Six legs same binary (6 nodes: 6,21/13,10/19,10/22,10/22,6/22,3 — (22,6) gid2 walkable verified): **0/5,0/5,3/5 @421s,0/5,0/5 (with rests 3s at 22,10+22,6 — hurt, reverted),4/5 @275/424/424/425s** — best 4/5 elites 1,1,2,1,0 trash 9-13 deaths 44 bossSeen 4 kills 0 mm=0 (logs/m3_gate_r24.bwj 93K). Healer kiter (kit 3) on map5 with runner guard + font focus (boss priority within 6 of font) exercised — Cultist deaths 6 vs Ravager 10, Gravecaller 12 in best leg, more balanced than r23. Boss verdict still NOT ESTABLISHED — no kills, party dies last 7 tiles at font inside quadruple aggro (16,4)/(25,4)/(21,5)/(21,2). Rests at (22,10)+(22,6) tested 0/5 and reverted. Reach regressed vs r23 5/5 @150s — extra node adds holds but time. Suite 209/209 · 329,058, duel pin `b273be661b54673a`, m3_gate.bwj 36042 ticks mm=0, t120.bwj 1500 ticks mm=0, r23 6042 ticks mm=0, r24 18042 ticks mm=0. Devlog `0088-t127-m3-boss-verdict.md` · card `done/T-127b-m3-boss-verdict.md` · handover `docs/handover/T-127-r24.md`. Next card **T-128**, next devlog **0089**. Housekeeping: moved stale T-104/T-112 from open to done/.
 ## Done — T-126 (2026-09-15): affix v2, table 3 → 10 (H3 loot depth, 1/5)
 
 T-126 CONTENT (epoch 21→22): 7 hooked affixes (Ox/Thorns/Focus/Embers/
