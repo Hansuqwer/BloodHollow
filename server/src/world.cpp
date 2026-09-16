@@ -596,6 +596,7 @@ void World::spawnNpcs() {
 // equipped flag, laundering aura/durability/affix/refine and dropping
 // equipped. Replay had its own 4-field sscanf + debugGive lane. Both are
 // replaced by this one parser.
+// T-159: 8th field = rarity (0..3); legacy 7-field blobs default rarity to 0.
 void parseInvBlob(const std::string& blob, std::vector<InvSlot>& out) {
   size_t pos = 0;
   while (pos < blob.size()) {
@@ -603,11 +604,11 @@ void parseInvBlob(const std::string& blob, std::vector<InvSlot>& out) {
     const std::string rec =
         blob.substr(pos, end == std::string::npos ? end : end - pos);
     pos = end == std::string::npos ? blob.size() : end + 1;
-    // split into at most 7 colon-fields
-    std::string f[7];
+    // split into at most 8 colon-fields
+    std::string f[8];
     int nf = 0;
     size_t p = 0;
-    while (nf < 7) {
+    while (nf < 8) {
       const size_t c = rec.find(':', p);
       if (c == std::string::npos) {
         f[nf++] = rec.substr(p);
@@ -651,6 +652,7 @@ void parseInvBlob(const std::string& blob, std::vector<InvSlot>& out) {
     if (nf > 4) { if (!num(f[4], &v)) continue; sl.durability = static_cast<std::uint8_t>(v); }
     if (nf > 5) { if (!num(f[5], &v)) continue; sl.affix = static_cast<std::uint8_t>(v); }
     if (nf > 6) { if (!num(f[6], &v)) continue; sl.refine = static_cast<std::uint8_t>(v); }
+    if (nf > 7) { if (!num(f[7], &v)) continue; sl.rarity = static_cast<std::uint8_t>(v); }
     out.push_back(sl);
   }
 }
@@ -661,7 +663,7 @@ std::string canonicalInvBlob(const std::vector<InvSlot>& inv) {
     blob += std::to_string(sl.itemId) + ":" + std::to_string(sl.qty) + ":" +
             (sl.equipped ? "1" : "0") + ":" + std::to_string(sl.aura) + ":" +
             std::to_string(sl.durability) + ":" + std::to_string(sl.affix) +
-            ":" + std::to_string(sl.refine) + ";";
+            ":" + std::to_string(sl.refine) + ":" + std::to_string(sl.rarity) + ";";
   }
   return blob;
 }
@@ -703,6 +705,9 @@ std::uint32_t World::equippedWeaponDmg(const Entity& e) const {
           dmg += 2;
           if (isNight()) dmg += 1;
         }
+        if (sl.affix == 11) dmg += 3;  // T-159 of the Hollow: +3 flat
+        if (sl.affix == 17 && isNight()) dmg += 4;  // T-159 of the Dirge: +4 at night
+        if (sl.affix == 20 && e.hpMax > 0 && e.hp * 5 < e.hpMax) dmg += 8u;  // T-159 Last Rites: +8 below 20% hp
         if (sl.aura >= 1) {  // Edge Rite (tier I): flat attack bleed
           if (const content::AuraTier* t = content::findAuraTier(sl.aura))
             dmg += t->atkBonusFlat;
@@ -731,17 +736,20 @@ std::uint8_t World::equippedGlowTier(const Entity& e) const {
 }
 
 std::uint32_t World::equippedArmorDef(const Entity& e) const {
+  std::uint32_t total = 0;
   for (const InvSlot& sl : e.inv) {
     if (sl.equipped) {
       const content::ItemDef* d = content::findItem(sl.itemId);
-      if (d != nullptr && d->slot == 1) {
-        if (sl.durability == 0) return 0u;  // dormant (T-058)
-        const std::uint32_t def = d->def + sl.refine;  // T-060 refine steps
-        return sl.affix == 2 ? def + 2u : def;         // of Warding (T-059)
+      if (d != nullptr && (d->slot == 1 || d->slot == 2)) {
+        if (sl.durability == 0) continue;  // dormant (T-058)
+        std::uint32_t def = d->def + sl.refine;  // T-060 refine steps
+        if (sl.affix == 2) def += 2u;            // of Warding (T-059)
+        if (sl.affix == 18) def += 2u;           // T-159 of the Husk: +2 flat def
+        total += def;
       }
     }
   }
-  return 0;
+  return total;
 }
 
 bool World::useItem(Entity& e, std::uint8_t slot) {
@@ -749,7 +757,7 @@ bool World::useItem(Entity& e, std::uint8_t slot) {
   if (tick_ - e.lastSipTick < kSipCdTicks) return false;
   InvSlot& sl = e.inv[slot];
   const content::ItemDef* d = content::findItem(sl.itemId);
-  if (d == nullptr || d->slot != 2 || sl.qty == 0) return false;
+  if (d == nullptr || d->slot != 5 || sl.qty == 0) return false;
   // T-071 night light: torches and lanterns branch off before the sip lane.
   // Premise note: no new kUse command was needed — kUseItem is already
   // journaled (only chat/ping are excluded) and the client already sends it
@@ -807,7 +815,7 @@ bool World::toggleEquip(Entity& e, std::uint8_t slot) {
   if (e.kind != EntityKind::kPlayer || slot >= e.inv.size()) return false;
   InvSlot& sl = e.inv[slot];
   const content::ItemDef* d = content::findItem(sl.itemId);
-  if (d == nullptr || d->slot > 1) return false;
+  if (d == nullptr || d->slot > 4) return false;
   if (!sl.equipped) {
     // one equipped item per gear slot
     for (InvSlot& other : e.inv) {
@@ -818,11 +826,11 @@ bool World::toggleEquip(Entity& e, std::uint8_t slot) {
   } else {
     sl.equipped = false;
   }
-  // T-126 of the Ox materializes on armor equip/unequip, not just level-up.
-  // Gated to armor toggles: weapon toggles never touched hpMax before, and a
+  // T-126 of the Ox materializes on armor/helm equip/unequip, not just level-up.
+  // Gated to armor/helm toggles: weapon toggles never touched hpMax before, and a
   // hand-set cap (tests, GM staging) must survive them. Replay-neutral —
   // affix 4 gear cannot exist in pre-v2 journals.
-  if (d->slot == 1) {
+  if (d->slot == 1 || d->slot == 2) {
     e.hpMax = recomputeHpMax(e);
     if (e.hp > e.hpMax) e.hp = e.hpMax;
   }
@@ -835,14 +843,20 @@ bool World::toggleEquip(Entity& e, std::uint8_t slot) {
 std::uint32_t World::effAcc(const Entity& e) const {
   std::uint32_t acc = 2u * e.dex;
   if (hasAffix(e, 6, 0)) acc += 4;  // T-126 of Focus: equipped blade steadies +4
+  if (hasAffix(e, 15, 9)) acc += 2;  // T-159 of the Pall: +2 acc (any gear)
   if (siegeHolder_ != 0 && e.id == siegeHolder_) acc = acc * 110u / 100u;  // T-134 holder
   if (e.blessUntil >= 0 && tick_ < e.blessUntil) acc = acc * 110u / 100u;  
   if (e.chorusUntil >= 0 && tick_ < e.chorusUntil) acc = acc * 105u / 100u;  // T-054b
   return acc;
 }
 
-std::uint32_t World::effDmgBase(const Entity& e) const {
-  if (e.kind != EntityKind::kPlayer) {
+std::uint32_t World::effEvd(const Entity& e) const {
+  std::uint32_t evd = e.dex;
+  if (e.kind == EntityKind::kPlayer && hasAffix(e, 15, 9)) ++evd;  // T-159 Pall +1 evd
+  return evd;
+}
+
+std::uint32_t World::effDmgBase(const Entity& e) const {  if (e.kind != EntityKind::kPlayer) {
     const content::MobDef* md = content::findMob(e.mobId);
     return md != nullptr ? md->dmg : 4;
   }
@@ -891,8 +905,9 @@ void World::trySkill(Entity& e, std::uint8_t skill, std::uint32_t targetId) {
   e.lastPowerTick = tick_;
 
   const int acc = static_cast<int>(effAcc(e));
-  const int evd = target->kind == EntityKind::kPlayer ? target->dex : target->dex;
-  const sim::HitCheck hc = sim::rollHit(acc, evd, e.dex, rng_);
+  int evd = static_cast<int>(effEvd(*target));  // T-159 Pall +1 rides effEvd
+  sim::HitCheck hc = sim::rollHit(acc, evd, e.dex, rng_);
+  if (hc.hit && !hc.crit && hasAffix(e, 16, 0) && rng_.range(1, 100) <= 5) hc.crit = true;  // T-159 Boneyard +5% crit
   if (!hc.hit) {
     WorldEvent ev;
     ev.attacker = e.id;
@@ -906,7 +921,7 @@ void World::trySkill(Entity& e, std::uint8_t skill, std::uint32_t targetId) {
   std::uint32_t dmg = sim::rollDamage(base, e.str, def, hc.crit);
   dmg = dmg * kPowerSwingMultPct / 100u;
   if (target->kind == EntityKind::kPlayer) dmg = dmg * 65u / 100u;
-  dmg = dmg < 1 ? 1 : dmg;
+  dmg = dmg < 1 ? 1 : dmg;  // NOTE Last Rites rides base via equippedWeaponDmg (display == dealt)
   target->hp = dmg >= target->hp ? 0 : target->hp - dmg;
   target->lastHurtTick = tick_;
   if (target->kind == EntityKind::kMob && target->attackTarget == 0) {
@@ -1265,7 +1280,7 @@ bool World::repairAll(Entity& e) {
   std::uint32_t fixed = 0;
   for (InvSlot& sl : e.inv) {
     const content::ItemDef* d = content::findItem(sl.itemId);
-    if (d == nullptr || d->slot > 1 || sl.durability >= 100) continue;
+    if (d == nullptr || d->slot > 4 || sl.durability >= 100) continue;
     const std::uint32_t missing = 100u - sl.durability;
     total += (missing + 1u) / 2u;  // 1g per 2 points
   }
@@ -1273,7 +1288,7 @@ bool World::repairAll(Entity& e) {
   e.gold -= total;
   for (InvSlot& sl : e.inv) {
     const content::ItemDef* d = content::findItem(sl.itemId);
-    if (d == nullptr || d->slot > 1) continue;
+    if (d == nullptr || d->slot > 4) continue;
     if (sl.durability < 100) { sl.durability = 100; ++fixed; }
   }
   WorldEvent ev;
@@ -1313,7 +1328,7 @@ std::uint32_t World::vendorSellJunk(Entity& e) {
   std::uint32_t gained = 0;
   for (size_t i = 0; i < e.inv.size();) {
     const content::ItemDef* d = content::findItem(e.inv[i].itemId);
-    if (d != nullptr && d->slot == 3) {
+    if (d != nullptr && d->slot == 6) {
       // T-104: multiply-then-divide so qty doesn't multiply a truncated
       // per-unit price (1g junk × 40% × 20 = 0 with the old order).
       gained += static_cast<std::uint32_t>(
@@ -1398,7 +1413,7 @@ std::uint32_t World::fenceSellJunk(Entity& e) {
   std::uint32_t gained = 0;
   for (size_t i = 0; i < e.inv.size();) {
     const content::ItemDef* d = content::findItem(e.inv[i].itemId);
-    if (d != nullptr && d->slot == 3) {
+    if (d != nullptr && d->slot == 6) {
       // T-104: multiply-then-divide, 64-bit (matches Marta's fixed path).
       gained += static_cast<std::uint32_t>(
           static_cast<std::uint64_t>(d->value) *
@@ -2110,7 +2125,7 @@ bool World::tryRefine(Entity& e, std::uint8_t invSlot) {
   if (invSlot >= e.inv.size()) return false;
   InvSlot& sl = e.inv[invSlot];
   const content::ItemDef* d = content::findItem(sl.itemId);
-  if (d == nullptr || d->slot > 1) return false;  // gear only
+  if (d == nullptr || d->slot > 4) return false;  // gear only
   if (sl.refine >= 7) {
     WorldEvent ev;
     ev.aboutId = e.id;
@@ -2130,7 +2145,7 @@ bool World::tryRefine(Entity& e, std::uint8_t invSlot) {
   int junkIdx = -1;
   for (size_t i = 0; i < e.inv.size(); ++i) {
     const content::ItemDef* jd = content::findItem(e.inv[i].itemId);
-    if (jd != nullptr && jd->slot == 3) { junkIdx = static_cast<int>(i); break; }
+    if (jd != nullptr && jd->slot == 6) { junkIdx = static_cast<int>(i); break; }
   }
   if (junkIdx < 0 || e.gold < 50) return false;
   if (--e.inv[junkIdx].qty == 0) {
@@ -2627,7 +2642,7 @@ void World::trySwing(Entity& att, Entity& def) {
     base = md != nullptr ? md->dmg : 4;
   }
   if (def.kind == EntityKind::kPlayer) {
-    evd = def.dex;
+    evd = static_cast<int>(effEvd(def));  // T-159 Pall +1 rides effEvd
     ddef = effDef(def);                        // ironskin-aware (T-054)
   } else {
     const content::MobDef* md = content::findMob(def.mobId);
@@ -2635,7 +2650,11 @@ void World::trySwing(Entity& att, Entity& def) {
     ddef = md != nullptr ? md->def : 0;
   }
 
-  const sim::HitCheck hc = sim::rollHit(acc, evd, adex, rng_);
+  sim::HitCheck hc = sim::rollHit(acc, evd, adex, rng_);
+  // T-159 of the Boneyard: equipped weapon crits +5% (extra deterministic roll upgrades hit→crit)
+  if (hc.hit && !hc.crit && att.kind == EntityKind::kPlayer && hasAffix(att, 16, 0)) {
+    if (rng_.range(1, 100) <= 5) hc.crit = true;
+  }
   WorldEvent ev;
   ev.attacker = att.id;
   ev.target = def.id;
@@ -2665,6 +2684,12 @@ void World::trySwing(Entity& att, Entity& def) {
   if (def.kind == EntityKind::kMob && def.firstHurtTick < 0) {
     def.firstHurtTick = tick_;
   }
+  // T-159 of the Crypt: equipped armor/helm reduces incoming damage by 10%
+  if (def.kind == EntityKind::kPlayer && hasAffix(def, 13, 1)) {
+    dmg = dmg * 90u / 100u;
+    if (dmg < 1) dmg = 1;
+  }
+  // NOTE T-159 Last Rites (+8 <20% hp) lives in equippedWeaponDmg so display == dealt.
   def.hp = dmg >= def.hp ? 0 : def.hp - dmg;
   def.lastHurtTick = tick_;
   // T-126 of Thorns: worn plate bites back for 2 per landed swing. Never lands
@@ -2676,11 +2701,13 @@ void World::trySwing(Entity& att, Entity& def) {
   if (att.kind == EntityKind::kPlayer) {
     ++att.swingLands;
     // T-059 of Leech: equipped weapon drinks 5% of damage dealt
+    // T-159 of the Marrow: equipped weapon drinks 3% of damage dealt
     for (const InvSlot& sl : att.inv) {
       const content::ItemDef* dd = content::findItem(sl.itemId);
-      if (sl.equipped && dd != nullptr && dd->slot == 0 && sl.affix == 3 &&
-          sl.durability > 0) {
-        const std::uint32_t sip = std::max<std::uint32_t>(1, dmg / 20);
+      if (sl.equipped && dd != nullptr && dd->slot == 0 && sl.durability > 0 &&
+          (sl.affix == 3 || sl.affix == 14)) {
+        const std::uint32_t pct = sl.affix == 3 ? 5u : 3u;
+        const std::uint32_t sip = std::max<std::uint32_t>(1, dmg * pct / 100);
         att.hp = std::min<std::int32_t>(
             att.hp + static_cast<std::int32_t>(sip), att.hpMax);
         break;
@@ -2694,7 +2721,8 @@ void World::trySwing(Entity& att, Entity& def) {
     if (def.kind == EntityKind::kPlayer)
       for (InvSlot& sl : def.inv)
         if (sl.equipped && content::findItem(sl.itemId) != nullptr &&
-            content::findItem(sl.itemId)->slot == 1 && sl.durability > 0)
+            content::findItem(sl.itemId)->slot >= 1 &&
+            content::findItem(sl.itemId)->slot <= 4 && sl.durability > 0)
           --sl.durability;
     const std::uint8_t newSkill =
         static_cast<std::uint8_t>(std::min<std::uint32_t>(100, att.swingLands / kSkillLandsPerPoint));
@@ -3427,7 +3455,9 @@ void World::killMob(Entity& mob, Entity* killer) {
       }
     }
     if (md != nullptr) {
-      // T-059 affixes v1: named-gear side-drop with a rolled one-liner mod
+      // T-059/T-159 affixes: named-gear side-drop with rarity roll + affix mod.
+      // Rarity: Common 78%, Magic 17%, Rare 4.6%, Unique 0.4% (GDD §7).
+      // Affixes per tier: Common=0, Magic=1, Rare=2, Uniques are boss-only.
       if (const content::GearDropDef* gd = content::findGearDrop(md->mobId)) {
         const std::int64_t gearPct =  // T-062 nightcreep rides drops too
             isNight() ? static_cast<std::int64_t>(gd->chancePct) * 125 / 100
@@ -3439,7 +3469,20 @@ void World::killMob(Entity& mob, Entity* killer) {
             sl.qty = 1;
             sl.equipped = false;
             sl.aura = 0;
-            sl.affix = static_cast<std::uint8_t>(rng_.range(1, content::kAffixCount));
+            // T-159: roll rarity tier then set affix count per tier.
+            const std::int32_t rarityRoll = rng_.range(1, 100);
+            std::uint8_t rarity = content::kRarityCommon;
+            if (rarityRoll <= 78) rarity = content::kRarityCommon;
+            else if (rarityRoll <= 95) rarity = content::kRarityMagic;
+            else if (rarityRoll <= 99) rarity = content::kRarityRare;
+            else rarity = content::kRarityUnique;
+            sl.rarity = rarity;
+            if (rarity == content::kRarityMagic) {
+              sl.affix = static_cast<std::uint8_t>(rng_.range(1, content::kAffixCount));
+            } else if (rarity == content::kRarityRare) {
+              sl.affix = static_cast<std::uint8_t>(rng_.range(1, content::kAffixCount));
+            }
+            // Common: affix stays 0 (no mod). Unique handled by boss path.
             killer->inv.push_back(sl);
             WorldEvent gev;
             gev.aboutId = killer->id;
@@ -3447,7 +3490,10 @@ void World::killMob(Entity& mob, Entity* killer) {
             gev.chatCh = 255;
             const content::ItemDef* id = content::findItem(gd->itemId);
             gev.chatText = std::string("looted ") + (id != nullptr ? id->name : "?") +
-                           " " + content::kAffixNames[sl.affix] + ".";
+                           (sl.affix > 0
+                                ? std::string(" ") + content::kAffixNames[sl.affix]
+                                : "") +
+                           ".";
             events_.push_back(std::move(gev));
           }
         }
@@ -3484,6 +3530,7 @@ void World::killMob(Entity& mob, Entity* killer) {
                              0, static_cast<std::int64_t>(md->goldHi) -
                                     static_cast<std::int64_t>(md->goldLo)));
         if (hasAffix(*killer, 9, 0)) g = g * 110u / 100u;  // T-126 of Greed (pre-moral)
+        if (hasAffix(*killer, 19, 0)) g = g * 115u / 100u;  // T-159 of the Tithemaster: +15%
         std::uint32_t award = (killer->karma < 0) ? g * 115u / 100u : g;
         if (siegeHolder_ != 0) {  // T-134 castle tax: 5% of the award, silent
           const std::uint32_t tithe = award * 5u / 100u;
@@ -3814,7 +3861,7 @@ void World::killPlayer(Entity& victim, Entity* killer) {
   // lawful rusts the same as red.
   for (InvSlot& sl : victim.inv) {
     const content::ItemDef* dd = content::findItem(sl.itemId);
-    if (dd == nullptr || dd->slot > 1) continue;
+    if (dd == nullptr || dd->slot > 4) continue;
     sl.durability = sl.durability <= 5 ? 0 : static_cast<std::uint8_t>(sl.durability - 5);
   }
   // GDD: XP debt 10% of bar at L1 rising to 25% at L25; de-level at 0 XP.
@@ -4287,6 +4334,7 @@ void World::tick() {
     if (tick_ - e.lastHurtTick > kOocRegenDelay && tick_ % kOocRegenPeriod == 0) {
       ++e.hp;
       if (hasAffix(e, 10, 1)) ++e.hp;  // T-126 of Mending: worn mail knits +1
+      if (hasAffix(e, 12, 9)) ++e.hp;  // T-159 Grave-touched: any gear knits +1
       if (e.hp > e.hpMax) e.hp = e.hpMax;
       std::uint8_t aura = 0;
       for (const InvSlot& sl : e.inv) {

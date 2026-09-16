@@ -45,14 +45,16 @@ struct InvSlot {
   bool equipped = false;
   std::uint8_t aura = 0;   // T-042: applied aura tier (0=none, 1..5 per RFC 0001)
   std::uint8_t durability = 100;  // T-058: 0 = dormant (kept, no stats); weapons/armor
-  std::uint8_t affix = 0;         // T-059 v1: 0 none, 1 whet, 2 ward, 3 leech; T-126 v2 adds 4..10
+  std::uint8_t affix = 0;         // T-059 v1: 0 none, 1 whet, 2 ward, 3 leech; T-126 v2 adds 4..10; T-159 v3 adds 11..20
   std::uint8_t refine = 0;        // T-060: 0..3, T-079: to +7 (+2 weapon dmg / +1 armor def per tier)
+  std::uint8_t rarity = 0;        // T-159: 0 common, 1 magic, 2 rare, 3 unique
 };
 
 // T-049x (relog-launderer fix): ONE grammar for persisted inventory blobs —
-// "iid:qty:equipped:aura:durability:affix:refine;..." — shared by the live
+// "iid:qty:equipped:aura:durability:affix:refine:rarity;..." — shared by the live
 // login path and the world-replay applyLogin. Legacy short tails (v3 3-field,
 // v5 4-field aura, v8 +durability, v9 +affix) parse with InvSlot defaults.
+// T-159: 8th field = rarity (0..3); legacy 7-field blobs default rarity to 0.
 // Records are appended in blob order; NOTHING stacks or reorders. Pre-fix BOTH
 // lanes laundered: live login used an rfind 3-field heuristic (dropped
 // equipped + aura/durability/affix/refine on v5+ records), replay used a
@@ -240,6 +242,7 @@ class World {
   void trySkill(Entity& e, std::uint8_t skill, std::uint32_t targetId);
   bool kitChoose(Entity& e, std::uint8_t kitId);  // T-053 one-time swear
   std::uint32_t effAcc(const Entity& e) const;    // bless-adjusted accuracy (+Focus)
+  std::uint32_t effEvd(const Entity& e) const;    // T-159: dex + Pall +1
   std::uint32_t effDmgBase(const Entity& e) const;
   std::uint32_t effDef(const Entity& e) const;    // ironskin-adjusted mitigation
   // T-126 affix probe: equipped + slot-gated (0 weapon, 1 armor, 9 any gear)
@@ -547,6 +550,10 @@ class World {
   sim::Tick tickCount() const { return tick_; }
   sim::Rng& rng() { return rng_; }
 
+  // T-159: public for tests
+  std::uint32_t equippedWeaponDmg(const Entity& e) const;
+  std::uint32_t equippedArmorDef(const Entity& e) const;
+
  private:
 
   void initialMobSpawns(Zone& zone, std::uint16_t zoneId);
@@ -572,8 +579,6 @@ class World {
   std::vector<Entity*> playersNear(Zone& zone, int x, int y, int radius);
   // inventory helpers (sorted by itemId; equips occupy their slot domain)
   bool addItem(Entity& e, std::uint32_t itemId, std::uint16_t qty);
-  std::uint32_t equippedWeaponDmg(const Entity& e) const;
-  std::uint32_t equippedArmorDef(const Entity& e) const;
   void syncIndxPush(Entity& e) {  // mark inventory changed for the net layer
     WorldEvent ev;
     ev.aboutId = e.id;

@@ -193,9 +193,13 @@ cape. (Vampires later: claws-fangs body slots + 6 jewelry.)
 
 **Rarity tiers [MVP]:** Common (white) 78% · Magic (blue, 1–2 affixes) 17% ·
 Rare (yellow, 2–3 affixes) 4.6% · Unique (named, fixed rolls, boss-only) 0.4%.
-Affix pools are dark-themed: *of the Leech* (2–4% life on hit), *Grim* (+dmg to
+Affix pools are dark-themed (20 affixes): *of the Leech* (2–4% life on hit), *Grim* (+dmg to
 undead), *Festering* (poison proc), *of the Vigil* (+light radius — mechanically
-real at night), *Bloodforged* (+dmg at night), *of the Choir* (+buff duration).
+real at night), *Bloodforged* (+dmg at night), *of the Choir* (+buff duration),
+*of the Hollow* (+3 flat dmg), *Grave-touched* (+1 OOC regen), *of the Crypt*
+(-10% incoming dmg), *of the Marrow* (+3% lifesteal), *of the Pall* (+2 acc +1 evd),
+*of the Boneyard* (+5% crit), *of the Dirge* (+4 dmg at night), *of the Husk* (+2 flat def),
+*of the Tithemaster* (+15% kill gold), *of Last Rites* (+8 dmg &lt;20% hp).
 
 **Enhancement — "the Anvil" [MVP]:** at the blacksmith, spend
 **Blackiron Ore** (mined in Bonehowl Mine, purity 1–10) + a **fodder accessory** +

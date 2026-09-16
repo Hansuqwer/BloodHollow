@@ -178,8 +178,8 @@ void Game::handleInputOnline() {
             if (net_->tradeWithId != 0) {
               net_->sendTradeOfferItem(it->second.itemId, 1);  // click offers one
             } else {
-              if (d->slot == 2) net_->sendUseItem(it->first);
-              if (d->slot <= 1) net_->sendToggleEquip(it->first);
+              if (d->slot == 5) net_->sendUseItem(it->first);
+              if (d->slot <= 4) net_->sendToggleEquip(it->first);
             }
           }
         }
