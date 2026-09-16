@@ -215,3 +215,18 @@ TEST_CASE("T-133: journaled crown path") {
   server::applyWorldCommand(w, *ctx.a, c);
   CHECK(ctx.a->crownUntil > 0);
 }
+
+TEST_CASE("T-137: re-kneeling mid-channel never resets the deadline") {
+  server::World w;
+  REQUIRE(w.loadFrom(makeArena()));
+  REQUIRE(w.loadZoneFrom(6, makeArena()));
+  CrownCtx ctx = ready(w);
+  attune(w);
+  REQUIRE(w.crown(*ctx.a));
+  const sim::Tick first = ctx.a->crownUntil;
+  for (int t = 0; t < 50; ++t) w.tick();
+  REQUIRE(w.crown(*ctx.a));  // spam kneel: no-op success, deadline holds
+  CHECK(ctx.a->crownUntil == first);
+  for (int t = 0; t < 200; ++t) w.tick();
+  CHECK(w.siegeHolder() == ctx.a->id);  // the channel survived the spam
+}

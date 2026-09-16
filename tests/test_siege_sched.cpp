@@ -144,3 +144,34 @@ TEST_CASE("T-136: rehearsal posture opens the window unconditionally") {
   CHECK_FALSE(w.rehearsalMode());
   CHECK_FALSE(w.inSiegeWindow());
 }
+
+TEST_CASE("T-137: registration enlists the captain's living party as one band") {
+  server::World w;
+  REQUIRE(w.loadFrom(makeArena()));
+  server::Entity* a = spawnP(w, "leader", 5, 5);
+  server::Entity* b = spawnP(w, "mate", 6, 5);
+  server::Entity* c = spawnP(w, "third", 5, 6);
+  REQUIRE(w.partyInvite(*a, *b));
+  REQUIRE(w.partyAccept(*b));
+  REQUIRE(w.partyInvite(*a, *c));
+  REQUIRE(w.partyAccept(*c));
+  REQUIRE(w.siegeRegister(a->id));  // one call, three enlisted, one band
+  CHECK(w.siegeAttackers().size() == 3u);
+  CHECK_FALSE(w.siegeRegister(b->id));  // already in camp
+  // dead members ride no band
+  w.debugKillPlayer(*c);
+  server::Entity* d = spawnP(w, "lonely", 8, 8);
+  server::Entity* e = spawnP(w, "fallen", 9, 8);
+  REQUIRE(w.partyInvite(*d, *e));
+  REQUIRE(w.partyAccept(*e));
+  w.debugKillPlayer(*e);
+  REQUIRE(w.siegeRegister(d->id));
+  CHECK(w.siegeAttackers().size() == 4u);  // d only; e was dead
+  // the camp fills at 8 BANDS: 6 more solo registrations, 9th refused
+  for (int i = 0; i < 6; ++i) {
+    server::Entity* p = spawnP(w, ("solo" + std::to_string(i)).c_str(), 20 + i, 20);
+    REQUIRE(w.siegeRegister(p->id));
+  }
+  server::Entity* extra = spawnP(w, "ninth", 30, 30);
+  CHECK_FALSE(w.siegeRegister(extra->id));  // 9th band: camp is full
+}

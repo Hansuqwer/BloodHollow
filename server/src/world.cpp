@@ -1554,8 +1554,33 @@ bool World::siegeRegister(std::uint32_t captainId) {
   if (c == nullptr || c->kind != EntityKind::kPlayer || c->dead) return false;
   for (const std::uint32_t id : siegeAttackers_)
     if (id == captainId) return false;  // already in the war camp, quiet
-  if (siegeAttackers_.size() >= kSiegeMaxBands) return false;  // camp is full
-  siegeAttackers_.push_back(captainId);
+  if (siegeBandsUsed_ >= kSiegeMaxBands) return false;  // camp is full
+  // T-137 band = party: the captain's living party rides one registration
+  // (M4's 40 = 8 bands of 5). Unaffiliated captains ride solo.
+  std::vector<std::uint32_t> band{captainId};
+  if (c->partyId != 0) {
+    if (const Party* p = partyOf(c->id)) {
+      for (const std::uint32_t mid : p->members) {
+        if (mid == captainId) continue;
+        Entity* m = find(mid);
+        if (m != nullptr && m->kind == EntityKind::kPlayer && !m->dead)
+          band.push_back(mid);
+      }
+    }
+  }
+  for (const std::uint32_t id : band) {
+    bool known = false;
+    for (const std::uint32_t e : siegeAttackers_)
+      if (e == id) {
+        known = true;
+        break;
+      }
+    if (!known) siegeAttackers_.push_back(id);
+  }
+  ++siegeBandsUsed_;
+  std::printf("[siege] band enlisted (%u members, %u/8 bands)\n",
+              static_cast<unsigned>(band.size()),
+              static_cast<unsigned>(siegeBandsUsed_));
   return true;
 }
 
@@ -1645,12 +1670,15 @@ bool World::breach(Entity& e) {
     return true;
   }
   const std::string fallen = gate->name;
+  // T-137 fix (use-after-erase): despawn() invalidates references into the
+  // entity deque, so copy the attacker's name BEFORE erasing the gate.
+  const std::string by = e.name;
   despawn(gate->id);
   WorldEvent fev;
   fev.chatCh = 2;
   fev.chatText = "the " + fallen + " lies in splinters!";
   events_.push_back(std::move(fev));
-  std::printf("[siege] %s breached by %s\n", fallen.c_str(), e.name.c_str());
+  std::printf("[siege] %s breached by %s\n", fallen.c_str(), by.c_str());
   return true;
 }
 
@@ -1690,6 +1718,9 @@ void World::spawnHeartstone(Zone& zone) {
 bool World::crown(Entity& e) {
   if (e.kind != EntityKind::kPlayer || e.dead) return false;
   if (!siegeBattleActive() || !heartAttuned_) return false;
+  // T-137: re-kneeling mid-channel is a no-op (a 5 s client loop must not
+  // keep resetting the 10 s channel — the drill proved it never completes).
+  if (e.crownUntil >= 0) return true;
   bool enlisted = false;
   for (const std::uint32_t id : siegeAttackers_)
     if (id == e.id) {

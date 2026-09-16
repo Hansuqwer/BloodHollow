@@ -543,11 +543,14 @@ class World {
   bool bloodMoonActive_ = false;
   sim::Tick bloodMoonUntil_ = -1;
   // T-131 siege battle (session-scoped; holder/tax persist lands in S3).
-  // Bands are captain entity ids today, pledge ids when Phase P lands.
+  // Bands are parties: one registration enlists the captain's living party
+  // (5-man convention; M4's 40 = 8 bands). Unaffiliated captains ride solo.
+  // Pledge ids replace captain ids when Phase P lands (same shape).
   std::vector<std::uint32_t> siegeAttackers_{};
   std::uint32_t siegeHolder_ = 0;  // 0 = unclaimed castle
   bool siegeBattleActive_ = false;
   sim::Tick siegeBattleEndsAt_ = -1;
+  std::uint32_t siegeBandsUsed_ = 0;  // T-137: the 8-band cap counts bands
   bool rehearsalMode_ = false;  // T-136: drill posture (window bypass)
   // T-133 Heartstone (session-scoped like the battle).
   std::uint32_t heartProgress_ = 0;

@@ -900,6 +900,16 @@ crown moves to T-137 (yard-pack pressure mapped over 4 iterations).
 t135 re-replays mm=0. Devlog 0097 · card `done/T-136.md`. Next: T-137
 defenders + M4.
 
+## Done — T-137 (2026-09-15): defenders + live crown + M4 PASS (Phase S done)
+
+T-137 CONTENT (no epoch bump, stays 25): `--defenders` hold-ring bots +
+hold mode (adjacent mobs only) + kiters + party bands (cap counts bands;
+spawn mustering) + crown re-kneel guard + breach use-after-erase fix.
+M4 VERDICT PASS: flips 3/3 (replay mm=0) + p99 6.6 ms @40 bots (< 25 ms).
+Contest-denial proven inverted (12v6/12v3 freeze correctly). Full
+forensics in devlog (6 drill lessons). Devlog 0098 · card `done/T-137.md`.
+Next: Phase P (pledge-lite).
+
 
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
