@@ -961,6 +961,15 @@ v13→**v14**; disband burns the pool. No epoch (26), no wire. 291/291
 mm=0 (neutrality). Live-crown drip proof deferred (doctest twins pin it).
 Devlog 0101 · card `T-140.md` (→ done on merge). Next: Phase A art.
 
+## Done — T-141 (2026-09-15): Ravager WIP sheets packed + QA-triaged (Phase A, 1/3)
+
+T-141 SHEETS (content-only): 20 landed Ravager keyframes → v1 sheets
+(128×384, walk/attack/cast/die × S/SE/E, idle/hurt/gib + W-side padded);
+feet gate PASS (m walk_SE floater fixed in-cell); colours ≤32 PASS;
+R-LUMA FAIL recorded (Δ 10.7/4.3, remediation = T-142); LICENSES rows.
+b5_build.sh exit 0 · suite 2/2 · validate 0/6. No epoch/wire/code.
+Devlog 0102 · card `T-141.md` (→ done on merge). Next: T-142 wiring.
+
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
 | Card | Title | Notes |
