@@ -1012,7 +1012,6 @@ replay mm=0) · epoch28 guard exit 4. Deviations + T-159f1 in card.
 Devlog 0109 · card `T-159-loot-depth.md` (→ done on merge). Next: T-154/T-168.
 
 ## Done — T-154/T-168 (2026-09-16): headless gate + one build-dir law
-
 T-154 core (raylib-gated test TUs) already in tree — verified headless
 314/314, not redone. Shipped: 9 legs honour `BH_BUILD_DIR` (default
 `build/linux-gcc` unchanged); `--out` on 4 mapgens (byte-identical diffs);
@@ -1020,6 +1019,27 @@ CI mapgen gate 1/6→6/6 + `headless` job (no X11) + t159 replay guard;
 `tools/clean_clone_check.sh` → PASS on fresh clone. Caught: unquoted `:`
 broke ci.yml (fixed, yaml-parsed). Devlog 0110 · card
 `T-154-headless-build-law.md` (→ done on merge). Next: T-156 T-ART-12..15.
+
+## Audit wave T-150..T-169 (2026-09-16 playable-audit; drafts in PR #53 / commit a1bd867)
+
+Shipped → `done/`: T-150 (zone6 client map, `91c5325`), T-151 (siege/pledge
+wire+HUD epoch 28, `04a60b8`), T-152 (GM allowlist+/ban/announce, `9f3b43e`),
+T-155 (--bless replay guard, `ef618a5`), T-169 (/help+F1, `ca3e71a`),
+T-165-Wave0 (castle test salvage, `eeee6e0`); T-154/T-168 (PR #55), T-159
+(PR #54) → done on merge. Open (filed this wave, implement per queue):
+T-153 argon2id · T-156 T-ART-12..15 · T-157 evidence refresh · T-158 GDD
+truth-up · T-160 stat model · T-161 kit spine · T-162 roster · T-163 field-war
+· T-164 night light · T-165 remainder (director merges) · T-166 bounty ·
+T-167 char-create. Wave-2 epoch-30 batch proposal: `T-WAVE2-EPOCH30.md`.
+Human-only T-146..T-149 stay director-owned.
+
+## Done — T-158 (2026-09-16): GDD law truth-up + ADRs (docs-only)
+
+T-158 TRUTH-UP: 7 deviation rows all adopt-shipped (ADR-0013 enhancement/
+economy, ADR-0014 siege/moon + change-control); GDD §6/§7/§8/§9 amended;
+README epoch-18/t107/Phase-4 lines → epoch 29/t159/wave-2; AGENTS.md DoD
++--bless ban +headless gate; T-138..T-145 → done/, stale opens T-104/T-112/
+T-142 removed. No code/wire/epoch. Devlog 0111 · card `done/T-158.md`.
 
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 

@@ -177,22 +177,27 @@ party wants one).
 - **Level cap 25 [MVP]** (100 planned full-game). XP curve:
   `xpNext(L) = 100 · L^1.85` rounded to 10s — L1→2 ≈ 100, L10→11 ≈ 7,000,
   L24→25 ≈ 36,000. Tuned for ~60–90 h to cap in alpha (era-slow but not cruel).
-- **Monster XP** is per-mob flat by tier; elites ×8, nameds ×20, boss ×100.
+- **Monster XP** is per-mob flat, set in content rows (`shared/content/mobs.h`
+  `xp` — the ×8/×20/×100 tier-multiplier law was never implemented; rows ARE
+  the law, ADR-0013).
 - **Party [MVP]:** up to 5. Kill XP pool = `mobXP · (1 + 0.12·(n−1))`, split as
   **50% even-level share / 50% contribution share** (damage + healing×1.0 + tanking
   via damage-taken×0.5). Aura radius 12 tiles (CHA+0.5/stat). 8-man parties v0.2.
 - **Why this curve:** a 5-man party earns 1.48× total XP per kill vs solo —
   mathematically the optimal way to play, always. Group-focus is enforced by math,
   not slogans.
-- Leash range 18 tiles; mobs regen to full when leashed (kite-grief protection).
+- Leash range 18 tiles default, per-row `leashRadius` in content (`mobs.h`);
+  mobs regen to full when leashed (kite-grief protection).
 
 ## 7. Items, loot, enhancement
 
-**Slots:** weapon, shield/off-hand, helm, armor, gloves, boots, belt, amulet, 2× ring,
-cape. (Vampires later: claws-fangs body slots + 6 jewelry.)
+**Slots [MVP-shipped, T-159]:** weapon, armor, helm, amulet, ring (5 equippable)
++ consumables + junk. Shield/off-hand, gloves, boots, belt, cape are [LATER].
+(Vampires later: claws-fangs body slots + 6 jewelry.)
 
-**Rarity tiers [MVP]:** Common (white) 78% · Magic (blue, 1–2 affixes) 17% ·
-Rare (yellow, 2–3 affixes) 4.6% · Unique (named, fixed rolls, boss-only) 0.4%.
+**Rarity tiers [MVP-shipped, T-159]:** Common (white, no affix) 78% · Magic (blue,
+1 affix) 17% · Rare (yellow, 1 affix) 4.6% · Unique (named, fixed rolls,
+boss-only) 0.4%. Multi-affix items need a schema change — deferred (T-159f1).
 Affix pools are dark-themed (20 affixes): *of the Leech* (2–4% life on hit), *Grim* (+dmg to
 undead), *Festering* (poison proc), *of the Vigil* (+light radius — mechanically
 real at night), *Bloodforged* (+dmg at night), *of the Choir* (+buff duration),
@@ -201,30 +206,33 @@ real at night), *Bloodforged* (+dmg at night), *of the Choir* (+buff duration),
 *of the Boneyard* (+5% crit), *of the Dirge* (+4 dmg at night), *of the Husk* (+2 flat def),
 *of the Tithemaster* (+15% kill gold), *of Last Rites* (+8 dmg &lt;20% hp).
 
-**Enhancement — "the Anvil" [MVP]:** at the blacksmith, spend
-**Blackiron Ore** (mined in Bonehowl Mine, purity 1–10) + a **fodder accessory** +
-gold to refine a weapon/armor from +0 to +7:
+**Enhancement — "the Anvil" [MVP-shipped law, ADR-0013]:** at the blacksmith,
+spend one **Blackiron Ore** (flat, mined in Bonehowl Mine — purity tiers [LATER])
++ one **junk** + 50g toll to refine gear from +0 to +7:
 
 | To level | Success | On failure | Notes |
 |---|---|---|---|
 | +1 | 100% | — | tutorializes the system |
-| +2 | 90% | stays | |
-| +3 | 80% | stays | |
+| +2 | 100% | stays | mercy row (shipped) |
+| +3 | 60% | **SHATTERS** | destruction coin (shipped) |
 | +4 | 65% | **−1 level** | |
-| +5 | 50% | −1 level | |
-| +6 | 35% | −1 level | item glows from +5 |
+| +5 | 50% | −1 level | item glows from +5 |
+| +6 | 35% | −1 level | |
 | +7 | 25% | **resets to +0** | pre-nerve ceiling; +8–10 [LATER] with break-risk + Blessed/Protection scrolls |
 
-Ore purity adds −4%…+10%; fodder tier adds up to +5%. Every attempt costs
-durability + gold → the great gold sink. (Mir's break-gamble arrives as scrolls
-[LATER]; MVP resets hurt enough to generate stories without mass-quit risk.)
+Fodder tiers [LATER] with +8–10 scrolls. Every attempt costs 50g + toll junk →
+the great gold sink. (Mir's break-gamble arrives as scrolls [LATER]; MVP
+shatter-at-2 + resets hurt enough to generate stories without mass-quit risk.)
+(Dead law, harmless: a +10 mythic silhouette exists in code but is unreachable
+at the +7 cap.)
 
 **Durability [MVP]:** items lose durability on death (5) and on refine (10); repair
 at blacksmith for gold; at 0 the item is unusable (not destroyed).
 
-**Economy [MVP]:** gold from mobs/selling; sinks = potions, repair, refine, teleport
-scrolls, guild upkeep, castle tax. Player-to-player **trade window** [MVP];
-stalls/auction [LATER]. Server-side transaction log for every trade (dupe audits).
+**Economy [MVP]:** gold from mobs/selling; sinks = potions, repair, refine,
+guild upkeep, castle tax (teleport scrolls [LATER] — no scroll item ships, T-163
+records the cut). Player-to-player **trade window** [MVP]; stalls/auction
+[LATER]. Server-side transaction log for every trade (dupe audits).
 
 ## 8. Bloodpledges & the Weeping Castle siege
 
@@ -234,12 +242,14 @@ stalls/auction [LATER]. Server-side transaction log for every trade (dupe audits
   deferred to v0.2 with factions (CHA decision in T-160).
   *Cut decision in 05-mvp: MVP ships pledge-lite = name/emblem/members/chat; storage
   & pledge-XP later.*
-- **Siege [MVP, simplified]:** every **Saturday 20:00 UTC, 90 minutes**, one castle.
-  Attackers (any pledged group, registration closes 24h prior) breach 2 destructible
-  **gates** (100k HP, siege-damage-type skills ×3) → destroy the courtyard
-  **Heartstone** (Guardian-Tower analogue) → any attacking liege starts a **60 s
-  crown channel** on the throne; interrupt = restart; complete = ownership flips
-  **immediately** and defenders become attackers. Most holds at horn = keep.
+- **Siege [MVP-shipped law, ADR-0014]:** every **Saturday 20:00 UTC, 90 minutes**,
+  one castle. Attackers (any pledged group, registration closes 24h prior)
+  breach 2 destructible **gates** (300 HP each, felled by the `/breach` ram at
+  10 dmg ≈ 30 actions — no siege-damage skills in MVP) → contest the courtyard
+  **Heartstone** (Guardian-Tower analogue: 60 s uncontested presence attunement)
+  → any attacking liege starts a **10 s crown channel** on the throne
+  (re-kneel mid-channel is a no-op); interrupt = restart; complete = ownership
+  flips **immediately** and defenders become attackers. Most holds at horn = keep.
 - **Holdings [MVP]:** owner sets town shop **tax 0–15%** (collected hourly to pledge
   vault), members get *Castle's Favor* buff (+10% XP & drops in territory), spawn
   shortcut. Mir-style winner buff package.
@@ -258,9 +268,10 @@ stalls/auction [LATER]. Server-side transaction log for every trade (dupe audits
   pools, worth **+50% XP**, Blood Bolt-type effects buffed (+25% at night).
   Ambient dread audio (bell drone, no music), fog at light falloff. First-kill
   world call only — quiet is dread.
-- **Blood Moon [v0.2 — deferred BIBLE v2]:** weekly 20-min event — all spawn rates
-  ×2, world boss **The Pale Sow** roams, all drops +loot-tier. NOT in MVP (was
-  shipped partial out-of-scope; gated behind GM-only flag until v0.2).
+- **Blood Moon [MVP-lite shipped, full event v0.2 — ADR-0014]:** curse duration
+  ×2 + night bite 130%, GM-raised session flag lasting to next dawn, never
+  persisted. Weekly 20-min event shape — all spawn rates ×2, world boss **The
+  Pale Sow** roams, all drops +loot-tier — stays [v0.2].
 - Named elites on 15–60 min rotating timers (world-announced first-kill, T-097 reword):
   *Old Maw* (fields — shipped T-101: Gnoll-base L7, 30-min pit), *The Red Widow*
   (mine — shipped T-102: Widow-base L9, 45-min nest), *Cantor Vex* (crypt —
