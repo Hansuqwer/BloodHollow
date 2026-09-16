@@ -68,6 +68,30 @@ TEST_CASE("T-ART-07: overhead tint priority (red > party > lawful > gray)") {
   CHECK(resolveNameTint(true, 2, true) == NameTint::kNeutral);  // own short-circuits
 }
 
+TEST_CASE("T-142: player sheet dirs resolve for shipped Ravager m/f; fallback on unknown") {
+  char png[160], js[160];
+  // shipped Ravager m/f resolve under assets/aigen/players/<class>/<sex>/
+  REQUIRE(playerSheetPaths(1, 1, png, sizeof png, js, sizeof js));
+  CHECK(std::string(png) == "assets/aigen/players/ravager/m/sheet.png");
+  CHECK(std::string(js) == "assets/aigen/players/ravager/m/sheet.json");
+  REQUIRE(playerSheetPaths(1, 2, png, sizeof png, js, sizeof js));
+  CHECK(std::string(png) == "assets/aigen/players/ravager/f/sheet.png");
+  // Gravecaller/Cultist resolve too (sheets not yet shipped — loader falls back to hero)
+  REQUIRE(playerSheetPaths(2, 1, png, sizeof png, js, sizeof js));
+  CHECK(std::string(png) == "assets/aigen/players/gravecaller/m/sheet.png");
+  REQUIRE(playerSheetPaths(3, 2, png, sizeof png, js, sizeof js));
+  CHECK(std::string(png) == "assets/aigen/players/cultist/f/sheet.png");
+  // unknown class, unknown sex, or sex 0 (T-142b not yet captured) never reach the loader
+  CHECK_FALSE(playerSheetPaths(0, 1, png, sizeof png, js, sizeof js));
+  CHECK_FALSE(playerSheetPaths(99, 1, png, sizeof png, js, sizeof js));
+  CHECK_FALSE(playerSheetPaths(1, 0, png, sizeof png, js, sizeof js));
+  CHECK_FALSE(playerSheetPaths(1, 3, png, sizeof png, js, sizeof js));
+  // mobs/furniture kinds are not players (wire layer separates them)
+  // playerSheetPaths is class-gated, not kind-gated — but the atlasForPlayer
+  // branch only fires on kind==0; this pin ensures the path law is class-only
+  CHECK_FALSE(playerSheetPaths(1, 0, png, sizeof png, js, sizeof js));
+}
+
 TEST_CASE("T-ART-10: feet anchors ride the anim (42.0 legacy default)") {
   Atlas a;
   CHECK(animAnchorY(a, "walk") == 42.0f);  // absent anim: legacy default

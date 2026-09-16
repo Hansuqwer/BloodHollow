@@ -1037,6 +1037,11 @@ void distributeEvents(Server& s) {
           m.karmaBand = World::karmaBandOf(e->karma);
           m.light = e->lightRadius;  // T-071 night light
           m.glowTier = s.world.equippedGlowTier(*e);  // T-092 refine glow
+          // T-142: players ride class+sex so the client sheets them.
+          // Mobs carry none (0 = hero fallback). Sex is 0 (unknown) until
+          // T-142b captures it at creation (no source of truth exists yet).
+          m.classId = e->kind == EntityKind::kPlayer ? e->classId : std::uint8_t(0);
+          m.sex = std::uint8_t(0);
           sendMsg(kv.first, m, s);
         }
       }
@@ -1149,6 +1154,9 @@ void tickServer(Server& s) {
                           : std::uint8_t(1);  // mobs: neutral band
         m.light = e->lightRadius;  // T-071 night light
         m.glowTier = s.world.equippedGlowTier(*e);  // T-092 refine glow
+        // T-142: players ride class+sex (mobs 0; sex 0 unknown until T-142b).
+        m.classId = e->kind == EntityKind::kPlayer ? e->classId : std::uint8_t(0);
+        m.sex = std::uint8_t(0);
         sendMsg(sess.peer, m, s);
       }
       proto::EntityDelta d;
@@ -1160,6 +1168,9 @@ void tickServer(Server& s) {
       d.hp = e->hp;
       d.light = e->lightRadius;  // T-071 (torch expiry/toggle rides the delta)
       d.glowTier = s.world.equippedGlowTier(*e);  // T-092 (refine swaps ride too)
+      // T-142: class rides the delta so a /kit oath re-sheets remotes live.
+      d.classId = e->kind == EntityKind::kPlayer ? e->classId : std::uint8_t(0);
+      d.sex = std::uint8_t(0);
       sendMsg(sess.peer, d, s);
     }
     for (const std::uint32_t id : sess.interest) {
