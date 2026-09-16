@@ -972,7 +972,11 @@ Devlog 0102 · card `T-141.md` (→ done on merge). Next: T-142 wiring.
 
 ## Done — T-142 (2026-09-16): player sheets wired — class/sex to visible (Phase A, 2/3)
 
-T-142 WIRE 237→238: spawn/delta +`classId`+`sex` (237→238 via protogen base 201; old clients refused reason 4), server packs `classId` (sex 0 until T-142b — no DB column), client `NetEntSnapshot` + `playerSheetPaths` + `atlasForPlayer` cache, `kind==0` branches to it, hero fallback on unknown/missing (Gravecaller/Cultist pending). Ravager m/f live; `test_clientlaw` +1 (299/299). No epoch (render-only, `t146` mm=0). Contrast R-LUMA (10.7/4.3) not restyled; gen probe-before-batch + 10/turn cap unchanged. Devlog 0107 · card `done/T-142.md`. Merge repair epoch 26→27 (H1/H2 mine+steward vs stack — `t146` leg) landed first.
+T-142 WIRE 237→238: spawn/delta +`classId`+`sex` (237→238 via protogen base 201; old clients refused reason 4), server packs `classId` (sex 0 until T-142b — no DB column), client `NetEntSnapshot` + `playerSheetPaths` + `atlasForPlayer` cache, `kind==0` branches to it, hero fallback on unknown/missing (Gravecaller/Cultist pending). Ravager m/f live; `test_clientlaw` +1 (299/299). No epoch (render-only, `t146` mm=0). Devlog 0107 · card `done/T-142.md`. Merge repair epoch 26→27 (H1/H2 mine+steward vs stack — `t146` leg) landed first.
+
+## Done — T-R-LUMA (2026-09-17): Ravager contrast accept
+
+R-LUMA remediation: rim-light NW bone inside-outline strength1 +9, strength2 +17 but colour 33 and night 11.9 <15; re-quantized drops. Decision ACCEPT provisional — dark horror palette reads via outline/nameplate. Sheets unchanged. Devlog 0108 · card `done/T-R-LUMA.md`.
 
 ## Done — T-143 (2026-09-15): ops boxes, agent-closable set (Phase O, 1/2)
 
