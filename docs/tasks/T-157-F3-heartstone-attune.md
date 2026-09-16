@@ -1,6 +1,10 @@
 # T-157-F3 — Heartstone attunement denied by 6 holders (filed 2026-09-16)
 
-**Status:** `open` — the remaining M4 gap after F1 (horn) landed.
+**Status:** `open` — (a) tried and failed at 16v6/900 s (`m4f3a`: battle 1,
+gates 2/2, attuned 0, flips 0, p99 4.8 ms, replay mm=0). Now a director call:
+**(b) tune** (`kHeartCaptureTicks`/ring/defender grace — sim change, needs
+M4 re-proof) or **(c) accept** the gate shape. Sim constants are unchanged
+since the epoch-25 3/3 M4 — numbers alone may never do it.
 
 ## Finding (`m4e29b`)
 

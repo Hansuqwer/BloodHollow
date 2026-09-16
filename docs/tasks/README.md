@@ -1058,6 +1058,13 @@ F1(a) landed in drill; `m4e29b`: battle joined (12 bands), both gates ~tick
 never opened vs 6 holders). p99 2.8 ms PASS, replay mm=0 PASS (leg kept).
 Open: `T-157-F3` (attune levers, recommend 16v6/900 s first). Devlog 0113.
 
+## Done — T-157 F3(a) (2026-09-16): 16v6 tried, attune still denied
+
+`m4f3a` (16v6 × 900 s): battle 1, gates 2/2, attuned 0, flips 0 → M4 still
+FAIL. p99 4.8 ms PASS, replay mm=0 PASS (leg kept). (a) exhausted — sim
+constants unchanged since epoch-25 3/3, smells structural. `T-157-F3` now a
+director call: (b) tune attune law or (c) accept gate shape. Devlog 0114.
+
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
 | Card | Title | Notes |
