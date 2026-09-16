@@ -879,6 +879,16 @@ siege` readout. Vault spending = Phase P. 6 new tests. `t128.bwj`
 re-replays mm=0. Devlog 0095 · card `done/T-134.md`. Next: S4 bots +
 M4 gate.
 
+## Done — T-135 (2026-09-15): Weeping Castle map live (Phase S, map 6/6)
+
+T-135 CONTENT (epoch 24→25): adopted castle tmj+generator ex T-123 lane
+(byte-stable verified); Thornwall `castle_road` portal (regen-verified);
+mapconv + boot zone-6 wiring; validator to 6 maps. Mid-card correction:
+no-bump claim failed 12/12 on re-replay (entity-set shift, T-068
+precedent) → bumped + fresh `t135.bwj` (mm=0); guard refuses t128 exit 4.
+PR #23 SUPERSEDED on the map paths (comment posted). Devlog 0096 · card
+`done/T-135.md`. Next: T-136 rehearsal flag + siege bots.
+
 
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
