@@ -325,6 +325,21 @@ class World {
   bool crown(Entity& e);  // /crown: registered attacker kneels at attuned stone
   std::uint32_t heartProgress() const { return heartProgress_; }
   bool heartAttuned() const { return heartAttuned_; }
+  // T-134 taxes + holder economy (persisted by the shell via saveSiege).
+  std::uint32_t siegeVault() const { return siegeVault_; }
+  std::uint32_t siegeCrowns() const { return siegeCrowns_; }
+  const std::string& siegeHolderName() const { return siegeHolderName_; }
+  bool siegeDirty() const { return siegeDirty_; }
+  bool siegeSaveDue(sim::Tick now) const {
+    return siegeDirty_ && now - siegeSavedAt_ >= 600;
+  }
+  void markSiegeSaved(sim::Tick now) {
+    siegeDirty_ = false;
+    siegeSavedAt_ = now;
+  }
+  void loadSiegeState(std::uint32_t holderId, const std::string& holderName,
+                      std::uint32_t vault, std::uint32_t crowns);
+  void siegeReadout(Entity& requester);  // T-134: gm siege directed lines
   void spawnConfessor(Zone& zone);  // zone 1 chapel only
   void spawnAnvils();                        // plaza (z1) + bone barrow (z3)
   void spawnNpcs();  // T-094: twins flank the anvil, guards stand the posts
@@ -533,6 +548,13 @@ class World {
   // T-133 Heartstone (session-scoped like the battle).
   std::uint32_t heartProgress_ = 0;
   bool heartAttuned_ = false;
+  // T-134 taxes + holder (holder/vault/crowns persist via siege_state; the
+  // per-tick accrual flags below are session-only).
+  std::uint32_t siegeVault_ = 0;  // tax-only pool (spending = Phase P)
+  std::uint32_t siegeCrowns_ = 0;
+  std::string siegeHolderName_{};
+  bool siegeDirty_ = false;
+  sim::Tick siegeSavedAt_ = -10000;
   sim::Tick tick_ = 0;
   std::vector<WorldEvent> events_{};
 

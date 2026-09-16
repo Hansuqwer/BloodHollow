@@ -816,6 +816,7 @@ bool World::toggleEquip(Entity& e, std::uint8_t slot) {
 std::uint32_t World::effAcc(const Entity& e) const {
   std::uint32_t acc = 2u * e.dex;
   if (hasAffix(e, 6, 0)) acc += 4;  // T-126 of Focus: equipped blade steadies +4
+  if (siegeHolder_ != 0 && e.id == siegeHolder_) acc = acc * 110u / 100u;  // T-134 holder
   if (e.blessUntil >= 0 && tick_ < e.blessUntil) acc = acc * 110u / 100u;  
   if (e.chorusUntil >= 0 && tick_ < e.chorusUntil) acc = acc * 105u / 100u;  // T-054b
   return acc;
@@ -827,6 +828,7 @@ std::uint32_t World::effDmgBase(const Entity& e) const {
     return md != nullptr ? md->dmg : 4;
   }
   std::uint32_t base = equippedWeaponDmg(e) + e.swordSkill / 20;
+  if (siegeHolder_ != 0 && e.id == siegeHolder_) base = base * 110u / 100u;  // T-134 holder
   if (e.blessUntil >= 0 && tick_ < e.blessUntil) base = base * 110u / 100u;  
   if (e.chorusUntil >= 0 && tick_ < e.chorusUntil) base = base * 105u / 100u;  // T-054b
   return base;
@@ -1785,6 +1787,9 @@ void World::crownTick() {
     if (tick_ >= e.crownUntil) {
       e.crownUntil = -1;
       siegeHolder_ = e.id;
+      siegeHolderName_ = e.name;  // T-134: the castle remembers
+      ++siegeCrowns_;
+      siegeDirty_ = true;
       siegeBattleActive_ = false;
       WorldEvent ev;
       ev.chatCh = 2;
@@ -1792,6 +1797,38 @@ void World::crownTick() {
       events_.push_back(std::move(ev));
       std::printf("[siege] crowned: %s holds the castle\n", e.name.c_str());
     }
+  }
+}
+
+// ---- siege economy (T-134, Phase S 3/4) ------------------------------------
+// Tax-only vault (spending integrates with the pledge vault in Phase P).
+// Holder acts blessed (+10% hit&dmg). All deterministic, zero draws.
+void World::loadSiegeState(std::uint32_t holderId, const std::string& holderName,
+                           std::uint32_t vault, std::uint32_t crowns) {
+  siegeHolder_ = holderId;
+  siegeHolderName_ = holderName;
+  siegeVault_ = vault;
+  siegeCrowns_ = crowns;
+  siegeDirty_ = false;
+}
+
+void World::siegeReadout(Entity& requester) {
+  const std::string holder =
+      siegeHolder_ != 0 ? siegeHolderName_ : std::string("unclaimed");
+  const std::string lines[4] = {
+      "castle: " + holder + " holds Weeping Castle.",
+      "vault: " + std::to_string(siegeVault_) + "g (" +
+          std::to_string(siegeCrowns_) + " crowns).",
+      std::string("battle: ") +
+          (siegeBattleActive() ? "joined." : "quiet."),
+      "bands: " + std::to_string(siegeAttackers_.size()) + " registered.",
+  };
+  for (const auto& text : lines) {
+    WorldEvent ev;
+    ev.aboutId = requester.id;
+    ev.chatCh = 255;
+    ev.chatText = text;
+    events_.push_back(std::move(ev));
   }
 }
 
@@ -2888,7 +2925,14 @@ void World::killMob(Entity& mob, Entity* killer) {
                              0, static_cast<std::int64_t>(md->goldHi) -
                                     static_cast<std::int64_t>(md->goldLo)));
         if (hasAffix(*killer, 9, 0)) g = g * 110u / 100u;  // T-126 of Greed (pre-moral)
-        killer->gold += (killer->karma < 0) ? g * 115u / 100u : g;  // bad moral: richer drops
+        std::uint32_t award = (killer->karma < 0) ? g * 115u / 100u : g;
+        if (siegeHolder_ != 0) {  // T-134 castle tax: 5% of the award, silent
+          const std::uint32_t tithe = award * 5u / 100u;
+          award -= tithe;
+          siegeVault_ += tithe;
+          siegeDirty_ = true;
+        }
+        killer->gold += award;  // bad moral: richer drops (folded above)
         WorldEvent ev2;
         ev2.aboutId = killer->id;
         ev2.statsChanged = true;
