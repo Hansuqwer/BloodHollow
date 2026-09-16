@@ -179,6 +179,7 @@ bool Db::open(const std::string& path, std::string* err) {
       return false;
     }
     if (!exec("PRAGMA user_version=12;", err)) return false;
+    uv = 12;
   }
   // T-134 siege_state: castle holder + tax vault (version-free table —
   // IF NOT EXISTS, characters ladder untouched).
@@ -192,6 +193,20 @@ bool Db::open(const std::string& path, std::string* err) {
             ");",
             err)) {
     return false;
+  }
+  if (uv < 13) {
+    // v13 (T-138 rebase of T-122): pledge-lite — membership columns + the
+    // pledges registry. Additive-only; old rows default to unaffiliated.
+    if (!exec("ALTER TABLE characters ADD COLUMN pledge_id INTEGER NOT NULL DEFAULT 0;"
+              "ALTER TABLE characters ADD COLUMN pledge_rank INTEGER NOT NULL DEFAULT 0;"
+              "CREATE TABLE IF NOT EXISTS pledges ("
+              "id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE, "
+              "emblem INTEGER NOT NULL DEFAULT 0, liege TEXT NOT NULL DEFAULT '');",
+              err)) {
+      return false;
+    }
+    if (!exec("PRAGMA user_version=13;", err)) return false;
+    uv = 13;
   }
   return true;
 }
@@ -301,7 +316,8 @@ bool Db::loginOrCreate(const std::string& user, const std::string& pass,
   // v12 (T-130): town_id + ek ride the same guarantee.
   sqlite3_stmt* cs = nullptr;
   if (sqlite3_prepare_v2(db_,
-                         "SELECT id, name, map_id, x, y, level, xp, str, vit, dex, stat_points, gold, inv, anvil_mercy, karma, class_id, sword_skill, swing_lands, town_id, ek "
+                         "SELECT id, name, map_id, x, y, level, xp, str, vit, dex, stat_points, gold, inv, anvil_mercy, karma, class_id, sword_skill, swing_lands, town_id, ek, pledge_id, pledge_rank "
+
         "FROM characters "
                          "WHERE account_id=? LIMIT 1;",
                          -1, &cs, nullptr) != SQLITE_OK) {
@@ -332,6 +348,8 @@ bool Db::loginOrCreate(const std::string& user, const std::string& pass,
     out->swingLands = sqlite3_column_int64(cs, 17);
     out->townId = sqlite3_column_int(cs, 18);
     out->ek = sqlite3_column_int(cs, 19);
+    out->pledgeId = sqlite3_column_int(cs, 20);  // v13 (T-138 rebase)
+    out->pledgeRank = sqlite3_column_int(cs, 21);
     sqlite3_finalize(cs);
     return true;
   }
@@ -371,12 +389,13 @@ void Db::saveProgress(std::int64_t characterId, int level, std::int64_t xp, int 
                       int vit, int dex, int statPoints, int gold,
                       const std::string& invBlob, std::int64_t anvilMercy,
                       std::int32_t karma, int classId, int swordSkill,
-                      std::int64_t swingLands, int townId, int ek) {
+                      std::int64_t swingLands, int townId, int ek,
+                      int pledgeId, int pledgeRank) {
   if (db_ == nullptr) return;
   sqlite3_stmt* st = nullptr;
   if (sqlite3_prepare_v2(db_,
                          "UPDATE characters SET level=?, xp=?, str=?, vit=?, dex=?, "
-                         "stat_points=?, gold=?, inv=?, anvil_mercy=?, karma=?, class_id=?, sword_skill=?, swing_lands=?, town_id=?, ek=? WHERE id=?;",
+                         "stat_points=?, gold=?, inv=?, anvil_mercy=?, karma=?, class_id=?, sword_skill=?, swing_lands=?, town_id=?, ek=?, pledge_id=?, pledge_rank=? WHERE id=?;",
                          -1, &st, nullptr) != SQLITE_OK) {
     return;
   }
@@ -395,7 +414,9 @@ void Db::saveProgress(std::int64_t characterId, int level, std::int64_t xp, int 
   sqlite3_bind_int64(st, 13, swingLands);
   sqlite3_bind_int(st, 14, townId);
   sqlite3_bind_int(st, 15, ek);
-  sqlite3_bind_int64(st, 16, characterId);
+  sqlite3_bind_int(st, 16, pledgeId);  // v13 (T-138 rebase)
+  sqlite3_bind_int(st, 17, pledgeRank);
+  sqlite3_bind_int64(st, 18, characterId);
   sqlite3_step(st);
   sqlite3_finalize(st);
 }
@@ -418,6 +439,27 @@ bool Db::loadSiege(SiegeRow* out, std::string* err) {
     out->holderName = nm != nullptr ? reinterpret_cast<const char*>(nm) : "";
     out->vaultGold = sqlite3_column_int64(st, 2);
     out->crowns = sqlite3_column_int64(st, 3);
+  }
+  sqlite3_finalize(st);
+  return true;
+}
+
+// ---- T-122 pledge-lite registry I/O (live shell only) ----------------------
+bool Db::loadPledges(std::vector<PledgeRec>* out, std::string* err) {
+  if (db_ == nullptr) return false;
+  sqlite3_stmt* st = nullptr;
+  if (sqlite3_prepare_v2(db_, "SELECT id, name, emblem, liege FROM pledges;", -1,
+                         &st, nullptr) != SQLITE_OK) {
+    if (err) *err = "prepare failed (pledges)";
+    return false;
+  }
+  while (sqlite3_step(st) == SQLITE_ROW) {
+    PledgeRec p;
+    p.id = static_cast<std::uint32_t>(sqlite3_column_int64(st, 0));
+    p.name = reinterpret_cast<const char*>(sqlite3_column_text(st, 1));
+    p.emblem = sqlite3_column_int(st, 2);
+    p.liege = reinterpret_cast<const char*>(sqlite3_column_text(st, 3));
+    out->push_back(std::move(p));
   }
   sqlite3_finalize(st);
   return true;
@@ -446,7 +488,66 @@ bool Db::saveSiege(std::int64_t holderId, const std::string& holderName,
   return ok;
 }
 
-void Db::savePosition(std::int64_t characterId, int mapId, int x, int y) {  if (db_ == nullptr) return;
+// ---- T-122/T-138 pledge-lite registry I/O (live shell only) ------
+
+bool Db::loadPledgeMembers(
+    std::vector<std::pair<std::string, std::pair<int, int>>>* out,
+    std::string* err) {
+  if (db_ == nullptr) return false;
+  sqlite3_stmt* st = nullptr;
+  if (sqlite3_prepare_v2(db_,
+                         "SELECT name, pledge_id, pledge_rank FROM characters "
+                         "WHERE pledge_id != 0 ORDER BY name;",
+                         -1, &st, nullptr) != SQLITE_OK) {
+    if (err) *err = "prepare failed (pledge members)";
+    return false;
+  }
+  while (sqlite3_step(st) == SQLITE_ROW) {
+    out->push_back({reinterpret_cast<const char*>(sqlite3_column_text(st, 0)),
+                    {sqlite3_column_int(st, 1), sqlite3_column_int(st, 2)}});
+  }
+  sqlite3_finalize(st);
+  return true;
+}
+
+bool Db::upsertPledge(const PledgeRec& p, std::string* err) {
+  if (db_ == nullptr) return false;
+  sqlite3_stmt* st = nullptr;
+  if (sqlite3_prepare_v2(db_,
+                         "INSERT INTO pledges (id, name, emblem, liege) VALUES (?,?,?,?) "
+                         "ON CONFLICT(id) DO UPDATE SET name=excluded.name, "
+                         "emblem=excluded.emblem, liege=excluded.liege;",
+                         -1, &st, nullptr) != SQLITE_OK) {
+    if (err) *err = "prepare failed (pledges upsert)";
+    return false;
+  }
+  sqlite3_bind_int64(st, 1, p.id);
+  sqlite3_bind_text(st, 2, p.name.c_str(), -1, SQLITE_TRANSIENT);
+  sqlite3_bind_int(st, 3, p.emblem);
+  sqlite3_bind_text(st, 4, p.liege.c_str(), -1, SQLITE_TRANSIENT);
+  const bool ok = sqlite3_step(st) == SQLITE_DONE;
+  sqlite3_finalize(st);
+  if (!ok && err) *err = "pledges upsert failed";
+  return ok;
+}
+
+bool Db::deletePledge(std::uint32_t id, std::string* err) {
+  if (db_ == nullptr) return false;
+  sqlite3_stmt* st = nullptr;
+  if (sqlite3_prepare_v2(db_, "DELETE FROM pledges WHERE id=?;", -1, &st,
+                         nullptr) != SQLITE_OK) {
+    if (err) *err = "prepare failed (pledges delete)";
+    return false;
+  }
+  sqlite3_bind_int64(st, 1, id);
+  const bool ok = sqlite3_step(st) == SQLITE_DONE;
+  sqlite3_finalize(st);
+  if (!ok && err) *err = "pledges delete failed";
+  return ok;
+}
+
+void Db::savePosition(std::int64_t characterId, int mapId, int x, int y) {
+  if (db_ == nullptr) return;
   sqlite3_stmt* st = nullptr;
   if (sqlite3_prepare_v2(db_, "UPDATE characters SET map_id=?, x=?, y=? WHERE id=?;", -1, &st,
                          nullptr) != SQLITE_OK) {

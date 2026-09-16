@@ -2,6 +2,8 @@
 
 #include <cstdint>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include <sqlite3.h>
 
@@ -27,7 +29,17 @@ struct CharacterRow {
   std::int64_t swingLands = 0;  // schema v11: exact land counter
   int townId = 0;  // schema v12 (T-130): 0 unsworn, 1 Thornwall, 2 Marrowgate
   int ek = 0;      // schema v12: enemy-kill fame (persisted, board-read)
+  int pledgeId = 0;   // schema v13 (T-138 rebase of T-122): pledge membership
+  int pledgeRank = 0;  // 0 none / 1 Initiate / 2 Bloodsworn / 3 Liege
   std::string invBlob{};  // "itemId:qty:equipped;..." (schema v3)
+};
+
+// T-122 pledge-lite registry row (members are derived from characters.pledge_id)
+struct PledgeRec {
+  std::uint32_t id = 0;
+  std::string name;
+  int emblem = 0;
+  std::string liege;
 };
 
 // SQLite (WAL) persistence, ADR-0004. Login flow for M1 is intentionally a
@@ -51,7 +63,8 @@ class Db {
                     int vit, int dex, int statPoints, int gold,
                     const std::string& invBlob, std::int64_t anvilMercy,
                     std::int32_t karma, int classId, int swordSkill,
-                    std::int64_t swingLands, int townId, int ek);
+                    std::int64_t swingLands, int townId, int ek,
+                    int pledgeId, int pledgeRank);
   // T-134 siege_state (id=1 row): castle holder + tax vault + crown count.
   // Created IF NOT EXISTS on open (no user_version change — characters
   // ladder untouched). Empty table loads as all-zeros.
@@ -64,6 +77,15 @@ class Db {
   bool loadSiege(SiegeRow* out, std::string* err);
   bool saveSiege(std::int64_t holderId, const std::string& holderName,
                  std::int64_t vaultGold, std::int64_t crowns, std::string* err);
+  // T-122/T-138 pledge-lite: registry load/persist (live shell only; replay
+  // never opens a Db). Membership columns ride saveProgress.
+  bool loadPledges(std::vector<PledgeRec>* out, std::string* err);
+  // memberships: (character name, {pledgeId, rank}) for pledge_id != 0
+  bool loadPledgeMembers(
+      std::vector<std::pair<std::string, std::pair<int, int>>>* out,
+      std::string* err);
+  bool upsertPledge(const PledgeRec& p, std::string* err);
+  bool deletePledge(std::uint32_t id, std::string* err);
 
  private:
   sqlite3* db_ = nullptr;
