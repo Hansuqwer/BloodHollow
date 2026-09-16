@@ -25,6 +25,8 @@ struct NetEntSnapshot {
   std::uint8_t karmaBand = 1;  // T-057: 0 lawful / 1 neutral / 2 chaotic (red)
   std::uint8_t light = 0;      // T-071: carried light radius (tiles)
   std::uint8_t glowTier = 0;   // T-092: equipped-weapon refine glow (0/1/2)
+  std::uint8_t classId = 0;    // T-142: kit id (0 unsworn/none, 1 Ravager, 2 Gravecaller, 3 Cultist)
+  std::uint8_t sex = 0;        // T-142: 0 unknown (T-142b captures), 1 m, 2 f
 };
 
 // Server-pushed progression snapshot (OwnStats message).

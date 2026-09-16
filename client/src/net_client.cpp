@@ -272,6 +272,8 @@ void NetClient::poll() {
               s0.karmaBand = m.kind == 0 ? m.karmaBand : 1;  // players only
               s0.light = m.light;  // T-071 night light
               s0.glowTier = m.glowTier;  // T-092 refine glow
+              s0.classId = m.kind == 0 ? m.classId : 0;  // T-142 players only
+              s0.sex = m.kind == 0 ? m.sex : 0;          // T-142 (0 until T-142b)
               ents[m.id] = s0;
               spawnedIds.push_back(m.id);
               break;
@@ -288,6 +290,8 @@ void NetClient::poll() {
               it->second.hp = d.hp;
               it->second.light = d.light;  // T-071 (torch expiry rides the delta)
               it->second.glowTier = d.glowTier;  // T-092 (refine swaps ride too)
+              it->second.classId = d.classId;    // T-142 (/kit oath re-sheets live)
+              it->second.sex = d.sex;            // T-142 (0 until T-142b)
               break;
             }
             case kIdEntityDespawn: {

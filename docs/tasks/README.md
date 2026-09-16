@@ -970,12 +970,9 @@ R-LUMA FAIL recorded (Δ 10.7/4.3, remediation = T-142); LICENSES rows.
 b5_build.sh exit 0 · suite 2/2 · validate 0/6. No epoch/wire/code.
 Devlog 0102 · card `T-141.md` (→ done on merge). Next: T-142 wiring.
 
-## Open — T-142 (2026-09-15): player sheets to visible (Phase A, 2/3)
+## Done — T-142 (2026-09-16): player sheets wired — class/sex to visible (Phase A, 2/3)
 
-T-142 WIRES the T-141 sheets: snapshot needs class/sex (absent today) →
-wire change + server pack + client map + screenshots + contrast call.
-Turn-1 Gravecaller gens (seeds 2001–2010) REJECTED 10/10, quarantined;
-probe-before-batch rule. Devlog 0103 · card `T-142.md`. In progress.
+T-142 WIRE 237→238: spawn/delta +`classId`+`sex` (237→238 via protogen base 201; old clients refused reason 4), server packs `classId` (sex 0 until T-142b — no DB column), client `NetEntSnapshot` + `playerSheetPaths` + `atlasForPlayer` cache, `kind==0` branches to it, hero fallback on unknown/missing (Gravecaller/Cultist pending). Ravager m/f live; `test_clientlaw` +1 (299/299). No epoch (render-only, `t146` mm=0). Contrast R-LUMA (10.7/4.3) not restyled; gen probe-before-batch + 10/turn cap unchanged. Devlog 0107 · card `done/T-142.md`. Merge repair epoch 26→27 (H1/H2 mine+steward vs stack — `t146` leg) landed first.
 
 ## Done — T-143 (2026-09-15): ops boxes, agent-closable set (Phase O, 1/2)
 

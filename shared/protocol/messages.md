@@ -179,6 +179,8 @@ string name
 u8 karmaBand
 u8 light
 u8 glowTier  // T-092: equipped-weapon refine glow (0 none, 1 +5..9, 2 +10+)
+u8 classId  // T-142: kit id (kits.h; 0 unsworn, 1 Ravager, 2 Gravecaller, 3 Cultist)
+u8 sex  // T-142: 0 unknown (T-142b captures), 1 m, 2 f
 ```
 
 ```proto
@@ -191,6 +193,8 @@ u8 moving
 u32 hp
 u8 light
 u8 glowTier  // T-092: rides the delta (refine/repair/equip change it live)
+u8 classId  // T-142: rides the delta so a /kit oath re-sheets remotes live
+u8 sex  // T-142: immutable once captured (T-142b); 0 until then
 ```
 
 ```proto
