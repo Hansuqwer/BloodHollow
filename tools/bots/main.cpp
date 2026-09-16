@@ -149,6 +149,16 @@ struct Bot {
   // T-118 r8d: quorumWaitT0 = the runner holding a gauntlet waypoint for
   // the column to close up (0 = not waiting; the r8c leg's string split).
   double quorumWaitT0 = 0.0;
+  // T-136 siege rehearsal: attacker choreography (march/reg/breach/crown).
+  // Staging tiles (tmj-verified walkable; generator staging until PR #23):
+  // castle_road (21,14) map 1; gates (23,10)/(26,10); stone ring (28,10).
+  int siegeStage = 0;  // 0 march, 1 reg, 2 start, 3/4 breach, 5 crown loop
+  double siegeT0 = -1.0;
+  bool siegeRegged = false, siegeStartSent = false;
+  int siegeBreachN = 0;
+  double nextBreachAt = 0.0, nextCrownAt = 0.0;
+  std::uint64_t siegeDeathsSeen = 0;
+  std::uint64_t siegeRegs = 0, siegeStarts = 0, siegeBreaches = 0, siegeCrowns = 0;
 };
 
 // T-118 r8: the front runner of the gauntlet stack. The r7 leg's 24 deaths
@@ -370,7 +380,7 @@ int run(int argc, char** argv) {
     else {
       std::fprintf(stderr,
                    "usage: bh_bots [--host H] [--port P] [--count N] [--secs S] [--map M] "
-                  "[--prefix P] [--profile wander|fighter|pilgrim|campaign|crypt|raider] "
+                  "[--prefix P] [--profile wander|fighter|pilgrim|campaign|crypt|raider|siege] "
                   "[--target-level N] [--party-size N]\n");
       return 2;
     }
@@ -778,6 +788,15 @@ int run(int argc, char** argv) {
         }
       }
       const bool raider = (profile == "raider");  // T-118 M3 gate
+      const bool siege = (profile == "siege");  // T-136 castle rehearsal
+      // T-136: 30 s drill trace (the raider's 5 s proved its worth at M3).
+      if (siege && b.welcomed && t - b.lastTraceAt >= 30.0) {
+        b.lastTraceAt = t;
+        std::fprintf(stderr,
+                     "[siege-trace] %-9s t=%.0f (%d,%d) map=%u stage=%d hp=%d%%\n",
+                     b.name.c_str(), t, b.tileX, b.tileY, b.mapId, b.siegeStage,
+                     b.hpMax > 0 ? b.hp * 100 / b.hpMax : 0);
+      }
       // T-118 r3: 5 s state trace — the gate legs died silently, and the
       // journal shows WHAT was sent but not WHICH state sent it.
       if (raider && b.welcomed && t - b.lastTraceAt >= 5.0) {
@@ -1162,7 +1181,79 @@ int run(int argc, char** argv) {
         }
         if (b.campaignDone) continue;  // target reached: idle out the clock
       }
-      if (profile == "fighter" || pilgrimRites || campaign || crypt || raider) {
+      // T-136 siege rehearsal (attackers): march the castle road, register,
+      // sound the horn (bot 0), ram both gates, hold the stone and kneel.
+      // Every verb is server-gated quietly — mistimed lines are harmless.
+      if (siege && b.welcomed) {
+        if (b.siegeT0 < 0.0) { b.siegeT0 = t; b.siegeDeathsSeen = b.deaths; }
+        if (b.deaths != b.siegeDeathsSeen) {  // fell: re-march, re-register
+          b.siegeDeathsSeen = b.deaths;
+          b.siegeStage = 0;
+          b.siegeRegged = false;
+        }
+        auto siegeGoto = [&](int gx, int gy) {
+          const int d = std::max(std::abs(b.tileX - gx), std::abs(b.tileY - gy));
+          if (d > 1 && t >= b.nextMoveAt) {
+            bh::proto::InputPath ip;
+            ip.goalX = gx;
+            ip.goalY = gy;
+            sendProto(b.peer, bh::proto::pack(ip));
+            b.nextMoveAt = t + 0.8;
+          }
+          return d;
+        };
+        auto siegeSay = [&](const char* text, std::uint64_t& counter) {
+          bh::proto::ChatSend cs;
+          cs.channel = 0;
+          cs.text = text;
+          sendProto(b.peer, bh::proto::pack(cs));
+          ++counter;
+        };
+        if (b.siegeStage == 0) {  // march to the castle road portal
+          if (b.mapId == 6) {
+            b.siegeStage = 1;
+          } else {
+            siegeGoto(21, 14);
+          }
+        } else if (b.siegeStage == 1) {  // register the band
+          if (!b.siegeRegged) {
+            siegeSay("/siege-reg", b.siegeRegs);
+            b.siegeRegged = true;
+          }
+          b.siegeStage = 2;
+        } else if (b.siegeStage == 2) {  // bot 0 sounds the horn
+          if (botIdx == 0 && !b.siegeStartSent && t >= b.siegeT0 + 20.0) {
+            siegeSay("gm siege-start", b.siegeStarts);
+            b.siegeStartSent = true;
+          }
+          if (t >= b.siegeT0 + 45.0) b.siegeStage = 3;
+        } else if (b.siegeStage == 3) {  // ram the Outer Gate
+          // Drill quota 15/bot (30 needed; 6 bots oversubscribe — M4 tunes).
+          if (siegeGoto(23, 10) <= 2 && t >= b.nextBreachAt) {
+            siegeSay("/breach", b.siegeBreaches);
+            b.nextBreachAt = t + 2.0;
+            if (++b.siegeBreachN >= 15) { b.siegeStage = 4; b.siegeBreachN = 0; }
+          }
+        } else if (b.siegeStage == 4) {  // ram the Inner Gate
+          if (siegeGoto(26, 10) <= 2 && t >= b.nextBreachAt) {
+            siegeSay("/breach", b.siegeBreaches);
+            b.nextBreachAt = t + 2.0;
+            if (++b.siegeBreachN >= 15) { b.siegeStage = 5; b.siegeBreachN = 0; }
+          }
+        } else {  // hold the stone ring, then kneel on loop
+          siegeGoto(28, 10);
+          if (t >= b.siegeT0 + 280.0 && t >= b.nextCrownAt) {
+            siegeSay("/crown", b.siegeCrowns);
+            b.nextCrownAt = t + 5.0;
+          }
+        }
+      }
+      // T-136 drill: siege bots fight everywhere except the march (stage 0
+      // runs choreography blind to escape wildlife drag). Blind crowners
+      // died to yard packs without answering (14 deaths); the kneel needs
+      // defenders, not martyrs. Full combat integration in T-137.
+      if (profile == "fighter" || pilgrimRites || campaign || crypt || raider ||
+          (siege && b.siegeStage != 0)) {
         // nearest mob within 10 tiles -> chase / attack
         std::uint32_t bestId = 0;
         int bestD = 100;
@@ -2119,6 +2210,8 @@ int run(int argc, char** argv) {
           }
           continue;
         }
+      } else if (profile == "siege") {
+        continue;  // T-136: choreography + fighter ran above; hold position
       } else if (profile != "wander" && profile != "pilgrim" && profile != "crypt" && profile != "crypt_party") {
         std::fprintf(stderr, "bh_bots: unknown profile '%s'\n", profile.c_str());
         return 2;
@@ -2195,7 +2288,10 @@ int run(int argc, char** argv) {
   }
   std::uint64_t bossSeen = 0, bossKills = 0, curseSeen = 0, slamSeen = 0;
   for (const Bot& b : bots) { bossSeen += b.bossSeen; bossKills += b.bossKills; curseSeen += b.curseSeen; slamSeen += b.slamSeen; }
+  std::uint64_t siegeRegs = 0, siegeBreaches = 0, siegeCrowns = 0;
+  for (const Bot& b : bots) { siegeRegs += b.siegeRegs; siegeBreaches += b.siegeBreaches; siegeCrowns += b.siegeCrowns; }
   std::printf("[bots] CRYPT bossSeen=%llu bossKills=%llu curse=%llu slam=%llu\n", (unsigned long long)bossSeen, (unsigned long long)bossKills, (unsigned long long)curseSeen, (unsigned long long)slamSeen);
+  std::printf("[bots] SIEGE reg=%llu breach=%llu crown=%llu\n", (unsigned long long)siegeRegs, (unsigned long long)siegeBreaches, (unsigned long long)siegeCrowns);
   std::printf("[bots] SUMMARY welcomed=%d/%d moved=%d/%d minDeltas=%" PRIu64
               " kills=%" PRIu64 " pots=%" PRIu64 " swings=%" PRIu64" deaths=%" PRIu64 " shops=%" PRIu64 " anvilTries=%" PRIu64 " levelDrops=%" PRIu64
               " regear=%" PRIu64 " maxLevel=%d pkts=%" PRIu64 " bytes=%" PRIu64

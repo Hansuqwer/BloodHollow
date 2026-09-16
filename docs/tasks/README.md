@@ -889,6 +889,17 @@ precedent) → bumped + fresh `t135.bwj` (mm=0); guard refuses t128 exit 4.
 PR #23 SUPERSEDED on the map paths (comment posted). Devlog 0096 · card
 `done/T-135.md`. Next: T-136 rehearsal flag + siege bots.
 
+## Done — T-136 (2026-09-15): rehearsal mode + siege bots (Phase S, 4a/4)
+
+T-136 CONTENT (no epoch bump, stays 25): `--siege-rehearsal` (window
+bypass, journal marker, exit-4 cross-mode refusal) + `siege` attacker
+profile (march/reg/start/breach/crown choreography, fighter except
+march, traces, verb telemetry). Drill (900 s, disclosed L15 top-up):
+6 bands, battle, both gates, ATTUNED, 369 crowns, replay mm=0; live
+crown moves to T-137 (yard-pack pressure mapped over 4 iterations).
+t135 re-replays mm=0. Devlog 0097 · card `done/T-136.md`. Next: T-137
+defenders + M4.
+
 
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 

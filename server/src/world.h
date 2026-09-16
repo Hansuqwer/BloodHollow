@@ -308,6 +308,9 @@ class World {
   sim::Tick siegeWindowStart() const;  // this week's Saturday 20:00
   sim::Tick siegeWindowEnd() const { return siegeWindowStart() + kSiegeLenTicks; }
   bool inSiegeWindow() const;
+  // T-136 rehearsal posture: window opens unconditionally (drill only).
+  void setRehearsal(bool on) { rehearsalMode_ = on; }
+  bool rehearsalMode() const { return rehearsalMode_; }
   bool siegeRegister(std::uint32_t captainId);  // war-band captain (player id)
   bool siegeStart(Entity& e);  // gm siege-start: in-window + bands, else quiet
   bool siegeBattleActive() const;
@@ -545,6 +548,7 @@ class World {
   std::uint32_t siegeHolder_ = 0;  // 0 = unclaimed castle
   bool siegeBattleActive_ = false;
   sim::Tick siegeBattleEndsAt_ = -1;
+  bool rehearsalMode_ = false;  // T-136: drill posture (window bypass)
   // T-133 Heartstone (session-scoped like the battle).
   std::uint32_t heartProgress_ = 0;
   bool heartAttuned_ = false;

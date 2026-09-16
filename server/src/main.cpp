@@ -61,8 +61,10 @@ struct Server {
   // world journal (M2 gate): record every world-mutating interaction + hashes
   std::string recordWorldPath{};
   std::string replayWorldPath{};
-  FILE* journal = nullptr;
-  std::unordered_map<ENetPeer*, std::uint32_t> loginIndexPerPeer{};
+  // T-136 rehearsal posture: opens the siege window unconditionally (loud,
+  // never default). Journal-guarded: cross-mode replays refuse (exit 4).
+  bool siegeRehearsal = false;
+  FILE* journal = nullptr;  std::unordered_map<ENetPeer*, std::uint32_t> loginIndexPerPeer{};
   std::vector<std::string> loginOrder{};  // name per index (stable)
   // soak metrics
   std::vector<std::int64_t> tickMicros{};
@@ -1093,19 +1095,32 @@ void tickServer(Server& s) {
 // c=command(tick,loginIdx,kind,a,b,channel); h=tick hash markers every 100.
 // Replays entity creation + world commands on a fresh world (fixed seed), then
 // verifies every hash marker. Exit 0 = perfect replay (wipe+all), 3 = mismatch.
-int runReplayWorld(const std::string& path, const std::string& mapPath) {
+int runReplayWorld(const std::string& path, const std::string& mapPath,
+                   bool rehearsal) {
   {
     FILE* pf = std::fopen(path.c_str(), "r");
     if (pf != nullptr) {
       char vline[32];
       if (std::fgets(vline, sizeof vline, pf) != nullptr && vline[0] == 'v') {
         int ep = 1;
-        std::sscanf(vline, "v %d", &ep);
+        char mode[16] = "";
+        std::sscanf(vline, "v %d %15s", &ep, mode);
         if (ep != kJournalEpoch) {
           std::fprintf(stderr,
               "[replay] journal epoch %d vs build epoch %d — sim semantics "
               "changed since; record a fresh gate leg (old leg retained as "
               "history)\n", ep, kJournalEpoch);
+          std::fclose(pf);
+          return 4;
+        }
+        // T-136: rehearsal journals replay only under the flag and vice versa.
+        const bool journalRehearsal = std::string(mode) == "rehearsal";
+        if (journalRehearsal != rehearsal) {
+          std::fprintf(stderr,
+              "[replay] rehearsal-mode mismatch (journal %s rehearsal, "
+              "--siege-rehearsal %s) — refusing to lie with it\n",
+              journalRehearsal ? "is" : "is not",
+              rehearsal ? "set" : "unset");
           std::fclose(pf);
           return 4;
         }
@@ -1120,6 +1135,7 @@ int runReplayWorld(const std::string& path, const std::string& mapPath) {
   }
   std::string err;
   World world;
+  world.setRehearsal(rehearsal);  // T-136: window opens in rehearsal journals
   if (!world.load(mapPath, &err)) {
     std::fprintf(stderr, "bh_server: %s\n", err.c_str());
     std::fclose(f);
@@ -1447,12 +1463,13 @@ int run(int argc, char** argv) {
       if (eq != std::string::npos) s.bless[spec.substr(0, eq)] = spec.substr(eq + 1);
     }
     else if (a == "--replay-world") s.replayWorldPath = next("");
+    else if (a == "--siege-rehearsal") s.siegeRehearsal = true;  // T-136
     else if (a == "--p99-budget-ms") s.p99BudgetMs = std::atof(next("10").c_str());
     else if (a == "--no-register") s.allowRegister = false;  // T-109 gate
     else {
       std::fprintf(stderr,
                    "usage: bh_server [--map M] [--db D] [--port P] [--soak-secs S] "
-                   "[--p99-budget-ms N] [--no-register]\n");
+                   "[--p99-budget-ms N] [--no-register] [--siege-rehearsal]\n");
       return 2;
     }
   }
@@ -1497,6 +1514,11 @@ int run(int argc, char** argv) {
       std::fprintf(stderr, "bh_server: siege load: %s\n", siegeErr.c_str());
     }
   }
+  // T-136 rehearsal posture (loud, never default).
+  if (s.siegeRehearsal) {
+    s.world.setRehearsal(true);
+    std::printf("[rehearsal] siege window OPEN unconditionally (drill posture)\n");
+  }
   // T-109: make the auth posture visible in every server log.
   std::printf("[auth] registration %s; limiter: %d logins + %d new accounts "
               "per %llds per IP, %d consecutive bad-password fails -> %llds lockout\n",
@@ -1509,7 +1531,8 @@ int run(int argc, char** argv) {
               static_cast<long long>(LoginLimiter::kLockoutMs / 1000));
   std::fflush(stdout);
   if (!s.replayWorldPath.empty()) {
-    return runReplayWorld(s.replayWorldPath, mapPath);  // offline deterministic mode
+    return runReplayWorld(s.replayWorldPath, mapPath,
+                          s.siegeRehearsal);  // offline deterministic mode
   }
   if (!s.recordWorldPath.empty()) {
     s.journal = std::fopen(s.recordWorldPath.c_str(), "w");
@@ -1524,7 +1547,10 @@ int run(int argc, char** argv) {
     // ("h 875 a52a7e3"), and the replay dutifully failed on the garbage
     // expected hash. Complete lines must survive an ungraceful kill.
     std::setvbuf(s.journal, nullptr, _IOLBF, 0);
-    std::fprintf(s.journal, "v %d\n", kJournalEpoch);
+    if (s.siegeRehearsal)
+      std::fprintf(s.journal, "v %d rehearsal\n", kJournalEpoch);
+    else
+      std::fprintf(s.journal, "v %d\n", kJournalEpoch);
     std::fflush(s.journal);
     std::fprintf(stderr, "[journal] recording world to %s (epoch %d)\n",
                  s.recordWorldPath.c_str(), kJournalEpoch);
