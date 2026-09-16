@@ -1528,6 +1528,48 @@ bool World::bloodMoon(Entity& e) {
   return true;
 }
 
+// ---- siege window + registration (T-131, Phase S 1/4) ----------------------
+// Weekly Saturday 20:00–21:30 game time. Tick 0 == day 0 08:00, so Saturday
+// 20:00 lands at ((6*24+20) - 8) game-hours = tick 1872000 each week.
+sim::Tick World::siegeWindowStart() const {
+  return tick_ - (tick_ % kSiegeWeekTicks) + kSiegeStartOff;
+}
+
+bool World::inSiegeWindow() const {
+  const sim::Tick w = tick_ % kSiegeWeekTicks;
+  return w >= kSiegeStartOff && w < kSiegeStartOff + kSiegeLenTicks;
+}
+
+bool World::siegeBattleActive() const {
+  return siegeBattleActive_ && tick_ < siegeBattleEndsAt_;
+}
+
+bool World::siegeRegister(std::uint32_t captainId) {
+  Entity* c = find(captainId);
+  if (c == nullptr || c->kind != EntityKind::kPlayer || c->dead) return false;
+  for (const std::uint32_t id : siegeAttackers_)
+    if (id == captainId) return false;  // already in the war camp, quiet
+  if (siegeAttackers_.size() >= kSiegeMaxBands) return false;  // camp is full
+  siegeAttackers_.push_back(captainId);
+  return true;
+}
+
+bool World::siegeStart(Entity& e) {
+  if (e.kind != EntityKind::kPlayer || e.dead) return false;
+  if (!inSiegeWindow() || siegeAttackers_.empty()) return false;  // quiet
+  if (siegeBattleActive()) return false;  // one battle at a time, quiet
+  siegeBattleActive_ = true;
+  siegeBattleEndsAt_ = siegeWindowEnd();
+  WorldEvent ev;
+  ev.chatCh = 2;
+  ev.chatText = "the war-horn sounds over Weeping Castle — the siege is joined.";
+  events_.push_back(std::move(ev));
+  std::printf("[siege] battle joined until tick %d (%u bands)\n",
+              static_cast<int>(siegeBattleEndsAt_),
+              static_cast<unsigned>(siegeAttackers_.size()));
+  return true;
+}
+
 // ---- anvil & aura spine (T-041/T-042, RFC 0001) ----------------------------
 
 void World::spawnAnvils() {
