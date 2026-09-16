@@ -1,0 +1,15 @@
+[boot] zone 2 (assets/maps/fields_overflow.bhmap: 64x48) online
+[boot] zone 3 (assets/maps/thornwall_crypt.bhmap: 48x36) online
+[boot] zone 4 (assets/maps/bonehowl_mine.bhmap: 56x40) online
+[boot] zone 5 (assets/maps/drowned_crypt.bhmap: 48x36) online
+[boot] zone 6 (assets/maps/weeping_castle.bhmap: 40x30) online
+[auth] registration OPEN (prototype posture; --no-register to gate); limiter: 60 logins + 30 new accounts per 60s per IP, 10 consecutive bad-password fails -> 60s lockout
+[journal] recording world to logs/t135.bwj (epoch 25)
+[boot] bh_server on 0.0.0.0:7834 | map 'assets/maps/thornwall.bhmap' | db '/tmp/t135.db' | tick 20Hz | aoi 26
+[net] t135__00         entered the world (entity 207, online 1)
+[net] t135__01         entered the world (entity 208, online 2)
+[net] t135__02         entered the world (entity 209, online 3)
+[net] t135__03         entered the world (entity 210, online 4)
+[net] t135__04         entered the world (entity 211, online 5)
+[soak] tick=600 online=5 entities=196 tickUs p50=519 p99=1001 worldHash=1da6b0d699c5f64d pkts=270/108686
+[soak] tick=1200 online=5 entities=193 tickUs p50=456 p99=730 worldHash=ac021c67e951afda pkts=505/183123

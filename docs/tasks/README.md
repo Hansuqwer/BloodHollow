@@ -794,6 +794,212 @@ r17 journal preserved byte-identical (md5 `b4c0cf3f…`). Devlog 0086 · card
 `logs/m3_gate_r{18,19,20,21,22,22b}.bwj` force-added. Next card **T-126**,
 next devlog **0087**.
 
+## Done — T-126 (2026-09-15): affix v2, table 3 → 10 (H3 loot depth, 1/5)
+
+T-126 CONTENT (epoch 21→22): 7 hooked affixes (Ox/Thorns/Focus/Embers/
+Vigil/Greed/Mending, one-per-item, wrong-slot mute); armor-gated hpMax
+re-sync in toggleEquip (T-047 pin safe); 10 new tests incl. 1M-draw
+distribution + paired-world Greed + Thorns never-kill floor. Gate leg
+`logs/t126.bwj` (5 fighters, 40 kills, mm=0); guard refuses t120 exit 4.
+Duel pin unchanged. Devlog 0087 · card `done/T-126.md`. Next: T-127 Old Maw
+uniques (then Widow T-128, Cantor T-129, Gravemother T-130).
+
+## Done — T-127 (2026-09-15): Old Maw uniques ×3 (H3 loot depth, 2/5)
+
+T-127 CONTENT (epoch 22→23): `UniqueDropDef` + `kUniqueDrops` (3 rows for
+1012 @4%, fixed Embers/Thorns/Greed) + `grantUniqueDrop` (cap-32, chatCh 2
+broadcast); 3 new ItemDefs (2201/2103/2202, never stocked). 4 new tests in
+`test_uniques.cpp` (grows with T-128..T-130). Gate leg `logs/t127.bwj`
+(52 kills, mm=0); guard refuses t126 exit 4. COLLISION FLAG: arena PR #23
+also claims epoch 23 — T-115 precedent rules. Devlog 0088 · card
+`done/T-127.md`. Next: T-128 Red Widow uniques.
+
+## Done — T-128 (2026-09-15): trio uniques ×9, 12/12 set complete (H3 loot depth, 3–5/5 COMBINED)
+
+T-128 CONTENT (epoch 23→24): 9 ItemDefs (2301/2104/2302 Widow,
+2303/2105/2304 Cantor, 2401/2106/2402 Gravemother @6%) + 9 `kUniqueDrops`
+rows, slot-legal fixed affixes; `test_uniques.cpp` +3 cases (counts/rates,
+slot-law sweep, per-boss grants, never-stocked sweep). Combined card —
+T-129/T-130 stay free; the 10 → 40 table is a filed follow-up. Gate leg
+`logs/t128.bwj` (60 kills, mm=0); guard refuses t127 exit 4. Devlog 0089 ·
+card `done/T-128.md`. Next: Phase H4 (Blood Moon + EK + L19 oath).
+
+## Done — T-129 (2026-09-15): Blood Moon flag + two levers (H4 night war, 1/3)
+
+T-129 CONTENT (no epoch bump, stays 24): session moon-to-dawn via `gm
+blood-moon` → journaled `kBloodMoon` (H1 shape); curse 60 s + bite ×1.30
+while red; scheduler/tint/gating filed as follow-ups. 6 new tests incl.
+paired-worlds ratio. `t128.bwj` re-replays mm=0 (neutrality proof). Devlog
+0090 · card `done/T-129.md`. Next: T-130 EK ledger + L19 oath.
+
+## Done — T-130 (2026-09-15): EK ledger + L19 town oath (H4 night war, 2–3/3)
+
+T-130 CONTENT (no epoch bump, stays 24, schema v12): `/oath` (L19+,
+one-time, journaled kOath) + `towns.h` (Thornwall/Ashen, Marrowgate/Synod)
++ war-kill EK fame instead of stain/wanted (duels + guard-murder excluded)
++ `w`-line journal sidecar (v3 l-line untouched) + `ekBoard`/`gm ek`
+readout (site page = Phase O). 8 new tests; T-118 migration pin updated
+to v12 (expected cascade). `t128.bwj` re-replays mm=0. Devlog 0091 · card
+`done/T-130.md`. Next: Phase S siege battle logic.
+
+## Done — T-131 (2026-09-15): siege scheduler + registration (Phase S, 1/4)
+
+T-131 CONTENT (no epoch bump, stays 24): Saturday 20:00–21:30 window
+(pure tick math) + captain-id registration (cap 8, journaled kSiegeReg)
++ holder slot + kSiegeStart battle-to-window-end. Zone-agnostic (map =
+PR #23, rehearsal = PR #29, pledge bands = Phase P follow-up). 6 new
+tests. `t128.bwj` re-replays mm=0. Devlog 0092 · card `done/T-131.md`.
+Next: S2 gates → Heartstone → crown.
+
+## Done — T-132 (2026-09-15): siege gates (Phase S, 2a/4)
+
+T-132 CONTENT (no epoch bump, stays 24): kind-75 Outer/Inner gates on
+zone-6 load (staging positions) + `/breach` → journaled kBreach (−10/ram,
+300 hp, splinters broadcast at 0). Breach-by-channel by design (setAttack
+refuses furniture; killMob would drag loot). 4 new tests. `t128.bwj`
+re-replays mm=0. Devlog 0093 · card `done/T-132.md`. Next: T-133
+Heartstone + crown.
+
+## Done — T-133 (2026-09-15): Heartstone + crown (Phase S, 2b/4)
+
+T-133 CONTENT (no epoch bump, stays 24): kind-76 stone on zone-6 load +
+presence attunement (1200 uncontested ticks, contest freezes, no decay) +
+`/crown` → journaled kCrown → 200-tick kneel (move/hit/death/leave/end
+breaks) → holder set + battle end + broadcast. `Entity.crownUntil`
+session-only. 6 new tests (incl. the movement-validation lesson). `t128.bwj`
+re-replays mm=0. Devlog 0094 · card `done/T-133.md`. Next: S3 taxes +
+holder persist.
+
+## Done — T-134 (2026-09-15): taxes + vault + holder buff (Phase S, 3/4)
+
+T-134 CONTENT (no epoch bump, stays 24): `siege_state` table (holder,
+vault, crowns) + boot load + throttled save; 5% PvE kill-gold tithe
+while held; holder +10% hit&dmg; crown books name/crowns/dirty; `gm
+siege` readout. Vault spending = Phase P. 6 new tests. `t128.bwj`
+re-replays mm=0. Devlog 0095 · card `done/T-134.md`. Next: S4 bots +
+M4 gate.
+
+## Done — T-135 (2026-09-15): Weeping Castle map live (Phase S, map 6/6)
+
+T-135 CONTENT (epoch 24→25): adopted castle tmj+generator ex T-123 lane
+(byte-stable verified); Thornwall `castle_road` portal (regen-verified);
+mapconv + boot zone-6 wiring; validator to 6 maps. Mid-card correction:
+no-bump claim failed 12/12 on re-replay (entity-set shift, T-068
+precedent) → bumped + fresh `t135.bwj` (mm=0); guard refuses t128 exit 4.
+PR #23 SUPERSEDED on the map paths (comment posted). Devlog 0096 · card
+`done/T-135.md`. Next: T-136 rehearsal flag + siege bots.
+
+## Done — T-136 (2026-09-15): rehearsal mode + siege bots (Phase S, 4a/4)
+
+T-136 CONTENT (no epoch bump, stays 25): `--siege-rehearsal` (window
+bypass, journal marker, exit-4 cross-mode refusal) + `siege` attacker
+profile (march/reg/start/breach/crown choreography, fighter except
+march, traces, verb telemetry). Drill (900 s, disclosed L15 top-up):
+6 bands, battle, both gates, ATTUNED, 369 crowns, replay mm=0; live
+crown moves to T-137 (yard-pack pressure mapped over 4 iterations).
+t135 re-replays mm=0. Devlog 0097 · card `done/T-136.md`. Next: T-137
+defenders + M4.
+
+## Done — T-137 (2026-09-15): defenders + live crown + M4 PASS (Phase S done)
+
+T-137 CONTENT (no epoch bump, stays 25): `--defenders` hold-ring bots +
+hold mode (adjacent mobs only) + kiters + party bands (cap counts bands;
+spawn mustering) + crown re-kneel guard + breach use-after-erase fix.
+M4 VERDICT PASS: flips 3/3 (replay mm=0) + p99 6.6 ms @40 bots (< 25 ms).
+Contest-denial proven inverted (12v6/12v3 freeze correctly). Full
+forensics in devlog (6 drill lessons). Devlog 0098 · card `done/T-137.md`.
+Next: Phase P (pledge-lite).
+
+> NOTE (T-138 rebase, 2026-09-15): the T-122 pledge-lite row below landed via the
+> `task/T-138-pledge-lite` cherry-pick of `c0de563` (PR #22 lane); T-121 precedent
+> rules — incoming number kept, board position appended.
+
+## Done — T-122 (2026-09-12): pledge-lite (Track B2) — the oath office opens (epoch 22)
+
+T-122: server-only pledge core per the 05-mvp.md cut — **create / emblem
+(placeholder 0–9) / ranks Liege·Bloodsworn·Initiate / pledge chat**;
+vault/tax deferred to B5 holdings, roster UI + emblem-over-head to a
+follow-up wire card. Registrar (72) takes the town-square post
+(Chebyshev ≤ 3, confessor pattern); founding gate **level ≥ 10 +
+10,000g** — flagged **GDD §8 deviation** (CHA ≥ 20 asked, no CHA stat
+exists; switch when the six-stat model lands). Membership by character
+name, schema **v12** (`pledge_id`/`pledge_rank` columns + `pledges`
+table), journal kinds 28–34 + **g-sidecar** login line (k-line pattern);
+pledge state stays outside worldHash by design. **Epoch 21→22** — the
+registrar is world composition (T-112 spawn law; t120 replayed 15/15
+mismatch before the bump, refuses by guard after). Leg of record
+`logs/t122.bwj`: 5 bots found `t122clan`, swear/promote/kick/leave,
+relog → membership restored, replay `ticks=1222 cmds=105 hashes=12
+mm=0`. Suite **218/218 · 329,270**, ctest 2/2, duel pin unchanged.
+Devlog 0084 · card `done/T-122.md`.
+
+## Done — T-138 (2026-09-15): pledge-lite rebase onto Phase-S stack (Phase P, 1/3)
+
+T-138 REBASE: `git cherry-pick -n c0de563` (PR #22 lane) onto
+`task/T-137-defenders-m4`. Journal kinds 34–40, schema v12→**v13**,
+epoch 25→**26**. Bots keep siege choreography AND pledge ceremony; single
+siege-aware fighter gate; whitelist excludes pledge. Repair: loadPledges
+spliced inside loadSiege restored. Battery + `logs/t138.bwj` on the PR.
+Devlog 0099 · card `T-138.md` (→ done on merge). Next: pledge bands +
+vault follow-ups.
+
+## Done — T-139 (2026-09-15): pledge bands muster sworn war-hosts (Phase P, 2/3)
+
+T-139 MUSTER: `siegeRegister` keys bands by pledge id (one pledge, one
+band); sworn callers muster missing members into the enlisted band (no slot);
+desertion never un-enlists; unaffiliated keep party shape. No epoch (26), no
+schema, no wire, no journal change. 286/286 (4 new) · `logs/t139.bwj`
+(5-member single enlistment, replay mm=0) · `t138.bwj` mm=0 (neutrality).
+Devlog 0100 · card `T-139.md` (→ done on merge). Next: T-140 pledge vault.
+
+## Done — T-140 (2026-09-15): pledge vault, deposit-only MVP (Phase P done)
+
+T-140 VAULT: `Pledge::vault` (hash-neutral) + tithe (kind 41) + vault
+readout + sworn-holder drip routing (name-keyed, offline-safe); schema
+v13→**v14**; disband burns the pool. No epoch (26), no wire. 291/291
+(5 new) · `logs/t140.bwj` (vault=500, kind-41, replay mm=0) · `t138`/`t139`
+mm=0 (neutrality). Live-crown drip proof deferred (doctest twins pin it).
+Devlog 0101 · card `T-140.md` (→ done on merge). Next: Phase A art.
+
+## Done — T-141 (2026-09-15): Ravager WIP sheets packed + QA-triaged (Phase A, 1/3)
+
+T-141 SHEETS (content-only): 20 landed Ravager keyframes → v1 sheets
+(128×384, walk/attack/cast/die × S/SE/E, idle/hurt/gib + W-side padded);
+feet gate PASS (m walk_SE floater fixed in-cell); colours ≤32 PASS;
+R-LUMA FAIL recorded (Δ 10.7/4.3, remediation = T-142); LICENSES rows.
+b5_build.sh exit 0 · suite 2/2 · validate 0/6. No epoch/wire/code.
+Devlog 0102 · card `T-141.md` (→ done on merge). Next: T-142 wiring.
+
+## Done — T-142 (2026-09-16): player sheets wired — class/sex to visible (Phase A, 2/3)
+
+T-142 WIRE 237→238: spawn/delta +`classId`+`sex` (237→238 via protogen base 201; old clients refused reason 4), server packs `classId` (sex 0 until T-142b — no DB column), client `NetEntSnapshot` + `playerSheetPaths` + `atlasForPlayer` cache, `kind==0` branches to it, hero fallback on unknown/missing (Gravecaller/Cultist pending). Ravager m/f live; `test_clientlaw` +1 (299/299). No epoch (render-only, `t146` mm=0). Devlog 0107 · card `done/T-142.md`. Merge repair epoch 26→27 (H1/H2 mine+steward vs stack — `t146` leg) landed first.
+
+## Done — T-R-LUMA (2026-09-17): Ravager contrast accept
+
+R-LUMA remediation: rim-light NW bone inside-outline strength1 +9, strength2 +17 but colour 33 and night 11.9 <15; re-quantized drops. Decision ACCEPT provisional — dark horror palette reads via outline/nameplate. Sheets unchanged. Devlog 0108 · card `done/T-R-LUMA.md`.
+
+## Done — T-143 (2026-09-15): ops boxes, agent-closable set (Phase O, 1/2)
+
+T-143 OPS (no code): systemd unit (verify clean) + backup script + REAL
+drill (accounts=5 chars=5 pledges=1 uv=14, integrity ok) + GM runbook
+(verified verbs only; /ban + broadcast carded as gaps) + crash posture
+(journald/coredumpctl). Handshake refusal pre-existing (reason=4).
+Director keeps: launcher, site, legal, clean-boot, surveys. Devlog 0104 ·
+card `T-143.md` (→ done on merge). Next: M5 pre-soak + T-142 wiring.
+
+## Done — T-144 (2026-09-15): M5 pre-soak signal 60×10 min (Phase O, 2/2)
+
+T-144 SOAK (no code, scratch DB): 60 fighters × 600 s live — clean exit,
+0 error lines, tick p99 ≤ 5.1 ms (budget 25), RSS flat 8.2 MB, 60/60
+online. Full M5 (200×12 h + MBA fps) stays director-scheduled. Devlog
+0105 · card `T-144.md` (→ done on merge). Next: Friday-Night readiness.
+
+## Done — T-145 (2026-09-15): Friday-Night readiness map (human-run)
+
+T-145 READY (no code): 4 acceptance legs → runnable tools + entry
+criteria + go/no-go list (`docs/ops/friday-night-readiness.md`). Legs 1–3
+runnable on current stack; leg 4 director survey. Devlog 0106 · card
+`T-145.md` (→ done on merge). Queue head: T-142 wiring implementation.
 
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 

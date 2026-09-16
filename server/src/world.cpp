@@ -10,6 +10,7 @@
 #include <system_error>
 
 #include "content/auras.h"
+#include "content/towns.h"
 #include "content/wirekind.h"
 #include "sim/clock.h"
 #include "sim/combat.h"
@@ -121,8 +122,12 @@ done:
   Zone& zone = zones_.at(mapId);
   if (mapId == 1) spawnVendor(zone);
   if (mapId == 1) spawnConfessor(zone);  // T-070: the chapel cure
+  if (mapId == 6) spawnSteward(zone);  // H1: the castle keeper (kind 73)
   initialMobSpawns(zone, mapId);
   if (mapId == 1 || mapId == 3) spawnAnvils();   // plaza + bone barrow
+  if (mapId == 4) spawnOreNodes();  // H2: blackiron ore in the mine
+  if (mapId == 6) spawnSiegeGates(zone);  // T-132: breach objectives
+  if (mapId == 6) spawnHeartstone(zone);  // T-133: capture + crown
   if (mapId == 1) spawnNpcs();  // T-094: twins + post guards (after anvil)
   return true;
 }
@@ -349,7 +354,25 @@ bool World::assignStat(Entity& e, std::uint8_t stat) {
 }
 
 std::uint32_t World::recomputeHpMax(Entity& e) const {
-  return sim::playerHpMax(e.level, e.vit);
+  std::uint32_t base = sim::playerHpMax(e.level, e.vit);
+  if (hasAffix(e, 4, 1)) base += 20;  // T-126 of the Ox: equipped armor carries +20
+  return base;
+}
+
+// T-126 affix probe: equipped + slot-gated + awake. Affix ids are unique per
+// design, so a slot mismatch (Ox on a blade) is flavor text only (v1 precedent).
+bool World::hasAffix(const Entity& e, std::uint8_t affix, std::uint8_t slot) const {
+  if (e.kind != EntityKind::kPlayer) return false;
+  for (const InvSlot& sl : e.inv) {
+    if (!sl.equipped || sl.affix != affix || sl.durability == 0) continue;
+    const content::ItemDef* d = content::findItem(sl.itemId);
+    if (d != nullptr && (slot == 9 || d->slot == slot)) return true;
+  }
+  return false;
+}
+
+std::uint8_t World::vigilBonus(const Entity& e) const {
+  return hasAffix(e, 8, 9) ? 2 : 0;  // T-126 of the Vigil: +2 while lit
 }
 
 std::vector<Entity*> World::playersNear(Zone& zone, int x, int y, int radius) {
@@ -480,8 +503,10 @@ void World::spawnFence(Zone& zone) {
 // sister, never desynced — two adjacent tiles), the Ashen guard stands the
 // east-gate post and the Synod guard the bridge post (the T-073 posts they
 // belong to). Spiral scans skipping occupied furniture, deterministic (no
-// RNG — same class as the confessor scan). Registrar (72) and steward (73)
-// stay unplaced: Marrowgate and the Weeping Castle do not exist yet.
+// RNG — same class as the confessor scan). T-122: the Registrar (72) takes
+// a post at the town square (spiral from the spawn point, one tile past
+// Marta); the steward (73) stays unplaced — the Weeping Castle does not
+// exist yet.
 void World::spawnNpcs() {
   auto zit = zones_.find(1);
   if (zit == zones_.end()) return;
@@ -546,6 +571,21 @@ void World::spawnNpcs() {
         }
       if (placed) break;
     }
+  }
+  // T-122: the pledge registrar — first free tile spiralling from the town
+  // spawn point (Marta took the nearest one; the clerk stands the next).
+  for (int r = 1; r < 8; ++r) {
+    bool placed = false;
+    for (int dy = -r; dy <= r && !placed; ++dy)
+      for (int dx = -r; dx <= r && !placed; ++dx) {
+        if (std::max(std::abs(dx), std::abs(dy)) != r) continue;
+        const int x = zone.spawnPoint.x + dx;
+        const int y = zone.spawnPoint.y + dy;
+        if (!freeTile(x, y)) continue;
+        place(content::kWireKindRegistrar, "Pledge Registrar", x, y);
+        placed = true;
+      }
+    if (placed) break;
   }
 }
 
@@ -659,6 +699,10 @@ std::uint32_t World::equippedWeaponDmg(const Entity& e) const {
         if (sl.durability == 0) return kFistsBaseDmg;  // dormant (T-058)
         std::uint32_t dmg = d->dmg + 2u * sl.refine;  // T-060 refine steps
         if (sl.affix == 1) dmg = dmg + dmg / 10;      // of Whet (T-059): +10%
+        if (sl.affix == 7) {  // T-126 of Embers: +2, +1 more after dark
+          dmg += 2;
+          if (isNight()) dmg += 1;
+        }
         if (sl.aura >= 1) {  // Edge Rite (tier I): flat attack bleed
           if (const content::AuraTier* t = content::findAuraTier(sl.aura))
             dmg += t->atkBonusFlat;
@@ -714,7 +758,7 @@ bool World::useItem(Entity& e, std::uint8_t slot) {
     e.lastSipTick = tick_;
     --sl.qty;
     if (sl.qty == 0) e.inv.erase(e.inv.begin() + slot);
-    e.lightRadius = 6;
+    e.lightRadius = static_cast<std::uint8_t>(6 + vigilBonus(e));
     e.lightUntil = tick_ + 6000;  // 300 s of carried light
     e.lanternLit = false;         // the torch wins while it burns
     WorldEvent ev;
@@ -722,14 +766,15 @@ bool World::useItem(Entity& e, std::uint8_t slot) {
     ev.invChanged = true;
     ev.statsChanged = true;
     ev.chatCh = 2;
-    ev.chatText = e.name + " lights a torch (6 tiles, 5 min).";
+    ev.chatText = e.name + " lights a torch (" +
+                  std::to_string(e.lightRadius) + " tiles, 5 min).";
     events_.push_back(std::move(ev));
     return true;
   }
   if (sl.itemId == 3004) {  // Blessed Lantern: never consumed, toggles 8
     e.lastSipTick = tick_;
     e.lanternLit = !e.lanternLit;
-    e.lightRadius = e.lanternLit ? 8 : 0;
+    e.lightRadius = e.lanternLit ? static_cast<std::uint8_t>(8 + vigilBonus(e)) : 0;
     e.lightUntil = -1;  // held light never expires; dropping ends it (later)
     WorldEvent ev;
     ev.aboutId = e.id;
@@ -773,6 +818,14 @@ bool World::toggleEquip(Entity& e, std::uint8_t slot) {
   } else {
     sl.equipped = false;
   }
+  // T-126 of the Ox materializes on armor equip/unequip, not just level-up.
+  // Gated to armor toggles: weapon toggles never touched hpMax before, and a
+  // hand-set cap (tests, GM staging) must survive them. Replay-neutral —
+  // affix 4 gear cannot exist in pre-v2 journals.
+  if (d->slot == 1) {
+    e.hpMax = recomputeHpMax(e);
+    if (e.hp > e.hpMax) e.hp = e.hpMax;
+  }
   syncIndxPush(e);
   return true;
 }
@@ -781,6 +834,8 @@ bool World::toggleEquip(Entity& e, std::uint8_t slot) {
 // (the rite is not yours) — no event spam on keyspam.
 std::uint32_t World::effAcc(const Entity& e) const {
   std::uint32_t acc = 2u * e.dex;
+  if (hasAffix(e, 6, 0)) acc += 4;  // T-126 of Focus: equipped blade steadies +4
+  if (siegeHolder_ != 0 && e.id == siegeHolder_) acc = acc * 110u / 100u;  // T-134 holder
   if (e.blessUntil >= 0 && tick_ < e.blessUntil) acc = acc * 110u / 100u;  
   if (e.chorusUntil >= 0 && tick_ < e.chorusUntil) acc = acc * 105u / 100u;  // T-054b
   return acc;
@@ -792,6 +847,7 @@ std::uint32_t World::effDmgBase(const Entity& e) const {
     return md != nullptr ? md->dmg : 4;
   }
   std::uint32_t base = equippedWeaponDmg(e) + e.swordSkill / 20;
+  if (siegeHolder_ != 0 && e.id == siegeHolder_) base = base * 110u / 100u;  // T-134 holder
   if (e.blessUntil >= 0 && tick_ < e.blessUntil) base = base * 110u / 100u;  
   if (e.chorusUntil >= 0 && tick_ < e.chorusUntil) base = base * 105u / 100u;  // T-054b
   return base;
@@ -1459,6 +1515,466 @@ void World::spawnConfessor(Zone& zone) {
   }
 }
 
+// ---- Blood Moon (T-129, H4 night war) --------------------------------------
+// Session flag to next dawn: curse lasts 60 s and the night bite lands
+// x1.30 while red. GM-raised for now (open to all callers like H1's
+// rehearsal hook — gating waits on accounts); the weekly scheduler hook
+// lands in Phase S. Never persisted; replay rebuilds from kBloodMoon.
+bool World::bloodMoonActive() const {
+  return bloodMoonActive_ && tick_ < bloodMoonUntil_;
+}
+
+sim::Tick World::curseDuration() const {
+  return bloodMoonActive() ? 2 * kCurseTicks : kCurseTicks;
+}
+
+std::uint32_t World::nightBiteNum() const {
+  return bloodMoonActive() ? 130u : 115u;  // over 100 (T-061 law)
+}
+
+bool World::bloodMoon(Entity& e) {
+  if (e.kind != EntityKind::kPlayer || e.dead) return false;
+  if (bloodMoonActive()) return false;  // one moon at a time, quiet
+  // ticks to next 05:00 dawn (exactly-at-dawn yields a full-day moon).
+  const float h = sim::hourAt(tick_);
+  float ahead = 5.0f - h;
+  if (ahead <= 0) ahead += 24.0f;
+  bloodMoonActive_ = true;
+  bloodMoonUntil_ =
+      tick_ + static_cast<sim::Tick>(ahead * sim::kTicksPerGameHour);
+  WorldEvent ev;
+  ev.chatCh = 2;
+  ev.chatText = "the moon rises red over Vessalia — blood answers blood.";
+  events_.push_back(ev);
+  std::printf("[moon] %s raised it until tick %d\n", e.name.c_str(),
+              static_cast<int>(bloodMoonUntil_));
+  return true;
+}
+
+// ---- siege window + registration (T-131, Phase S 1/4) ----------------------
+// Weekly Saturday 20:00–21:30 game time. Tick 0 == day 0 08:00, so Saturday
+// 20:00 lands at ((6*24+20) - 8) game-hours = tick 1872000 each week.
+sim::Tick World::siegeWindowStart() const {
+  return tick_ - (tick_ % kSiegeWeekTicks) + kSiegeStartOff;
+}
+
+bool World::inSiegeWindow() const {
+  if (rehearsalMode_) return true;  // T-136 drill posture
+  const sim::Tick w = tick_ % kSiegeWeekTicks;
+  return w >= kSiegeStartOff && w < kSiegeStartOff + kSiegeLenTicks;
+}
+
+bool World::siegeBattleActive() const {
+  return siegeBattleActive_ && tick_ < siegeBattleEndsAt_;
+}
+
+bool World::siegeRegister(std::uint32_t captainId) {
+  Entity* c = find(captainId);
+  if (c == nullptr || c->kind != EntityKind::kPlayer || c->dead) return false;
+  for (const std::uint32_t id : siegeAttackers_)
+    if (id == captainId) return false;  // already in the war camp, quiet
+  // T-139: a sworn caller whose pledge already enlisted musters missing
+  // members into the existing band — no free slot needed, cap not consulted.
+  if (c->pledgeId != 0) {
+    bool enlisted = false;
+    for (const std::uint32_t pid : siegeBandPledges_)
+      if (pid != 0 && pid == c->pledgeId) {
+        enlisted = true;
+        break;
+      }
+    if (enlisted) {
+      std::size_t added = 0;
+      for (Entity& e : entities_) {
+        if (e.kind != EntityKind::kPlayer || e.dead) continue;
+        if (e.pledgeId != c->pledgeId) continue;
+        bool known = false;
+        for (const std::uint32_t id : siegeAttackers_)
+          if (id == e.id) {
+            known = true;
+            break;
+          }
+        if (!known) {
+          siegeAttackers_.push_back(e.id);
+          ++added;
+        }
+      }
+      std::printf("[siege] pledge band %u mustered +%u late members\n",
+                  static_cast<unsigned>(c->pledgeId),
+                  static_cast<unsigned>(added));
+      return true;
+    }
+  }
+  if (siegeBandsUsed_ >= kSiegeMaxBands) return false;  // camp is full
+  // T-139 pledge bands: a sworn captain musters the whole sworn war-host —
+  // every living online member of the captain's pledge rides ONE band keyed
+  // by pledge id. A sworn caller whose pledge already enlisted musters
+  // missing members into the existing band (revive/relog path); no second
+  // band. Desertion (leave/kick) never un-enlists: the muster is session law.
+  std::vector<std::uint32_t> band;
+  std::uint32_t bandPledge = 0;
+  if (c->pledgeId != 0) {
+    for (Entity& e : entities_) {
+      if (e.kind != EntityKind::kPlayer || e.dead) continue;
+      if (e.pledgeId != c->pledgeId) continue;
+      bool known = false;
+      for (const std::uint32_t id : siegeAttackers_)
+        if (id == e.id) {
+          known = true;
+          break;
+        }
+      if (!known) {
+        siegeAttackers_.push_back(e.id);
+        band.push_back(e.id);
+      }
+    }
+    if (band.empty()) return false;  // captain desynced mid-call, quiet
+    bandPledge = c->pledgeId;
+    // fall through: band already merged above; record the pledge below
+  } else {
+    // T-137 band = party: the captain's living party rides one registration
+    // (M4's 40 = 8 bands of 5). Unaffiliated captains ride solo.
+    band.push_back(captainId);
+    if (c->partyId != 0) {
+      if (const Party* p = partyOf(c->id)) {
+        for (const std::uint32_t mid : p->members) {
+          if (mid == captainId) continue;
+          Entity* m = find(mid);
+          if (m != nullptr && m->kind == EntityKind::kPlayer && !m->dead)
+            band.push_back(mid);
+        }
+      }
+    }
+    for (const std::uint32_t id : band) {
+      bool known = false;
+      for (const std::uint32_t e : siegeAttackers_)
+        if (e == id) {
+          known = true;
+          break;
+        }
+      if (!known) siegeAttackers_.push_back(id);
+    }
+  }
+  siegeBandPledges_.push_back(bandPledge);
+  ++siegeBandsUsed_;
+  std::printf("[siege] band enlisted (%u members, %u/8 bands)\n",
+              static_cast<unsigned>(band.size()),
+              static_cast<unsigned>(siegeBandsUsed_));
+  return true;
+}
+
+bool World::siegeStart(Entity& e) {
+  if (e.kind != EntityKind::kPlayer || e.dead) return false;
+  if (!inSiegeWindow() || siegeAttackers_.empty()) return false;  // quiet
+  if (siegeBattleActive()) return false;  // one battle at a time, quiet
+  siegeBattleActive_ = true;
+  siegeBattleEndsAt_ = siegeWindowEnd();
+  WorldEvent ev;
+  ev.chatCh = 2;
+  ev.chatText = "the war-horn sounds over Weeping Castle — the siege is joined.";
+  events_.push_back(std::move(ev));
+  std::printf("[siege] battle joined until tick %d (%u bands)\n",
+              static_cast<int>(siegeBattleEndsAt_),
+              static_cast<unsigned>(siegeAttackers_.size()));
+  return true;
+}
+
+// ---- siege gates (T-132, Phase S 2a/4) -------------------------------------
+// Breach objectives, NOT walls (staging positions relative to the zone-6
+// spawn; real map-6 constants + movement-blocking land with PR #23's map).
+// Breach-by-channel by design: setAttack refuses furniture and killMob
+// would drag XP/loot along — the ram touches no combat path, draws no RNG.
+void World::spawnSiegeGates(Zone& zone) {
+  const sim::TilePos base = zone.spawnPoint;
+  const char* names[2] = {"Outer Gate", "Inner Gate"};
+  const sim::TilePos want[2] = {{base.x + 3, base.y}, {base.x + 6, base.y}};
+  for (int g = 0; g < 2; ++g) {
+    sim::TilePos at = want[g];
+    if (!zone.map.inBounds(at.x, at.y) || zone.map.isBlocked(at.x, at.y)) {
+      // anvil-spawn spiral: first walkable tile near the want
+      bool placed = false;
+      for (int r = 1; r < 8 && !placed; ++r) {
+        for (int dy = -r; dy <= r && !placed; ++dy) {
+          for (int dx = -r; dx <= r && !placed; ++dx) {
+            const int x = want[g].x + dx, y = want[g].y + dy;
+            if (!zone.map.inBounds(x, y) || zone.map.isBlocked(x, y)) continue;
+            at = sim::TilePos{x, y};
+            placed = true;
+          }
+        }
+      }
+      if (!placed) continue;
+    }
+    Entity gate;
+    gate.id = nextId_++;
+    gate.zoneId = 6;
+    gate.kind = EntityKind::kMob;  // furniture: non-combat
+    gate.wireKind = content::kWireKindSiegeGate;
+    gate.name = names[g];
+    gate.hp = kSiegeGateHp;
+    gate.hpMax = kSiegeGateHp;
+    gate.walker.place(at);
+    insertEntity(std::move(gate));
+  }
+}
+
+bool World::breach(Entity& e) {
+  if (e.kind != EntityKind::kPlayer || e.dead) return false;
+  if (!siegeBattleActive()) return false;
+  bool enlisted = false;
+  for (const std::uint32_t id : siegeAttackers_)
+    if (id == e.id) {
+      enlisted = true;
+      break;
+    }
+  if (!enlisted) return false;  // defenders breach nothing (quiet)
+  Entity* gate = nullptr;
+  for (auto& other : entities_) {
+    if (other.wireKind != content::kWireKindSiegeGate || other.dead) continue;
+    if (other.zoneId != e.zoneId) continue;
+    if (other.hp == 0) continue;
+    if (chebyshev(e.walker.tile(), other.walker.tile()) <= 2) {
+      gate = &other;
+      break;
+    }
+  }
+  if (gate == nullptr) return false;  // no standing gate in reach
+  gate->hp = gate->hp <= kBreachDmg ? 0 : gate->hp - kBreachDmg;
+  if (gate->hp > 0) {
+    WorldEvent ev;
+    ev.aboutId = e.id;
+    ev.chatCh = 255;
+    ev.chatText = "the ram strikes home (" + std::to_string(gate->hp) + " left).";
+    events_.push_back(std::move(ev));
+    return true;
+  }
+  const std::string fallen = gate->name;
+  // T-137 fix (use-after-erase): despawn() invalidates references into the
+  // entity deque, so copy the attacker's name BEFORE erasing the gate.
+  const std::string by = e.name;
+  despawn(gate->id);
+  WorldEvent fev;
+  fev.chatCh = 2;
+  fev.chatText = "the " + fallen + " lies in splinters!";
+  events_.push_back(std::move(fev));
+  std::printf("[siege] %s breached by %s\n", fallen.c_str(), by.c_str());
+  return true;
+}
+
+// ---- Heartstone + crown (T-133, Phase S 2b/4) ------------------------------
+// Presence attunes the stone (attackers uncontested); a registered attacker
+// then kneels 10 s to take the castle. Swings allowed mid-channel —
+// stillness is about feet, not steel. No RNG anywhere on this path.
+void World::spawnHeartstone(Zone& zone) {
+  sim::TilePos want{zone.spawnPoint.x + 9, zone.spawnPoint.y};
+  sim::TilePos at = want;
+  if (!zone.map.inBounds(at.x, at.y) || zone.map.isBlocked(at.x, at.y)) {
+    bool placed = false;
+    for (int r = 1; r < 8 && !placed; ++r) {
+      for (int dy = -r; dy <= r && !placed; ++dy) {
+        for (int dx = -r; dx <= r && !placed; ++dx) {
+          const int x = want.x + dx, y = want.y + dy;
+          if (!zone.map.inBounds(x, y) || zone.map.isBlocked(x, y)) continue;
+          at = sim::TilePos{x, y};
+          placed = true;
+        }
+      }
+    }
+    if (!placed) return;
+  }
+  Entity stone;
+  stone.id = nextId_++;
+  stone.zoneId = 6;
+  stone.kind = EntityKind::kMob;  // furniture: non-combat
+  stone.wireKind = content::kWireKindHeartstone;
+  stone.name = "Heartstone";
+  stone.hp = 1;
+  stone.hpMax = 1;
+  stone.walker.place(at);
+  insertEntity(std::move(stone));
+}
+
+bool World::crown(Entity& e) {
+  if (e.kind != EntityKind::kPlayer || e.dead) return false;
+  if (!siegeBattleActive() || !heartAttuned_) return false;
+  // T-137: re-kneeling mid-channel is a no-op (a 5 s client loop must not
+  // keep resetting the 10 s channel — the drill proved it never completes).
+  if (e.crownUntil >= 0) return true;
+  bool enlisted = false;
+  for (const std::uint32_t id : siegeAttackers_)
+    if (id == e.id) {
+      enlisted = true;
+      break;
+    }
+  if (!enlisted) return false;
+  const Entity* stone = nullptr;
+  for (const auto& other : entities_) {
+    if (other.wireKind != content::kWireKindHeartstone || other.dead) continue;
+    if (other.zoneId != e.zoneId) continue;
+    if (other.hp == 0) continue;
+    if (chebyshev(e.walker.tile(), other.walker.tile()) <= 2) {
+      stone = &other;
+      break;
+    }
+  }
+  if (stone == nullptr) return false;
+  e.crownUntil = tick_ + kCrownChannelTicks;
+  WorldEvent ev;
+  ev.aboutId = e.id;
+  ev.chatCh = 255;
+  ev.chatText = "you kneel before the Heartstone... (hold still)";
+  events_.push_back(std::move(ev));
+  return true;
+}
+
+// H1: the Castle Steward keeps the weeping keep (kind 73, T-ART-06 reserved).
+// First walkable tile with no furniture inside the keep interior
+// (17,5)-(22,8 per tools/mapgen/make_weeping_castle.py), session-seeded
+// like the confessor. Registrar (72) stays unplaced: Marrowgate is H2+.
+void World::spawnSteward(Zone& zone) {
+  for (int y = 5; y <= 8; ++y) {
+    for (int x = 17; x <= 22; ++x) {
+      if (!zone.map.inBounds(x, y) || zone.map.isBlocked(x, y)) continue;
+      bool occupied = false;
+      for (const Entity& ee : entities_)
+        if (ee.zoneId == 6 && !ee.dead && ee.walker.tile().x == x &&
+            ee.walker.tile().y == y &&
+            ee.wireKind >= content::kWireKindFurnitureFloor) {
+          occupied = true;
+          break;
+        }
+      if (occupied) continue;
+      Entity f;
+      f.id = nextId_++;
+      f.zoneId = 6;
+      f.kind = EntityKind::kMob;  // furniture, non-combat; wire kind 73
+      f.wireKind = content::kWireKindSteward;
+      f.name = "Castle Steward";
+      f.hp = 1;
+      f.hpMax = 1;
+      f.dead = false;
+      f.walker.place(sim::TilePos{x, y});
+      insertEntity(std::move(f));
+      return;
+    }
+  }
+}
+
+void World::heartTick() {
+  if (!siegeBattleActive() || heartAttuned_) return;
+  const Entity* stone = nullptr;
+  for (const auto& other : entities_) {
+    if (other.wireKind != content::kWireKindHeartstone || other.dead) continue;
+    if (other.hp == 0) continue;
+    stone = &other;
+    break;
+  }
+  if (stone == nullptr) return;
+  std::uint32_t attackers = 0, contest = 0;
+  for (const auto& e : entities_) {
+    if (e.kind != EntityKind::kPlayer || e.dead) continue;
+    if (e.zoneId != stone->zoneId) continue;
+    if (chebyshev(e.walker.tile(), stone->walker.tile()) > 3) continue;
+    bool enlisted = false;
+    for (const std::uint32_t id : siegeAttackers_)
+      if (id == e.id) {
+        enlisted = true;
+        break;
+      }
+    if (enlisted)
+      ++attackers;
+    else
+      ++contest;
+  }
+  if (attackers == 0 || contest > 0) return;  // empty or contested: hold
+  if (++heartProgress_ >= kHeartCaptureTicks) {
+    heartAttuned_ = true;
+    WorldEvent ev;
+    ev.chatCh = 2;
+    ev.chatText = "the Heartstone drinks deep — it is attuned.";
+    events_.push_back(std::move(ev));
+    std::printf("[siege] heartstone attuned at tick %d\n", static_cast<int>(tick_));
+  }
+}
+
+void World::crownTick() {
+  for (auto& e : entities_) {
+    if (e.kind != EntityKind::kPlayer || e.crownUntil < 0) continue;
+    const sim::Tick start = e.crownUntil - kCrownChannelTicks;
+    bool broken = e.dead || !siegeBattleActive() || e.walker.moving ||
+                  !e.path.empty() || e.lastHurtTick >= start;
+    if (!broken) {
+      // leaving the stone's radius breaks the kneel
+      bool near = false;
+      for (const auto& other : entities_) {
+        if (other.wireKind != content::kWireKindHeartstone || other.dead) continue;
+        if (other.zoneId != e.zoneId) continue;
+        if (other.hp == 0) continue;
+        if (chebyshev(e.walker.tile(), other.walker.tile()) <= 2) {
+          near = true;
+          break;
+        }
+      }
+      broken = !near;
+    }
+    if (broken) {
+      e.crownUntil = -1;
+      if (!e.dead) {
+        WorldEvent ev;
+        ev.aboutId = e.id;
+        ev.chatCh = 255;
+        ev.chatText = "the kneel breaks — the Heartstone waits.";
+        events_.push_back(std::move(ev));
+      }
+      continue;
+    }
+    if (tick_ >= e.crownUntil) {
+      e.crownUntil = -1;
+      siegeHolder_ = e.id;
+      siegeHolderName_ = e.name;  // T-134: the castle remembers
+      ++siegeCrowns_;
+      siegeDirty_ = true;
+      siegeBattleActive_ = false;
+      WorldEvent ev;
+      ev.chatCh = 2;
+      ev.chatText = e.name + " takes the Weeping Crown!";
+      events_.push_back(std::move(ev));
+      std::printf("[siege] crowned: %s holds the castle\n", e.name.c_str());
+    }
+  }
+}
+
+// ---- siege economy (T-134, Phase S 3/4) ------------------------------------
+// Tax-only vault (spending integrates with the pledge vault in Phase P).
+// Holder acts blessed (+10% hit&dmg). All deterministic, zero draws.
+void World::loadSiegeState(std::uint32_t holderId, const std::string& holderName,
+                           std::uint32_t vault, std::uint32_t crowns) {
+  siegeHolder_ = holderId;
+  siegeHolderName_ = holderName;
+  siegeVault_ = vault;
+  siegeCrowns_ = crowns;
+  siegeDirty_ = false;
+}
+
+void World::siegeReadout(Entity& requester) {
+  const std::string holder =
+      siegeHolder_ != 0 ? siegeHolderName_ : std::string("unclaimed");
+  const std::string lines[4] = {
+      "castle: " + holder + " holds Weeping Castle.",
+      "vault: " + std::to_string(siegeVault_) + "g (" +
+          std::to_string(siegeCrowns_) + " crowns).",
+      std::string("battle: ") +
+          (siegeBattleActive() ? "joined." : "quiet."),
+      "bands: " + std::to_string(siegeAttackers_.size()) + " registered.",
+  };
+  for (const auto& text : lines) {
+    WorldEvent ev;
+    ev.aboutId = requester.id;
+    ev.chatCh = 255;
+    ev.chatText = text;
+    events_.push_back(std::move(ev));
+  }
+}
+
 // ---- anvil & aura spine (T-041/T-042, RFC 0001) ----------------------------
 
 void World::spawnAnvils() {
@@ -1491,6 +2007,89 @@ void World::spawnAnvils() {
       }
     }
   }
+}
+
+// H2: blackiron ore nodes in Bonehowl Mine (zone 4).
+// 4 static deposits; no respawn yet.  hp=1, wireKind=74.
+void World::spawnOreNodes() {
+  auto it = zones_.find(4);
+  if (it == zones_.end()) return;
+  const sim::TilePos positions[] = {{20, 10}, {30, 15}, {15, 25}, {35, 20}};
+  for (const auto& at : positions) {
+    const int x = at.x, y = at.y;
+    if (!it->second.map.inBounds(x, y) || it->second.map.isBlocked(x, y)) continue;
+    Entity n;
+    n.id = nextId_++;
+    n.zoneId = 4;
+    n.kind = EntityKind::kMob;  // furniture: non-combat
+    n.wireKind = content::kWireKindOreNode;
+    n.name = "Ore Vein";
+    n.hp = 1;
+    n.hpMax = 1;
+    n.walker.place(sim::TilePos{x, y});
+    insertEntity(std::move(n));
+  }
+}
+
+bool World::nearNode(const Entity& e) const {
+  for (const Entity& other : entities_) {
+    if (other.wireKind == content::kWireKindOreNode && other.zoneId == e.zoneId &&
+        chebyshev(e.walker.tile(), other.walker.tile()) <= 2) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// H2: mine blackiron ore.  Gates: dead → near ore node → pick equipped (2003)
+// → cooldown ~40 ticks (2 s) → yield 1-2 ore via RNG.  Ore added to inventory;
+// [mine] log line emitted for replay.
+bool World::tryMine(Entity& e) {
+  if (e.kind != EntityKind::kPlayer || e.dead) return false;
+  if (!nearNode(e)) {
+    WorldEvent ev;
+    ev.aboutId = e.id;
+    ev.chatCh = 255;
+    ev.chatText = "there is no ore vein within reach.";
+    events_.push_back(ev);
+    return false;
+  }
+  // pick equipped?
+  int pickSlot = -1;
+  for (size_t i = 0; i < e.inv.size(); ++i) {
+    if (e.inv[i].equipped && e.inv[i].itemId == 2003) {
+      pickSlot = static_cast<int>(i);
+      break;
+    }
+  }
+  if (pickSlot < 0) {
+    WorldEvent ev;
+    ev.aboutId = e.id;
+    ev.chatCh = 255;
+    ev.chatText = "you need a Mine Pick to break ore.";
+    events_.push_back(ev);
+    return false;
+  }
+  // cooldown (reuse lastHurtTick as last-mine timestamp)
+  if (tick_ - e.lastHurtTick < 40) {
+    WorldEvent ev;
+    ev.aboutId = e.id;
+    ev.chatCh = 255;
+    ev.chatText = "the vein needs a moment to settle.";
+    events_.push_back(ev);
+    return false;
+  }
+  e.lastHurtTick = tick_;
+  const std::uint16_t qty = static_cast<std::uint16_t>(rng_.range(1, 2));
+  addItem(e, 5001, qty);  // Blackiron Ore
+  WorldEvent ev;
+  ev.aboutId = e.id;
+  ev.invChanged = true;
+  ev.chatCh = 255;
+  ev.chatText = "you pry " + std::to_string(qty) + " Blackiron Ore from the vein.";
+  std::printf("[mine] %s ore=%u\n", e.name.c_str(), static_cast<unsigned>(qty));
+  events_.push_back(std::move(ev));
+  return true;
 }
 
 bool World::nearAnvil(const Entity& e) const {
@@ -1659,9 +2258,11 @@ bool World::tryAnvil(Entity& e, std::uint8_t tier) {
     events_.push_back(ev);
     return false;
   }
+  // H2 ore lane: ore (5001) counts 1:5 toward any pelt toll (6 ore == 30 pelts)
   std::uint32_t parts = 0;
   for (const InvSlot& sl : e.inv) {
     if (sl.itemId == t->partItemId) parts += sl.qty;
+    else if (sl.itemId == 5001 && t->partItemId != 5001) parts += sl.qty * 5;
   }
   if (parts < t->partQty) {
     WorldEvent ev;
@@ -1685,6 +2286,7 @@ bool World::tryAnvil(Entity& e, std::uint8_t tier) {
 
   // consume parts + gold, atomically (all or nothing).
   // T-111: keep wslotIdx honest across erases (same discipline as tryRefine).
+  // H2: consume pelts first, then ore at 1:5 ratio if needed.
   std::uint16_t remaining = t->partQty;
   for (size_t i = 0; i < e.inv.size() && remaining > 0;) {
     InvSlot& sl = e.inv[i];
@@ -1695,9 +2297,26 @@ bool World::tryAnvil(Entity& e, std::uint8_t tier) {
     if (sl.qty == 0) {
       e.inv.erase(e.inv.begin() + static_cast<long>(i));
       if (static_cast<int>(i) < wslotIdx) --wslotIdx;
-      // do not ++i: next element slid into i
     } else {
       ++i;
+    }
+  }
+  // H2: if still short on pelts, consume ore at 1:5 ratio
+  if (remaining > 0 && t->partItemId != 5001) {
+    const std::uint16_t oreNeeded = (remaining + 4) / 5;  // ceil(remaining/5)
+    std::uint16_t oreLeft = oreNeeded;
+    for (size_t i = 0; i < e.inv.size() && oreLeft > 0;) {
+      InvSlot& sl = e.inv[i];
+      if (sl.itemId != 5001 || sl.equipped) { ++i; continue; }
+      const std::uint16_t take = sl.qty < oreLeft ? sl.qty : oreLeft;
+      sl.qty = static_cast<std::uint16_t>(sl.qty - take);
+      oreLeft = static_cast<std::uint16_t>(oreLeft - take);
+      if (sl.qty == 0) {
+        e.inv.erase(e.inv.begin() + static_cast<long>(i));
+        if (static_cast<int>(i) < wslotIdx) --wslotIdx;
+      } else {
+        ++i;
+      }
     }
   }
   e.gold -= t->gold;
@@ -2036,7 +2655,7 @@ void World::trySwing(Entity& att, Entity& def) {
   std::uint32_t dmg = sim::rollDamage(base, att.kind == EntityKind::kPlayer ? att.str : 0,
                                       ddef, hc.crit);
   if (att.kind == EntityKind::kMob && isNight()) {
-    dmg = dmg * 115u / 100u;  // T-061 nightcreep: +15% mob bite after dark
+    dmg = dmg * nightBiteNum() / 100u;  // T-061 law, x1.30 under Blood Moon
     dmg = dmg < 1 ? 1 : dmg;
   }
   if (att.kind == EntityKind::kPlayer && def.kind == EntityKind::kPlayer) {
@@ -2048,6 +2667,12 @@ void World::trySwing(Entity& att, Entity& def) {
   }
   def.hp = dmg >= def.hp ? 0 : def.hp - dmg;
   def.lastHurtTick = tick_;
+  // T-126 of Thorns: worn plate bites back for 2 per landed swing. Never lands
+  // the kill (floored at 1) so thorns stays out of the kill/loot path. Swings
+  // only — bolts and slams do not answer.
+  if (def.kind == EntityKind::kPlayer && hasAffix(def, 5, 1) && !att.dead) {
+    att.hp = att.hp > 2 ? att.hp - 2 : 1;
+  }
   if (att.kind == EntityKind::kPlayer) {
     ++att.swingLands;
     // T-059 of Leech: equipped weapon drinks 5% of damage dealt
@@ -2354,6 +2979,319 @@ bool World::partyKick(Entity& leader, std::uint32_t targetId) {
   return partyLeave(*victim);  // same path; the msg reads as a leave
 }
 
+// ---- pledge-lite (T-122) ---------------------------------------------------
+// Persistent social registry (GDD §8 MVP cut: create/emblem/ranks/chat; the
+// vault/tax half landed with T-140: deposit-only vault, sworn-holder drip).
+// - Membership by character NAME: entities are session-transient, pledges are
+//   not. e.pledgeId/rank is the entity-side cache, restored at login (DB live,
+//   journal g-sidecar in replay).
+// - Registry lives in World so journaled commands replay identically. It is
+//   deliberately NOT part of worldHash: pledge state is social, not sim, and
+//   pre-T-122 journals must keep replaying bit-exact (party/k-line precedent).
+// - The journal c-line carries no strings: live creation passes the real name
+//   via Command::text; replay synthesizes "pledge-<id>" (chat-only fidelity
+//   loss, hash-neutral by construction).
+// - GDD §8 gates creation on CHA >= 20; the shipped stat model is str/vit/dex
+//   + kit-derived int/mag with no CHA. Lite gate = level >= 10 + 10,000g
+//   (vs 100k for full pledges) — flagged as a deviation; switch when the
+//   six-stat model lands.
+bool World::pledgeCreate(Entity& e, const std::string& name) {
+  if (e.kind != EntityKind::kPlayer || e.dead || e.pledgeId != 0) return false;
+  if (!nearRegistrar(e)) return false;
+  if (e.level < kPledgeMinLevel) return false;
+  if (static_cast<std::int32_t>(e.gold) < kPledgeCreateGold) return false;
+  // name empty = replay path (the c-line journal carries no strings): skip
+  // shape/uniqueness — the pledge names itself "pledge-<id>" below. Live
+  // always passes a validated name (the shell pre-checks shape too).
+  if (!name.empty()) {
+    const int n = static_cast<int>(name.size());
+    if (n < kPledgeNameMin || n > kPledgeNameMax) return false;
+    for (const char ch : name) {
+      const bool ok = (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') ||
+                      (ch >= '0' && ch <= '9') || ch == '_' || ch == '-';
+      if (!ok) return false;
+    }
+    for (const Pledge& q : pledges_)
+      if (q.name == name) return false;  // names are unique forever (lite rule)
+  }
+  Pledge p;
+  p.id = nextPledgeId_++;
+  p.name = name.empty() ? ("pledge-" + std::to_string(p.id)) : name;
+  p.emblem = static_cast<std::uint8_t>(p.id % 10);  // placeholder until T-123
+  p.liege = e.name;
+  p.members.push_back(e.name);
+  pledges_.push_back(std::move(p));
+  e.gold -= kPledgeCreateGold;
+  e.pledgeId = pledges_.back().id;
+  e.pledgeRank = 3;  // Liege
+  pledgesDirty = true;
+  emitPledgeMsg(e.pledgeId, e.id,
+                e.name + " founds " + pledges_.back().name + " at the registrar.");
+  return true;
+}
+
+bool World::pledgeInvite(Entity& inviter, Entity& target) {
+  if (inviter.kind != EntityKind::kPlayer || target.kind != EntityKind::kPlayer ||
+      inviter.dead || target.dead || inviter.id == target.id) return false;
+  if (inviter.pledgeRank < 2) return false;  // Bloodsworn or Liege invite
+  if (target.pledgeId != 0) return false;
+  Pledge* p = const_cast<Pledge*>(pledgeById(inviter.pledgeId));
+  if (p == nullptr) { inviter.pledgeId = 0; inviter.pledgeRank = 0; return false; }
+  if (static_cast<int>(p->members.size()) >= kPledgeMaxMembers) return false;
+  if (target.zoneId != inviter.zoneId ||
+      chebyshev(inviter.walker.tile(), target.walker.tile()) > 12) return false;
+  // one pending pledge invite per invitee: renew/overwrite (party pattern)
+  bool found = false;
+  for (auto& inv : pledgeInvites_)
+    if (inv.first == target.id) {
+      inv.second = {tick_ + 400, inviter.id};  // 20 s to answer
+      found = true;
+    }
+  if (!found) pledgeInvites_.push_back({target.id, {tick_ + 400, inviter.id}});
+  emitPledgeMsg(p->id, target.id,
+                inviter.name + " offers " + target.name + " the oath — /pledge accept.");
+  return true;
+}
+
+bool World::pledgeAccept(Entity& e) {
+  if (e.kind != EntityKind::kPlayer || e.dead || e.pledgeId != 0) return false;
+  for (size_t i = 0; i < pledgeInvites_.size(); ++i) {
+    if (pledgeInvites_[i].first != e.id) continue;
+    if (tick_ > pledgeInvites_[i].second.first) {
+      pledgeInvites_.erase(pledgeInvites_.begin() + static_cast<long>(i));
+      return false;  // expired offers die on consumption, not on a timer
+    }
+    Entity* inviter = find(pledgeInvites_[i].second.second);
+    pledgeInvites_.erase(pledgeInvites_.begin() + static_cast<long>(i));
+    if (inviter == nullptr || inviter->pledgeRank < 2) return false;
+    Pledge* p = const_cast<Pledge*>(pledgeById(inviter->pledgeId));
+    if (p == nullptr || static_cast<int>(p->members.size()) >= kPledgeMaxMembers)
+      return false;
+    e.pledgeId = p->id;
+    e.pledgeRank = 1;  // Initiate
+    p->members.push_back(e.name);
+    pledgesDirty = true;
+    emitPledgeMsg(p->id, e.id, e.name + " swears the oath. Welcome, Initiate.");
+    return true;
+  }
+  return false;
+}
+
+bool World::pledgeLeave(Entity& e) {
+  if (e.kind != EntityKind::kPlayer || e.pledgeId == 0) return false;
+  if (e.pledgeRank == 3) return pledgeDisband(e);  // a liege cannot just walk
+  Pledge* p = const_cast<Pledge*>(pledgeById(e.pledgeId));
+  if (p == nullptr) { e.pledgeId = 0; e.pledgeRank = 0; return false; }
+  for (size_t i = 0; i < p->members.size(); ++i)
+    if (p->members[i] == e.name) {
+      p->members.erase(p->members.begin() + static_cast<long>(i));
+      break;
+    }
+  const std::uint32_t pid = e.pledgeId;
+  e.pledgeId = 0;
+  e.pledgeRank = 0;
+  pledgesDirty = true;
+  emitPledgeMsg(pid, e.id, e.name + " tears the oath.");
+  return true;
+}
+
+bool World::pledgeKick(Entity& liege, std::uint32_t targetId) {
+  if (liege.kind != EntityKind::kPlayer || liege.pledgeRank != 3) return false;
+  Pledge* p = const_cast<Pledge*>(pledgeById(liege.pledgeId));
+  if (p == nullptr || targetId == liege.id) return false;
+  Entity* victim = find(targetId);
+  if (victim == nullptr || victim->pledgeId != p->id) return false;
+  const std::string vname = victim->name;
+  const std::uint32_t pid = p->id;
+  victim->pledgeId = 0;
+  victim->pledgeRank = 0;
+  for (size_t i = 0; i < p->members.size(); ++i)
+    if (p->members[i] == vname) {
+      p->members.erase(p->members.begin() + static_cast<long>(i));
+      break;
+    }
+  pledgesDirty = true;
+  emitPledgeMsg(pid, liege.id, liege.name + " casts " + vname + " out.");
+  return true;
+}
+
+bool World::pledgeSetRank(Entity& actor, std::uint32_t targetId, std::uint8_t rank) {
+  if (actor.kind != EntityKind::kPlayer || actor.pledgeRank != 3) return false;
+  if (rank != 1 && rank != 2) return false;  // Liege transfers are post-lite
+  Pledge* p = const_cast<Pledge*>(pledgeById(actor.pledgeId));
+  if (p == nullptr) return false;
+  Entity* t = find(targetId);
+  if (t == nullptr || t->pledgeId != p->id || t->id == actor.id) return false;
+  t->pledgeRank = rank;
+  pledgesDirty = true;
+  emitPledgeMsg(p->id, t->id,
+                t->name + (rank == 2 ? " rises to Bloodsworn." : " stands as Initiate."));
+  return true;
+}
+
+bool World::pledgeDisband(Entity& e) {
+  if (e.kind != EntityKind::kPlayer || e.pledgeRank != 3) return false;
+  const std::uint32_t pid = e.pledgeId;
+  for (auto it = pledges_.begin(); it != pledges_.end(); ++it) {
+    if (it->id != pid) continue;
+    for (const std::string& m : it->members) {
+      for (Entity& other : entities_)  // clear online members' caches
+        if (other.kind == EntityKind::kPlayer && other.name == m) {
+          other.pledgeId = 0;
+          other.pledgeRank = 0;
+        }
+    }
+    emitPledgeMsg(pid, e.id, it->name + " is struck from the registrar's book.");
+    pledges_.erase(it);
+    pledgesDirty = true;
+    return true;
+  }
+  e.pledgeId = 0;
+  e.pledgeRank = 0;
+  return false;
+}
+
+void World::pledgeChat(const Entity& e, const std::string& text) {
+  if (e.kind != EntityKind::kPlayer || e.pledgeId == 0) return;
+  const Pledge* p = pledgeById(e.pledgeId);
+  if (p == nullptr) return;
+  const std::string line = "[" + p->name + "] " + e.name + ": " + text;
+  for (const Entity& other : entities_) {
+    if (other.kind != EntityKind::kPlayer || other.pledgeId != p->id) continue;
+    WorldEvent ev;
+    ev.chatCh = 255;  // directed system line, one per online member
+    ev.aboutId = other.id;
+    ev.chatText = line;
+    events_.push_back(std::move(ev));
+  }
+}
+
+const World::Pledge* World::pledgeById(std::uint32_t id) const {
+  for (const Pledge& p : pledges_)
+    if (p.id == id) return &p;
+  return nullptr;
+}
+
+// ---- pledge vault (T-140, Phase P 3/3) --------------------------------------
+// MVP-lite: DEPOSIT ONLY (siege tax drip while the holder is sworn + voluntary
+// tithe). No withdrawal economy — disband burns the vault with the registry
+// row (documented, no silent loss: the book says so at disband time via the
+// emitPledgeMsg line). Outside worldHash like all pledge state (T-122 law).
+bool World::pledgeTithe(Entity& e, std::uint32_t amount) {
+  if (e.kind != EntityKind::kPlayer || e.dead || e.pledgeId == 0) return false;
+  if (amount == 0 || amount > e.gold) return false;  // quiet, era-right
+  Pledge* p = const_cast<Pledge*>(pledgeById(e.pledgeId));
+  if (p == nullptr) return false;
+  e.gold -= amount;
+  p->vault += amount;
+  pledgesDirty = true;
+  WorldEvent ev;
+  ev.chatCh = 255;
+  ev.aboutId = e.id;
+  ev.chatText = e.name + " tithes " + std::to_string(amount) + "g to " +
+                p->name + " (" + std::to_string(p->vault) + "g in vault).";
+  events_.push_back(std::move(ev));
+  return true;
+}
+
+void World::pledgeVaultReadout(const Entity& e) {
+  if (e.kind != EntityKind::kPlayer) return;
+  std::string line = "Unsworn. No vault to count.";
+  if (e.pledgeId != 0) {
+    if (const Pledge* p = pledgeById(e.pledgeId))
+      line = p->name + " vault: " + std::to_string(p->vault) +
+             "g (tax-only, deposit-only).";
+  }
+  WorldEvent ev;
+  ev.chatCh = 255;
+  ev.aboutId = e.id;
+  ev.chatText = line;
+  events_.push_back(std::move(ev));
+}
+
+bool World::nearRegistrar(const Entity& e) const {
+  for (const Entity& other : entities_) {
+    if (other.wireKind == content::kWireKindRegistrar &&
+        other.zoneId == e.zoneId && !other.dead &&
+        chebyshev(other.walker.tile(), e.walker.tile()) <= 3) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void World::setPledges(std::vector<Pledge> loaded) {
+  pledges_.clear();
+  std::uint32_t maxId = 0;
+  for (Pledge& p : loaded) {
+    maxId = std::max(maxId, p.id);
+    pledges_.push_back(std::move(p));
+  }
+  nextPledgeId_ = maxId + 1;
+}
+
+void World::pledgeWho(const Entity& e) {
+  if (e.kind != EntityKind::kPlayer) return;
+  static const char* rankName[4] = {"", "Initiate", "Bloodsworn", "Liege"};
+  std::string roster = "Unsworn. /pledge create <name> at the registrar.";
+  if (e.pledgeId != 0) {
+    const Pledge* p = pledgeById(e.pledgeId);
+    if (p != nullptr) {
+      roster = p->name + " (emblem " + std::to_string(p->emblem) + "):";
+      for (const std::string& m : p->members) {
+        bool online = false;
+        for (const Entity& o : entities_)
+          if (o.kind == EntityKind::kPlayer && o.name == m) online = true;
+        std::uint8_t r = 0;
+        for (const Entity& o : entities_)
+          if (o.kind == EntityKind::kPlayer && o.name == m && o.pledgeId == p->id)
+            r = o.pledgeRank;
+        if (r == 0) r = (m == p->liege) ? 3 : 1;  // offline: infer from liege
+        roster += "\n  " + m + " — " + rankName[r] + (online ? "" : " (offline)");
+      }
+    }
+  }
+  WorldEvent ev;
+  ev.chatCh = 255;
+  ev.aboutId = e.id;
+  ev.chatText = roster;
+  events_.push_back(std::move(ev));
+}
+
+void World::pledgeReplayRestore(Entity& e, std::uint32_t pledgeId,
+                                std::uint8_t rank) {
+  e.pledgeId = pledgeId;
+  e.pledgeRank = rank;
+  if (pledgeId == 0) return;
+  Pledge* p = const_cast<Pledge*>(pledgeById(pledgeId));
+  if (p == nullptr) {
+    Pledge stub;
+    stub.id = pledgeId;
+    stub.name = "pledge-" + std::to_string(pledgeId);  // DB-of-record name
+    stub.liege = e.name;
+    stub.members.push_back(e.name);
+    pledges_.push_back(std::move(stub));
+    nextPledgeId_ = std::max(nextPledgeId_, pledgeId + 1);
+    return;
+  }
+  for (const std::string& m : p->members)
+    if (m == e.name) return;
+  p->members.push_back(e.name);
+}
+
+void World::emitPledgeMsg(std::uint32_t pledgeId, std::uint32_t aboutId,
+                          const std::string& text) {
+  // Announce on the town channel (chatCh 2), party-msg style: the roster
+  // chrome (T-123) will key off pledge events; for now members read it aloud.
+  WorldEvent ev;
+  ev.chatCh = 2;
+  ev.aboutId = aboutId;
+  ev.chatText = text;
+  (void)pledgeId;
+  events_.push_back(std::move(ev));
+}
+
+
 const content::BountyDef* World::bountyNow() const {
   return content::bountyAt(static_cast<std::uint32_t>(tick_ / content::kBountyCycleTicks));
 }
@@ -2384,6 +3322,29 @@ void World::bountyAssign(Entity& e) {
   ev.chatText = std::string("the board wants: ") + (md != nullptr ? md->name : "?") +
                 " — " + std::to_string(b->payoutGold) + "g.";
   events_.push_back(std::move(ev));
+}
+
+// T-127 boss-unique grant: fixed item + fixed affix + world broadcast.
+// Era-loud by design (chatCh 2, first-blood lane). Inv-full grants nothing.
+bool World::grantUniqueDrop(Entity& killer, const content::UniqueDropDef& u) {
+  if (killer.kind != EntityKind::kPlayer || killer.inv.size() >= 32) return false;
+  const content::ItemDef* id = content::findItem(u.itemId);
+  if (id == nullptr || u.affix > content::kAffixCount || u.title[0] == '\0')
+    return false;
+  InvSlot sl;
+  sl.itemId = u.itemId;
+  sl.qty = 1;
+  sl.equipped = false;
+  sl.aura = 0;
+  sl.affix = u.affix;
+  killer.inv.push_back(sl);
+  WorldEvent ev;
+  ev.aboutId = killer.id;
+  ev.invChanged = true;
+  ev.chatCh = 2;
+  ev.chatText = killer.name + " claims " + id->name + ", " + u.title + "!";
+  events_.push_back(std::move(ev));
+  return true;
 }
 
 void World::killMob(Entity& mob, Entity* killer) {
@@ -2491,6 +3452,16 @@ void World::killMob(Entity& mob, Entity* killer) {
           }
         }
       }
+      // T-127 boss uniques: per-row independent rolls (night rides +25%,
+      // T-062 law). New draws on elite kills only — hence the epoch bump.
+      for (std::uint32_t ui = 0; ui < content::kUniqueDropCount; ++ui) {
+        const content::UniqueDropDef& u = content::kUniqueDrops[ui];
+        if (u.mobId != md->mobId) continue;
+        const std::int64_t uniqPct =
+            isNight() ? static_cast<std::int64_t>(u.chancePct) * 125 / 100
+                      : static_cast<std::int64_t>(u.chancePct);
+        if (rng_.range(1, 100) <= uniqPct) grantUniqueDrop(*killer, u);
+      }
       // loot roll (junk tier for now; gear tables land with affixes in P3)
       const std::int64_t nightLootPct =  // T-062: +25% relative under dark
           isNight() ? static_cast<std::int64_t>(md->lootChancePct) * 125 / 100
@@ -2508,11 +3479,38 @@ void World::killMob(Entity& mob, Entity* killer) {
         }
       }
       if (md->goldHi >= md->goldLo) {
-        const std::uint32_t g =
+        std::uint32_t g =
             md->goldLo + static_cast<std::uint32_t>(rng_.range(
                              0, static_cast<std::int64_t>(md->goldHi) -
                                     static_cast<std::int64_t>(md->goldLo)));
-        killer->gold += (killer->karma < 0) ? g * 115u / 100u : g;  // bad moral: richer drops
+        if (hasAffix(*killer, 9, 0)) g = g * 110u / 100u;  // T-126 of Greed (pre-moral)
+        std::uint32_t award = (killer->karma < 0) ? g * 115u / 100u : g;
+        if (siegeHolder_ != 0) {  // T-134 castle tax: 5% of the award, silent
+          const std::uint32_t tithe = award * 5u / 100u;
+          award -= tithe;
+          // T-140: a sworn holder's drip feeds the pledge vault (deposit-only
+          // MVP); unsworn holders keep the castle pool. Name-keyed: the holder
+          // need not be online for the oath to eat.
+          Pledge* sworn = nullptr;
+          if (!siegeHolderName_.empty()) {
+            for (Pledge& p : pledges_) {
+              for (const std::string& m : p.members)
+                if (m == siegeHolderName_) {
+                  sworn = &p;
+                  break;
+                }
+              if (sworn != nullptr) break;
+            }
+          }
+          if (sworn != nullptr) {
+            sworn->vault += tithe;
+            pledgesDirty = true;
+          } else {
+            siegeVault_ += tithe;
+            siegeDirty_ = true;
+          }
+        }
+        killer->gold += award;  // bad moral: richer drops (folded above)
         WorldEvent ev2;
         ev2.aboutId = killer->id;
         ev2.statsChanged = true;
@@ -2554,6 +3552,60 @@ void World::killMob(Entity& mob, Entity* killer) {
 std::uint8_t World::karmaBandOf(std::int32_t karma) {
   if (karma < 0) return 2;        // chaotic — red name
   return karma > 500 ? 0 : 1;     // lawful / neutral
+}
+
+// ---- town war (T-130, H4) --------------------------------------------------
+// One oath at 19+, never respec'd in MVP (Helbreath rule, GDD section 1).
+bool World::oath(Entity& e, std::uint8_t town) {
+  if (e.kind != EntityKind::kPlayer || e.dead) return false;
+  if (e.townId != content::kTownNone) return false;  // sworn is sworn
+  if (e.level < content::kTownOathLevel) return false;
+  if (town != content::kTownThornwall && town != content::kTownMarrowgate)
+    return false;
+  e.townId = town;
+  WorldEvent ev;
+  ev.aboutId = e.id;
+  ev.chatCh = 2;  // town-crier broadcast: the realm hears the oath
+  ev.chatText = e.name + " swears to " + content::kTownNames[town] + " of the " +
+                content::kTownFactions[town] + ".";
+  events_.push_back(std::move(ev));
+  std::printf("[oath] %s town=%u\n", e.name.c_str(),
+              static_cast<unsigned>(town));
+  return true;
+}
+
+std::vector<std::tuple<std::string, std::uint32_t, std::uint8_t>>
+World::ekBoard(std::size_t n) const {
+  std::vector<std::tuple<std::string, std::uint32_t, std::uint8_t>> rows;
+  for (const Entity& e : entities_) {
+    if (e.kind != EntityKind::kPlayer || e.ek == 0) continue;
+    rows.emplace_back(e.name, e.ek, e.townId);
+  }
+  std::sort(rows.begin(), rows.end(), [](const auto& a, const auto& b) {
+    return std::get<1>(a) > std::get<1>(b);
+  });
+  if (rows.size() > n) rows.resize(n);
+  return rows;
+}
+
+void World::ekReadout(Entity& requester) {
+  const auto rows = ekBoard(5);
+  if (rows.empty()) {
+    WorldEvent ev;
+    ev.aboutId = requester.id;
+    ev.chatCh = 255;
+    ev.chatText = "no enemy kills recorded.";
+    events_.push_back(std::move(ev));
+    return;
+  }
+  for (const auto& [nm, ek, town] : rows) {
+    WorldEvent ev;
+    ev.aboutId = requester.id;
+    ev.chatCh = 255;
+    ev.chatText = "EK " + nm + " " + std::to_string(ek) + " (" +
+                  content::kTownNames[town] + ").";
+    events_.push_back(std::move(ev));
+  }
 }
 
 void World::bumpKarma(Entity& e, std::int32_t delta) {
@@ -2668,8 +3720,27 @@ void World::killPlayer(Entity& victim, Entity* killer) {
     events_.push_back(std::move(txt));
     return;  // no XP debt below, no drops
   }
+  // T-130 war law: sworn enemies of the other town grant EK fame INSTEAD
+  // of chaos (GDD sections 1/5). No karma stain, no red-hands line, no guard
+  // wanted — war is not murder. (Chaotic-victim crowd-pick drops below still
+  // run: those key on the victim's state, not the killer's.) Duels return
+  // earlier — consensual steel never mints EK.
+  const bool warKill =
+      killer != nullptr && killer->kind == EntityKind::kPlayer &&
+      killer->townId != content::kTownNone && victim.townId != content::kTownNone &&
+      killer->townId != victim.townId;
+  if (warKill) {
+    ++killer->ek;
+    WorldEvent ftxt;
+    ftxt.aboutId = killer->id;
+    ftxt.chatCh = 2;
+    ftxt.chatText = killer->name + " earns an enemy kill for " +
+                    content::kTownNames[killer->townId] + " (" +
+                    std::to_string(killer->ek) + ").";
+    events_.push_back(std::move(ftxt));
+  }
   if (killer != nullptr && killer->kind == EntityKind::kPlayer &&
-      victim.duelWith == 0 && karmaBandOf(victim.karma) != 2) {
+      victim.duelWith == 0 && karmaBandOf(victim.karma) != 2 && !warKill) {
     const std::int32_t deficit =
         killer->level > victim.level ? killer->level - victim.level : 0;
     bumpKarma(*killer, -(300 + 20 * deficit));  // GDD §5 formula
@@ -2854,7 +3925,7 @@ void World::slamStrike(Entity& mob) {
                 ? 0
                 : v->hp - static_cast<std::int32_t>(sdmg);
     if (v->hp > 0) {
-      v->curseUntil = tick_ + kCurseTicks;  // rot gets in the blood (T-070 lane)
+      v->curseUntil = tick_ + curseDuration();  // T-129: 60 s under Blood Moon
       WorldEvent cev;
       cev.aboutId = v->id;
       cev.chatCh = 2;
@@ -2980,9 +4051,10 @@ void World::mobThink(Entity& mob) {
       target->hp = bdmg >= static_cast<std::uint32_t>(target->hp)
                        ? 0 : target->hp - static_cast<std::int32_t>(bdmg);
       // T-070 Blood Curse: the bolt leaves thin blood — heals land at 75%
-      // for 30 s. Gravecaller and Gravemother share this cast path.
+      // for 30 s (60 s under Blood Moon, T-129). Gravecaller and
+      // Gravemother share this cast path.
       if (target->kind == EntityKind::kPlayer && target->hp > 0) {
-        target->curseUntil = tick_ + kCurseTicks;
+        target->curseUntil = tick_ + curseDuration();
         WorldEvent cev;
         cev.aboutId = target->id;
         cev.chatCh = 2;
@@ -3214,6 +4286,8 @@ void World::tick() {
     if (e.kind != EntityKind::kPlayer || e.dead || e.hp >= e.hpMax) continue;
     if (tick_ - e.lastHurtTick > kOocRegenDelay && tick_ % kOocRegenPeriod == 0) {
       ++e.hp;
+      if (hasAffix(e, 10, 1)) ++e.hp;  // T-126 of Mending: worn mail knits +1
+      if (e.hp > e.hpMax) e.hp = e.hpMax;
       std::uint8_t aura = 0;
       for (const InvSlot& sl : e.inv) {
         if (sl.equipped && sl.aura >= 2) aura = sl.aura;
@@ -3227,6 +4301,9 @@ void World::tick() {
       }
     }
   }
+
+  heartTick();  // T-133 Heartstone attunement
+  crownTick();  // T-133 crown channels
 
   respawnTick();
 }

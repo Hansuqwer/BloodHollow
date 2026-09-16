@@ -1,0 +1,31 @@
+[boot] zone 2 (assets/maps/fields_overflow.bhmap: 64x48) online
+[boot] zone 3 (assets/maps/thornwall_crypt.bhmap: 48x36) online
+[boot] zone 4 (assets/maps/bonehowl_mine.bhmap: 56x40) online
+[boot] zone 5 (assets/maps/drowned_crypt.bhmap: 48x36) online
+[boot] zone 6 (assets/maps/weeping_castle.bhmap: 40x30) online
+[auth] registration OPEN (prototype posture; --no-register to gate); limiter: 60 logins + 30 new accounts per 60s per IP, 10 consecutive bad-password fails -> 60s lockout
+[journal] recording world to logs/t140.bwj (epoch 26)
+[boot] pledges: 0 registered, 0 sworn members
+[boot] bh_server on 0.0.0.0:7825 | map 'assets/maps/thornwall.bhmap' | db '/tmp/t140.db' | tick 20Hz | aoi 26
+[net] t140__00         entered the world (entity 208, online 1)
+[net] t140__01         entered the world (entity 209, online 2)
+[net] t140__02         entered the world (entity 210, online 3)
+[net] t140__03         entered the world (entity 211, online 4)
+[net] t140__04         entered the world (entity 212, online 5)
+[net] t140__00         saved at (24,29)
+[net] t140__01         saved at (24,14)
+[net] t140__02         saved at (37,13)
+[net] t140__03         saved at (36,13)
+[net] t140__04         saved at (33,3)
+[net] t140__00         entered the world (entity 213, online 1)
+[net] t140__01         entered the world (entity 214, online 2)
+[net] t140__02         entered the world (entity 215, online 3)
+[net] t140__03         entered the world (entity 216, online 4)
+[net] t140__04         entered the world (entity 217, online 5)
+[soak] tick=600 online=5 entities=205 tickUs p50=678 p99=1126 worldHash=e96e8f74313125ad pkts=112/160278
+[net] t140__00         saved at (32,16)
+[net] t140__01         saved at (32,16)
+[net] t140__02         saved at (33,16)
+[net] t140__03         saved at (33,16)
+[net] t140__04         saved at (32,16)
+[soak] tick=1200 online=0 entities=202 tickUs p50=650 p99=1104 worldHash=28c28272bde9367c pkts=144/327505

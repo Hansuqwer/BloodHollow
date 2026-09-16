@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <deque>
+#include <tuple>
 #include <unordered_map>
 #include <optional>
 #include <string>
@@ -44,7 +45,7 @@ struct InvSlot {
   bool equipped = false;
   std::uint8_t aura = 0;   // T-042: applied aura tier (0=none, 1..5 per RFC 0001)
   std::uint8_t durability = 100;  // T-058: 0 = dormant (kept, no stats); weapons/armor
-  std::uint8_t affix = 0;         // T-059: 0 none, 1 whet, 2 ward, 3 leech
+  std::uint8_t affix = 0;         // T-059 v1: 0 none, 1 whet, 2 ward, 3 leech; T-126 v2 adds 4..10
   std::uint8_t refine = 0;        // T-060: 0..3, T-079: to +7 (+2 weapon dmg / +1 armor def per tier)
 };
 
@@ -95,10 +96,20 @@ struct Entity {
   sim::Tick firstHurtTick = -1;   // mob TTK probe (balancer, T-031)
   std::uint32_t anvilMercyMask = 0;
   std::int32_t karma = 0;  // moral economy (T-046): >0 = +15% XP, <0 = +15% gold loot  // bit per tier: used/not-used (S9 T-043 persist)
+  // T-130 town war: 0 unsworn, 1 Thornwall, 2 Marrowgate (content/towns.h);
+  // ek = enemy-kill fame (persisted, board-read in Phase O).
+  std::uint8_t townId = 0;
+  std::uint32_t ek = 0;
   std::uint16_t zoneId = 1;        // T-036: which zone this entity lives in
   sim::Tick lastPortalTick = -1000;  // arrival grace against portal ping-pong
 
   std::uint32_t partyId = 0;  // 0 = unaffiliated (T-050 party core)
+
+  // pledge-lite (T-122): persistent membership. pledgeId caches the registry
+  // entry (restored at login from the DB / from the journal g-sidecar in
+  // replay); rank 0 = none, 1 = Initiate, 2 = Bloodsworn, 3 = Liege.
+  std::uint32_t pledgeId = 0;
+  std::uint8_t pledgeRank = 0;
 
   // class kit (T-053/T-054): kit id (content/kits.h), mana, buff stamps, cast CDs
   std::uint8_t classId = 1;     // kKitRavager default: pre-kit chars unchanged
@@ -134,6 +145,7 @@ struct Entity {
   sim::Tick spawnProtectUntil = -1;
   // T-075 chapel repentance: one whitening-hour per logged hour at most.
   sim::Tick repentUntil = -1;
+  sim::Tick crownUntil = -1;  // T-133: crown channel deadline (-1 = idle)
 
   // trade (T-029): intents only until BOTH commit; swap validated at commit.
   std::uint32_t tradeWith = 0;
@@ -176,6 +188,12 @@ class World {
   bool duelForfeit(Entity& e);                            // T-056
   void bumpKarma(Entity& e, std::int32_t delta);          // clamp + crossing line
   static std::uint8_t karmaBandOf(std::int32_t karma);    // 0 lawful 1 neutral 2 chaotic
+  bool oath(Entity& e, std::uint8_t town);  // T-130: L19 one-time town swear
+  // T-130 EK board (session view; the site page reads the DB in Phase O):
+  // (name, ek, town) desc by ek, capped at n, ek > 0 only.
+  std::vector<std::tuple<std::string, std::uint32_t, std::uint8_t>> ekBoard(
+      std::size_t n) const;
+  void ekReadout(Entity& requester);  // T-130: directed top-5 EK lines
   sim::TilePos gallowsTile(std::uint16_t zoneId) const;   // chaotic bindstone
 
   // T-036 zones-in-process (public: also used by test harnesses)
@@ -221,9 +239,13 @@ class World {
   bool toggleEquip(Entity& e, std::uint8_t slot);
   void trySkill(Entity& e, std::uint8_t skill, std::uint32_t targetId);
   bool kitChoose(Entity& e, std::uint8_t kitId);  // T-053 one-time swear
-  std::uint32_t effAcc(const Entity& e) const;    // bless-adjusted accuracy
+  std::uint32_t effAcc(const Entity& e) const;    // bless-adjusted accuracy (+Focus)
   std::uint32_t effDmgBase(const Entity& e) const;
   std::uint32_t effDef(const Entity& e) const;    // ironskin-adjusted mitigation
+  // T-126 affix probe: equipped + slot-gated (0 weapon, 1 armor, 9 any gear)
+  // + awake (durability > 0). Mobs carry no affixed gear.
+  bool hasAffix(const Entity& e, std::uint8_t affix, std::uint8_t slot) const;
+  std::uint8_t vigilBonus(const Entity& e) const;  // T-126: +2 light if of the Vigil worn
 
  private:
   void tryMend(Entity& e, std::uint32_t targetId);      // T-054 (chan 2)
@@ -255,6 +277,48 @@ class World {
                     const std::string& text);
   const std::deque<Party>& parties() const { return parties_; }
 
+  // ---- pledge-lite (T-122): persistent guild core (create/emblem/ranks/chat)
+  // Registry is world-owned so journal commands replay identically; the live
+  // shell mirrors it into SQLite (pledgesDirty). Membership is by character
+  // NAME (entities are transient, pledges are not). Not in worldHash by
+  // design: pledge state is social, not sim — old journals must replay clean.
+  struct Pledge {
+    std::uint32_t id = 0;
+    std::string name;                  // unique, 3..16 of [A-Za-z0-9_-]
+    std::uint8_t emblem = 0;           // 0..9 placeholder (client chrome: T-123)
+    std::string liege;                 // liege's character name
+    std::vector<std::string> members;  // character names, registry of record
+    std::uint32_t vault = 0;           // T-140 tax-only pool (deposit-only MVP)
+  };
+  static constexpr int kPledgeMaxMembers = 20;              // lite cap (flagged)
+  static constexpr std::int32_t kPledgeCreateGold = 10000;  // lite toll (flagged)
+  static constexpr std::uint8_t kPledgeMinLevel = 10;       // CHA gap flagged
+  static constexpr int kPledgeNameMin = 3, kPledgeNameMax = 16;
+  bool pledgeCreate(Entity& e, const std::string& name);    // name empty => replay synth
+  bool pledgeInvite(Entity& inviter, Entity& target);
+  bool pledgeAccept(Entity& e);                             // consumes pending invite
+  bool pledgeLeave(Entity& e);                              // liege leaving => disband
+  bool pledgeKick(Entity& liege, std::uint32_t targetId);
+  bool pledgeSetRank(Entity& actor, std::uint32_t targetId, std::uint8_t rank);
+  bool pledgeDisband(Entity& e);
+  void pledgeChat(const Entity& e, const std::string& text);  // events only
+  void pledgeWho(const Entity& e);                            // roster reply
+  bool pledgeTithe(Entity& e, std::uint32_t amount);  // T-140 voluntary tithe
+  void pledgeVaultReadout(const Entity& e);           // T-140 vault reply
+  void emitPledgeMsg(std::uint32_t pledgeId, std::uint32_t aboutId,
+                     const std::string& text);
+  // replay-only: restore membership from the journal g-sidecar, synthesizing
+  // registry stubs for pledges created in prior sessions (names are
+  // DB-of-record; sim effects key off id/rank only)
+  void pledgeReplayRestore(Entity& e, std::uint32_t pledgeId, std::uint8_t rank);
+  const Pledge* pledgeById(std::uint32_t id) const;
+  bool nearRegistrar(const Entity& e) const;
+  // live shell: load at boot / flush when dirty (replay never touches the Db)
+  void setPledges(std::vector<Pledge> loaded);
+  const std::deque<Pledge>& pledges() const { return pledges_; }
+  std::uint32_t nextPledgeId() const { return nextPledgeId_; }  // test seam
+  bool pledgesDirty = false;  // never hashed; shell-only mirror flag
+
   // anvil (T-041/T-042): proximity-gated aura attempts, atomic part+gold tolls
   bool tryAnvil(Entity& e, std::uint8_t tier);
   static constexpr std::int32_t kKarmaAnvilOk = 2;      // craft tithe
@@ -274,8 +338,65 @@ class World {
   bool nearConfessor(const Entity& e) const;
   bool confess(Entity& e);  // clears curseUntil within 3 tiles, fiction line
   bool repent(Entity& e);   // T-075: +20 karma within 3 tiles, hourly, no curse touch
+  // T-129 Blood Moon: session-scoped red-moon flag to next dawn. Journaled
+  // via kBloodMoon (replay rebuilds it); scheduler hook lands in Phase S.
+  bool bloodMoon(Entity& e);  // gm blood-moon: raise until dawn, quiet on repeat/dead
+  bool bloodMoonActive() const;
+  sim::Tick bloodMoonUntil() const { return bloodMoonUntil_; }
+  sim::Tick curseDuration() const;  // 600, doubled under the moon
+  std::uint32_t nightBiteNum() const;  // T-061 numerator: 115, 130 under the moon
+  // T-131 siege window + registration (Phase S 1/4, zone-agnostic: the
+  // castle map rides PR #23, H1's rehearsal rides PR #29, pledge bands
+  // ride Phase P — this skeleton plugs into all three).
+  static constexpr sim::Tick kSiegeDayTicks = 288000;  // 24 game-hours
+  static constexpr sim::Tick kSiegeWeekTicks = 2016000;  // 7 game-days
+  static constexpr sim::Tick kSiegeStartOff = 1872000;  // Saturday 20:00
+  static constexpr sim::Tick kSiegeLenTicks = 108000;  // 90 min battle
+  static constexpr std::size_t kSiegeMaxBands = 8;
+  sim::Tick siegeWindowStart() const;  // this week's Saturday 20:00
+  sim::Tick siegeWindowEnd() const { return siegeWindowStart() + kSiegeLenTicks; }
+  bool inSiegeWindow() const;
+  // T-136 rehearsal posture: window opens unconditionally (drill only).
+  void setRehearsal(bool on) { rehearsalMode_ = on; }
+  bool rehearsalMode() const { return rehearsalMode_; }
+  bool siegeRegister(std::uint32_t captainId);  // war-band captain (player id)
+  bool siegeStart(Entity& e);  // gm siege-start: in-window + bands, else quiet
+  bool siegeBattleActive() const;
+  const std::vector<std::uint32_t>& siegeAttackers() const { return siegeAttackers_; }
+  std::uint32_t siegeHolder() const { return siegeHolder_; }
+  // T-132 gates: breach objectives (kind 75) on zone 6, felled by /breach.
+  static constexpr std::uint32_t kSiegeGateHp = 300;
+  static constexpr std::uint32_t kBreachDmg = 10;  // ~30 ram-actions per gate
+  void spawnSiegeGates(Zone& zone);  // zone 6 only (staging positions)
+  bool breach(Entity& e);  // registered attacker near a standing gate
+  // T-133 Heartstone + crown (kind 76): presence attunes, channel crowns.
+  static constexpr std::uint32_t kHeartCaptureTicks = 1200;  // 60 s uncontested
+  static constexpr sim::Tick kCrownChannelTicks = 200;  // 10 s kneel
+  void spawnHeartstone(Zone& zone);  // zone 6 only (by the Inner Gate)
+  bool crown(Entity& e);  // /crown: registered attacker kneels at attuned stone
+  std::uint32_t heartProgress() const { return heartProgress_; }
+  bool heartAttuned() const { return heartAttuned_; }
+  // T-134 taxes + holder economy (persisted by the shell via saveSiege).
+  std::uint32_t siegeVault() const { return siegeVault_; }
+  std::uint32_t siegeCrowns() const { return siegeCrowns_; }
+  const std::string& siegeHolderName() const { return siegeHolderName_; }
+  bool siegeDirty() const { return siegeDirty_; }
+  bool siegeSaveDue(sim::Tick now) const {
+    return siegeDirty_ && now - siegeSavedAt_ >= 600;
+  }
+  void markSiegeSaved(sim::Tick now) {
+    siegeDirty_ = false;
+    siegeSavedAt_ = now;
+  }
+  void loadSiegeState(std::uint32_t holderId, const std::string& holderName,
+                      std::uint32_t vault, std::uint32_t crowns);
+  void siegeReadout(Entity& requester);  // T-134: gm siege directed lines
   void spawnConfessor(Zone& zone);  // zone 1 chapel only
+  void spawnSteward(Zone& zone);  // zone 6 keep only (Castle Steward, kind 73)
   void spawnAnvils();                        // plaza (z1) + bone barrow (z3)
+  void spawnOreNodes();                       // H2: blackiron ore in zone 4 (mine)
+  bool nearNode(const Entity& e) const;       // H2: chebyshev ≤2 to ore node
+  bool tryMine(Entity& e);                    // H2: mine ore with equipped pick
   void spawnNpcs();  // T-094: twins flank the anvil, guards stand the posts
   std::uint8_t anvilTilesAllowed(std::uint16_t zoneId) const;
   // trade window (transactional by construction; see ADR-0011)
@@ -308,6 +429,10 @@ class World {
   void debugKillPlayerBy(Entity& e, Entity* killer) { killPlayer(e, killer); }
   void debugAwardXp(Entity& e, std::uint32_t amt) { awardXp(e, amt); }
   void debugKillMob(Entity& mob, Entity* killer) { killMob(mob, killer); }
+  // T-127: unique grant (fixed item + fixed affix + world broadcast). No roll
+  // inside — the caller owns the chance draw (testable deterministically).
+  // Inv-full grants nothing (no partial state). Returns the grant or false.
+  bool grantUniqueDrop(Entity& killer, const content::UniqueDropDef& u);
   void debugSetTick(sim::Tick t) { tick_ = t; }  // T-061/62 test seam: hour dial
   bool isNight() const;  // T-061: dark hours 21:00-05:00 (game clock)
   // T-065 session-scoped bounty board (no persistence by design)
@@ -440,6 +565,8 @@ class World {
   void awardXp(Entity& player, std::uint32_t amount);
   std::uint32_t recomputeHpMax(Entity& e) const;
   void respawnTick();
+  void heartTick();  // T-133: presence attunement while battle runs
+  void crownTick();  // T-133: channel progress/breaks/crowning
   std::vector<Entity*> playersNear(Zone& zone, int x, int y, int radius);
   // inventory helpers (sorted by itemId; equips occupy their slot domain)
   bool addItem(Entity& e, std::uint32_t itemId, std::uint16_t qty);
@@ -456,6 +583,11 @@ class World {
   std::deque<Entity> entities_{};
   std::deque<Party> parties_;
   std::uint32_t nextPartyId_ = 1;
+
+  // pledge-lite (T-122): registry + pending invites (target id -> {expiry, inviter id})
+  std::deque<Pledge> pledges_;
+  std::uint32_t nextPledgeId_ = 1;
+  std::vector<std::pair<std::uint32_t, std::pair<sim::Tick, std::uint32_t>>> pledgeInvites_;
   // pending invites: invitee entity id -> (expiryTick, inviter entity id)
   std::vector<std::pair<std::uint32_t, std::pair<sim::Tick, std::uint32_t>>> invites_;
   std::uint32_t nextId_ = 1;
@@ -463,6 +595,32 @@ class World {
   // T-101 named-elite first blood (session-scoped: vanishes at reboot like
   // the bounty sheet — persistent ledgers wait on Marrowgate/EK design).
   bool namedEliteSlain_[3] = {false, false, false};
+  // T-129 Blood Moon: session flags (never persisted; replay reproduces them
+  // from the journaled kBloodMoon command, H1 pattern).
+  bool bloodMoonActive_ = false;
+  sim::Tick bloodMoonUntil_ = -1;
+  // T-131 siege battle (session-scoped; holder/tax persist lands in S3).
+  // Bands are parties: one registration enlists the captain's living party
+  // (5-man convention; M4's 40 = 8 bands). Unaffiliated captains ride solo.
+  // T-139 pledge bands: a sworn captain musters the whole sworn war-host
+  // (living online pledge members) keyed by pledge id — one pledge, one band.
+  std::vector<std::uint32_t> siegeAttackers_{};
+  std::vector<std::uint32_t> siegeBandPledges_{};  // T-139: pledge id per band (0 = unaffiliated)
+  std::uint32_t siegeHolder_ = 0;  // 0 = unclaimed castle
+  bool siegeBattleActive_ = false;
+  sim::Tick siegeBattleEndsAt_ = -1;
+  std::uint32_t siegeBandsUsed_ = 0;  // T-137: the 8-band cap counts bands
+  bool rehearsalMode_ = false;  // T-136: drill posture (window bypass)
+  // T-133 Heartstone (session-scoped like the battle).
+  std::uint32_t heartProgress_ = 0;
+  bool heartAttuned_ = false;
+  // T-134 taxes + holder (holder/vault/crowns persist via siege_state; the
+  // per-tick accrual flags below are session-only).
+  std::uint32_t siegeVault_ = 0;  // tax-only pool (spending = Phase P)
+  std::uint32_t siegeCrowns_ = 0;
+  std::string siegeHolderName_{};
+  bool siegeDirty_ = false;
+  sim::Tick siegeSavedAt_ = -10000;
   sim::Tick tick_ = 0;
   std::vector<WorldEvent> events_{};
 

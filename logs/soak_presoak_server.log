@@ -1,0 +1,116 @@
+[boot] zone 2 (assets/maps/fields_overflow.bhmap: 64x48) online
+[boot] zone 3 (assets/maps/thornwall_crypt.bhmap: 48x36) online
+[boot] zone 4 (assets/maps/bonehowl_mine.bhmap: 56x40) online
+[boot] zone 5 (assets/maps/drowned_crypt.bhmap: 48x36) online
+[boot] zone 6 (assets/maps/weeping_castle.bhmap: 40x30) online
+[auth] registration OPEN (prototype posture; --no-register to gate); limiter: 60 logins + 30 new accounts per 60s per IP, 10 consecutive bad-password fails -> 60s lockout
+[boot] pledges: 0 registered, 0 sworn members
+[boot] bh_server on 0.0.0.0:7826 | map 'assets/maps/thornwall.bhmap' | db '/tmp/soak.db' | tick 20Hz | aoi 26
+[net] soak__00         entered the world (entity 208, online 1)
+[net] soak__01         entered the world (entity 209, online 2)
+[net] soak__02         entered the world (entity 210, online 3)
+[net] soak__03         entered the world (entity 211, online 4)
+[net] soak__04         entered the world (entity 212, online 5)
+[net] soak__05         entered the world (entity 213, online 6)
+[net] soak__06         entered the world (entity 214, online 7)
+[net] soak__07         entered the world (entity 215, online 8)
+[net] soak__08         entered the world (entity 216, online 9)
+[net] soak__09         entered the world (entity 217, online 10)
+[net] soak__10         entered the world (entity 218, online 11)
+[net] soak__11         entered the world (entity 219, online 12)
+[net] soak__12         entered the world (entity 220, online 13)
+[net] soak__13         entered the world (entity 221, online 14)
+[net] soak__14         entered the world (entity 222, online 15)
+[net] soak__15         entered the world (entity 223, online 16)
+[net] soak__16         entered the world (entity 224, online 17)
+[net] soak__17         entered the world (entity 225, online 18)
+[net] soak__18         entered the world (entity 226, online 19)
+[net] soak__19         entered the world (entity 227, online 20)
+[net] soak__20         entered the world (entity 228, online 21)
+[net] soak__21         entered the world (entity 229, online 22)
+[net] soak__22         entered the world (entity 230, online 23)
+[net] soak__23         entered the world (entity 231, online 24)
+[net] soak__24         entered the world (entity 232, online 25)
+[net] soak__25         entered the world (entity 233, online 26)
+[net] soak__26         entered the world (entity 234, online 27)
+[net] soak__27         entered the world (entity 235, online 28)
+[net] soak__28         entered the world (entity 236, online 29)
+[net] soak__29         entered the world (entity 237, online 30)
+[soak] tick=600 online=60 entities=210 tickUs p50=2261 p99=5091 worldHash=4ea0af75383c5be9 pkts=1456/965900
+[soak] tick=1200 online=60 entities=197 tickUs p50=2018 p99=3401 worldHash=04c87741d26f7826 pkts=2272/1717787
+[soak] tick=1800 online=60 entities=181 tickUs p50=2131 p99=3889 worldHash=0cef58225c78e3a4 pkts=3309/2517951
+[soak] tick=2400 online=60 entities=176 tickUs p50=1727 p99=2991 worldHash=a6684e9ab92ade36 pkts=4069/3126121
+[soak] tick=3000 online=60 entities=174 tickUs p50=1658 p99=2772 worldHash=3a8c2cf33ad57907 pkts=4693/3685753
+[soak] tick=3600 online=60 entities=172 tickUs p50=1493 p99=2416 worldHash=b9946ff95b6dc1f3 pkts=5374/4190207
+[soak] tick=4200 online=60 entities=172 tickUs p50=1442 p99=2401 worldHash=d8ab73e1bd5e4373 pkts=5895/4665382
+[soak] tick=4800 online=60 entities=172 tickUs p50=1358 p99=2260 worldHash=1ece04bfd69357fd pkts=6450/5102933
+[soak] tick=5400 online=60 entities=176 tickUs p50=1360 p99=2331 worldHash=1a7cb4616a6b68c7 pkts=6949/5546708
+[zone] soak__10 -> map 3 at (24,30)
+[zone] soak__10 -> map 3 at (24,30)
+[soak] tick=6000 online=60 entities=175 tickUs p50=1342 p99=2244 worldHash=10dd53fc8c2f9c94 pkts=7528/5978833
+[zone] soak__10 -> map 1 at (32,16)
+[zone] soak__10 -> map 1 at (32,16)
+[soak] tick=6600 online=60 entities=172 tickUs p50=1571 p99=2701 worldHash=d35a222cd36bf3ab pkts=8026/6497398
+[soak] tick=7200 online=60 entities=176 tickUs p50=1565 p99=2584 worldHash=6f7d62e2bb823572 pkts=8720/7040701
+[soak] tick=7800 online=60 entities=175 tickUs p50=1543 p99=2497 worldHash=4f91ba7446d2876f pkts=9271/7550616
+[soak] tick=8400 online=60 entities=178 tickUs p50=1657 p99=2864 worldHash=61433871f309a68c pkts=9772/8109018
+[soak] tick=9000 online=60 entities=174 tickUs p50=1827 p99=3127 worldHash=758f78cbefd75360 pkts=10334/8754621
+[soak] tick=9600 online=60 entities=174 tickUs p50=1675 p99=2707 worldHash=647b9c4e184c7984 pkts=10973/9311571
+[zone] soak__06 -> map 3 at (24,30)
+[zone] soak__06 -> map 3 at (24,30)
+[zone] soak__06 -> map 1 at (32,16)
+[zone] soak__06 -> map 1 at (32,16)
+[zone] soak__17 -> map 6 at (20,27)
+[zone] soak__17 -> map 6 at (20,27)
+[zone] soak__17 -> map 1 at (21,14)
+[zone] soak__17 -> map 1 at (21,14)
+[zone] soak__20 -> map 3 at (24,30)
+[zone] soak__20 -> map 3 at (24,30)
+[zone] soak__20 -> map 1 at (32,16)
+[zone] soak__20 -> map 1 at (32,16)
+[soak] tick=10200 online=60 entities=175 tickUs p50=1653 p99=2963 worldHash=bbc68669e60fd83e pkts=11605/9895815
+[soak] tick=10800 online=60 entities=172 tickUs p50=1446 p99=2711 worldHash=3c3e86b6cfafc3a1 pkts=12106/10395428
+[soak] tick=11400 online=60 entities=172 tickUs p50=1487 p99=2576 worldHash=1731d5e22e4b72db pkts=12656/10883976
+[soak] tick=12000 online=60 entities=172 tickUs p50=1504 p99=2483 worldHash=c6e1d59156be08f3 pkts=13218/11394586
+[net] soak__00         saved at (14,37)
+[net] soak__01         saved at (9,40)
+[net] soak__02         saved at (44,21)
+[net] soak__03         saved at (23,28)
+[net] soak__04         saved at (8,20)
+[net] soak__05         saved at (50,2)
+[net] soak__06         saved at (27,23)
+[net] soak__07         saved at (45,20)
+[net] soak__08         saved at (43,19)
+[net] soak__09         saved at (12,38)
+[net] soak__10         saved at (7,7)
+[net] soak__11         saved at (1,3)
+[net] soak__12         saved at (42,25)
+[net] soak__13         saved at (16,14)
+[net] soak__14         saved at (8,40)
+[net] soak__15         saved at (30,28)
+[net] soak__16         saved at (9,24)
+[net] soak__17         saved at (33,32)
+[net] soak__18         saved at (38,12)
+[net] soak__19         saved at (35,14)
+[net] soak__20         saved at (20,13)
+[net] soak__21         saved at (23,4)
+[net] soak__22         saved at (29,32)
+[net] soak__23         saved at (1,7)
+[net] soak__24         saved at (9,40)
+[net] soak__25         saved at (15,14)
+[net] soak__26         saved at (25,24)
+[net] soak__27         saved at (45,14)
+[net] soak__28         saved at (48,24)
+[net] soak__29         saved at (17,4)
+[soak] tick=12600 online=0 entities=152 tickUs p50=210 p99=2457 worldHash=fd4df4c85be4f80e pkts=13297/11454945
+[soak] tick=13200 online=0 entities=165 tickUs p50=218 p99=386 worldHash=d5986687f9ea9d9f pkts=13297/11454945
+[soak] tick=13800 online=0 entities=175 tickUs p50=242 p99=434 worldHash=ef2f5559f3cda2f4 pkts=13297/11454945
+[soak] FINISH ticks=14001 online=0 entities=179 tickUs p50=246 p99=430
+[soak] OK p99=0.43ms budget=25.00ms
+[balance] Marsh Rat        L1  kills=37    TTK(25t hps)=3.6s xp=40
+[balance] Feral Ghoul      L3  kills=47    TTK(25t hps)=10.8s xp=90
+[balance] Hollow Hound     L5  kills=11    TTK(25t hps)=18.6s xp=150
+[balance] Plague Bat       L2  kills=22    TTK(25t hps)=3.8s xp=55
+[balance] Bonepicker Gnoll L7  kills=9     TTK(25t hps)=151.9s xp=300
+[balance] Gravecaller      L11 kills=8     TTK(25t hps)=51.4s xp=560
+[balance] Gate Guard       L15 kills=12    TTK(25t hps)=31.9s xp=0

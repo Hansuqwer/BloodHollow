@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "content/kits.h"
 #include "content/mobs.h"
 #include "content/wirekind.h"
 
@@ -96,6 +97,29 @@ inline bool furnitureSheetPaths(std::uint8_t kind, char* png, std::size_t pngN,
     }
   }
   return false;  // 64 Marta / 65 anvil / 66 bounty board still use in-code stubs
+}
+
+// T-142: player sheet-dir law (headless-testable). Players (kind 0) resolve
+// to assets/aigen/players/<class>/<sex>/sheet.png+json when that sheet has
+// been shipped (Ravager m/f today; Gravecaller/Cultist when they land).
+// Wire classId is the kit id (kits.h: 1 Ravager, 2 Gravecaller, 3 Cultist;
+// 0 unsworn/none); sex is 1 m, 2 f, 0 unknown (T-142b captures). Returns
+// false when no sheet is shipped yet or sex==0 (caller falls back to the
+// hero placeholder) — same contract as mobSheetPaths.
+inline bool playerSheetPaths(std::uint8_t classId, std::uint8_t sex, char* png,
+                            std::size_t pngN, char* js, std::size_t jsN) {
+  if (sex != 1 && sex != 2) return false;
+  const char* classSlug = nullptr;
+  switch (classId) {
+    case content::kKitRavager: classSlug = "ravager"; break;
+    case content::kKitGravecaller: classSlug = "gravecaller"; break;
+    case content::kKitCultist: classSlug = "cultist"; break;
+    default: return false;
+  }
+  const char* sexSlug = (sex == 1) ? "m" : "f";
+  std::snprintf(png, pngN, "assets/aigen/players/%s/%s/sheet.png", classSlug, sexSlug);
+  std::snprintf(js, jsN, "assets/aigen/players/%s/%s/sheet.json", classSlug, sexSlug);
+  return true;
 }
 
 }  // namespace bh

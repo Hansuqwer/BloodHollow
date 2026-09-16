@@ -79,7 +79,11 @@ def emit_h(messages):
         "",
         "namespace bh::proto {",
         "",
-        "inline constexpr std::uint16_t kProtocolVersion = %d;" % (200 + len(messages)),
+        "inline constexpr std::uint16_t kProtocolVersion = %d;" % (201 + len(messages)),
+        "// T-142: base 201 (was 200): EntitySpawn/Delta gained classId+sex,",
+        "// an incompatible change the count-derived version would not move.",
+        "// Field additions MUST bump the base again; message additions bump",
+        "// via the count. (Follow-up: derive from a schema hash.)",
         "",
     ]
     for name, mid, fields in messages:

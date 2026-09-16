@@ -1,0 +1,64 @@
+[bots] CRYPT bossSeen=0 bossKills=0 curse=0 slam=0
+[bots] SIEGE reg=0 breach=0 crown=0
+[bots] SUMMARY welcomed=30/60 moved=30/60 minDeltas=0 kills=376 pots=29 swings=1638 deaths=204 shops=18 anvilTries=0 levelDrops=16 regear=0 maxLevel=4 pkts=11454480 bytes=273506946 gates b/g/p/a/r=0/0/0/0/0 mGold=0 mPelts=0 bless=0 mend=0 noSee=0 hurt=0 choir c6=0 c7=0 c8=0
+[bots] soak__00     kit=1 lvl=2 hp=100/94 party=0 deaths=4 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(7,43) killerByLvl=L11:2 L7:2
+[bots] soak__01     kit=1 lvl=3 hp=16/94 party=0 deaths=2 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(52,41) killerByLvl=L9:2
+[bots] soak__02     kit=1 lvl=4 hp=97/94 party=0 deaths=6 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(39,38) killerByLvl=L3:4 L5:2
+[bots] soak__03     kit=1 lvl=4 hp=112/106 party=0 deaths=10 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(51,42) killerByLvl=L9:4 L5:6
+[bots] soak__04     kit=1 lvl=2 hp=100/94 party=0 deaths=8 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(51,42) killerByLvl=L9:2 L7:2 L11:4
+[bots] soak__05     kit=1 lvl=2 hp=74/106 party=0 deaths=12 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(7,42) killerByLvl=L15:2 L11:6 L5:4
+[bots] soak__06     kit=1 lvl=3 hp=106/106 party=0 deaths=10 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(24,30) killerByLvl=L7:2 L9:4 L3:2 L5:2
+[bots] soak__07     kit=1 lvl=4 hp=112/94 party=0 deaths=14 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(49,40) killerByLvl=L7:2 L9:6 L3:2 L5:4
+[bots] soak__08     kit=1 lvl=2 hp=96/94 party=0 deaths=6 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(8,38) killerByLvl=L11:4 L3:2
+[bots] soak__09     kit=1 lvl=2 hp=100/100 party=0 deaths=6 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(44,40) killerByLvl=L7:2 L15:2 L11:2
+[bots] soak__10     kit=1 lvl=2 hp=100/100 party=0 deaths=4 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(24,30) killerByLvl=L9:4
+[bots] soak__11     kit=1 lvl=1 hp=94/94 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__12     kit=1 lvl=2 hp=91/100 party=0 deaths=6 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(9,40) killerByLvl=L11:2 L15:2 L5:2
+[bots] soak__13     kit=1 lvl=2 hp=100/100 party=0 deaths=6 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(61,4) killerByLvl=L15:2 L7:2 L11:2
+[bots] soak__14     kit=1 lvl=2 hp=87/94 party=0 deaths=6 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(39,38) killerByLvl=L7:2 L9:2 L5:2
+[bots] soak__15     kit=1 lvl=3 hp=106/94 party=0 deaths=4 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(45,41) killerByLvl=L3:2 L7:2
+[bots] soak__16     kit=1 lvl=3 hp=106/100 party=0 deaths=10 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(50,41) killerByLvl=L9:2 L3:2 L5:6
+[bots] soak__17     kit=1 lvl=3 hp=106/106 party=0 deaths=8 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(19,21) killerByLvl=L15:4 L3:2 L5:2
+[bots] soak__18     kit=1 lvl=2 hp=100/94 party=0 deaths=4 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(61,13) killerByLvl=L3:2 L7:2
+[bots] soak__19     kit=1 lvl=3 hp=106/100 party=0 deaths=10 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(60,17) killerByLvl=L15:4 L11:4 L9:2
+[bots] soak__20     kit=1 lvl=3 hp=106/106 party=0 deaths=6 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(51,41) killerByLvl=L9:4 L3:2
+[bots] soak__21     kit=1 lvl=2 hp=100/94 party=0 deaths=6 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(13,38) killerByLvl=L11:2 L5:4
+[bots] soak__22     kit=1 lvl=2 hp=98/100 party=0 deaths=6 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(50,41) killerByLvl=L9:2 L11:2 L5:2
+[bots] soak__23     kit=1 lvl=3 hp=106/94 party=0 deaths=8 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(8,39) killerByLvl=L9:2 L11:4 L5:2
+[bots] soak__24     kit=1 lvl=3 hp=92/100 party=0 deaths=10 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(51,42) killerByLvl=L9:2 L5:2 L15:6
+[bots] soak__25     kit=1 lvl=1 hp=94/94 party=0 deaths=10 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(51,41) killerByLvl=L7:2 L11:4 L5:4
+[bots] soak__26     kit=1 lvl=4 hp=112/94 party=0 deaths=4 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(51,41) killerByLvl=L7:4
+[bots] soak__27     kit=1 lvl=2 hp=91/94 party=0 deaths=6 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(51,42) killerByLvl=L9:2 L7:2 L5:2
+[bots] soak__28     kit=1 lvl=3 hp=58/94 party=0 deaths=4 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(46,20) killerByLvl=L3:2 L11:2
+[bots] soak__29     kit=1 lvl=3 hp=106/94 party=0 deaths=8 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(51,41) killerByLvl=L9:2 L7:2 L11:2 L15:2
+[bots] soak__30     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__31     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__32     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__33     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__34     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__35     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__36     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__37     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__38     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__39     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__40     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__41     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__42     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__43     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__44     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__45     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__46     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__47     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__48     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__49     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__50     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__51     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__52     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__53     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__54     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__55     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__56     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__57     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__58     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] soak__59     kit=1 lvl=1 hp=100/100 party=0 deaths=0 rxR=0 rxM=0 lastPid=0 casts c6=0 c7=0 c8=0 bossSeen=0 bossKills=0 curse=0 slam=0 lastDeath=(-1,-1) killerByLvl=
+[bots] FAIL

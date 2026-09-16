@@ -1,0 +1,57 @@
+{
+ "anims": {
+  "walk": {
+   "frames": 1,
+   "fps": 10.0,
+   "max_colours": 31
+  },
+  "attack": {
+   "frames": 1,
+   "fps": 12.0,
+   "max_colours": 32
+  },
+  "cast": {
+   "frames": 1,
+   "fps": 10.0,
+   "max_colours": 30
+  },
+  "die": {
+   "frames": 1,
+   "fps": 8.0,
+   "max_colours": 32
+  }
+ },
+ "padded": [
+  "walk/SW <- S",
+  "walk/W <- S",
+  "walk/NW <- E",
+  "walk/N <- E",
+  "walk/NE <- E",
+  "attack/S <- SE",
+  "attack/SW <- SE",
+  "attack/W <- SE",
+  "attack/NW <- E",
+  "attack/N <- E",
+  "attack/NE <- E",
+  "cast/S <- SE",
+  "cast/SW <- SE",
+  "cast/W <- SE",
+  "cast/NW <- E",
+  "cast/N <- E",
+  "cast/NE <- E",
+  "die/SW <- S",
+  "die/W <- S",
+  "die/NW <- E",
+  "die/N <- E",
+  "die/NE <- E"
+ ],
+ "feet_warnings": [],
+ "errors": [],
+ "loader_rule_replica": "clean",
+ "sheet_px": [
+  128,
+  384
+ ],
+ "colour_gate": true,
+ "engine_validated": false
+}

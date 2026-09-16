@@ -1,9 +1,4 @@
-# bh_tests: server/sim law suite. Most TUs are raylib-free; three client-law
-# TUs (test_zoom, test_animstate, test_clientlaw) include raylib-bearing
-# headers (camera_rig.h etc.). raylib is only fetched when BH_BUILD_CLIENT=ON,
-# so those TUs and the raylib link are gated together (T-108) — the headless
-# preset must configure and build without X11/GL, per CMakePresets.json.
-set(BH_TEST_SOURCES
+add_executable(bh_tests
   tests_main.cpp
   test_grid.cpp
   test_rng.cpp
@@ -18,12 +13,16 @@ set(BH_TEST_SOURCES
   test_combat.cpp
   test_cmdparity.cpp
   test_party.cpp
+  test_pledges.cpp
   test_kits.cpp
   test_alignment.cpp
   test_fence.cpp
   test_curse.cpp
   test_light.cpp
   test_guards.cpp
+  test_zoom.cpp
+  test_animstate.cpp
+  test_clientlaw.cpp
   test_repent.cpp
   test_tradelog.cpp
   test_purify.cpp
@@ -47,24 +46,22 @@ set(BH_TEST_SOURCES
   test_t111_review.cpp
   test_t112_spawn_epoch.cpp
   test_weapon_skill_persist.cpp
+  test_affix_v2.cpp
+  test_mine.cpp
+  test_uniques.cpp
+  test_blood_moon.cpp
+  test_ek_oath.cpp
+  test_siege_sched.cpp
+  test_siege_gates.cpp
+  test_siege_crown.cpp
+  test_siege_taxes.cpp
+  test_pledge_bands.cpp
+  test_pledge_vault.cpp
 )
-if(BH_BUILD_CLIENT)
-  # T-ART-02: snapZoom lives in raylib-including camera_rig.h — the test TUs
-  # never open a display; it is pure float/anim law under test. Headless CI
-  # legs simply skip these three TUs (their law is re-covered by the client
-  # build's own compile + the full graphical CI leg).
-  list(APPEND BH_TEST_SOURCES
-    test_zoom.cpp
-    test_animstate.cpp
-    test_clientlaw.cpp
-  )
-endif()
-
-add_executable(bh_tests ${BH_TEST_SOURCES})
-target_link_libraries(bh_tests PRIVATE bh_shared bh_protocol bh_server_world bh_doctest bh_warnings bh_sqlite)
-if(BH_BUILD_CLIENT)
-  target_link_libraries(bh_tests PRIVATE raylib)
-endif()
+target_link_libraries(bh_tests PRIVATE bh_shared bh_protocol bh_server_world bh_doctest bh_warnings)
+# T-ART-02: snapZoom lives in raylib-including camera_rig.h — link raylib for
+# the headers (test TU never opens a display; pure float math under test).
+target_link_libraries(bh_tests PRIVATE raylib)
 # T-071: light-mask law pins live in raylib-free engine/render/lightmask.h.
 target_include_directories(bh_tests PRIVATE ${CMAKE_SOURCE_DIR}/engine)
 add_test(NAME bh_tests COMMAND bh_tests)
