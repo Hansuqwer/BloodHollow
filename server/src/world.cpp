@@ -2424,6 +2424,29 @@ void World::bountyAssign(Entity& e) {
   events_.push_back(std::move(ev));
 }
 
+// T-127 boss-unique grant: fixed item + fixed affix + world broadcast.
+// Era-loud by design (chatCh 2, first-blood lane). Inv-full grants nothing.
+bool World::grantUniqueDrop(Entity& killer, const content::UniqueDropDef& u) {
+  if (killer.kind != EntityKind::kPlayer || killer.inv.size() >= 32) return false;
+  const content::ItemDef* id = content::findItem(u.itemId);
+  if (id == nullptr || u.affix > content::kAffixCount || u.title[0] == '\0')
+    return false;
+  InvSlot sl;
+  sl.itemId = u.itemId;
+  sl.qty = 1;
+  sl.equipped = false;
+  sl.aura = 0;
+  sl.affix = u.affix;
+  killer.inv.push_back(sl);
+  WorldEvent ev;
+  ev.aboutId = killer.id;
+  ev.invChanged = true;
+  ev.chatCh = 2;
+  ev.chatText = killer.name + " claims " + id->name + ", " + u.title + "!";
+  events_.push_back(std::move(ev));
+  return true;
+}
+
 void World::killMob(Entity& mob, Entity* killer) {
   const sim::TilePos mobPos = mob.walker.tile();  // before despawn below
   if (killer != nullptr && killer->kind == EntityKind::kPlayer) {
@@ -2528,6 +2551,16 @@ void World::killMob(Entity& mob, Entity* killer) {
             events_.push_back(std::move(gev));
           }
         }
+      }
+      // T-127 boss uniques: per-row independent rolls (night rides +25%,
+      // T-062 law). New draws on elite kills only — hence the epoch bump.
+      for (std::uint32_t ui = 0; ui < content::kUniqueDropCount; ++ui) {
+        const content::UniqueDropDef& u = content::kUniqueDrops[ui];
+        if (u.mobId != md->mobId) continue;
+        const std::int64_t uniqPct =
+            isNight() ? static_cast<std::int64_t>(u.chancePct) * 125 / 100
+                      : static_cast<std::int64_t>(u.chancePct);
+        if (rng_.range(1, 100) <= uniqPct) grantUniqueDrop(*killer, u);
       }
       // loot roll (junk tier for now; gear tables land with affixes in P3)
       const std::int64_t nightLootPct =  // T-062: +25% relative under dark

@@ -24,8 +24,14 @@ inline constexpr ItemDef kItems[] = {
     //  id    name                slot dmg def heal value stack
     {2001, "Rusty Shank",          0, 12, 0,  0,   80,   1},
     {2002, "Pit Blade",            0, 18, 0,  0,   260,  1},
+    {2003, "Mine Pick",            0, 8,  0,  0,   150,  1},
     {2101, "Hide Armor",           1, 0,  6,  0,   120,  1},
     {2102, "Bone Plate",           1, 0,  11, 0,   350,  1},
+    // T-127 Old Maw uniques (found, never stocked): Mawsplitter 2201,
+    // Gullet Plate 2103, Mawfang Shiv 2202.
+    {2201, "Mawsplitter",          0, 22, 0,  0,   600,  1},
+    {2103, "Gullet Plate",         1, 0,  13, 0,   700,  1},
+    {2202, "Mawfang Shiv",         0, 15, 0,  0,   450,  1},
     {3001, "Blood Vial",           2, 0,  0,  40,  30,   16},
     {3002, "Smuggled Vial",        2, 0,  0,  55,  45,   16},
     // T-071 night light: torches burn out (timed), the lantern never does
@@ -63,6 +69,25 @@ inline const GearDropDef* findGearDrop(std::uint32_t mobId) {
   for (const auto& g : kGearDrops) if (g.mobId == mobId) return &g;
   return nullptr;
 }
+
+// ---- T-127 boss uniques ------------------------------------------------
+// Fixed item + fixed affix + title; elites roll each row independently at
+// chancePct (night rides +25% like all drops, T-062). T-127 seeds Old Maw
+// (1012); T-128..T-130 append Widow (1013) / Cantor (1014) / Gravemother.
+struct UniqueDropDef {
+  std::uint32_t mobId;
+  std::uint32_t itemId;
+  std::uint8_t affix;      // fixed, never rolled (must be <= kAffixCount)
+  std::uint8_t chancePct;  // per-row independent roll
+  const char* title;       // broadcast epithet, non-empty
+};
+inline constexpr UniqueDropDef kUniqueDrops[] = {
+    {1012, 2201, 7, 4, "Tooth of the Pit"},
+    {1012, 2103, 5, 4, "The Maw That Keeps"},
+    {1012, 2202, 9, 4, "Tithetaker"},
+};
+inline constexpr std::uint32_t kUniqueDropCount =
+    sizeof(kUniqueDrops) / sizeof(kUniqueDrops[0]);
 
 inline const ItemDef* findItem(std::uint32_t itemId) {
   for (const ItemDef& d : kItems) {
