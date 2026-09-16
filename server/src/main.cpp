@@ -460,6 +460,12 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
     case kIdChatSend: {
       ChatSend m;
       if (!m.deserialize(pv.body) || !sess.inWorld) return;
+      if (m.text == "gm siege-now") {  // H1 rehearsal stub: journaled, replay-exact
+        Command c;
+        c.kind = Command::kSiegeNow;
+        if (sess.cmdq.size() < 32) sess.cmdq.push_back(std::move(c));
+        break;
+      }
       if (!m.text.empty() && m.text[0] == '/') {  // party verbs (era commands)
         Command c;
         bool okCmd = true;
@@ -502,6 +508,7 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
         else if (m.text == "/repair") { c.kind = Command::kRepair; }
         else if (m.text == "/confess") { c.kind = Command::kConfess; }
         else if (m.text == "/repent") { c.kind = Command::kRepent; }
+        else if (m.text == "/mine") { c.kind = Command::kMine; }
         else if (m.text.rfind("/refine ", 0) == 0) {  // T-060 anvil upgrade
           // T-104: throw-free parse (was std::stoi on client digits — any
           // all-digit argument wider than int aborted the server).
@@ -1391,7 +1398,8 @@ int run(int argc, char** argv) {
   for (const auto& [zid, zpath] : {std::pair<std::uint16_t, const char*>{2, "assets/maps/fields_overflow.bhmap"},
                                    {3, "assets/maps/thornwall_crypt.bhmap"},
                                    {4, "assets/maps/bonehowl_mine.bhmap"},
-                                   {5, "assets/maps/drowned_crypt.bhmap"}}) {
+                                   {5, "assets/maps/drowned_crypt.bhmap"},
+                                   {6, "assets/maps/weeping_castle.bhmap"}}) {
     std::string zerr;
     if (s.world.loadZone(zid, zpath, &zerr)) {
       const sim::Map* zm = s.world.zoneMap(zid);

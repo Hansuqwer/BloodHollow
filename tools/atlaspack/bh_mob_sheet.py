@@ -381,7 +381,13 @@ def frames_for(anim: str, n: int, base: Image.Image, d: str, *, kind: str, lunge
     fdx, fdy = FACING_DX[d], FACING_DY[d]
     h = base.height
     out = []
-    if anim == "walk":
+    if anim == "idle":
+        # B5 NPC idle: standing breath, NOT a step — vertical bob ±1 px only,
+        # no leg shear (cf. walk which shears the bottom rows). Zero lunge.
+        for f in range(n):
+            im = shift(base, 0, -1 if f % 2 == 1 else 0)
+            out.append(im)
+    elif anim == "walk":
         for f in range(n):
             im = base
             if kind == "fly":
@@ -460,7 +466,9 @@ def frames_for(anim: str, n: int, base: Image.Image, d: str, *, kind: str, lunge
 # ----------------------------------------------------------------------------
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("mob_id", type=int)
+    ap.add_argument("mob_id", type=int, nargs="?", default=None, help="mob id (mobs/<id>_*/); omit with --npc-dir for B5 NPCs")
+    ap.add_argument("--npc-dir", default=None, help="B5 NPC folder, e.g. assets/aigen/npcs/marta (uses --anims idle4; plate names <slug>_{S,SE,E,N}_4x_raw.png)")
+    ap.add_argument("--wire-kind", type=int, default=None, help="B5 NPC wireKind 64..73, recorded in derivation.json")
     ap.add_argument("--plates-dir")
     ap.add_argument("--out")
     ap.add_argument("--body-h", type=int, required=True)
@@ -484,8 +492,16 @@ def main(argv=None) -> int:
     ap.add_argument("--gamma", type=float, default=0.85, help="palette lift (B0 = 0.85); lower = brighter body for R-LUMA")
     args = ap.parse_args(argv)
 
-    folder = next(ROOT.glob(f"assets/aigen/mobs/{args.mob_id}_*"))
-    slug = folder.name.split("_", 1)[1]
+    if args.npc_dir:
+        folder = ROOT / args.npc_dir
+        slug = folder.name
+        wire_kind = args.wire_kind
+    else:
+        if args.mob_id is None:
+            print("need mob_id or --npc-dir"); return 2
+        folder = next(ROOT.glob(f"assets/aigen/mobs/{args.mob_id}_*"))
+        slug = folder.name.split("_", 1)[1]
+        wire_kind = None
     plates_dir = Path(args.plates_dir) if args.plates_dir else folder / "plates"
     out = Path(args.out) if args.out else folder
     cells_dir = out / "cells"
@@ -531,19 +547,20 @@ def main(argv=None) -> int:
                               shadow_rx=args.shadow_rx)
                 cell.save(cells_dir / f"{anim}_{d}_{f}.png")
 
-    deriv = {"mob_id": args.mob_id, "slug": slug, "family": args.family, "body_h": args.body_h,
+    deriv = {"mob_id": args.mob_id, "slug": slug, "wire_kind": wire_kind, "family": args.family, "body_h": args.body_h,
              "cell": [cw, ch], "anchor_y": anchor_y, "kind": args.kind, "walk_style": args.walk_style,
              "attack_fx": args.attack_fx, "n_hide_face": args.n_hide_face, "quiet_band_rows": args.quiet_band, "quiet_ramp": args.quiet_ramp, "pins": pin_notes,
              "gamma": args.gamma, "contrast": args.contrast, "hover": args.hover if args.kind == "fly" else 0,
              "asym_box": list(asym) if asym else None, "colour_matched_to": args.match_to if ref is not None else None,
              "native_fit": fit_notes,
              "native_plates": sorted(native), "direction_provenance": prov,
-             "frame_provenance": "walk/attack/die frames are pixel-op derivations of the per-direction base "
+             "frame_provenance": "idle frames are a zero-lunge breath bob (±1 px, no leg shear); "
+                                 "walk/attack/die frames are pixel-op derivations of the per-direction base "
                                  "(bob/shear/lunge/flop) — first-pass for T-ART-01/05 bring-up; hand-fix list in prompt.md applies",
              "status": "UNVALIDATED in engine"}
     (out / "derivation.json").write_text(json.dumps(deriv, indent=1) + "\n")
 
-    fps = ",".join(f"{a}={ {'walk':10,'attack':12,'cast':10,'hurt':12,'die':8,'summon':8}.get(a,8)}" for a, _ in anims)
+    fps = ",".join(f"{a}={ {'walk':10,'attack':12,'cast':10,'hurt':12,'die':8,'summon':8,'idle':4}.get(a,8)}" for a, _ in anims)
     order = ",".join(a for a, _ in anims)
     r = subprocess.run([sys.executable, str(Path(__file__).parent / "bh_pack_sheet.py"), str(cells_dir), str(out),
                         "--fps", fps, "--order", order, "--cell", f"{cw}x{ch}", "--anchor-y", str(anchor_y)],
@@ -551,7 +568,11 @@ def main(argv=None) -> int:
     print(r.stdout.strip()[-600:])
     if r.returncode != 0:
         print(r.stderr[-800:]); return 1
-    print(f"wrote {out.relative_to(ROOT)}/sheet.png + sheet.json + derivation.json ({sum(n for _, n in anims) * 8} cells)")
+    try:
+        rel = out.relative_to(ROOT)
+    except ValueError:
+        rel = out
+    print(f"wrote {rel}/sheet.png + sheet.json + derivation.json ({sum(n for _, n in anims) * 8} cells)")
     return 0
 
 

@@ -1,3 +1,9 @@
+> **MANDATORY TOOL USE — Context7 + Vercel Grep:**
+> - ALWAYS use **Context7 MCP** (`context7_resolve-library-id` → `context7_query-docs`) for latest APIs, libraries, docs, versioned code examples, setup/config steps. Do NOT rely on training data. If Context7 tools are unavailable, say so and do not guess versions.
+> - ALWAYS use **Vercel Grep MCP** (`mcp.grep.app` / `searchGitHub`) for real-world usage: find production code examples, API usage patterns, configs, and rare syntax across ~1M public GitHub repos before writing library-dependent code. Prefer `searchGitHub` evidence over speculation.
+> - Trigger: any task touching raylib, ENet, sqlite3, nlohmann/json, doctest, miniaudio, stb, CMake, or any third-party API/library/docs. Query both tools first, then implement.
+> - Config: project MCPs live in `opencode.json` at repo root (`context7`, `gh_grep`). Requires `CONTEXT7_API_KEY` env for higher limits; `gh_grep` needs no key.
+
 # AGENTS.md — Rules for AI coding agents in this repository
 
 You are an engineering agent on **BLOODHOLLOW**, a 2D MMORPG (C++20 client on raylib,

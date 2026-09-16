@@ -19,6 +19,7 @@ inline constexpr std::uint8_t kWireKindGuardAshen = 70;  // T-ART-06 town guard
 inline constexpr std::uint8_t kWireKindGuardSynod = 71;  // T-ART-06 town guard
 inline constexpr std::uint8_t kWireKindRegistrar = 72;   // T-ART-06 pledge clerk
 inline constexpr std::uint8_t kWireKindSteward = 73;     // T-ART-06 castle keeper
+inline constexpr std::uint8_t kWireKindOreNode = 74;     // H2: mineable ore deposit
 
 inline bool wireIsFurniture(std::uint8_t k) { return k >= kWireKindFurnitureFloor; }
 inline bool wireIsMob(std::uint8_t k) { return k < kWireKindFurnitureFloor; }
