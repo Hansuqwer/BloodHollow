@@ -171,6 +171,7 @@ void flushPledges(Server& s) {
     r.name = p.name;
     r.emblem = p.emblem;
     r.liege = p.liege;
+    r.vault = p.vault;  // T-140 tax-only pool
     s.db.upsertPledge(r, nullptr);
     known.insert(p.id);
   }
@@ -538,6 +539,11 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
           if (pe != nullptr) s.world.pledgeWho(*pe);
           break;
         }
+        if (m.text == "/pledge vault") {  // T-140 readout (directed, unjournaled)
+          Entity* pe = s.world.find(sess.entityId);
+          if (pe != nullptr) s.world.pledgeVaultReadout(*pe);
+          break;
+        }
         Command c;
         bool okCmd = true;
         if (m.text.rfind("/invite ", 0) == 0) {
@@ -678,6 +684,21 @@ void handlePacket(Server& s, Session& sess, const proto::PacketView& pv) {
             okCmd = resolve(arg.substr(7));
           } else if (arg == "disband") {
             c.kind = Command::kPledgeDisband;
+          } else if (arg.rfind("tithe ", 0) == 0) {  // T-140 voluntary tithe
+            // digits-only, capped: typos fall through as an ordinary say.
+            const std::string digits = arg.substr(6);
+            std::int32_t amount = 0;
+            bool shaped = !digits.empty() && digits.size() <= 7;
+            for (char ch : digits) {
+              if (!shaped || ch < '0' || ch > '9') { shaped = false; break; }
+              amount = amount * 10 + (ch - '0');
+            }
+            if (shaped && amount > 0) {
+              c.kind = Command::kPledgeTithe;
+              c.a = amount;
+            } else {
+              okCmd = false;
+            }
           } else {
             okCmd = false;
           }
@@ -1685,6 +1706,7 @@ int run(int argc, char** argv) {
         p.name = r.name;
         p.emblem = static_cast<std::uint8_t>(r.emblem);
         p.liege = r.liege;
+        p.vault = r.vault;  // T-140 tax-only pool
         loaded.push_back(std::move(p));
       }
       for (const auto& m : mems) {  // (name, {pledgeId, rank})
