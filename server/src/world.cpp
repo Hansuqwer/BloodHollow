@@ -1571,29 +1571,88 @@ bool World::siegeRegister(std::uint32_t captainId) {
   if (c == nullptr || c->kind != EntityKind::kPlayer || c->dead) return false;
   for (const std::uint32_t id : siegeAttackers_)
     if (id == captainId) return false;  // already in the war camp, quiet
-  if (siegeBandsUsed_ >= kSiegeMaxBands) return false;  // camp is full
-  // T-137 band = party: the captain's living party rides one registration
-  // (M4's 40 = 8 bands of 5). Unaffiliated captains ride solo.
-  std::vector<std::uint32_t> band{captainId};
-  if (c->partyId != 0) {
-    if (const Party* p = partyOf(c->id)) {
-      for (const std::uint32_t mid : p->members) {
-        if (mid == captainId) continue;
-        Entity* m = find(mid);
-        if (m != nullptr && m->kind == EntityKind::kPlayer && !m->dead)
-          band.push_back(mid);
-      }
-    }
-  }
-  for (const std::uint32_t id : band) {
-    bool known = false;
-    for (const std::uint32_t e : siegeAttackers_)
-      if (e == id) {
-        known = true;
+  // T-139: a sworn caller whose pledge already enlisted musters missing
+  // members into the existing band — no free slot needed, cap not consulted.
+  if (c->pledgeId != 0) {
+    bool enlisted = false;
+    for (const std::uint32_t pid : siegeBandPledges_)
+      if (pid != 0 && pid == c->pledgeId) {
+        enlisted = true;
         break;
       }
-    if (!known) siegeAttackers_.push_back(id);
+    if (enlisted) {
+      std::size_t added = 0;
+      for (Entity& e : entities_) {
+        if (e.kind != EntityKind::kPlayer || e.dead) continue;
+        if (e.pledgeId != c->pledgeId) continue;
+        bool known = false;
+        for (const std::uint32_t id : siegeAttackers_)
+          if (id == e.id) {
+            known = true;
+            break;
+          }
+        if (!known) {
+          siegeAttackers_.push_back(e.id);
+          ++added;
+        }
+      }
+      std::printf("[siege] pledge band %u mustered +%u late members\n",
+                  static_cast<unsigned>(c->pledgeId),
+                  static_cast<unsigned>(added));
+      return true;
+    }
   }
+  if (siegeBandsUsed_ >= kSiegeMaxBands) return false;  // camp is full
+  // T-139 pledge bands: a sworn captain musters the whole sworn war-host —
+  // every living online member of the captain's pledge rides ONE band keyed
+  // by pledge id. A sworn caller whose pledge already enlisted musters
+  // missing members into the existing band (revive/relog path); no second
+  // band. Desertion (leave/kick) never un-enlists: the muster is session law.
+  std::vector<std::uint32_t> band;
+  std::uint32_t bandPledge = 0;
+  if (c->pledgeId != 0) {
+    for (Entity& e : entities_) {
+      if (e.kind != EntityKind::kPlayer || e.dead) continue;
+      if (e.pledgeId != c->pledgeId) continue;
+      bool known = false;
+      for (const std::uint32_t id : siegeAttackers_)
+        if (id == e.id) {
+          known = true;
+          break;
+        }
+      if (!known) {
+        siegeAttackers_.push_back(e.id);
+        band.push_back(e.id);
+      }
+    }
+    if (band.empty()) return false;  // captain desynced mid-call, quiet
+    bandPledge = c->pledgeId;
+    // fall through: band already merged above; record the pledge below
+  } else {
+    // T-137 band = party: the captain's living party rides one registration
+    // (M4's 40 = 8 bands of 5). Unaffiliated captains ride solo.
+    band.push_back(captainId);
+    if (c->partyId != 0) {
+      if (const Party* p = partyOf(c->id)) {
+        for (const std::uint32_t mid : p->members) {
+          if (mid == captainId) continue;
+          Entity* m = find(mid);
+          if (m != nullptr && m->kind == EntityKind::kPlayer && !m->dead)
+            band.push_back(mid);
+        }
+      }
+    }
+    for (const std::uint32_t id : band) {
+      bool known = false;
+      for (const std::uint32_t e : siegeAttackers_)
+        if (e == id) {
+          known = true;
+          break;
+        }
+      if (!known) siegeAttackers_.push_back(id);
+    }
+  }
+  siegeBandPledges_.push_back(bandPledge);
   ++siegeBandsUsed_;
   std::printf("[siege] band enlisted (%u members, %u/8 bands)\n",
               static_cast<unsigned>(band.size()),
