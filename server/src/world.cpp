@@ -124,6 +124,7 @@ done:
   if (mapId == 1) spawnConfessor(zone);  // T-070: the chapel cure
   initialMobSpawns(zone, mapId);
   if (mapId == 1 || mapId == 3) spawnAnvils();   // plaza + bone barrow
+  if (mapId == 6) spawnSiegeGates(zone);  // T-132: breach objectives
   if (mapId == 1) spawnNpcs();  // T-094: twins + post guards (after anvil)
   return true;
 }
@@ -1567,6 +1568,85 @@ bool World::siegeStart(Entity& e) {
   std::printf("[siege] battle joined until tick %d (%u bands)\n",
               static_cast<int>(siegeBattleEndsAt_),
               static_cast<unsigned>(siegeAttackers_.size()));
+  return true;
+}
+
+// ---- siege gates (T-132, Phase S 2a/4) -------------------------------------
+// Breach objectives, NOT walls (staging positions relative to the zone-6
+// spawn; real map-6 constants + movement-blocking land with PR #23's map).
+// Breach-by-channel by design: setAttack refuses furniture and killMob
+// would drag XP/loot along — the ram touches no combat path, draws no RNG.
+void World::spawnSiegeGates(Zone& zone) {
+  const sim::TilePos base = zone.spawnPoint;
+  const char* names[2] = {"Outer Gate", "Inner Gate"};
+  const sim::TilePos want[2] = {{base.x + 3, base.y}, {base.x + 6, base.y}};
+  for (int g = 0; g < 2; ++g) {
+    sim::TilePos at = want[g];
+    if (!zone.map.inBounds(at.x, at.y) || zone.map.isBlocked(at.x, at.y)) {
+      // anvil-spawn spiral: first walkable tile near the want
+      bool placed = false;
+      for (int r = 1; r < 8 && !placed; ++r) {
+        for (int dy = -r; dy <= r && !placed; ++dy) {
+          for (int dx = -r; dx <= r && !placed; ++dx) {
+            const int x = want[g].x + dx, y = want[g].y + dy;
+            if (!zone.map.inBounds(x, y) || zone.map.isBlocked(x, y)) continue;
+            at = sim::TilePos{x, y};
+            placed = true;
+          }
+        }
+      }
+      if (!placed) continue;
+    }
+    Entity gate;
+    gate.id = nextId_++;
+    gate.zoneId = 6;
+    gate.kind = EntityKind::kMob;  // furniture: non-combat
+    gate.wireKind = content::kWireKindSiegeGate;
+    gate.name = names[g];
+    gate.hp = kSiegeGateHp;
+    gate.hpMax = kSiegeGateHp;
+    gate.walker.place(at);
+    insertEntity(std::move(gate));
+  }
+}
+
+bool World::breach(Entity& e) {
+  if (e.kind != EntityKind::kPlayer || e.dead) return false;
+  if (!siegeBattleActive()) return false;
+  bool enlisted = false;
+  for (const std::uint32_t id : siegeAttackers_)
+    if (id == e.id) {
+      enlisted = true;
+      break;
+    }
+  if (!enlisted) return false;  // defenders breach nothing (quiet)
+  Entity* gate = nullptr;
+  for (auto& other : entities_) {
+    if (other.wireKind != content::kWireKindSiegeGate || other.dead) continue;
+    if (other.zoneId != e.zoneId) continue;
+    if (other.hp == 0) continue;
+    if (chebyshev(e.walker.tile(), other.walker.tile()) <= 2) {
+      gate = &other;
+      break;
+    }
+  }
+  if (gate == nullptr) return false;  // no standing gate in reach
+  gate->hp = gate->hp <= kBreachDmg ? 0 : gate->hp - kBreachDmg;
+  if (gate->hp > 0) {
+    WorldEvent ev;
+    ev.aboutId = e.id;
+    ev.chatCh = 255;
+    ev.chatText = "the ram strikes home (" + std::to_string(gate->hp) + " left).";
+    events_.push_back(std::move(ev));
+    return true;
+  }
+  const std::string fallen = gate->name;
+  despawn(gate->id);
+  WorldEvent fev;
+  fev.chatCh = 2;
+  fev.chatText = "the " + fallen + " lies in splinters!";
+  events_.push_back(std::move(fev));
+  std::printf("[siege] %s breached by %s\n", fallen.c_str(), e.name.c_str());
   return true;
 }
 

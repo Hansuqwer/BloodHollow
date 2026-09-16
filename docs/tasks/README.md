@@ -851,6 +851,15 @@ PR #23, rehearsal = PR #29, pledge bands = Phase P follow-up). 6 new
 tests. `t128.bwj` re-replays mm=0. Devlog 0092 · card `done/T-131.md`.
 Next: S2 gates → Heartstone → crown.
 
+## Done — T-132 (2026-09-15): siege gates (Phase S, 2a/4)
+
+T-132 CONTENT (no epoch bump, stays 24): kind-75 Outer/Inner gates on
+zone-6 load (staging positions) + `/breach` → journaled kBreach (−10/ram,
+300 hp, splinters broadcast at 0). Breach-by-channel by design (setAttack
+refuses furniture; killMob would drag loot). 4 new tests. `t128.bwj`
+re-replays mm=0. Devlog 0093 · card `done/T-132.md`. Next: T-133
+Heartstone + crown.
+
 
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
