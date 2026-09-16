@@ -457,7 +457,17 @@ int run(int argc, char** argv) {
           const auto pv = bh::proto::view(
               static_cast<std::uint8_t*>(ev.packet->data), ev.packet->dataLength);
           if (pv.ok) {
-            if (pv.id == bh::proto::kIdWelcome) {
+            if (pv.id == bh::proto::kIdCharCreatePrompt) {
+              // T-167 wave-2: fresh bot rows hold at creation — answer
+              // deterministically from the name hash (kit 1..3, sex 1..2).
+              // No retry needed: the server enforces once-only.
+              bh::proto::CharCreate c;
+              unsigned hsh = 0;
+              for (char ch : b.name) hsh = hsh * 31u + static_cast<unsigned>(ch);
+              c.classId = static_cast<std::uint8_t>(hsh % 3u + 1u);
+              c.sex = static_cast<std::uint8_t>((hsh / 3u) % 2u + 1u);
+              sendProto(ev.peer, bh::proto::pack(c));
+            } else if (pv.id == bh::proto::kIdWelcome) {
               bh::proto::Welcome w;
               if (w.deserialize(pv.body)) {
                 if (b.welcomed && w.mapId == 5 && b.tMap5Entry < 0.0 &&

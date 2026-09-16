@@ -226,7 +226,7 @@ TEST_CASE("T-130: v11 -> v12 migration adds town/ek defaulting 0") {
   REQUIRE(sqlite3_prepare_v2(check, "PRAGMA user_version;", -1, &st, nullptr) ==
           SQLITE_OK);
   REQUIRE(sqlite3_step(st) == SQLITE_ROW);
-  CHECK(sqlite3_column_int(st, 0) == 15);  // wave-2 cascade: v11->..->v15
+  CHECK(sqlite3_column_int(st, 0) == 16);  // T-153: schema v16 (was v15)
   sqlite3_finalize(st);
   REQUIRE(sqlite3_prepare_v2(check,
                              "SELECT town_id, ek FROM characters WHERE id=1;",

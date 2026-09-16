@@ -107,7 +107,7 @@ TEST_CASE("T-167: schema v15 migrates, sex packs into spawn") {
   REQUIRE(sqlite3_prepare_v2(check, "PRAGMA user_version;", -1, &st, nullptr) ==
           SQLITE_OK);
   REQUIRE(sqlite3_step(st) == SQLITE_ROW);
-  CHECK(sqlite3_column_int(st, 0) == 15);
+  CHECK(sqlite3_column_int(st, 0) == 16);  // T-153: v16 (was v15 at wave-2)
   sqlite3_finalize(st);
   sqlite3_close(check);
   // spawn carries sex (T-142 fields finally live)

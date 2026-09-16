@@ -61,6 +61,7 @@ add_executable(bh_tests
   test_pledge_vault.cpp
   test_gm_authority.cpp
   test_wave2_epoch30.cpp  # wave-2: T-167/T-160/T-161/T-162/T-163/T-166 pins
+  test_t153_auth.cpp  # T-153: argon2id PHC, migration, refusals
 )
 target_link_libraries(bh_tests PRIVATE bh_shared bh_protocol bh_server_world bh_doctest bh_warnings)
 # T-ART-02: snapZoom lives in raylib-including camera_rig.h — link raylib for
