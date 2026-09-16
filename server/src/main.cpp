@@ -2144,6 +2144,13 @@ int run(int argc, char** argv) {
     }
   }
 
+  if (!s.bless.empty() && (!s.recordWorldPath.empty() || !s.replayWorldPath.empty())) {
+    std::fprintf(stderr,
+                 "[fatal] --bless is incompatible with --record-world/--replay-world "
+                 "(breaks replay determinism)\n");
+    return 1;
+  }
+
   std::string err;
   if (!s.world.load(mapPath, &err)) {
     std::fprintf(stderr, "bh_server: %s\n", err.c_str());
