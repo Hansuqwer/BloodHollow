@@ -97,7 +97,10 @@ bool Game::chatTyping() {
   if (IsKeyPressed(KEY_ENTER)) {
     chatFocus_ = false;
     if (!chatBuf_.empty()) {
-      if (net_ != nullptr && net_->state == NetClient::State::kInWorld) {
+      // T-169: intercept /help locally — never send to server
+      if (chatBuf_ == "/help" || chatBuf_ == "help") {
+        showHelp_ = !showHelp_;
+      } else if (net_ != nullptr && net_->state == NetClient::State::kInWorld) {
         net_->sendChat(chatBuf_[0] == '.' ? 0 : 1, chatBuf_.substr(chatBuf_[0] == '.' ? 1 : 0));
       } else {
         chatLog_.push_back(ChatLine{2, "system", "chat needs --server; you're offline."});
@@ -117,6 +120,7 @@ void Game::handleInput() {
   }
   if (IsKeyPressed(KEY_F3)) showGrid_ = !showGrid_;
   if (IsKeyPressed(KEY_F4)) showPath_ = !showPath_;
+  if (IsKeyPressed(KEY_F1)) showHelp_ = !showHelp_;  // T-169
   if (IsKeyPressed(KEY_H)) debugHourOffset_ += 1.0f;
   if (IsKeyPressed(KEY_N)) debugHourOffset_ -= 1.0f;
 
@@ -156,6 +160,7 @@ void Game::handleInputOnline() {
   }
   if (IsKeyPressed(KEY_F3)) showGrid_ = !showGrid_;
   if (IsKeyPressed(KEY_F4)) showPath_ = !showPath_;
+  if (IsKeyPressed(KEY_F1)) showHelp_ = !showHelp_;  // T-169
   if (net_->state != NetClient::State::kInWorld) return;
 
   if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
@@ -1679,9 +1684,9 @@ void Game::drawHud() const {
                     net_->ownStats.gold);
       DrawText(buf, 240, 62, 10, kCol);
     }
-    DrawText("LMB walk/fight - 1 PowerSwing - Q sip - I bag - T trade (P commit/X cancel) - Enter chat", 16,
+    DrawText("LMB walk/fight - 1 PowerSwing - Q sip - I bag - T trade (P commit/X cancel) - Enter chat - F1 help", 16,
              82, 10, GRAY);
-    DrawText("I inventory - V vendor - Space recenter - F3 grid - ESC quit", 16, 98, 10,
+    DrawText("I inventory - V vendor - Space recenter - F3 grid - F1 help", 16, 98, 10,
              Color{120, 110, 100, 255});
   } else {
     const char* mode = replay_ != nullptr ? "REPLAY" : (rec_ != nullptr ? "RECORDING" : "LIVE");
@@ -1758,7 +1763,85 @@ void Game::render(double /*interpAlpha*/) {
   drawAnvilPanel();
   drawTradeBanner();
   drawDeathOverlay();
+  if (showHelp_) drawHelpPanel();  // T-169: F1 or /help
   EndDrawing();
+}
+
+// T-169: in-client discoverability — F1 or /help toggles this panel.
+void Game::drawHelpPanel() const {
+  const int px = 200, py = 80, pw = 624, ph = 608;
+  DrawRectangle(px, py, pw, ph, Color{12, 10, 8, 220});
+  DrawRectangleLinesEx(Rectangle{(float)px, (float)py, (float)pw, (float)ph},
+                       1.0f, Color{180, 150, 90, 220});
+  int y = py + 10;
+  auto line = [&](const char* txt, Color c) {
+    DrawText(txt, px + 12, y, 10, c);
+    y += 14;
+  };
+  auto header = [&](const char* txt) {
+    DrawText(txt, px + 12, y, 11, Color{220, 180, 120, 255});
+    y += 16;
+  };
+  auto blank = [&]() { y += 6; };
+
+  header("BLOODHOLLOW — COMMAND REFERENCE");
+  line("(close: F1 or type /help again)", Color{100, 90, 80, 255});
+  blank();
+
+  header("COMBAT / MOVEMENT");
+  line("LMB click    walk / attack", GRAY);
+  line("WASD         instant step", GRAY);
+  line("1-8          hotbar skills", GRAY);
+  line("Q            sip potion", GRAY);
+  line("F5/F6/F7     +STR/+VIT/+DEX (stat point)", GRAY);
+  line("F            open anvil (near anvil NPC)", GRAY);
+  blank();
+
+  header("CHAT / SOCIAL");
+  line("Enter        open chat", GRAY);
+  line("/invite      invite to party", GRAY);
+  line("/accept      accept party invite", GRAY);
+  line("/leave       leave party", GRAY);
+  line("/kick <name> kick from party", GRAY);
+  line("/duel <name> consent duel", GRAY);
+  line("/forfeit     end duel", GRAY);
+  line("/confess     pay gold to repent (clear karma)", GRAY);
+  blank();
+
+  header("PROGRESSION / CRAFT");
+  line("/kit <name>  choose class (ravager/gravecaller/cultist)", GRAY);
+  line("/refine <slot> upgrade gear at anvil", GRAY);
+  line("/repair      repair all equipped gear", GRAY);
+  line("/mine        harvest ore (near node, pick equipped)", GRAY);
+  blank();
+
+  header("PLEDGE / SIEGE");
+  line("/pledge      create bloodpledge (L>=10, 10k gold)", GRAY);
+  line("/oath        swear town loyalty (L19+)", GRAY);
+  line("/siege-reg   register for siege", GRAY);
+  line("/breach      attack siege gate", GRAY);
+  line("/crown       channel the throne (crown phase)", GRAY);
+  blank();
+
+  header("VENDOR / TRADE");
+  line("I            inventory", GRAY);
+  line("V            vendor (near NPC)", GRAY);
+  line("T            trade offer (click player)", GRAY);
+  line("P            commit trade", GRAY);
+  line("X            cancel trade", GRAY);
+  line("G            sell junk (near NPC)", GRAY);
+  line("F1-F12       buy from vendor slot", GRAY);
+  blank();
+
+  header("SYSTEM");
+  line("Space        recenter camera", GRAY);
+  line("F3           toggle grid", GRAY);
+  line("F4           toggle path overlay", GRAY);
+  line("H/N          shift hour (debug)", GRAY);
+  line("ESC          quit", GRAY);
+  blank();
+
+  line("Type /help in chat or press F1 to toggle this panel.", Color{140, 130, 120, 255});
 }
 
 }  // namespace bh

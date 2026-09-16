@@ -113,6 +113,7 @@ class Game {
   void drawTradeBanner() const;
   void drawSiegePanel() const;   // T-151 parchment siege readout
   void drawPledgePanel() const;  // T-151 pledge roster / emblem / vault
+  void drawHelpPanel() const;    // T-169: /help verb + hotkey reference
   bool isPledgeMemberName(const std::string& n) const;
   Color terrainColor(std::uint16_t type) const;
   float gameHour() const;
@@ -169,6 +170,7 @@ class Game {
   int invHover_ = -1;
   bool showVendor_ = false;
   bool showAnvil_ = false;
+  bool showHelp_ = false;  // T-169: /help overlay
 
   NetClient* net_ = nullptr;
   sim::JournalWriter* rec_ = nullptr;
