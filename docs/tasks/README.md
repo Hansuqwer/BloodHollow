@@ -986,6 +986,13 @@ drill (accounts=5 chars=5 pledges=1 uv=14, integrity ok) + GM runbook
 Director keeps: launcher, site, legal, clean-boot, surveys. Devlog 0104 ·
 card `T-143.md` (→ done on merge). Next: M5 pre-soak + T-142 wiring.
 
+## Done — T-144 (2026-09-15): M5 pre-soak signal 60×10 min (Phase O, 2/2)
+
+T-144 SOAK (no code, scratch DB): 60 fighters × 600 s live — clean exit,
+0 error lines, tick p99 ≤ 5.1 ms (budget 25), RSS flat 8.2 MB, 60/60
+online. Full M5 (200×12 h + MBA fps) stays director-scheduled. Devlog
+0105 · card `T-144.md` (→ done on merge). Next: Friday-Night readiness.
+
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
 | Card | Title | Notes |
