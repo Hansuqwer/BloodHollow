@@ -1051,6 +1051,13 @@ battle never started (drill-vs-tree, not a sim bug). Open: `T-157-F1`
 bands, quality). Readiness doc → epoch 29. F1 re-run owes re-verdict; M1 soak
 + M2/M3 scheduled. Devlog 0112 · card `done/T-157.md`.
 
+## Done — T-157 re-verdict (2026-09-16): horn fixed, gates 2/2, flips 0
+
+F1(a) landed in drill; `m4e29b`: battle joined (12 bands), both gates ~tick
+5400, attuned 0, flips 0 → M4 still FAIL, gap now contest-side (60 s window
+never opened vs 6 holders). p99 2.8 ms PASS, replay mm=0 PASS (leg kept).
+Open: `T-157-F3` (attune levers, recommend 16v6/900 s first). Devlog 0113.
+
 ## Open — Phase 3 remaining (refreshed 2026-09-09: stale rows retired)
 
 | Card | Title | Notes |

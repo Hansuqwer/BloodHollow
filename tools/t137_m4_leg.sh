@@ -71,7 +71,7 @@ fi
 echo "[t137:$TAG] horn OK: battle joined, running out the clock..."
 wait $BOTA 2>/dev/null || true
 sleep 2
-kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true
+kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true  # || true: soak may beat us here (set -e)
 
 echo "[t137:$TAG] assertions:"
 grep -c "battle joined" logs/t137_${TAG}_server.log | xargs -I{} echo "battles: {}"
