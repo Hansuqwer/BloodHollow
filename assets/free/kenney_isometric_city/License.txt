@@ -1,0 +1,27 @@
+
+###############################################################################
+
+
+	Isometric Tiles: City pack
+	by Kenney Vleugels for Kenney (www.kenney.nl)
+
+			------------------------------
+
+	License (Creative Commons Zero, CC0)
+	http://creativecommons.org/publicdomain/zero/1.0/
+
+	You may use these graphics in personal and commercial projects.
+	Credit (Kenney or www.kenney.nl) would be nice but is not mandatory.
+
+			------------------------------
+
+	Donate:   http://donate.kenney.nl/
+	Request:  http://request.kenney.nl/
+
+
+###############################################################################
+
+[Restored at ingest time (2026-09-17): the GitHub mirror copy of this pack
+did not include its License.txt. This file reproduces Kenney's standard CC0
+license block, verbatim as shipped with the other packs in this same
+catalog (see e.g. ../kenney_roguelike/License.txt, unmodified).
