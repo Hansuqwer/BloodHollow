@@ -40,6 +40,46 @@ section 7) requires this file to cover everything under assets/.
 | `docs/research-notes/qa/b6_ravager_{m,f}_*` | B6 Ravager QA triptychs + audits (`bh_qa_sheet.py --kind sheet`), 2026-09-15: feet-on-anchor PASS (m walk_SE floater fixed +4px in-cell), colours ≤ 32 PASS, R-LUMA **FAIL** (day Δ 10.7 / night Δ 4.3 vs gate 25/15 — muddy mid-tones; remediation = T-142) | Derived; numbers only |
 | Everything else (Sprint 2+) | not yet shipped | — |
 
+## Free packs (assets/free, ingested 2026-09-17)
+
+Curated CC0 base packs for world / NPC / mob / furniture production. All by
+**Kenney Vleugels (www.kenney.nl)** under **CC0 1.0 Universal**
+(https://creativecommons.org/publicdomain/zero/1.0/). Retrieved from the
+community mirror https://github.com/ETdoFresh/kenney.nl @
+`45df48c4d45f8716216b1a9e22df0b69cd9f5932` (byte-for-byte extraction of the
+official zip contents; direct kenney.nl downloads are WAF-gated from the
+agent sandbox). 2D-only subsets copied — 3D models, vector sources and
+project files excluded. Original upstream `License.txt` preserved per pack
+where the mirror included it; for 5 packs where the mirror omitted it
+(`kenney_isometric_buildings`, `kenney_isometric_landscape`,
+`kenney_isometric_city`, `kenney_modular_characters`, `kenney_rpg_pack`)
+Kenney's standard CC0 block was restored at ingest time (end-note in each
+file). Per-pack provenance in each folder's `CREDITS.md`; usage tiers in
+`assets/free/README.md` and `docs/prompts/asset-factory-deep-prompt.md` §10.
+Several pre-2017 pack pages were delisted from the current kenney.nl site
+(they ship in the kenney.itch.io All-in-1 bundle); for those, the pack name
++ catalog is the upstream reference.
+
+| Asset | Source | License |
+|---|---|---|
+| `assets/free/kenney_isometric_buildings/**` (136 files) | Kenney "Isometric Tiles: Buildings" v1.0 (2014), https://kenney.nl/assets/isometric-tiles-buildings (mirror row above) | CC0 1.0 |
+| `assets/free/kenney_isometric_landscape/**` (134 files) | Kenney "Isometric Tiles: Landscape" v1.0 (2014), https://kenney.nl/assets/isometric-tiles-landscape | CC0 1.0 |
+| `assets/free/kenney_isometric_city/**` (147 files) | Kenney "Isometric Tiles: City" v1.0 (2014), https://kenney.nl/assets/isometric-tiles-city | CC0 1.0 |
+| `assets/free/kenney_castle_kit/**` (Isometric + Topdown renders) | Kenney "Castle Kit" v2.0, https://kenney.nl/assets/castle-kit | CC0 1.0 |
+| `assets/free/kenney_graveyard_kit/**` (Isometric + Side renders) | Kenney "Graveyard Kit" v5.0, https://kenney.nl/assets/graveyard-kit | CC0 1.0 |
+| `assets/free/kenney_furniture_kit/**` (Isometric + Side renders) | Kenney "Furniture Kit" v1.0 (2018), https://kenney.nl/assets/furniture-kit | CC0 1.0 |
+| `assets/free/kenney_roguelike/**` (16×16 sheet + 128 chars + sample .tmx) | Kenney "Roguelike/RPG pack" v1.0 (2015), https://kenney.nl/assets/roguelike-rpg-pack | CC0 1.0 |
+| `assets/free/kenney_roguelike_indoor/**` (16×16 interior sheet) | Kenney "Roguelike Indoor pack" (2014), kenney.nl catalog (page delisted; ships in kenney.itch.io All-in-1) | CC0 1.0 |
+| `assets/free/kenney_roguelike_cave/**` (16×16 cave/dungeon sheet) | Kenney "Roguelike Cave & Dungeons pack" (2014), kenney.nl catalog (page delisted; ships in kenney.itch.io All-in-1) | CC0 1.0 |
+| `assets/free/kenney_animal_pack/**` (80 pixel animals) | Kenney "Animal Pack" v1.0 (2015), https://kenney.nl/assets/animal-pack | CC0 1.0 |
+| `assets/free/kenney_topdown_shooter_pixel/**` (580 pixel sprites) | Kenney "Top-down Shooter" v1.0 (2016), https://kenney.nl/assets/top-down-shooter | CC0 1.0 |
+| `assets/free/kenney_rpg_pack/**` (32×32 medieval RPG) | Kenney "RPG Pack" (32×32 base, 2014), kenney.nl catalog (page delisted; ships in kenney.itch.io All-in-1) | CC0 1.0 |
+| `assets/free/kenney_medieval_rts_pack/**` (120 top-down medieval) | Kenney "Medieval RTS" v1.0 (2016), https://kenney.nl/assets/medieval-rts | CC0 1.0 |
+| `assets/free/kenney_blocky_characters/**` (faces + skin colour variants, 2D) | Kenney "Blocky Characters" v2.0, https://kenney.nl/assets/blocky-characters | CC0 1.0 |
+| `assets/free/kenney_modular_characters/**` (425 modular character parts) | Kenney "Modular Characters" v1.0 (2014), https://kenney.nl/assets/modular-characters | CC0 1.0 |
+| `assets/free/kenney_particle_pack/**` (80 transparent particles) | Kenney "Particle Pack" v1.0 (2018), https://kenney.nl/assets/particle-pack | CC0 1.0 |
+| `assets/free/kenney_weapon_pack/**` (2D weapon renders + silhouettes) | Kenney "Weapon Pack" (2016, updated 2018), kenney.nl catalog (original slug /assets/weapon-pack delisted; ships in kenney.itch.io All-in-1) | CC0 1.0 |
+
 Rules: free/placeholder packs require an entry with upstream URL + license.
 AI-generated assets go to `assets/aigen/` with a note on model + date.
 Human-commissioned art goes to `assets/final/` with contract reference.

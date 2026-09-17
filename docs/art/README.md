@@ -17,6 +17,8 @@ work only. **Nothing here is shipped art**; `assets/final/` untouched.
 | [`40-items-icons.md`](40-items-icons.md) | weapon silhouettes + refine states, icon language, UI chrome incl. anvil theatre | §10–11 |
 | [`50-vfx.md`](50-vfx.md) | 31 VFX with size × frames @ fps and colour family; callout font | §12 |
 | `../research-notes/00-dossier-index.md` | five ancestor dossiers + Helbreath readability rulebook + style-tile proof | §3–4 |
+| `../../assets/free/README.md` | CC0 free base packs index (ingested 2026-09-17: world / furniture / mobs / NPCs / VFX / weapons) + usage tiers | §10 |
+| `../prompts/asset-factory-deep-prompt.md` | **Deep asset-creation prompt** (2026-09-17): style lock, universal prompt system, per-category specs (world/furniture/mobs/NPCs/players/icons/VFX), free-pack policy, QA gates, batch plan B10–B16 | §0–§15 |
 | `../../assets/aigen/**/BRIEF.md` | 39 per-folder briefs with the exact prompt skeleton and QA checklist (§17 layout) | §13–17 |
 | `../../tools/atlaspack/` | `bhpix.py` pipeline lib + `make_style_tile.py` reference chain | §5, §14 |
 
