@@ -529,10 +529,11 @@ game).
   ground shadow" + <object beats> + <state line>`; refine-state variants
   are generated as img2img from the +0 icon at denoise ≤ 0.25 (state
   differences must be glow/edge only — never reshape the object).
-- Free-pack usage: `kenney_weapon_pack` (2D renders + silhouettes) =
-  silhouette language for every weapon icon and in-hand shape (blade
-  width vs grip, mallet head mass, bow curvature); `kenney_roguelike`
-  (16×16 items) = icon *readability* study at tiny size. Finals are
+- Free-pack usage: `kenney_weapon_pack` (2D renders + silhouettes of a
+  *modern/shooter* weapon set) = generic small-size shape/silhouette
+  readability study only (mass distribution, grip-vs-weapon legibility at
+  16–32 px) — never for weapon-set content (our set is medieval);
+  `kenney_roguelike` (16×16 items) = icon *readability* study at tiny size. Finals are
   generated; the weapon pack ships no pixel into finals (its renders are
   3D-shaded, wrong era).
 
@@ -593,7 +594,8 @@ cell size to our 32×48 cells → primary *era-mood* reference), 16×16
 top-down sheets with sample maps (map prototyping + placeholder
 interiors/dungeons), character face + skin colour-variant sets (placeholder
 crowd colour study), a particle set (placeholder FX), and a 2D weapon
-render set (icon silhouette language). Every pack is public-domain, so placeholder use in released
+render set (generic silhouette-reading reference). Every pack is
+public-domain, so placeholder use in released
 builds is legally safe; the *art-direction* constraints below are binding
 regardless.
 

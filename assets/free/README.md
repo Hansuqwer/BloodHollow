@@ -37,7 +37,7 @@ was restored at ingest time — each such file carries an end-note saying so.
 | [`kenney_blocky_characters/`](kenney_blocky_characters/) | Blocky Characters (v2.0) | **NPC** — face + skin colour-variant textures (2D); placeholder crowd colour study |
 | [`kenney_modular_characters/`](kenney_modular_characters/) | Modular Characters (v1.0, 2014) | **NPC / paper-doll** — 425 modular parts; layering + trim-% study |
 | [`kenney_particle_pack/`](kenney_particle_pack/) | Particle Pack (v1.0, 2018) | **VFX** — 80 transparent particles; placeholder FX + timing reference |
-| [`kenney_weapon_pack/`](kenney_weapon_pack/) | Weapon Pack 2D renders (2016/18) | **items** — weapon silhouettes for icons + in-hand attachments |
+| [`kenney_weapon_pack/`](kenney_weapon_pack/) | Weapon Pack 2D renders (2016/18) | **items** — modern-weapon renders + silhouettes; generic small-size shape/silhouette-reading study (not a medieval set) |
 
 ## Usage tiers (binding)
 
