@@ -196,9 +196,11 @@ void sendMsg(ENetPeer* peer, const Msg& m, Server& s) {
 // warband/EK law + bounty persistence + creation/sex + roster composition
 // shift (entity-set, T-068 precedent) + worldHash widening → epoch 30.
 // ADR-0016 (T-159f1.1/.2): multi-affix rolls + 45-row band tables + 10-field
-// blob widen the RNG stream and worldHash → epoch 31. Wire 241→242 (ItemSlot
-// affix2+affix3 via protogen base 203). NOTE: the "242→244" in the wave-2
-// line above was stale — the generated kProtocolVersion read 241 pre-bump.
+// blob widen the RNG stream and worldHash → epoch 31. Wire 244→245 (ItemSlot
+// affix2+affix3 via protogen base 203). NOTE: the live version is
+// build-regenerated from messages.md (base + count); the old committed
+// shared/protocol/gen/ mirror froze at 241 and is deleted — never read wire
+// numbers off a mirror, only off build/*/generated.
 constexpr int kJournalEpoch = 31;  // ADR-0016. Fresh gate leg: logs/t159f1.bwj (8 fighters x60s + relog, replay mm=0)
 
 // ---- world journal record helpers (M2) ------------------------------------

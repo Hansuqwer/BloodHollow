@@ -1151,7 +1151,7 @@ Retired: "L8→L9 step-up, no waypoint" (T-084 opened the (60,41) camp; T-090/T-
   re-replays mm=0). M4 still FAIL (attune 0 = F3 director call). Devlog 0122.
 - **R2 T-159f1 CLOSED** → `done/T-159f1.md` (ADR-0016): multi-affix
   (affix2/3, 10-field blob, Magic 1–2 / Rare 2–3) + 45-row band tables
-  (all-rows roll). Epoch 30→**31**, wire 241→**242**, gate leg
+  (all-rows roll). Epoch 30→**31**, wire 244→**245**, gate leg
   `logs/t159f1.bwj` (mm=0, guard refuses wave2 exit 4). Suite 388/388.
   Devlog 0123. GDD §7 rarity line amended.
 - **R3 T-156/T-ART-12..15:** all four cards filed with executable AC; renderer
@@ -1197,3 +1197,13 @@ Retired: "L8→L9 step-up, no waypoint" (T-084 opened the (60,41) camp; T-090/T-
 - Still open: T-157-F3 (director) · T-156 (1/4: T-ART-15 art) · T-ART-14b ·
   T-ART-15 (art) · T-165 (director) · T-146..149 (human) · Friday legs +
   full M5 soak (director). M1/M2 full closed per devlog 0124.
+
+## Done — 2026-09-18 (F-WIRE close, no sim/wire/epoch impact)
+
+- **F-WIRE CLOSED:** live builds regenerate bindings at build time
+  (`shared/protocol/CMakeLists.txt` → `build/*/generated/`) and already run
+  wire **245** (base 203 + 42 msgs). Deleted the dead `shared/protocol/gen/`
+  mirror (froze at 241, nothing included it — T-165's standing order) and
+  corrected the epoch-31 "241→242" claims to **244→245** (ADR-0016 +
+  Correction section, `main.cpp` comment, `done/T-159f1.md`, pass-5 row).
+  True chain: 242 (T-159) → 244 (wave-2) → 245 (ADR-0016).

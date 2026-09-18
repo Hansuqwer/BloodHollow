@@ -9,7 +9,7 @@ second roll). T-159f1 items 1–2 owe: Magic 1–2 / Rare 2–3 affixes, and
 per-band drop tables toward ~45 rows (kGearDrops has 4). Both are sim changes
 under old journals (drop RNG stream + worldHash via the inv blob) → one
 shared epoch bump (30→31). The affix ride-along also needs two more wire
-bytes on ItemSlot → wire 241→242.
+bytes on ItemSlot → wire 244→245.
 
 ## Decision
 - `InvSlot` gains `affix2`/`affix3` (u8, 0 = none). Blob grammar 8→10
@@ -27,7 +27,7 @@ bytes on ItemSlot → wire 241→242.
   (2–3 rows × 2–4%); absolute rates stay low and the 32-slot cap still gates.
   Revisit only on gold-starved legs (T-113 discipline).
 - Epoch 30→31 + fresh gate leg `logs/t159f1.bwj`; guard refuses `wave2.bwj`
-  (epoch 30) exit 4. Wire 241→242 via protogen base 202→203 (field-addition
+  (epoch 30) exit 4. Wire 244→245 via protogen base 202→203 (field-addition
   class, T-142 precedent).
 
 ## Consequences
@@ -35,3 +35,14 @@ bytes on ItemSlot → wire 241→242.
   affix names after — T-159f1.3 order kept).
 - Old 8-field blobs (DB rows, journals) parse losslessly; re-saved rows
   upgrade to 10 fields on next logout save.
+
+## Correction (2026-09-18, F-WIRE)
+
+- The live wire version is **build-regenerated** from `messages.md`
+  (`shared/protocol/CMakeLists.txt` → `build/*/generated/`): base 203 +
+  42 messages = **245**. The first draft of this ADR (and `main.cpp`,
+  the board pass-5 row, `done/T-159f1.md`) said 241→242 — that reading came
+  off the committed `shared/protocol/gen/` mirror, which had frozen at 241
+  (pre-wave-2) and nothing includes. The mirror is deleted per T-165; the
+  true chain is 242 (T-159) → 244 (wave-2, +2 messages) → 245 (here).
+  Lesson: read wire numbers off `build/*/generated`, never off a mirror.
