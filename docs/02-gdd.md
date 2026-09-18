@@ -116,10 +116,13 @@ Skeleton (1 pet tank/backup; CHA adds slots) · **Sanctuary** (ground healing ci
 party wants one).
 
 Shipped kits (MVP): Ravager ch1 · Gravecaller ch5/ch8 · Cultist
-ch1/ch2/ch3/ch4/ch6/ch7/ch8/ch9 **+ch10 Resurrect (T-161)**. Resurrect ships as a
+ch1/ch2/ch3/ch4/ch6/ch7/ch8/ch9 **+ch10 Resurrect (T-161) +ch11 Sanctuary
+(T-161b.1: ground hold, radius 3, 600t hold, 40t pulses, 600t CD)**. Resurrect ships as a
 post-mortem debt rebate within 5 min (3 s respawn makes corpse-raise unusable —
-recorded deviation). Unshipped kit rows (Gravecaller control set, Ravager set,
-Sanctuary/Curse/Raise): T-161b.
+recorded deviation). Unshipped kit rows (Gravecaller control set, Ravager set):
+T-161b (all six shipped T-161b.1–6: Sanctuary ch11 + Weakness ch12 + Raise
+ch13 + Corpse ch14 + control set ch15–18 + Ravager set ch19–23; M3
+re-measure running).
 
 > Support-class design rule: a Cultist's raid DPS contribution ≈ 0.4 of a damage
 > class, but a party WITH one out-farms/out-survives an equal party without one.
@@ -204,9 +207,9 @@ Sanctuary/Curse/Raise): T-161b.
 + consumables + junk. Shield/off-hand, gloves, boots, belt, cape are [LATER].
 (Vampires later: claws-fangs body slots + 6 jewelry.)
 
-**Rarity tiers [MVP-shipped, T-159]:** Common (white, no affix) 78% · Magic (blue,
-1 affix) 17% · Rare (yellow, 1 affix) 4.6% · Unique (named, fixed rolls,
-boss-only) 0.4%. Multi-affix items need a schema change — deferred (T-159f1).
+**Rarity tiers [MVP-shipped, T-159 + ADR-0016]:** Common (white, no affix) 78% · Magic (blue,
+1–2 affixes) 17% · Rare (yellow, 2–3 affixes) 4.6% · Unique (named, fixed rolls,
+boss-only) 0.4%. Multi-affix shipped via 10-field blob (ADR-0016, epoch 31).
 Affix pools are dark-themed (20 affixes): *of the Leech* (2–4% life on hit), *Grim* (+dmg to
 undead), *Festering* (poison proc), *of the Vigil* (+light radius — mechanically
 real at night), *Bloodforged* (+dmg at night), *of the Choir* (+buff duration),
@@ -272,8 +275,10 @@ records the cut). Player-to-player **trade window** [MVP]; stalls/auction
 - **Night [MVP — really dark, readable-dark]:** global darkness **78–80% desat
   blue-black multiply + additive light mask** (BIBLE v2 law, T-164 proves with
   screenshots). Light radius law: **base 0; torch 6, lantern 8, of-the-Vigil
-  extends** — without light you can walk, you cannot grind. Torch economy is
-  balanced around this. Night-only spawns (Wraiths, Bloodfiends) sit in shadow
+  +2** — without light you can walk, you cannot grind. Warm pools composite
+  **after** the night overlay (additive-in-effect, floor-safe — T-071/T-164).
+  Evidence: `docs/research-notes/qa/t164/` matrix (00/02/04h × lamp states).
+  Torch economy is balanced around this. Night-only spawns (Wraiths, Bloodfiends) sit in shadow
   pools, worth **+50% XP**, Blood Bolt-type effects buffed (+25% at night).
   Ambient dread audio (bell drone, no music), fog at light falloff. First-kill
   world call only — quiet is dread.

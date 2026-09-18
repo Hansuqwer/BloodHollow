@@ -11,7 +11,14 @@ ring; the 60 s uncontested window (`kHeartCaptureTicks=1200`, 3-tile ring)
 never opened. Same signature as the audit drill (`attuned=0`). p99 2.8 ms,
 replay mm=0 — the sim is healthy; the contest is denied.
 
-## Scope (director picks ONE; staff recommends a)
+## Evidence update (2026-09-16): option (a) exhausted
+
+`m4e30a` (16v6 × 900 s, epoch 30, `logs/t137_m4e30a.bwj`, replay mm=0):
+battles 1, gates 2/2, attuned 0, flips 0, p99 8.9 ms PASS, 1119 crown
+attempts vs 6 holders. Tripling the attackers does not open the 60 s
+window — staff recommendation moves from (a) to **director call: (b) or (c)**.
+
+## Scope (director picks ONE)
 
 - (a) Drill-side: more attackers (e.g. 16v6) and/or longer clock (900 s), kiter
   split already in bots. Cheapest, no sim touch — try first.

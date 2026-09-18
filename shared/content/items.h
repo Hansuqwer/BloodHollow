@@ -104,13 +104,65 @@ inline constexpr const char* kAffixNames[] = {"", "of Whet", "of Warding", "of L
 inline constexpr std::uint8_t kAffixCount = 20;
 
 // gear-drop side-table (kept off MobDef rows: content table stays 16-wide)
+// T-159f1.2 (ADR-0016): 45 rows banded by mob level — L1-3 light gear,
+// L5-8 pit gear, L9-11 warden gear, L12+ grave gear. Chances 2-5% (the
+// gear-chance gate + rarity roll are unchanged, so the economy impact is
+// bounded: more KINDS drop, not more drops).
 struct GearDropDef { std::uint32_t mobId; std::uint32_t itemId; std::uint8_t chancePct; };
 inline constexpr GearDropDef kGearDrops[] = {
+    // L1-3 band: rats, bats, ghouls — shanks, hide, scrap, bands, charms
+    {1001, 2001, 4},   // Marsh Rat: Rusty Shank
+    {1001, 2701, 3},   // Marsh Rat: Iron Band
+    {1004, 2001, 4},   // Plague Bat: Rusty Shank
+    {1004, 2601, 2},   // Plague Bat: Bone Charm
     {1002, 2001, 4},   // Feral Ghoul: Rusty Shank
+    {1002, 2101, 3},   // Feral Ghoul: Hide Armor
+    {1002, 2501, 2},   // Feral Ghoul: Scrap Helm
+    // L5-8 band: hounds, gnolls, wretches, spiders — pit gear + first warden
+    {1003, 2001, 3},   // Hollow Hound: Rusty Shank
+    {1003, 2101, 3},   // Hollow Hound: Hide Armor
+    {1003, 2701, 3},   // Hollow Hound: Iron Band
+    {1016, 2601, 3},   // Lantern Spider: Bone Charm
     {1005, 2002, 3},   // Bonepicker Gnoll: Pit Blade
+    {1005, 2101, 3},   // Bonepicker Gnoll: Hide Armor
+    {1005, 2702, 2},   // Bonepicker Gnoll: Ossuary Ring
+    {1012, 2002, 4},   // Old Maw: Pit Blade
+    {1012, 2101, 3},   // Old Maw: Hide Armor
+    {1015, 2002, 3},   // Mine Wretch: Pit Blade
+    {1015, 2101, 3},   // Mine Wretch: Hide Armor
+    {1022, 2601, 3},   // Wraith: Bone Charm
+    // L9-11 band: widows, golems, fiends, patrols — bone plate + warden gear
     {1006, 2101, 3},   // Charnel Widow: Hide Armor
-    {1007, 2102, 2},   // Gravecaller: Bone Plate
+    {1006, 2102, 2},   // Charnel Widow: Bone Plate
+    {1006, 2502, 2},   // Charnel Widow: Graveguard Helm
+    {1013, 2102, 3},   // Red Widow: Bone Plate
+    {1013, 2502, 2},   // Red Widow: Graveguard Helm
+    {1013, 2602, 2},   // Red Widow: Grave Lodestone
+    {1017, 2102, 2},   // Mud Golem: Bone Plate
+    {1017, 2702, 2},   // Mud Golem: Ossuary Ring
+    {1023, 2002, 3},   // Bloodfiend: Pit Blade
+    {1023, 2602, 2},   // Bloodfiend: Grave Lodestone
+    {1025, 2002, 3},   // Ashen Patrol: Pit Blade
+    {1024, 2002, 3},   // Synod Patrol: Pit Blade
+    {1021, 2102, 2},   // Pale Cultist: Bone Plate
+    // L11-12 band: celebrants, sextons, revenants — gravelodestone tier
+    {1007, 2102, 2},   // Waxen Celebrant: Bone Plate
+    {1007, 2602, 2},   // Waxen Celebrant: Grave Lodestone
+    {1007, 2702, 2},   // Waxen Celebrant: Ossuary Ring
+    {1008, 2102, 3},   // Revenant Sexton: Bone Plate
+    {1008, 2502, 2},   // Revenant Sexton: Graveguard Helm
+    {1018, 2102, 2},   // Crypt Revenant: Bone Plate
+    // L12+ band: elites, banshees, cantors, ringers — hollow warden tier
+    {1010, 2503, 2},   // Sepulcher Elite: Hollow Warden
+    {1010, 2603, 2},   // Sepulcher Elite: Marrow Talisman
+    {1010, 2703, 2},   // Sepulcher Elite: Seal of the Hollow
+    {1019, 2503, 2},   // Grave Banshee: Hollow Warden
+    {1014, 2603, 2},   // Cantor Vex: Marrow Talisman
+    {1014, 2703, 2},   // Cantor Vex: Seal of the Hollow
+    {1020, 2503, 2},   // Bell Ringer: Hollow Warden
 };
+inline constexpr std::uint32_t kGearDropCount =
+    sizeof(kGearDrops) / sizeof(kGearDrops[0]);
 inline const GearDropDef* findGearDrop(std::uint32_t mobId) {
   for (const auto& g : kGearDrops) if (g.mobId == mobId) return &g;
   return nullptr;

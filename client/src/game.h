@@ -8,10 +8,12 @@
 #include <vector>
 
 #include "assets/atlas.h"
+#include "bitmap_font.h"  // T-ART-13 red-caps callout font
 #include "net_client.h"
 #include "render/animstate.h"  // T-ART-04 combat anim hook
 #include "render/camera_rig.h"
 #include "render/decals.h"  // T-ART-09 ground decal layer (blood/telegraph/circle)
+#include "terrain_skin.h"  // T-ART-12 textured ground + skinned prisms
 #include "sim/bhmap.h"
 #include "sim/journal.h"
 #include "synthkit.h"  // T-067 procedural audio kit
@@ -75,6 +77,30 @@ class Game {
 
   void debugSetHour(float h);
 
+  // T-ART-12/T-164 dev captures (render-only, no sim): --zoom forces the
+  // camera zoom every frame, --flat-ground forces the legacy flat diamonds,
+  // --lamp draws one shipped-style warm pool at the hero (same gradient call
+  // and radius law as the online carried-light path, for night matrices).
+  void debugSetZoom(float z) { debugZoom_ = z; }
+  void debugSetFlatGround(bool f) { skin_.setFlatForced(f); }
+  void debugSetLamp(int radiusTiles) { lampRadius_ = radiusTiles; }
+  void debugSetFlatFont(bool f) {  // --flat-font: legacy DrawText (before shots)
+    if (f) fontsTried_ = true;
+  }
+  // T-ART-14 dev visual: --vfx-test loads the dirs:1 fixture strip and plays
+  // it looping at the hero (proves load+play; real strips wire to events).
+  void debugSetVfxTest(bool v) { vfxTest_ = v; }
+  // T-ART-13 dev captures: --create 1M preselects the T-167 creation answer
+  // so a fresh account lands in-world unattended (class 1..3, sex 1..2).
+  void debugSetCreate(std::uint8_t c, std::uint8_t s) {
+    createClass_ = c;
+    createSex_ = s;
+    debugAutoCreate_ = (c != 0 && s != 0);
+  }
+  // T-ART-12: offline --map loads by path; the skin needs the zone id.
+  static std::uint16_t mapIdForFile(const std::string& path);
+  void setLoadedMapId(std::uint16_t id) { loadedMapId = id; }
+
  private:
   sim::TilePos findSpawn() const;
   void handleInput();        // offline input (journaled)
@@ -94,6 +120,11 @@ class Game {
   void drawHud() const;
   void drawChat() const;
   void drawFloaters();
+  void ensureFonts();  // T-ART-13: lazy bitmap fonts (GL must be up first)
+  // T-ART-13 bitmap name tag: bitmap small caps when loaded (legacy DrawText
+  // fallback), degrading to the karma badge in piles of 4+ (R-TEXT-2).
+  void drawNameTag(Vector2 w, const std::string& name, Color nc, int yOff,
+                   std::uint32_t id, bool canDegrade);
   void noteVestiges();   // T-066: harvest despawnedIds into vestige queue
   void drawVestiges();   // T-066: petrify-fade silhouettes under the world
   void noteDecals();     // T-ART-09: harvest kill pulses into blood decals
@@ -101,6 +132,7 @@ class Game {
   void addTelegraph(float x, float y, int stage);  // T-ART-09: boss API (1-3)
   void addCircle(float x, float y);                // T-ART-09: spell-circle API
   void drawStatPanel() const;
+  void drawHotbar() const;  // T-ART-15: skill slots (keys+locks; icons pending)
   void drawPartyFrame() const;  // T-052 top-left HB-style party list
   std::uint32_t chanTarget() const;  // T-054: party-frame pick else self
   void drawInventoryPanel() const;
@@ -119,9 +151,19 @@ class Game {
   Color terrainColor(std::uint16_t type) const;
   float gameHour() const;
   Vector2 entRenderPos(const RenderEnt& e) const;
+  // T-071/T-164: one warm pool (shared by the online carried-light loop and
+  // the offline --lamp dev visual — same call, same radius law, no fork).
+  void drawLightPool(Vector2 worldPos, int radiusTiles) const;
 
   sim::Map map_;
   std::uint16_t loadedMapId = 1;
+  TerrainSkin skin_;  // T-ART-12: baked textured ground + prism skins
+  BitmapFont calloutFont_;  // T-ART-13: 7x11 red-caps (floaters)
+  BitmapFont nameFont_;     // T-ART-13: 5x7 small caps (nameplates)
+  bool fontsTried_ = false;
+  // R-TEXT-2: screen-space name-tag anchors for the pile test, rebuilt in
+  // drawEntitiesOnline before any tag draws.
+  std::unordered_map<std::uint32_t, int> namePileCounts_;
   bool zoneReload(std::uint16_t mapId);   // T-037: hot-swap on Welcome reuse
   static const char* mapFileFor(std::uint16_t mapId);
   sim::CostGrid grid_{};
@@ -138,6 +180,9 @@ class Game {
   // or unknown class falls back to hero (T-142b captures sex at creation).
   std::unordered_map<std::uint16_t, Atlas> playerAtlases_{};
   const Atlas& atlasForPlayer(std::uint8_t classId, std::uint8_t sex);
+  Atlas testVfx_{};      // T-ART-14 fixture strip (dev visual only)
+  bool vfxTest_ = false;
+  void drawVfxTest();  // T-ART-14: looping fixture playback at the hero
 
   // offline sim
   sim::Walker walker_{};
@@ -151,6 +196,8 @@ class Game {
   bool showGrid_ = false;
   bool showPath_ = true;
   float debugHourOffset_ = 0.0f;
+  float debugZoom_ = -1.0f;   // >0 forces camera zoom (dev captures)
+  int lampRadius_ = 0;        // >0 draws one warm pool at the hero (dev)
 
   // chat + UX state
   bool chatFocus_ = false;
@@ -174,6 +221,7 @@ class Game {
   bool showHelp_ = false;  // T-169: /help overlay
   // T-167 creation panel selection (1..3 kit, 1..2 sex, 0 = unpicked)
   std::uint8_t createClass_ = 0, createSex_ = 0;
+  bool debugAutoCreate_ = false;  // --create: answer once, dev captures only
 
   NetClient* net_ = nullptr;
   sim::JournalWriter* rec_ = nullptr;

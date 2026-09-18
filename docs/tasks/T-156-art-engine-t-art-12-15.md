@@ -48,3 +48,10 @@ Renderer-law unit pins; screenshot sets; fps check; existing suite green.
 
 ## Evidence owed at merge
 Screenshots per zone, fps evidence, the four filed cards, devlog, board rows.
+
+## Status (2026-09-18 — 3/4 shipped, Xvfb frigor)
+
+- T-ART-12 DONE → `done/` (textured ground + skinned prisms, 5 zones).
+- T-ART-13 DONE → `done/` (bitmap font + R-TEXT-2).
+- T-ART-14 DONE (loader) → `done/`; events + real strips → T-ART-14b.
+- T-ART-15 OPEN (hotbar structure + plates live; 60-icon art needs pipeline key).

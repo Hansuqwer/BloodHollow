@@ -46,15 +46,18 @@ struct InvSlot {
   std::uint8_t aura = 0;   // T-042: applied aura tier (0=none, 1..5 per RFC 0001)
   std::uint8_t durability = 100;  // T-058: 0 = dormant (kept, no stats); weapons/armor
   std::uint8_t affix = 0;         // T-059 v1: 0 none, 1 whet, 2 ward, 3 leech; T-126 v2 adds 4..10; T-159 v3 adds 11..20
+  std::uint8_t affix2 = 0;        // T-159f1.1 (ADR-0016): 2nd mod, 0 = none (Magic 50%, Rare always)
+  std::uint8_t affix3 = 0;        // T-159f1.1 (ADR-0016): 3rd mod, 0 = none (Rare 50%)
   std::uint8_t refine = 0;        // T-060: 0..3, T-079: to +7 (+2 weapon dmg / +1 armor def per tier)
   std::uint8_t rarity = 0;        // T-159: 0 common, 1 magic, 2 rare, 3 unique
 };
 
 // T-049x (relog-launderer fix): ONE grammar for persisted inventory blobs —
-// "iid:qty:equipped:aura:durability:affix:refine:rarity;..." — shared by the live
+// "iid:qty:equipped:aura:durability:affix:refine:rarity:affix2:affix3;..." — shared by the live
 // login path and the world-replay applyLogin. Legacy short tails (v3 3-field,
 // v5 4-field aura, v8 +durability, v9 +affix) parse with InvSlot defaults.
 // T-159: 8th field = rarity (0..3); legacy 7-field blobs default rarity to 0.
+// ADR-0016: 9th/10th fields = affix2/affix3; legacy 8-field blobs default 0/0.
 // Records are appended in blob order; NOTHING stacks or reorders. Pre-fix BOTH
 // lanes laundered: live login used an rfind 3-field heuristic (dropped
 // equipped + aura/durability/affix/refine on v5+ records), replay used a
@@ -142,6 +145,40 @@ struct Entity {
   sim::Tick lastHasteTick = -1000;
   sim::Tick lastIronskinTick = -1000;
   sim::Tick lastFireboltTick = -1000;
+  sim::Tick lastSanctTick = -1000;  // T-161b.1 Sanctuary cadence (ch11)
+  sim::Tick lastWeakTick = -1000;   // T-161b.2 Weakness cadence (ch12)
+  sim::Tick weakUntil = -1;  // T-161b.2: -15% dmg/def (NOT in worldHash:
+                             // T-133 crownUntil precedent — old journals stay clean)
+  sim::Tick lastRaiseTick = -1000;  // T-161b.3 thrall cadence (ch13)
+  sim::Tick lastBlastTick = -1000;  // T-161b.4 corpse-blast cadence (ch14)
+  // T-161b.5 control set (all unhashed, T-133 law — old journals stay clean):
+  sim::Tick lastFrostTick = -1000;  // ch15 cadence
+  sim::Tick slowUntil = -1;         // ch15: Frost Spike 20% slow (move 4/5t)
+  sim::Tick lastWitherTick = -1000;  // ch16 cadence
+  std::uint8_t witherStacks = 0;    // ch16: Wither DoT stacks (max 3)
+  sim::Tick witherUntil = -1;
+  sim::Tick witherNext = 0;
+  std::uint8_t witherLevel = 0;  // cast-time level (deterministic pulses)
+  std::uint32_t witherCaster = 0;
+  sim::Tick lastTerrorTick = -1000;  // ch17 cadence
+  sim::Tick fearUntil = -1;          // ch17: Terror rout
+  int fearX = 0, fearY = 0;          // rout source (walk away from here)
+  sim::Tick lastShieldTick = -1000;  // ch18 cadence
+  sim::Tick shieldUntil = -1;        // ch18: Mana Shield absorb (1 MP / 2 dmg)
+  // T-161b.6 Ravager set (all unhashed, T-133 law):
+  sim::Tick lastSunderTick = -1000;  // ch19 cadence
+  sim::Tick sunderUntil = -1;        // ch19: Sunder -15% DEF (stacks w/ Weak)
+  sim::Tick lastRushTick = -1000;    // ch20 cadence
+  sim::Tick lastStompTick = -1000;   // ch21 cadence
+  sim::Tick knockUntil = -1;         // ch20/21: prone (no move, no strike)
+  sim::Tick lastExecTick = -1000;    // ch22 cadence (GDD 100t)
+  sim::Tick lastWindTick = -1000;    // ch23 cadence (GDD 600t)
+  std::uint32_t windPool = 0;        // ch23: Second Wind hp remaining
+  sim::Tick windUntil = -1;
+  sim::Tick windNext = 0;
+  sim::Tick windMark = -1;  // lastHurtTick at cast (any later hit breaks it)
+  std::uint32_t ownerId = 0;  // T-161b.3: pet bond (0 = wild; unhashed, T-133 law)
+  std::uint8_t petLevel = 0;  // T-161b.3: caster level at raising (strike/guard scale)
 
   // alignment & PK (T-056): duel state + offer handshake
   std::uint32_t duelWith = 0;      // active duel partner (0 = none)
@@ -257,6 +294,10 @@ class World {
   // T-126 affix probe: equipped + slot-gated (0 weapon, 1 armor, 9 any gear)
   // + awake (durability > 0). Mobs carry no affixed gear.
   bool hasAffix(const Entity& e, std::uint8_t affix, std::uint8_t slot) const;
+  // T-159f1.1 (ADR-0016): any of the three mods on one equipped slot.
+  static bool slotHasAffix(const InvSlot& sl, std::uint8_t affix) {
+    return sl.affix == affix || sl.affix2 == affix || sl.affix3 == affix;
+  }
   std::uint8_t vigilBonus(const Entity& e) const;  // T-126: +2 light if of the Vigil worn
 
  private:
@@ -268,7 +309,62 @@ class World {
   void tryHaste(Entity& e);                     // T-054b (chan 8)
   void tryPurify(Entity& e, std::uint32_t targetId);  // T-082 (chan 9)
   void tryResurrect(Entity& e, std::uint32_t targetId);  // T-161 (chan 10)
+  void trySanctuary(Entity& e);                   // T-161b.1 (chan 11)
+  void tryWeaken(Entity& e, std::uint32_t targetId);  // T-161b.2 (chan 12)
+  void tryRaise(Entity& e);  // T-161b.3 (chan 13)
+  // T-161b.3 thrall law: kMob + ownerId, zero wire (spawn/delta already
+  // carry mobId), zero hash (generic entity mix covers the body; the bond
+  // fields stay out like crownUntil). Returns false when the thrall
+  // crumbled mid-think (caller must drop its reference).
+  bool petThink(Entity& pet);
+  void petCrumble(std::uint32_t petId, const std::string& notice);
+  void tryCorpseBlast(Entity& e);  // T-161b.4 (chan 14)
+  void tryFrost(Entity& e, std::uint32_t targetId);   // T-161b.5 (chan 15)
+  void tryWither(Entity& e, std::uint32_t targetId);  // T-161b.5 (chan 16)
+  void tryTerror(Entity& e, std::uint32_t targetId);  // T-161b.5 (chan 17)
+  void tryManaShield(Entity& e);                      // T-161b.5 (chan 18)
+  void trySunder(Entity& e, std::uint32_t targetId);   // T-161b.6 (chan 19)
+  void tryBullRush(Entity& e, std::uint32_t targetId);  // T-161b.6 (chan 20)
+  void tryWarStomp(Entity& e);                          // T-161b.6 (chan 21)
+  // ch22 Execute pre-gates in trySkill and resolves via powerSwing(e, t,
+  // true) — no body (the aimed reading keeps old journals identical).
+  void trySecondWind(Entity& e);                        // T-161b.6 (chan 23)
+  // T-161b.6: shared Power-Swing lane (ch1 plain, ch22 doubled). Extracted
+  // verbatim + execute doubling + prone/ward reads (all neutral on old
+  // journals: execute never invoked, knockUntil/shieldUntil init -1).
+  void powerSwing(Entity& e, Entity& target, bool execute);
+  void tickWind();  // T-161b.6: Second Wind pulses (fixed order, last)
+  void tickWither();  // T-161b.5: DoT pulses (fixed order, after Sanctuary)
+  void fearStep(Entity& e);  // T-161b.5: one routed step away from fearX/Y
+  // T-161b.5: Mana Shield absorb (1 MP per 2 dmg, rounded up). Pure function
+  // of def state — every damage path calls it before subtracting.
+  std::uint32_t shieldAbsorb(Entity& def, std::uint32_t dmg);
+  // T-161b.4 death tape: mob corpses only (player corpses are sacrosanct;
+  // thralls crumble, they leave none). Cap-32 ring, 300t meat window.
+  // Unhashed like every bond field (T-133 law) — blasts derive from
+  // journaled kills, so live and replay read the same tape.
+  struct DeathMark {
+    std::uint16_t zone = 0;
+    int x = 0, y = 0;
+    sim::Tick tick = -100000;
+  };
+  void noteCorpse(std::uint16_t zone, int x, int y);
   void tryFirebolt(Entity& e, std::uint32_t targetId);  // T-054 (chan 5)
+  // T-161b.1 Sanctuary: ground circles held by the sim, read by the tick.
+  // Level + party are captured at cast (the caster may log out mid-hold);
+  // circles ride journaled kSkill commands, use zero RNG, and stay outside
+  // worldHash (entity HP already covers the effect — old journals replay
+  // clean by construction, proven by the neutrality leg).
+  struct SanctCircle {
+    std::uint32_t caster = 0;
+    std::uint32_t party = 0;  // 0 = caster alone (self-only hold)
+    std::uint16_t zone = 0;
+    int x = 0, y = 0;
+    std::uint8_t level = 1;
+    sim::Tick expiry = -1;
+    sim::Tick next = 0;
+  };
+  void tickSanctuary();
 
  public:
   bool vendorBuy(Entity& e, std::uint32_t itemId, std::uint16_t qty);
@@ -424,6 +520,11 @@ class World {
   // tests (default logs/trades.log). Outside the journal: replay appends
   // byte-identical lines (same tick/ids/offers) — ops dedups trivially.
   static void setTradeLogPath(const std::string& p);
+  // T-159f1.5 drop log (economy evidence): one line per awarded drop
+  // (gear/unique/junk/gold). Same posture as the trade log (default
+  // logs/drops.log, test override, replay-duplicate harmless).
+  static void setDropLogPath(const std::string& p);
+  void dropLog(const std::string& line);  // T-159f1.5: append one drop line
   // test/debug knob (gm tooling later): grant an item without checks
   bool debugGive(Entity& e, std::uint32_t itemId, std::uint16_t qty) {
     return addItem(e, itemId, qty);
@@ -547,6 +648,14 @@ class World {
                                       int radiusTiles) const;
 
   const std::vector<WorldEvent>& events() const { return events_; }
+  std::size_t sanctCount() const { return sanct_.size(); }  // T-161b.1 (test pin)
+  // T-161b.3: the caster's living thrall, if any (test pin + future UI).
+  const Entity* petOf(std::uint32_t ownerId) const {
+    for (const auto& m : entities_)
+      if (m.kind == EntityKind::kMob && m.ownerId == ownerId && !m.dead)
+        return &m;
+    return nullptr;
+  }
   std::deque<Entity>& entities() { return entities_; }
   // legacy single-zone accessors (zone 1) used by main/tests/bots
   const sim::Map& map() const { return zones_.at(1).map; }
@@ -600,6 +709,8 @@ class World {
   std::deque<Entity> entities_{};
   std::deque<Party> parties_;
   std::uint32_t nextPartyId_ = 1;
+  std::vector<SanctCircle> sanct_;  // T-161b.1: live Sanctuary holds
+  std::vector<DeathMark> tape_;  // T-161b.4: mob-corpse tape (cap-32 ring)
 
   // pledge-lite (T-122): registry + pending invites (target id -> {expiry, inviter id})
   std::deque<Pledge> pledges_;

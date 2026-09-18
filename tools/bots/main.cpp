@@ -120,9 +120,18 @@ struct Bot {
   bool kitSworn = false;      // /kit cultist sent
   double nextMendAt = 0.0, nextBlessAt = 0.0;
   // T-054b choir-bot v2: kit-v2 channel pacing (ch6 Chorus / ch7 Mass Mend /
-  // ch8 Haste) + per-channel cast counters for the SUMMARY line
+  // ch8 Haste, ch11 Sanctuary, ch13 Raise) + per-channel cast counters
   double nextChorusAt = 0.0, nextMassMendAt = 0.0, nextHasteAt = 0.0;
-  std::uint64_t chorusCasts = 0, massCasts = 0, hasteCasts = 0;
+  double nextSanctAt = 0.0, nextRaiseAt = 0.0, nextBlastAt = 0.0;
+  double nextFrostAt = 0.0, nextWitherAt = 0.0, nextTerrorAt = 0.0;
+  double nextShieldAt = 0.0;
+  double nextSunderAt = 0.0, nextRushAt = 0.0, nextStompAt = 0.0;
+  double nextExecAt = 0.0, nextWindAt = 0.0;
+  std::uint64_t chorusCasts = 0, massCasts = 0, hasteCasts = 0, sanctCasts = 0;
+  std::uint64_t raiseCasts = 0, blastCasts = 0;
+  std::uint64_t frostCasts = 0, witherCasts = 0, terrorCasts = 0, shieldCasts = 0;
+  std::uint64_t sunderCasts = 0, rushCasts = 0, stompCasts = 0, execCasts = 0;
+  std::uint64_t windCasts = 0;
   std::uint64_t blessCasts = 0, mendCasts = 0, mendNoSee = 0, mendHurtCnt = 0;
   std::uint64_t rcvReset = 0, rcvMember = 0; std::uint32_t lastResetPid = 0;
   // T-118 M3 gate: raider profile state (march/telegraph-dodge/boss telemetry)
@@ -786,6 +795,23 @@ int run(int argc, char** argv) {
             sendProto(b.peer, bh::proto::pack(su));
             b.nextMassMendAt = t + 3.5; ++b.massCasts; massMended = true;
           }
+          // T-161b.1 ch11 Sanctuary (Choir L14): two+ hurt voices make the
+          // 20 mp ground hold beat another burst; the 35 s bot period clears
+          // the 30 s server CD. Level gate from the shared table (quiet
+          // no-op below 14, server enforces too).
+          if (b.level >= bh::content::kitSkillUnlock(b.kitClass, 11) && b.mp >= 20 && hurtSeen >= 2 && t >= b.nextSanctAt) {
+            bh::proto::SkillUse su; su.skill = 11; su.targetId = b.ownId;
+            sendProto(b.peer, bh::proto::pack(su));
+            b.nextSanctAt = t + 35.0; ++b.sanctCasts;
+          }
+          // T-161b.3 ch13 Raise (Choir L16): keep one thrall walking — the
+          // 180 s bot period is pure upkeep thrift (the 30 s server CD only
+          // prices thrall-cycling; recast replaces). Server gates level/MP.
+          if (b.level >= bh::content::kitSkillUnlock(b.kitClass, 13) && b.mp >= 25 && t >= b.nextRaiseAt) {
+            bh::proto::SkillUse su; su.skill = 13; su.targetId = b.ownId;
+            sendProto(b.peer, bh::proto::pack(su));
+            b.nextRaiseAt = t + 180.0; ++b.raiseCasts;
+          }
           bool mobAdj = false;
           for (const auto& kv2 : b.ents) {
             if (kv2.second.kind == 0 || bh::content::wireIsFurniture(kv2.second.kind)) continue;
@@ -802,6 +828,107 @@ int run(int argc, char** argv) {
               sendProto(b.peer, bh::proto::pack(su));
               b.nextMendAt = t + 1.5; ++b.swings; ++b.mendCasts;
             }
+          }
+        }
+        if (b.kitClass == 2 && !b.party.empty()) {
+          // T-161b.4 ch14 Corpse Explosion (Grave L14): two+ yard bodies
+          // within arm's reach make the 15 mp detonation beat another bolt.
+          // The server no-ops meatless casts for free (no MP spent), so the
+          // bot offers the shape every 20 s and the sim decides.
+          auto cheb2 = [&](int ax, int ay, int bx, int by) {
+            const int dx = ax > bx ? ax - bx : bx - ax;
+            const int dy = ay > by ? ay - by : by - ay;
+            return dx > dy ? dx : dy;
+          };
+          int near = 0;
+          for (const auto& kv2 : b.ents) {
+            if (kv2.second.kind == 0 || bh::content::wireIsFurniture(kv2.second.kind)) continue;
+            if (cheb2(b.tileX, b.tileY, kv2.second.x, kv2.second.y) <= 2 && ++near >= 2) break;
+          }
+          if (near >= 2 && b.level >= bh::content::kitSkillUnlock(b.kitClass, 14) && b.mp >= 15 && t >= b.nextBlastAt) {
+            bh::proto::SkillUse su; su.skill = 14; su.targetId = b.ownId;
+            sendProto(b.peer, bh::proto::pack(su));
+            b.nextBlastAt = t + 20.0; ++b.blastCasts;
+          }
+          // T-161b.5 control set (Grave L4/8/12/10): wither the nearest
+          // yard body (30 s), terror a pile (90 s), ward below half (90 s).
+          // Server gates everything; periods are thrift, not law.
+          std::uint32_t witherId = 0;
+          int witherDist = 99;
+          for (const auto& kv2 : b.ents) {
+            if (kv2.second.kind == 0 || bh::content::wireIsFurniture(kv2.second.kind)) continue;
+            if (!entAggressive(kv2.second.kind)) continue;
+            const int d = cheb2(b.tileX, b.tileY, kv2.second.x, kv2.second.y);
+            if (d <= 8 && d < witherDist) { witherDist = d; witherId = kv2.first; }
+          }
+          const std::uint8_t witherUnlock = bh::content::kitSkillUnlock(b.kitClass, 16);
+          if (witherId != 0 && witherUnlock > 0 && b.level >= witherUnlock && b.mp >= 14 && t >= b.nextWitherAt) {
+            bh::proto::SkillUse su; su.skill = 16; su.targetId = witherId;
+            sendProto(b.peer, bh::proto::pack(su));
+            b.nextWitherAt = t + 30.0; ++b.witherCasts;
+          }
+          const std::uint8_t terrorUnlock = bh::content::kitSkillUnlock(b.kitClass, 17);
+          if (near >= 2 && terrorUnlock > 0 && b.level >= terrorUnlock && b.mp >= 12 && t >= b.nextTerrorAt) {
+            bh::proto::SkillUse su; su.skill = 17; su.targetId = witherId;
+            sendProto(b.peer, bh::proto::pack(su));
+            b.nextTerrorAt = t + 90.0; ++b.terrorCasts;
+          }
+          const std::uint8_t shieldUnlock = bh::content::kitSkillUnlock(b.kitClass, 18);
+          if (shieldUnlock > 0 && b.level >= shieldUnlock && b.mp >= 10 && b.hp * 2 < b.hpMax && t >= b.nextShieldAt) {
+            bh::proto::SkillUse su; su.skill = 18; su.targetId = b.ownId;
+            sendProto(b.peer, bh::proto::pack(su));
+            b.nextShieldAt = t + 90.0; ++b.shieldCasts;
+          }
+        }
+        if (b.kitClass == 1) {
+          // T-161b.6 Ravager set (L6/8/12/14/10): sunder the nearest yard
+          // body, rush a near one, stomp a pile, execute anything bleeding,
+          // rally below 40%. Server gates levels/ranges/fractions; periods
+          // are thrift. Blind offers are free (no meat = no spend).
+          auto cheb3 = [&](int ax, int ay, int bx, int by) {
+            const int dx = ax > bx ? ax - bx : bx - ax;
+            const int dy = ay > by ? ay - by : by - ay;
+            return dx > dy ? dx : dy;
+          };
+          std::uint32_t foeId = 0;
+          int foeDist = 99;
+          int pile = 0;
+          for (const auto& kv2 : b.ents) {
+            if (kv2.second.kind == 0 || bh::content::wireIsFurniture(kv2.second.kind)) continue;
+            if (!entAggressive(kv2.second.kind)) continue;
+            const int d = cheb3(b.tileX, b.tileY, kv2.second.x, kv2.second.y);
+            if (d <= 2) ++pile;
+            if (d < foeDist) { foeDist = d; foeId = kv2.first; }
+          }
+          const std::uint8_t sunU = bh::content::kitSkillUnlock(b.kitClass, 19);
+          if (foeId != 0 && foeDist <= 1 && sunU > 0 && b.level >= sunU && b.mp >= 10 && t >= b.nextSunderAt) {
+            bh::proto::SkillUse su; su.skill = 19; su.targetId = foeId;
+            sendProto(b.peer, bh::proto::pack(su));
+            b.nextSunderAt = t + 65.0; ++b.sunderCasts;
+          }
+          const std::uint8_t rushU = bh::content::kitSkillUnlock(b.kitClass, 20);
+          if (foeId != 0 && foeDist >= 2 && foeDist <= 4 && rushU > 0 && b.level >= rushU && b.mp >= 12 && t >= b.nextRushAt) {
+            bh::proto::SkillUse su; su.skill = 20; su.targetId = foeId;
+            sendProto(b.peer, bh::proto::pack(su));
+            b.nextRushAt = t + 125.0; ++b.rushCasts;
+          }
+          const std::uint8_t stompU = bh::content::kitSkillUnlock(b.kitClass, 21);
+          if (pile >= 2 && stompU > 0 && b.level >= stompU && b.mp >= 15 && t >= b.nextStompAt) {
+            bh::proto::SkillUse su; su.skill = 21; su.targetId = b.ownId;
+            sendProto(b.peer, bh::proto::pack(su));
+            b.nextStompAt = t + 165.0; ++b.stompCasts;
+          }
+          const std::uint8_t execU = bh::content::kitSkillUnlock(b.kitClass, 22);
+          if (foeId != 0 && foeDist <= 1 && execU > 0 && b.level >= execU && b.mp >= 8 && t >= b.nextExecAt) {
+            bh::proto::SkillUse su; su.skill = 22; su.targetId = foeId;
+            sendProto(b.peer, bh::proto::pack(su));
+            b.nextExecAt = t + 105.0; ++b.execCasts;
+          }
+          const std::uint8_t windU = bh::content::kitSkillUnlock(b.kitClass, 23);
+          if (windU > 0 && b.level >= windU && b.mp >= 10 && b.hp * 5 < b.hpMax * 2 && t >= b.nextWindAt) {
+            bh::proto::SkillUse su; su.skill = 23; su.targetId = b.ownId;
+            sendProto(b.peer, bh::proto::pack(su));
+            b.nextWindAt = t + 610.0; ++b.windCasts;
           }
         }
       }
@@ -1146,6 +1273,29 @@ int run(int argc, char** argv) {
             ++b.massCasts;
             massMended = true;
           }
+          // T-161b.3 ch13 Raise (Choir L16): keep one thrall walking (180 s
+          // upkeep thrift; recast replaces; shared-table gate).
+          if (b.level >= bh::content::kitSkillUnlock(b.kitClass, 13) &&
+              b.mp >= 25 && t >= b.nextRaiseAt) {
+            bh::proto::SkillUse su;
+            su.skill = 13;
+            su.targetId = b.ownId;
+            sendProto(b.peer, bh::proto::pack(su));
+            b.nextRaiseAt = t + 180.0;
+            ++b.raiseCasts;
+          }
+          // T-161b.1 ch11 Sanctuary (Choir L14): two+ hurt voices make the
+          // 20 mp ground hold beat another burst (35 s bot period clears the
+          // 30 s server CD; shared-table gate, quiet no-op below 14).
+          if (b.level >= bh::content::kitSkillUnlock(b.kitClass, 11) &&
+              b.mp >= 20 && hurtSeen >= 2 && t >= b.nextSanctAt) {
+            bh::proto::SkillUse su;
+            su.skill = 11;
+            su.targetId = b.ownId;
+            sendProto(b.peer, bh::proto::pack(su));
+            b.nextSanctAt = t + 35.0;
+            ++b.sanctCasts;
+          }
           // ch8 Haste (Gravecaller L10 / Choir L11): self rotation gear while
           // something stands in swing range (60 s of fast steel, ~70 s refresh).
           bool mobAdj = false;
@@ -1195,6 +1345,97 @@ int run(int argc, char** argv) {
             sendProto(b.peer, bh::proto::pack(ip));
             b.nextMoveAt = t + 0.8;
             continue;
+          }
+        }
+        // T-161b parity mirror (moved out of the kit-3 gate:
+        // the rites below serve kits 1/2 on campaign/raider).
+        // T-161b parity mirror (campaign/raider path): the crypt flow
+        // owns the full support shape; this path only had choir basics.
+        // Same next*At/counters — shared periods make the paths mutually
+        // exclusive, never double-casts. Server gates everything.
+        {
+          auto chebM = [&](int ax, int ay, int bx, int by) {
+            const int dx = ax > bx ? ax - bx : bx - ax;
+            const int dy = ay > by ? ay - by : by - ay;
+            return dx > dy ? dx : dy;
+          };
+          int near = 0;
+          std::uint32_t witherId = 0;
+          int witherDist = 99;
+          std::uint32_t foeId = 0;
+          int foeDist = 99;
+          for (const auto& kv : b.ents) {
+            if (kv.second.kind == 0 ||
+                bh::content::wireIsFurniture(kv.second.kind))
+              continue;
+            if (!entAggressive(kv.second.kind)) continue;
+            const int d = chebM(b.tileX, b.tileY, kv.second.x, kv.second.y);
+            if (d <= 2) ++near;
+            if (d <= 8 && d < witherDist) {
+              witherDist = d;
+              witherId = kv.first;
+            }
+            if (d < foeDist) {
+              foeDist = d;
+              foeId = kv.first;
+            }
+          }
+          if (b.kitClass == 2 && !b.party.empty()) {
+            if (near >= 2 && b.level >= bh::content::kitSkillUnlock(b.kitClass, 14) && b.mp >= 15 && t >= b.nextBlastAt) {
+              bh::proto::SkillUse su; su.skill = 14; su.targetId = b.ownId;
+              sendProto(b.peer, bh::proto::pack(su));
+              b.nextBlastAt = t + 20.0; ++b.blastCasts;
+            }
+            const std::uint8_t wu = bh::content::kitSkillUnlock(b.kitClass, 16);
+            if (witherId != 0 && wu > 0 && b.level >= wu && b.mp >= 14 && t >= b.nextWitherAt) {
+              bh::proto::SkillUse su; su.skill = 16; su.targetId = witherId;
+              sendProto(b.peer, bh::proto::pack(su));
+              b.nextWitherAt = t + 30.0; ++b.witherCasts;
+            }
+            const std::uint8_t tu = bh::content::kitSkillUnlock(b.kitClass, 17);
+            if (near >= 2 && tu > 0 && b.level >= tu && b.mp >= 12 && t >= b.nextTerrorAt) {
+              bh::proto::SkillUse su; su.skill = 17; su.targetId = witherId;
+              sendProto(b.peer, bh::proto::pack(su));
+              b.nextTerrorAt = t + 90.0; ++b.terrorCasts;
+            }
+            const std::uint8_t shu = bh::content::kitSkillUnlock(b.kitClass, 18);
+            if (shu > 0 && b.level >= shu && b.mp >= 10 && b.hp * 2 < b.hpMax && t >= b.nextShieldAt) {
+              bh::proto::SkillUse su; su.skill = 18; su.targetId = b.ownId;
+              sendProto(b.peer, bh::proto::pack(su));
+              b.nextShieldAt = t + 90.0; ++b.shieldCasts;
+            }
+          }
+          if (b.kitClass == 1) {
+            const std::uint8_t sunU = bh::content::kitSkillUnlock(b.kitClass, 19);
+            if (foeId != 0 && foeDist <= 1 && sunU > 0 && b.level >= sunU && b.mp >= 10 && t >= b.nextSunderAt) {
+              bh::proto::SkillUse su; su.skill = 19; su.targetId = foeId;
+              sendProto(b.peer, bh::proto::pack(su));
+              b.nextSunderAt = t + 65.0; ++b.sunderCasts;
+            }
+            const std::uint8_t rushU = bh::content::kitSkillUnlock(b.kitClass, 20);
+            if (foeId != 0 && foeDist >= 2 && foeDist <= 4 && rushU > 0 && b.level >= rushU && b.mp >= 12 && t >= b.nextRushAt) {
+              bh::proto::SkillUse su; su.skill = 20; su.targetId = foeId;
+              sendProto(b.peer, bh::proto::pack(su));
+              b.nextRushAt = t + 125.0; ++b.rushCasts;
+            }
+            const std::uint8_t stompU = bh::content::kitSkillUnlock(b.kitClass, 21);
+            if (near >= 2 && stompU > 0 && b.level >= stompU && b.mp >= 15 && t >= b.nextStompAt) {
+              bh::proto::SkillUse su; su.skill = 21; su.targetId = b.ownId;
+              sendProto(b.peer, bh::proto::pack(su));
+              b.nextStompAt = t + 165.0; ++b.stompCasts;
+            }
+            const std::uint8_t execU = bh::content::kitSkillUnlock(b.kitClass, 22);
+            if (foeId != 0 && foeDist <= 1 && execU > 0 && b.level >= execU && b.mp >= 8 && t >= b.nextExecAt) {
+              bh::proto::SkillUse su; su.skill = 22; su.targetId = foeId;
+              sendProto(b.peer, bh::proto::pack(su));
+              b.nextExecAt = t + 105.0; ++b.execCasts;
+            }
+            const std::uint8_t windU = bh::content::kitSkillUnlock(b.kitClass, 23);
+            if (windU > 0 && b.level >= windU && b.mp >= 10 && b.hp * 5 < b.hpMax * 2 && t >= b.nextWindAt) {
+              bh::proto::SkillUse su; su.skill = 23; su.targetId = b.ownId;
+              sendProto(b.peer, bh::proto::pack(su));
+              b.nextWindAt = t + 610.0; ++b.windCasts;
+            }
           }
         }
         if (b.campaignDone) continue;  // target reached: idle out the clock
@@ -1277,26 +1518,66 @@ int run(int argc, char** argv) {
         if (!b.siegeDefend && b.siegeStage == 0) {  // muster, then march
           // muster: hold spawn until the quintile is in the roster (or 60 s
           // timeout) so invites land within range; then march the road.
+          // T-157-F2: STATIC quintile size (m4e30c band 1/8 enlisted solo —
+          // want counted welcomed mates, so early birds mustered alone) and
+          // only the LIVING roster counts (m4e30c re-reg fragments: dead
+          // quintile-mates held the quorum open for solo re-enlistment).
+          // T-157-F2b (m4e30d: parties never formed for 3/16 — the march
+          // released at T+60 into a scattered column and invites died past
+          // 12 tiles): the 60 s release fires ONLY when the quintile is
+          // incomplete (unwelcomed mate) or diminished (dead mate in
+          // roster) — a full living quintile holds to T+180 for formation.
           const int lead = (botIdx / 5) * 5;
           int want = 0;
           for (int k = 0; k < 5; ++k) {
             const size_t si = static_cast<size_t>(lead + k);
             if (si >= bots.size()) break;
-            if (bots[si].welcomed) ++want;
+            ++want;
           }
-          const bool mustered =
-              (int)b.party.size() >= want - 1 || t >= b.siegeT0 + 60.0;
+          int quick = 0;
+          bool allHere = true;
+          bool anyDead = false;
+          for (int k = 0; k < 5; ++k) {
+            const size_t si = static_cast<size_t>(lead + k);
+            if (si >= bots.size()) break;
+            if (!bots[si].welcomed) allHere = false;
+          }
+          for (const auto& kv : b.party) {
+            if (kv.second.hp > 0) ++quick;
+            else anyDead = true;
+          }
+          const bool mustered = quick >= want - 1 ||
+                                (t >= b.siegeT0 + 60.0 && (!allHere || anyDead)) ||
+                                t >= b.siegeT0 + 180.0;
           if (b.mapId == 6) {
             b.siegeStage = 1;
           } else if (mustered) {
             siegeGoto(21, 14);
           }
         } else if (!b.siegeDefend && b.siegeStage == 1) {  // register the band
-          if (!b.siegeRegged) {
+          // T-157-F2: never reg solo — a singleton enlistment burns one of
+          // M4's 8 band slots (m4e29: 7 bands for 12; m4e30a: 7 for 16).
+          // Hold the road until the quintile shares the roster; late
+          // fallback T+300 so a lost mate cannot stall the drill. The march
+          // (stage 0) already holds spawn 60 s for the same quorum.
+          // Static size + living roster (m4e30c diagnosis): welcomed-count
+          // let early birds through; dead mates held the door for re-regs.
+          const int lead = (botIdx / 5) * 5;
+          int want = 0;
+          for (int k = 0; k < 5; ++k) {
+            const size_t si = static_cast<size_t>(lead + k);
+            if (si >= bots.size()) break;
+            ++want;
+          }
+          int quick = 0;
+          for (const auto& kv : b.party)
+            if (kv.second.hp > 0) ++quick;
+          const bool quintile = quick >= want - 1;
+          if (!b.siegeRegged && (quintile || t >= b.siegeT0 + 300.0)) {
             siegeSay("/siege-reg", b.siegeRegs);
             b.siegeRegged = true;
           }
-          b.siegeStage = 2;
+          if (b.siegeRegged) b.siegeStage = 2;
         } else if (b.siegeStage == 2) {  // bot 0 sounds the horn
           if (botIdx == 0 && !b.siegeStartSent && t >= b.siegeT0 + 20.0) {
             siegeSay("gm siege-start", b.siegeStarts);
@@ -1968,6 +2249,22 @@ int run(int argc, char** argv) {
                 b.nextFireboltAt = t + 1.5;  // MP regen 2/2s: recheck soon
               }
             }
+            // T-161b.5 ch15 Frost (Grave L4): every third bolt goes cold —
+            // the 8 s bot period against the 2.5 s bolt cadence, same mark.
+            // Server gates level/MP/range; the slow is the point on runners.
+            if (raider && b.kitClass == 2 && bestD <= 8 &&
+                t >= b.nextFrostAt) {
+              if (b.mp >= 12) {
+                bh::proto::SkillUse su;
+                su.skill = 15;
+                su.targetId = bestId;
+                sendProto(b.peer, bh::proto::pack(su));
+                b.nextFrostAt = t + 8.0;
+                ++b.frostCasts;
+              } else {
+                b.nextFrostAt = t + 1.5;
+              }
+            }
             // T-118 r5: on the open fields the raider NEVER stops for a
             // fight — the r4 gate sat 150 s on a respawning pack because
             // "something is always within 12" in mob country, so the route
@@ -2509,7 +2806,12 @@ int run(int argc, char** argv) {
   std::uint64_t dbgNoBlade = 0, dbgNoGold = 0, dbgNoPelts = 0, dbgNoAnvil = 0,
                 dbgReady = 0;
   std::uint64_t blessCasts = 0, mendCasts = 0, mendNoSee = 0, mendHurtCnt = 0;
-  std::uint64_t chorusCasts = 0, massCasts = 0, hasteCasts = 0;
+  std::uint64_t chorusCasts = 0, massCasts = 0, hasteCasts = 0, sanctCasts = 0;
+  std::uint64_t raiseCasts = 0;
+  std::uint64_t blastCasts = 0;
+  std::uint64_t frostCasts = 0, witherCasts = 0, terrorCasts = 0, shieldCasts = 0;
+  std::uint64_t sunderCasts = 0, rushCasts = 0, stompCasts = 0, execCasts = 0;
+  std::uint64_t windCasts = 0;
   std::uint32_t mxGold = 0, mxPelts = 0;
   int maxLevel = 1;
   for (const Bot& b : bots) {
@@ -2527,7 +2829,13 @@ int run(int argc, char** argv) {
     blessCasts += b.blessCasts; mendCasts += b.mendCasts;
     mendNoSee += b.mendNoSee; mendHurtCnt += b.mendHurtCnt;
     chorusCasts += b.chorusCasts; massCasts += b.massCasts;
-    hasteCasts += b.hasteCasts;
+    hasteCasts += b.hasteCasts; sanctCasts += b.sanctCasts;
+    raiseCasts += b.raiseCasts; blastCasts += b.blastCasts;
+    frostCasts += b.frostCasts; witherCasts += b.witherCasts;
+    terrorCasts += b.terrorCasts; shieldCasts += b.shieldCasts;
+    sunderCasts += b.sunderCasts; rushCasts += b.rushCasts;
+    stompCasts += b.stompCasts; execCasts += b.execCasts;
+    windCasts += b.windCasts;
     dbgNoBlade += b.dbgNoBlade; dbgNoGold += b.dbgNoGold;
     dbgNoPelts += b.dbgNoPelts; dbgNoAnvil += b.dbgNoAnvil; dbgReady += b.dbgReady;
     if (b.dbgMaxGold > mxGold) mxGold = b.dbgMaxGold;
@@ -2544,16 +2852,21 @@ int run(int argc, char** argv) {
               " kills=%" PRIu64 " pots=%" PRIu64 " swings=%" PRIu64" deaths=%" PRIu64 " shops=%" PRIu64 " anvilTries=%" PRIu64 " levelDrops=%" PRIu64
               " regear=%" PRIu64 " maxLevel=%d pkts=%" PRIu64 " bytes=%" PRIu64
               " gates b/g/p/a/r=%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 " mGold=%u mPelts=%u bless=%" PRIu64 " mend=%" PRIu64 " noSee=%" PRIu64 " hurt=%" PRIu64
-              " choir c6=%" PRIu64 " c7=%" PRIu64 " c8=%" PRIu64 "\n",
+              " choir c6=%" PRIu64 " c7=%" PRIu64 " c8=%" PRIu64 " c11=%" PRIu64 " c13=%" PRIu64 " c14=%" PRIu64
+              " grave c15=%" PRIu64 " c16=%" PRIu64 " c17=%" PRIu64 " c18=%" PRIu64
+              " rav c19=%" PRIu64 " c20=%" PRIu64 " c21=%" PRIu64 " c22=%" PRIu64 " c23=%" PRIu64 "\n",
               welcomed, count, moved, count, minDeltas == UINT64_MAX ? 0 : minDeltas,
               kills, pots, swings, deaths, shops, anvilTries, levelDrops, regear,
               maxLevel,
               packetsRx, bytesRx, dbgNoBlade, dbgNoGold, dbgNoPelts, dbgNoAnvil,
               dbgReady, mxGold, mxPelts, blessCasts, mendCasts, mendNoSee,
-              mendHurtCnt, chorusCasts, massCasts, hasteCasts);
+              mendHurtCnt, chorusCasts, massCasts, hasteCasts, sanctCasts,
+              raiseCasts, blastCasts, frostCasts, witherCasts, terrorCasts,
+              shieldCasts, sunderCasts, rushCasts, stompCasts, execCasts,
+              windCasts);
 
   for (Bot& b : bots) {  // T-055 probe: per-bot kit/roster truth
-    std::printf("[bots] %-12s kit=%d lvl=%d hp=%d/%d party=%zu deaths=%llu rxR=%llu rxM=%llu lastPid=%u casts c6=%llu c7=%llu c8=%llu bossSeen=%llu bossKills=%llu curse=%llu slam=%llu lastDeath=(%d,%d) killerByLvl=",
+    std::printf("[bots] %-12s kit=%d lvl=%d hp=%d/%d party=%zu deaths=%llu rxR=%llu rxM=%llu lastPid=%u casts c6=%llu c7=%llu c8=%llu c11=%llu c13=%llu c14=%llu c15=%llu c16=%llu c17=%llu c18=%llu c19=%llu c20=%llu c21=%llu c22=%llu c23=%llu bossSeen=%llu bossKills=%llu curse=%llu slam=%llu lastDeath=(%d,%d) killerByLvl=",
                 b.name.c_str(), b.kitClass, b.level, static_cast<int>(b.hp),
                 static_cast<int>(b.hpMax), b.party.size(),
                 static_cast<unsigned long long>(b.deaths),
@@ -2562,6 +2875,18 @@ int run(int argc, char** argv) {
                 static_cast<unsigned long long>(b.chorusCasts),
                 static_cast<unsigned long long>(b.massCasts),
                 static_cast<unsigned long long>(b.hasteCasts),
+                static_cast<unsigned long long>(b.sanctCasts),
+                static_cast<unsigned long long>(b.raiseCasts),
+                static_cast<unsigned long long>(b.blastCasts),
+                static_cast<unsigned long long>(b.frostCasts),
+                static_cast<unsigned long long>(b.witherCasts),
+                static_cast<unsigned long long>(b.terrorCasts),
+                static_cast<unsigned long long>(b.shieldCasts),
+                static_cast<unsigned long long>(b.sunderCasts),
+                static_cast<unsigned long long>(b.rushCasts),
+                static_cast<unsigned long long>(b.stompCasts),
+                static_cast<unsigned long long>(b.execCasts),
+                static_cast<unsigned long long>(b.windCasts),
                 static_cast<unsigned long long>(b.bossSeen),
                 static_cast<unsigned long long>(b.bossKills),
                 static_cast<unsigned long long>(b.curseSeen),

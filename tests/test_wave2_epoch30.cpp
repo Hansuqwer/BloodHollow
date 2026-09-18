@@ -135,7 +135,10 @@ TEST_CASE("T-160: ch10 unlocks at 20 for Cultist only") {
   CHECK(content::kitSkillUnlock(content::kKitCultist, 10) == 20);
   CHECK(content::kitSkillUnlock(content::kKitRavager, 10) == 0);
   CHECK(content::kitSkillUnlock(content::kKitGravecaller, 10) == 0);
-  CHECK(content::kitSkillUnlock(content::kKitCultist, 11) == 0);  // spare slot
+  // T-161b.1: the spare slot is spent — ch11 Sanctuary, Cultist 14 only.
+  CHECK(content::kitSkillUnlock(content::kKitCultist, 11) == 14);
+  CHECK(content::kitSkillUnlock(content::kKitRavager, 11) == 0);
+  CHECK(content::kitSkillUnlock(content::kKitGravecaller, 11) == 0);
 }
 
 TEST_CASE("T-161: Resurrect rebates half the nominal debt") {

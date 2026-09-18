@@ -1028,9 +1028,10 @@ T-154/T-168 (headless gate + build-dir law), T-155 (--bless guard),
 T-157 verdicts + F3(a) (M4 FAIL, cause + attune gap carded),
 T-158 (GDD truth-up, ADR-0013/14), T-159 (loot depth), T-169 (/help+F1),
 T-165-Wave0, wave-2 (creation/five-stat/Resurrect/roster/war/bounty,
-epoch 30). Open: T-156 T-ART-12..15 · T-157-F2 bands · T-157-F3 attune
-(director call) · T-159f1 loot follow-ups · T-161b kit spine part 2 ·
-T-164 night light · T-165 remainder (director merges).
+epoch 30). Open (2026-09-17, pass 5): T-156 T-ART-12..15 (deferred:
+graphical env) · T-157-F3 attune (director call) · T-164 night light
+(graphical env) · T-165 remainder (director merges). Closed in pass 5:
+T-157-F2, T-159f1 (ADR-0016, epoch 31).
 Human-only T-146..T-149 stay director-owned.
 
 ## Done — T-158 (2026-09-16): GDD law truth-up + ADRs (docs-only)
@@ -1087,3 +1088,112 @@ Devlog 0116 · card `done/T-153.md` · ADR-0012.
 | Bot bad-leg deaths | v5c legs 3/5 perch mode: T-074/T-077 levers measured red + reverted; T-083 closed the drift as roam-RNG (leg totals stable ~130–160, distribution roams) | reopen only on perch-clustered all-L3 legs (T-074 discipline); reproductions: leg 3/5 logs, val5 |
 
 Retired: "L8→L9 step-up, no waypoint" (T-084 opened the (60,41) camp; T-090/T-100 climbed it twice).
+
+## Done — session 2026-09-16 (MVP execution pass 1)
+
+- **T-157-F1 closed** → `done/T-157-F1.md` (horn seat + abort-fast proven by
+  `m4e29b`: battles=1, p99 2.8 ms, mm=0).
+- **m4e30a** (F3 option a, 16v6 × 900 s @ epoch 30): battles 1, gates 2/2,
+  attuned 0, flips 0 → M4 still FAIL; p99 8.9 ms PASS; replay mm=0 (186).
+  16 regs → 7 bands (F2 persists). F3 now director-call (b)/(c); verdict in
+  `done/T-157.md`. Leg `logs/t137_m4e30a.bwj`.
+- **T-161b.1 Sanctuary** (ch11) + **T-161b.2 Weakness** (ch12): zero-RNG,
+  worldHash-untouched, epoch stays 30. 11 unit pins, suite 343/343,
+  `wave2.bwj` mm=0, fresh leg `logs/t161b_sanct.bwj` (c11=2, mm=0).
+  GDD §3 rows flipped; devlog 0117. Items 3–6 remain open.
+- **T-159f1.3 rarity chrome** (render-only): marker law + inventory colours,
+  2 pins, client green. Items 1, 2, 4, 5 remain open.
+- Open queue after this pass: T-161b.3–6 · T-159f1.1/2/4/5 · T-164 ·
+  T-156/T-ART-12..15 · T-157-F2 · T-157-F3 (director) · T-165 (director) ·
+  T-146..149 (human) · M1/M2/M3 evidence refresh @ epoch 30 · Friday legs.
+
+## Done — session 2026-09-16 (MVP execution pass 2)
+
+- **T-161b CLOSED** → `done/T-161b.md`. Items 3–6 (Raise/Corpse/control/
+  Ravager, ch13–23) + Shift/Ctrl hotkey pages + help text, all epoch-neutral
+  (epoch stays 30; seven old legs re-replay mm=0). 27 unit pins across
+  `test_raise/corpse/control/ravager.cpp`. Fresh legs per skill (c11=2,
+  c13=2, c14=3, c15=12, c16=6, c17=1, c18=3, c19–23=15/9/6/3/3), all mm=0.
+  **M3c: bossKills=3, deaths 12, full kit live — M3 PASS.** Devlogs
+  0117–0121. Bots lesson: mirror profile-gated support per path.
+- **T-157-F2 fix-landed** (reg gated on quintile quorum; re-measure owed on
+  the next siege leg). **T-157-F3 (a) exhausted** (16v6 flips 0) → director
+  call (b)/(c). Verdicts in `done/T-157.md`.
+- **T-159f1.3/.4/.5 done** (chrome, Boneyard rate pin, drop log). .1/.2
+  deferred (schema/epoch wave).
+- Open queue: T-157-F2/F3 · T-159f1.1/.2 · T-164 · T-156/T-ART · T-165 ·
+  T-146..149 (human) · M1/M2 refresh.
+
+## Done — session 2026-09-16 (MVP execution pass 3)
+
+- **T-161bccd M3 legs**: M3a (reach 5/5, kit unfired) → bots parity mirror
+  (nested-in-kit3 bug found by the numbers, moved out) → M3b (deeper, still
+  partial) → **M3c: bossKills=3, deaths 12, every rite live — M3 PASS**.
+  T-161b CLOSED → `done/`. Hotkeys Shift/Ctrl pages shipped (humans cast
+  the whole spine now).
+- **T-157-F2 siege legs c/d/e**: 7→6→7→6 bands for 16 (noise); diagnosis:
+  early-bird + dead-quorum + march-release holes fixed in bots; structural
+  floor found (16 = 5+5+5+1, bot 15 always solo). Card-literal 12v6
+  (`m4e30f`) measures the real ≤4 bar.
+- **T-159f1.4/.5**: Boneyard twin-world rate pin; drop-log instrumentation
+  (`World::dropLog`, `logs/drops.log`, 1 pin). .1/.2 deferred (schema/epoch).
+- M4 still FAIL-open (attune gap = director call (b)/(c)); epoch 30, suite
+  370/370, all legs mm=0.
+
+## Done — session 2026-09-17 (MVP execution pass 5, R0–R6)
+
+- **R0 hygiene:** linux-gcc 388/388 · 2,332,023, headless 380/380, ctest 2/2
+  both presets, validate 0/6, `wave2.bwj` mm=0 (pre-R2). Epoch 30 / wire 241
+  / schema v16 at pass start.
+- **R1 T-157-F2 CLOSED** → `done/T-157-F2.md`. Server-side party merge
+  (T-139 extended, no bots change): 12 regs → **4 bands (1+4+5+1)** in
+  `m4f2m` (was 7) — bar ≤4 PASS. Hash-neutral → no epoch bump (m4e30f
+  re-replays mm=0). M4 still FAIL (attune 0 = F3 director call). Devlog 0122.
+- **R2 T-159f1 CLOSED** → `done/T-159f1.md` (ADR-0016): multi-affix
+  (affix2/3, 10-field blob, Magic 1–2 / Rare 2–3) + 45-row band tables
+  (all-rows roll). Epoch 30→**31**, wire 241→**242**, gate leg
+  `logs/t159f1.bwj` (mm=0, guard refuses wave2 exit 4). Suite 388/388.
+  Devlog 0123. GDD §7 rarity line amended.
+- **R3 T-156/T-ART-12..15:** all four cards filed with executable AC; renderer
+  implementation stays DEFERRED (headless sandbox: no screenshots/fps
+  evidence possible) — graphical-env requirement stands.
+- **R4 T-164:** radius law audited (torch 6 / lantern 8 / Vigil +2, one place,
+  pins green); screenshot matrix + D6b layer remain owed (graphical env).
+  Note appended to card; card stays OPEN.
+- **R5:** M1/M2 refresh still owed (long-clock; F2 + epoch-31 legs took the
+  soak budget this pass).
+- **R6 human-only:** T-146..149 + F3 + T-165 cards verified filed; Friday
+  legs + full M5 soak director-scheduled (no change).
+- Open queue: T-157-F3 (director (b)/(c)) · T-164 (graphical env) ·
+  T-156/T-ART (graphical env) · T-165 (director) · T-146..149 (human) ·
+  Friday-Night legs (human-run).
+- R5 CLOSED 2026-09-17 (devlog 0124): M1 20×1800 s p99 ~1.5 ms + replay
+  mm=0 (`logs/m1e31.bwj`); M2 TTK era-kit 4–6 s @7/7 equals, pace ~1.3
+  levels/h at L6 (`logs/duel-table-e31.csv`). Both PASS as scoped.
+- Prompt: `PROMPT-MVP-REMAINING-2026-09-17.md` (workspace root, supersedes
+  the stale 09-17 handover/resume §§1–2).
+
+## Done — session 2026-09-16 (MVP execution pass 4, close-out)
+
+- **T-157-F2 parked**: m4e30e (6 bands) → march-hold refinement → m4e30f,
+  card-literal 12v6: **7 bands (5+1+2+1+1+2+1)**. Five legs, bots levers
+  exhausted (7,7,6,7,7). Re-file: server-side band merge (T-139 extended).
+- Epoch 30, wire 241, schema v16. Suite 370/370. Every leg this pass mm=0.
+- Still open: T-157-F2 (re-filed) · T-157-F3 (director (b)/(c)) · T-159f1.1/.2
+  (schema/epoch wave) · T-164 · T-156/T-ART · T-165 (director) · T-146..149
+  (human) · M1/M2 refresh · Friday-Night legs (human-run).
+
+## Done — session 2026-09-18 (art-engine visual pass, Xvfb frigor over)
+
+- **T-ART-12 DONE** → `done/` (textured ground + skinned prisms, 5 zones,
+  law + 6 pins, shots `qa/tart12/`, manifests validated).
+- **T-ART-13 DONE** → `done/` (bitmap font + R-TEXT-2 badges, pile shots).
+- **T-ART-14 DONE (loader)** → `done/` (dirs:1 law+pins, fixture-proven);
+  events + real strips → `T-ART-14b-vfx-events.md` (open, needs art key).
+- **T-ART-15 structure DONE, stays OPEN** (hotbar + bag plates live,
+  `qa/tart15_hotbar.png`; 60-icon art needs pipeline key).
+- **T-164 DONE** → `done/` (10-shot matrix `qa/t164/`, shared pool helper,
+  GDD §9 reconciled). Devlog 0125.
+- Still open: T-157-F3 (director) · T-156 (1/4: T-ART-15 art) · T-ART-14b ·
+  T-ART-15 (art) · T-165 (director) · T-146..149 (human) · Friday legs +
+  full M5 soak (director). M1/M2 full closed per devlog 0124.

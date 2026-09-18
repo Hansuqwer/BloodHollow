@@ -195,8 +195,11 @@ void sendMsg(ENetPeer* peer, const Msg& m, Server& s) {
 // Wave-2 (T-161/T-162/T-163/T-166/T-167): resurrect stamps + night premium +
 // warband/EK law + bounty persistence + creation/sex + roster composition
 // shift (entity-set, T-068 precedent) + worldHash widening → epoch 30.
-// Wire 242→244 (CharCreate 25 + CharCreatePrompt 120 via message count).
-constexpr int kJournalEpoch = 30;  // Wave-2. Fresh gate leg: logs/wave2.bwj (8 fighters x60s + relog, replay mm=0)
+// ADR-0016 (T-159f1.1/.2): multi-affix rolls + 45-row band tables + 10-field
+// blob widen the RNG stream and worldHash → epoch 31. Wire 241→242 (ItemSlot
+// affix2+affix3 via protogen base 203). NOTE: the "242→244" in the wave-2
+// line above was stale — the generated kProtocolVersion read 241 pre-bump.
+constexpr int kJournalEpoch = 31;  // ADR-0016. Fresh gate leg: logs/t159f1.bwj (8 fighters x60s + relog, replay mm=0)
 
 // ---- world journal record helpers (M2) ------------------------------------
 void journalTickHash(Server& s) {
@@ -1439,6 +1442,8 @@ void pushInventory(Server& s, Session& sess) {
     m.affix = e->inv[i].affix;            // T-059
     m.refine = e->inv[i].refine;          // T-060
     m.rarity = e->inv[i].rarity;          // T-159
+    m.affix2 = e->inv[i].affix2;          // ADR-0016
+    m.affix3 = e->inv[i].affix3;          // ADR-0016
     sendMsg(sess.peer, m, s);
   }
 }

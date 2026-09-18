@@ -95,7 +95,8 @@ TEST_CASE("inv blob: canonical serializer is a lossless round-trip") {
   std::vector<InvSlot> inv;
   server::parseInvBlob("2002:1:1:4:73:2:3;4002:32:0:0:100:0:0;2001:1:1:0:0:0:0", inv);
   const std::string canon = server::canonicalInvBlob(inv);
-  CHECK(canon == "2002:1:1:4:73:2:3:0;4002:32:0:0:100:0:0:0;2001:1:1:0:0:0:0:0;");
+  // ADR-0016: canonical is 10 fields (legacy tails upgrade with :0:0).
+  CHECK(canon == "2002:1:1:4:73:2:3:0:0:0;4002:32:0:0:100:0:0:0:0:0;2001:1:1:0:0:0:0:0:0:0;");
   std::vector<InvSlot> again;
   server::parseInvBlob(canon, again);
   REQUIRE(again.size() == inv.size());

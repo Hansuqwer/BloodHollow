@@ -175,3 +175,72 @@ TEST_CASE("T-137: registration enlists the captain's living party as one band") 
   server::Entity* extra = spawnP(w, "ninth", 30, 30);
   CHECK_FALSE(w.siegeRegister(extra->id));  // 9th band: camp is full
 }
+
+TEST_CASE("T-157-F2: straggler merges into the party band, no new slot") {
+  server::World w;
+  REQUIRE(w.loadFrom(makeArena()));
+  server::Entity* a = spawnP(w, "leader", 5, 5);
+  server::Entity* b = spawnP(w, "mate", 6, 5);
+  server::Entity* c = spawnP(w, "third", 5, 6);
+  REQUIRE(w.siegeRegister(a->id));  // scattered arrival: solo band 1
+  CHECK(w.siegeBandsUsed() == 1u);
+  // the party forms after arrival; each mate's own reg merges — no new slot
+  REQUIRE(w.partyInvite(*a, *b));
+  REQUIRE(w.partyAccept(*b));
+  REQUIRE(w.partyInvite(*a, *c));
+  REQUIRE(w.partyAccept(*c));
+  CHECK(w.siegeRegister(b->id));
+  CHECK(w.siegeAttackers().size() == 3u);  // muster takes the whole party
+  CHECK(w.siegeBandsUsed() == 1u);
+  // pure dup still quiet
+  CHECK_FALSE(w.siegeRegister(c->id));
+  CHECK(w.siegeBandsUsed() == 1u);
+}
+
+TEST_CASE("T-157-F2: enlisted captain re-reg musters late mates, cap not consulted") {
+  server::World w;
+  REQUIRE(w.loadFrom(makeArena()));
+  server::Entity* a = spawnP(w, "leader", 5, 5);
+  REQUIRE(w.siegeRegister(a->id));  // solo band 1 (party forms after arrival)
+  CHECK(w.siegeBandsUsed() == 1u);
+  server::Entity* b = spawnP(w, "mate", 6, 5);
+  REQUIRE(w.partyInvite(*a, *b));
+  REQUIRE(w.partyAccept(*b));
+  // the captain's re-reg musters the late mate into band 1
+  CHECK(w.siegeRegister(a->id));
+  CHECK(w.siegeAttackers().size() == 2u);
+  CHECK(w.siegeBandsUsed() == 1u);
+  // fill the camp, then prove a merge still lands without a free slot
+  for (int i = 0; i < 7; ++i) {
+    server::Entity* p = spawnP(w, ("solo" + std::to_string(i)).c_str(), 20 + i, 20);
+    REQUIRE(w.siegeRegister(p->id));
+  }
+  CHECK(w.siegeBandsUsed() == 8u);
+  server::Entity* late = spawnP(w, "late", 7, 5);
+  REQUIRE(w.partyInvite(*a, *late));
+  REQUIRE(w.partyAccept(*late));
+  CHECK(w.siegeRegister(late->id));  // merges: cap not consulted
+  CHECK(w.siegeBandsUsed() == 8u);
+  CHECK(w.siegeAttackers().size() == 10u);
+  // ...while a true stranger is still refused at a full camp
+  server::Entity* stranger = spawnP(w, "stranger", 30, 30);
+  CHECK_FALSE(w.siegeRegister(stranger->id));
+}
+
+TEST_CASE("T-157-F2: the merge never musters the dead") {
+  server::World w;
+  REQUIRE(w.loadFrom(makeArena()));
+  server::Entity* a = spawnP(w, "leader", 5, 5);
+  server::Entity* b = spawnP(w, "mate", 6, 5);
+  REQUIRE(w.partyInvite(*a, *b));
+  REQUIRE(w.partyAccept(*b));
+  REQUIRE(w.siegeRegister(a->id));
+  CHECK(w.siegeAttackers().size() == 2u);
+  w.debugKillPlayer(*b);
+  server::Entity* c = spawnP(w, "third", 5, 6);
+  REQUIRE(w.partyInvite(*a, *c));
+  REQUIRE(w.partyAccept(*c));
+  CHECK(w.siegeRegister(a->id));  // musters c only; b stays fallen
+  CHECK(w.siegeAttackers().size() == 3u);
+  CHECK(w.siegeBandsUsed() == 1u);
+}

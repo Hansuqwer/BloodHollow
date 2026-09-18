@@ -20,4 +20,24 @@ inline NameTint resolveNameTint(bool isOwn, std::uint8_t karmaBand, bool isParty
   return NameTint::kNeutral;
 }
 
+// R-TEXT-2 crowd degrade (B0 ruling, T-ART-13): the crowd15 failure was
+// name-tag pile-up, not silhouettes. When more than kNamePileLimit tags
+// overlap, they degrade to the karma-badge glyph only (era HB read — names
+// on hover/target — while the PvP karma signal survives).
+inline constexpr int kNamePileLimit = 3;
+inline constexpr float kNameTagOverlapX = 48.0f;
+inline constexpr float kNameTagOverlapY = 16.0f;
+
+inline bool nameTagsOverlap(float ax, float ay, float bx, float by) {
+  const float dx = ax > bx ? ax - bx : bx - ax;
+  const float dy = ay > by ? ay - by : by - ay;
+  return dx < kNameTagOverlapX && dy < kNameTagOverlapY;
+}
+
+// overlappingOthers = other tags overlapping this one. A pile of 4+
+// (self + 3) degrades; a pair or trio still reads.
+inline bool namePileDegrades(int overlappingOthers) {
+  return overlappingOthers >= kNamePileLimit;
+}
+
 }  // namespace bh

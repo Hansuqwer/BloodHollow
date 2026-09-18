@@ -10,6 +10,7 @@
 
 #include "command.h"
 #include "content/items.h"
+#include "content/kits.h"
 #include "content/mobs.h"
 #include "sim/clock.h"
 #include "sim/rng.h"
@@ -358,7 +359,8 @@ TEST_CASE("T-159: rarity blob round-trip") {
   REQUIRE(out.size() == 1u);
   CHECK(out[0].rarity == 2u);
   const std::string back = server::canonicalInvBlob(out);
-  CHECK(back.find(":2;") != std::string::npos);
+  // ADR-0016: canonical is 10 fields now — rarity rides 3rd-from-tail.
+  CHECK(back.find(":2:0:0;") != std::string::npos);
 }
 
 TEST_CASE("T-159: 100k fixed-seed rarity distribution") {
@@ -453,4 +455,41 @@ TEST_CASE("T-159: of the Boneyard is weapon-gated (slot law)") {
     }
   CHECK_FALSE(w.hasAffix(*q, 16, 0));  // armor piece is not a weapon
   CHECK(w.hasAffix(*q, 16, 9));        // ...but rides any-gear probes
+}
+
+TEST_CASE("T-159f1.4: Boneyard upgrades ~5% of landed non-crits (twin-world rate)") {
+  // Seed-fragile exact-count pins break whenever the RNG order shifts; this
+  // pins the LAW instead: two identical worlds, identical seeds — the only
+  // difference is the affix. (Hero swings report kind 5 for crits too, so
+  // crits are invisible in events; damage uplift is the observable.) The
+  // extra roll only ever ADDS crits (+70% each): over 4000 swings the
+  // Boneyard world must deal decisively more (mean ≈ +1200 at these stats;
+  // the +250 floor sits several σ below it — seed-proof, but a dead or
+  // doubled upgrade path still fails loudly).
+  auto runSwings = [](bool boneyard) {
+    server::World w;
+    REQUIRE(w.loadFrom(makeArena()));
+    server::Entity* a = spawnP(w, "swinger", 5, 5);
+    a->classId = content::kKitRavager;
+    a->level = 10;
+    if (boneyard) giveAffixed(w, *a, 2001, 16);
+    server::Entity* v = spawnP(w, "dummy", 6, 5);
+    v->hp = 1000000;
+    v->hpMax = 1000000;
+    const std::uint32_t att = a->id;
+    const std::uint32_t vic = v->id;
+    std::uint64_t landed = 0;
+    for (int i = 0; i < 4000; ++i) {
+      w.trySkill(*w.find(att), 1, vic);
+      for (const auto& ev : w.events())
+        if (ev.attacker == att && ev.target == vic && ev.kind == 5) ++landed;
+      for (int t = 0; t < 40; ++t) w.tick();  // outwait the 40t swing CD
+    }
+    REQUIRE(landed > 2000u);  // the blades actually met (~62% hit rate)
+    return 1000000u - w.find(vic)->hp;
+  };
+  const std::uint32_t plain = runSwings(false);
+  const std::uint32_t boned = runSwings(true);
+  CHECK(boned > plain);  // the upgrade path exists and only adds
+  CHECK(boned >= plain + 250u);  // ~5% of landed non-crits at +70%, floored hard
 }

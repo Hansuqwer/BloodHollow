@@ -15,6 +15,7 @@
 #include "render/lightmask.h"
 #include "render/overhead.h"  // T-ART-07 overhead tint priority
 #include "render/refine_glow.h"  // T-ART-11 refine glow tiers (inventory rows)
+#include "render/rarity_chrome.h"  // T-159f1.3 rarity marker (inventory rows)
 #include "sim/clock.h"
 #include "sim/tick.h"
 
@@ -164,6 +165,11 @@ void Game::handleInputOnline() {
     if (IsKeyPressed(KEY_F)) createSex_ = 2;
     if (IsKeyPressed(KEY_ENTER) && createClass_ != 0 && createSex_ != 0)
       net_->sendCharCreate(createClass_, createSex_);
+    // T-ART-13 dev captures: --create preselects, auto-answer on arrival.
+    if (createClass_ != 0 && createSex_ != 0 && debugAutoCreate_) {
+      debugAutoCreate_ = false;  // once (server answers with Welcome)
+      net_->sendCharCreate(createClass_, createSex_);
+    }
     return;
   }
   if (IsKeyPressed(KEY_ENTER)) {
@@ -263,17 +269,47 @@ void Game::handleInputOnline() {
     if (IsKeyPressed(KEY_X)) net_->sendTradeCancel();
     if (IsKeyPressed(KEY_H)) net_->sendTradeOfferGold(net_->tradeGoldOffered + 10);
   }
-  if (IsKeyPressed(KEY_ONE) && targetId_ != 0) net_->sendSkill(1, targetId_);
-  // kit channels (T-054): 2 Mend 3 Bless 4 Ironskin 5 Firebolt.
-  // Choir casts take the selected party target (else self); Firebolt wants the
-  // attack target specifically (selected mob), falling back to 0 = no-op server.
-  if (IsKeyPressed(KEY_TWO)) net_->sendSkill(2, chanTarget());
-  if (IsKeyPressed(KEY_THREE)) net_->sendSkill(3, chanTarget());
-  if (IsKeyPressed(KEY_FOUR)) net_->sendSkill(4, chanTarget());
-  if (IsKeyPressed(KEY_FIVE)) net_->sendSkill(5, targetId_);
+  // kit channels (T-054): 1-5 plain. T-161b pages: Shift+1..8 = ch11..18,
+  // Ctrl+1..5 = ch19..23. Strikes take the attack target; self rites take
+  // the choir target (server ignores it where unused). Wrong-kit pages are
+  // quiet no-ops server-side — one layout serves all three kits.
+  const bool shiftPage = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
+  const bool ctrlPage =
+      IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL);
+  if (!shiftPage && !ctrlPage) {
+    if (IsKeyPressed(KEY_ONE) && targetId_ != 0)
+      net_->sendSkill(1, targetId_);
+    if (IsKeyPressed(KEY_TWO)) net_->sendSkill(2, chanTarget());
+    if (IsKeyPressed(KEY_THREE)) net_->sendSkill(3, chanTarget());
+    if (IsKeyPressed(KEY_FOUR)) net_->sendSkill(4, chanTarget());
+    if (IsKeyPressed(KEY_FIVE)) net_->sendSkill(5, targetId_);
+  } else if (shiftPage && !ctrlPage) {
+    if (IsKeyPressed(KEY_ONE)) net_->sendSkill(11, chanTarget());
+    if (IsKeyPressed(KEY_TWO) && targetId_ != 0)
+      net_->sendSkill(12, targetId_);
+    if (IsKeyPressed(KEY_THREE)) net_->sendSkill(13, chanTarget());
+    if (IsKeyPressed(KEY_FOUR)) net_->sendSkill(14, chanTarget());
+    if (IsKeyPressed(KEY_FIVE) && targetId_ != 0)
+      net_->sendSkill(15, targetId_);
+    if (IsKeyPressed(KEY_SIX) && targetId_ != 0)
+      net_->sendSkill(16, targetId_);
+    if (IsKeyPressed(KEY_SEVEN) && targetId_ != 0)
+      net_->sendSkill(17, targetId_);
+    if (IsKeyPressed(KEY_EIGHT)) net_->sendSkill(18, chanTarget());
+  } else if (ctrlPage && !shiftPage) {
+    if (IsKeyPressed(KEY_ONE) && targetId_ != 0)
+      net_->sendSkill(19, targetId_);
+    if (IsKeyPressed(KEY_TWO) && targetId_ != 0)
+      net_->sendSkill(20, targetId_);
+    if (IsKeyPressed(KEY_THREE)) net_->sendSkill(21, chanTarget());
+    if (IsKeyPressed(KEY_FOUR) && targetId_ != 0)
+      net_->sendSkill(22, targetId_);
+    if (IsKeyPressed(KEY_FIVE)) net_->sendSkill(23, chanTarget());
+  }
   // T-161: 6 = Resurrect at the click-selected fallen (server validates
-  // cultist/L20/range/window/rebate; 7+ reserved for the ch11/12 follow-ups).
-  if (IsKeyPressed(KEY_SIX) && targetId_ != 0) net_->sendSkill(10, targetId_);
+  // cultist/L20/range/window/rebate). Plain page only (Shift+6 = Wither).
+  if (!shiftPage && !ctrlPage && IsKeyPressed(KEY_SIX) && targetId_ != 0)
+    net_->sendSkill(10, targetId_);
   if (IsKeyPressed(KEY_Q)) {
     // quick-sip: first Blood Vial stack
     for (const auto& kv : net_->inventory) {
@@ -539,6 +575,54 @@ void Game::applyNetState() {
       f.r = 255;
       f.g = 60;
       f.b = 30;
+    } else if (cp.kind == 17) {
+      // T-161b.1: sanctuary hold — choir-green ground vow.
+      f.text = "SANCTUARY";
+      f.r = 140;
+      f.g = 235;
+      f.b = 150;
+    } else if (cp.kind == 18) {
+      // T-161b.2: weakness laid on — sallow debility.
+      f.text = "WEAKENED";
+      f.r = 190;
+      f.g = 170;
+      f.b = 90;
+    } else if (cp.kind == 19) {
+      // T-161b.3: thrall rises — grave-muster over the caster.
+      f.text = "THRALL RISES";
+      f.r = 170;
+      f.g = 220;
+      f.b = 170;
+    } else if (cp.kind == 21) {
+      // T-161b.5: terror takes hold — white-eyed flight.
+      f.text = "TERROR";
+      f.r = 235;
+      f.g = 235;
+      f.b = 245;
+    } else if (cp.kind == 22) {
+      // T-161b.5: ward raised — blue hush over the caster.
+      f.text = "MANA SHIELD";
+      f.r = 140;
+      f.g = 190;
+      f.b = 255;
+    } else if (cp.kind == 23) {
+      // T-161b.5: rot laid on — sallow-green decay.
+      f.text = "WITHERED";
+      f.r = 150;
+      f.g = 200;
+      f.b = 120;
+    } else if (cp.kind == 24) {
+      // T-161b.6: bull rush — dust-brown charge.
+      f.text = "BULL RUSH";
+      f.r = 220;
+      f.g = 170;
+      f.b = 100;
+    } else if (cp.kind == 25) {
+      // T-161b.6: sundered plate — rust-red rend.
+      f.text = "SUNDERED";
+      f.r = 220;
+      f.g = 110;
+      f.b = 70;
     } else {
       f.text = std::to_string(cp.amount);
       if (cp.kind == 2) {
@@ -562,7 +646,10 @@ void Game::applyNetState() {
   for (const CombatPulse& cp : net_->combatIn) {
     const bool swing = cp.kind == 1 || cp.kind == 2;
     const bool cast = cp.kind == 5 || cp.kind == 9 || cp.kind == 10 ||
-                      cp.kind == 13 || cp.kind == 14 || cp.kind == 15;
+                      cp.kind == 13 || cp.kind == 14 || cp.kind == 15 ||
+                      cp.kind == 17 || cp.kind == 18 || cp.kind == 19 ||
+                      cp.kind == 21 || cp.kind == 22 || cp.kind == 23 ||
+                      cp.kind == 24 || cp.kind == 25;
     const bool hurt = cp.kind == 1 || cp.kind == 2 || cp.kind == 5 ||
                       cp.kind == 9 || cp.kind == 16;
     const bool slain = cp.kind == 3;
@@ -688,7 +775,15 @@ void Game::playCallout(std::uint8_t kind) {  // T-067
     case 10: PlaySound(kit_.choir); break;   // bless
     case 9: PlaySound(kit_.bolt); break;     // BLOOD BOLT
     case 11: PlaySound(kit_.toll); break;    // ironskin (armor-set ring)
-    case 13: PlaySound(kit_.choir); break;   // chorus (the whole song at once)
+    case 13: PlaySound(kit_.choir); break;    // chorus (the whole song at once)
+    case 17: PlaySound(kit_.choir); break;    // sanctuary (a held note)
+    case 18: PlaySound(kit_.bolt); break;     // weakness (thin dark)
+    case 19: PlaySound(kit_.bolt); break;     // thrall (the mud answers)
+    case 21: PlaySound(kit_.bolt); break;     // terror (a cold draft)
+    case 22: PlaySound(kit_.choir); break;    // ward (a held breath)
+    case 23: PlaySound(kit_.bolt); break;     // wither (damp rot)
+    case 24: PlaySound(kit_.swing); break;    // rush (shoulder-first)
+    case 25: PlaySound(kit_.swing); break;    // sunder (plate screams)
     case 14: PlaySound(kit_.swing); break;   // haste (steel quickens)
     default: break;                          // misses/xp shimmer: quiet
   }
@@ -762,6 +857,7 @@ Color Game::terrainColor(std::uint16_t type) const {
 }
 
 void Game::drawGround() {
+  skin_.ensureFor(loadedMapId, map_);  // T-ART-12: no-op when baked
   for (int y = 0; y < map_.h; ++y) {
     for (int x = 0; x < map_.w; ++x) {
       const size_t i = static_cast<size_t>(y) * static_cast<size_t>(map_.w) +
@@ -777,6 +873,7 @@ void Game::drawGround() {
       }
     }
   }
+  skin_.drawLayer();  // T-ART-12: textured diamonds+edges over the flat underlay
   bool heroDrawn = false;
   if (net_ == nullptr) {
     const int heroRow = static_cast<int>(std::floor(walker_.fy() + 0.5f));
@@ -786,8 +883,12 @@ void Game::drawGround() {
                          static_cast<size_t>(x);
         if (map_.ground[i] != 2) continue;
         const Vector2 c = iso::tileToWorld(x, y, map_.tileW, map_.tileH);
-        iso::drawPrism(c, map_.tileW, map_.tileH, 28, Color{120, 120, 128, 255},
-                       Color{74, 74, 82, 255}, Color{92, 92, 100, 255});
+        if (skin_.prismReady() && !skin_.flatForced())
+          skin_.drawPrism(c.x, c.y, map_.tileW, map_.tileH, 28,
+                          terrainVariant(x, y, 3));
+        else
+          iso::drawPrism(c, map_.tileW, map_.tileH, 28, Color{120, 120, 128, 255},
+                         Color{74, 74, 82, 255}, Color{92, 92, 100, 255});
       }
       if (!heroDrawn && y == heroRow) {
         drawHero();
@@ -802,8 +903,12 @@ void Game::drawGround() {
                          static_cast<size_t>(x);
         if (map_.ground[i] != 2) continue;
         const Vector2 c = iso::tileToWorld(x, y, map_.tileW, map_.tileH);
-        iso::drawPrism(c, map_.tileW, map_.tileH, 28, Color{120, 120, 128, 255},
-                       Color{74, 74, 82, 255}, Color{92, 92, 100, 255});
+        if (skin_.prismReady() && !skin_.flatForced())
+          skin_.drawPrism(c.x, c.y, map_.tileW, map_.tileH, 28,
+                          terrainVariant(x, y, 3));
+        else
+          iso::drawPrism(c, map_.tileW, map_.tileH, 28, Color{120, 120, 128, 255},
+                         Color{74, 74, 82, 255}, Color{92, 92, 100, 255});
       }
     }
     drawDecals();  // T-ART-09: decal surface sits under entities, never over
@@ -840,11 +945,8 @@ void Game::drawRemoteEnt(const RenderEnt& e, bool isOwn) {
                        Rectangle{w.x, w.y, src.width, src.height},
                        Vector2{src.width * 0.5f, animAnchorY(at, "idle")},
                        0.0f, WHITE);
-        if (!e.snap.name.empty()) {
-          const int tw = MeasureText(e.snap.name.c_str(), 10);
-          DrawText(e.snap.name.c_str(), static_cast<int>(w.x) - tw / 2,
-                   static_cast<int>(w.y) - 58, 10, Color{190, 210, 220, 255});
-        }
+        // T-ART-13 bitmap tag (R-TEXT-2 degrades NPC piles to badges).
+        drawNameTag(w, e.snap.name, Color{190, 210, 220, 255}, -58, e.snap.id, true);
         return;
       }
     }
@@ -862,9 +964,8 @@ void Game::drawRemoteEnt(const RenderEnt& e, bool isOwn) {
                     Color{120, 92, 40, 255});
     }
     if (!e.snap.name.empty()) {
-      const int tw = MeasureText(e.snap.name.c_str(), 10);
-      DrawText(e.snap.name.c_str(), static_cast<int>(w.x) - tw / 2,
-               static_cast<int>(w.y) - 52, 10, Color{190, 210, 220, 255});
+      // T-ART-13 bitmap tag (R-TEXT-2 degrades NPC piles to badges).
+      drawNameTag(w, e.snap.name, Color{190, 210, 220, 255}, -52, e.snap.id, true);
     }
     return;
   }
@@ -919,11 +1020,6 @@ void Game::drawRemoteEnt(const RenderEnt& e, bool isOwn) {
       label = label + " L" + std::to_string(e.snap.level);
     }
     if (!label.empty()) {
-      const int tw = MeasureText(label.c_str(), 10);
-      // T-057: chaotic = era red name (the gamble must read at a glance).
-      // T-ART-07 overhead priority: chaotic red > party green > lawful blue
-      // > neutral. (Enemy-town rank needs war state, which does not exist —
-      // no wire carries it; the branch is a documented no-op, not a guess.)
       Color nc = isOwn ? Color{230, 210, 190, 255} : Color{190, 190, 200, 255};
       if (!isOwn) {
         switch (resolveNameTint(false, e.snap.karmaBand, isPartyMember(e.snap.id))) {
@@ -933,8 +1029,12 @@ void Game::drawRemoteEnt(const RenderEnt& e, bool isOwn) {
           case NameTint::kNeutral: break;
         }
       }
-      DrawText(label.c_str(), static_cast<int>(w.x) - tw / 2,
-                 static_cast<int>(w.y) - 52, 10, nc);
+      // T-ART-13 bitmap names (5x7 small caps stay quiet — D4); the pledge
+      // plate hangs off the measured width either way. R-TEXT-2 degrades
+      // piles of 4+ (own name never degrades).
+      const int tw =
+          nameFont_.ok() ? nameFont_.measure(label) : MeasureText(label.c_str(), 10);
+      drawNameTag(w, label, nc, nameFont_.ok() ? -58 : -52, e.snap.id, !isOwn);
       if (isPledgeMemberName(e.snap.name)) {
         const int bx = static_cast<int>(w.x) + tw / 2 + 4;
         const int by = static_cast<int>(w.y) - 62;
@@ -955,12 +1055,42 @@ void Game::drawRemoteEnt(const RenderEnt& e, bool isOwn) {
 }
 
 void Game::drawEntitiesOnline() {
+  ensureFonts();
   std::vector<const RenderEnt*> order;
   order.reserve(rents_.size());
   for (const auto& kv : rents_) order.push_back(&kv.second);
   std::sort(order.begin(), order.end(), [&](const RenderEnt* a, const RenderEnt* b) {
     return entRenderPos(*a).y < entRenderPos(*b).y;
   });
+  // R-TEXT-2 pile test on tag rects (tags are wide centered texts — anchors
+  // alone miss the overlap; same measure the tags draw with below).
+  namePileCounts_.clear();
+  struct TagRect {
+    std::uint32_t id = 0;
+    float x0 = 0, y0 = 0, x1 = 0, y1 = 0;
+  };
+  std::vector<TagRect> tags;
+  tags.reserve(order.size());
+  for (const RenderEnt* e : order) {
+    std::string label = e->snap.name;
+    if (!content::wireIsFurniture(e->snap.kind) && !label.empty() && e->snap.level > 1)
+      label = label + " L" + std::to_string(e->snap.level);
+    if (label.empty()) continue;
+    const Vector2 w = iso::tileToWorldF(entRenderPos(*e), map_.tileW, map_.tileH);
+    const Vector2 s = GetWorldToScreen2D(w, rig_.cam);
+    const float tw = nameFont_.ok() ? static_cast<float>(nameFont_.measure(label))
+                                    : static_cast<float>(MeasureText(label.c_str(), 10));
+    tags.push_back(TagRect{e->snap.id, s.x - tw / 2.0f - 4.0f, s.y - 62.0f,
+                           s.x + tw / 2.0f + 4.0f, s.y - 48.0f});
+  }
+  for (const TagRect& a : tags) {
+    int n = 0;
+    for (const TagRect& b : tags) {
+      if (a.id == b.id) continue;
+      if (a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1) ++n;
+    }
+    namePileCounts_[a.id] = n;
+  }
   for (const RenderEnt* e : order) drawRemoteEnt(*e, e->snap.id == net_->ownId);
 }
 
@@ -1020,8 +1150,7 @@ const Atlas& Game::atlasForPlayer(std::uint8_t classId, std::uint8_t sex) {
   return heroAtlas_;
 }
 
-const char* Game::mapFileFor(std::uint16_t mapId) {
-  switch (mapId) {
+const char* Game::mapFileFor(std::uint16_t mapId) {  switch (mapId) {
     case 2: return "assets/maps/fields_overflow.bhmap";
     case 3: return "assets/maps/thornwall_crypt.bhmap";
     case 4: return "assets/maps/bonehowl_mine.bhmap";   // T-ART-08
@@ -1031,8 +1160,16 @@ const char* Game::mapFileFor(std::uint16_t mapId) {
   }
 }
 
-bool Game::zoneReload(std::uint16_t mapId) {
-  if (mapId == loadedMapId) return true;
+std::uint16_t Game::mapIdForFile(const std::string& path) {
+  if (path.find("thornwall_crypt") != std::string::npos) return 3;
+  if (path.find("fields_overflow") != std::string::npos) return 2;
+  if (path.find("bonehowl_mine") != std::string::npos) return 4;
+  if (path.find("drowned_crypt") != std::string::npos) return 5;
+  if (path.find("weeping_castle") != std::string::npos) return 6;
+  return 1;  // thornwall.bhmap default (check crypt first: name contains it)
+}
+
+bool Game::zoneReload(std::uint16_t mapId) {  if (mapId == loadedMapId) return true;
   std::string err;
   auto m = sim::loadBhmap(mapFileFor(mapId), &err);
   if (!m) {
@@ -1099,7 +1236,63 @@ void Game::drawVestiges() {
   }
 }
 
+void Game::ensureFonts() {
+  if (fontsTried_) return;
+  fontsTried_ = true;
+  // Missing files -> !ok() -> legacy DrawText path (never holes).
+  calloutFont_.load("assets/aigen/ui/font/callout_font_cap11.png",
+                    "assets/aigen/ui/font/callout_font_cap11.json");
+  nameFont_.load("assets/aigen/ui/font/callout_font_cap7.png",
+                 "assets/aigen/ui/font/callout_font_cap7.json");
+}
+
+void Game::drawNameTag(Vector2 w, const std::string& name, Color nc, int yOff,
+                         std::uint32_t id, bool canDegrade) {
+  if (name.empty()) return;
+  int pile = 0;
+  auto pc = namePileCounts_.find(id);
+  if (pc != namePileCounts_.end()) pile = pc->second;
+  const int iy = static_cast<int>(w.y) + yOff;
+  if (canDegrade && namePileDegrades(pile)) {
+    DrawPoly(Vector2{w.x, static_cast<float>(iy)}, 4, 5, 0.0f, nc);
+    return;
+  }
+  if (nameFont_.ok()) {
+    const int tw = nameFont_.measure(name);
+    nameFont_.drawText(name, static_cast<int>(w.x) - tw / 2, iy, nc);
+  } else {
+    const int tw = MeasureText(name.c_str(), 10);
+    DrawText(name.c_str(), static_cast<int>(w.x) - tw / 2, iy, 10, nc);
+  }
+}
+
+void Game::drawVfxTest() {
+  if (!vfxTest_) return;
+  if (!testVfx_.ok) {
+    Atlas a;
+    if (!loadAtlas("assets/aigen/vfx/test/castring/strip.png",
+                   "assets/aigen/vfx/test/castring/strip.json", a) ||
+        !a.ok)
+      return;
+    testVfx_ = std::move(a);
+  }
+  const Rectangle src = animFrame(testVfx_, "play", 0, animT_);
+  if (src.width <= 0.0f) return;
+  Vector2 w;
+  if (net_ != nullptr) {
+    const auto own = rents_.find(net_->ownId);
+    w = own != rents_.end()
+            ? iso::tileToWorldF(entRenderPos(own->second), map_.tileW, map_.tileH)
+            : iso::tileToWorld(map_.w / 2, map_.h / 3, map_.tileW, map_.tileH);
+  } else {
+    w = iso::tileToWorldF(Vector2{walker_.fx(), walker_.fy()}, map_.tileW, map_.tileH);
+  }
+  DrawTexturePro(testVfx_.tex, src, Rectangle{w.x, w.y, src.width, src.height},
+                 Vector2{src.width * 0.5f, src.height * 0.5f}, 0.0f, WHITE);
+}
+
 void Game::drawFloaters() {
+  ensureFonts();
   const double now = GetTime();
   while (!floaters_.empty() && now - floaters_.front().at > 0.9) floaters_.pop_front();
   for (const Floater& f : floaters_) {
@@ -1107,9 +1300,15 @@ void Game::drawFloaters() {
     const float rise = static_cast<float>(age) * 28.0f;
     const auto a = static_cast<unsigned char>(255 * (1.0 - age / 0.9));
     const Vector2 w = iso::tileToWorldF(Vector2{f.x, f.y}, map_.tileW, map_.tileH);
-    DrawText(f.text.c_str(), static_cast<int>(w.x) - 8,
-             static_cast<int>(w.y) - 56 - static_cast<int>(rise), 10,
-             Color{f.r, f.g, f.b, a});
+    const Color col{f.r, f.g, f.b, a};
+    if (calloutFont_.ok()) {
+      const int tw = calloutFont_.measure(f.text);
+      calloutFont_.drawText(f.text, static_cast<int>(w.x) - tw / 2,
+                            static_cast<int>(w.y) - 56 - static_cast<int>(rise), col);
+    } else {
+      DrawText(f.text.c_str(), static_cast<int>(w.x) - 8,
+               static_cast<int>(w.y) - 56 - static_cast<int>(rise), 10, col);
+    }
   }
 }
 
@@ -1119,7 +1318,7 @@ void Game::drawFloaters() {
 void Game::noteDecals() {
   if (net_ == nullptr) return;
   for (const CombatPulse& cp : net_->combatIn) {
-    if (cp.kind != 3 && cp.kind != 15) continue;  // slain + slam wind-up
+    if (cp.kind != 3 && cp.kind != 15 && cp.kind != 17) continue;  // slain + slam wind-up + sanctuary
     auto ti = rents_.find(cp.target);
     if (ti == rents_.end()) continue;
     if (content::wireIsFurniture(ti->second.snap.kind)) continue;
@@ -1129,7 +1328,11 @@ void Game::noteDecals() {
     d.y = p.y;
     // T-091: wind-up stains stage 1 at the victim's tile; the draw path
     // advances 1-2-3 by age against the server's 60t fuse (shared clock).
-    d.kind = cp.kind == 15 ? DecalKind::kTelegraph1 : DecalKind::kBlood;
+    // T-161b.1: sanctuary rings a persistent circle at the holder's tile
+    // (decal law: circles hold until zone reload).
+    d.kind = cp.kind == 15 ? DecalKind::kTelegraph1
+             : cp.kind == 17 ? DecalKind::kCircle
+                             : DecalKind::kBlood;
     d.bornTick = static_cast<std::int64_t>(tick_);
     decals_.push_back(d);
     while (decals_.size() > kDecalCap) decals_.pop_front();
@@ -1218,6 +1421,92 @@ void Game::drawDecals() {
         DrawEllipseLines(static_cast<int>(w.x), static_cast<int>(w.y), 12, 6,
                          Color{150, 220, 220, a});
         break;
+    }
+  }
+}
+
+void Game::drawHotbar() const {
+  // T-ART-15 skill bar: one row always visible online, following the live
+  // input page (plain 1-6 / Shift+1-8 / Ctrl+1-5 — the T-161b layout in
+  // handleInputOnline). Slots show lock state from kits.h unlocks at the
+  // hero's kit+level (server re-validates casts; this never decides).
+  // Plates are procedural placeholders in the §11 backing colours; the
+  // 60-icon art set fills them when it ships. No cooldown sweep yet (no
+  // wire carries cooldowns — owed with the art).
+  if (net_ == nullptr || !net_->welcomed) return;
+  const bool shiftPage = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
+  const bool ctrlPage = IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL);
+  std::uint8_t ch[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+  const char* key[8] = {"", "", "", "", "", "", "", ""};
+  const char* page = "";
+  if (!shiftPage && !ctrlPage) {
+    const std::uint8_t c[] = {1, 2, 3, 4, 5, 10, 0, 0};
+    const char* k[] = {"1", "2", "3", "4", "5", "6", "", ""};
+    for (int i = 0; i < 8; ++i) {
+      ch[i] = c[i];
+      key[i] = k[i];
+    }
+  } else if (shiftPage && !ctrlPage) {
+    const char* k[] = {"1", "2", "3", "4", "5", "6", "7", "8"};
+    for (int i = 0; i < 8; ++i) {
+      ch[i] = static_cast<std::uint8_t>(11 + i);
+      key[i] = k[i];
+    }
+    page = "SHIFT";
+  } else if (ctrlPage && !shiftPage) {
+    const char* k[] = {"1", "2", "3", "4", "5", "", "", ""};
+    for (int i = 0; i < 5; ++i) {
+      ch[i] = static_cast<std::uint8_t>(19 + i);
+      key[i] = k[i];
+    }
+    page = "CTRL";
+  } else {
+    return;  // Shift+Ctrl: no page (matches input — no casts fire)
+  }
+  // §11 backing families by channel (later channels grouped by effect).
+  auto family = [](std::uint8_t c) -> Color {
+    switch (c) {
+      case 2:
+      case 7:
+      case 13:
+      case 23: return Color{232, 228, 220, 255};  // bone: heal
+      case 3:
+      case 6:
+      case 10:
+      case 11: return Color{200, 170, 60, 255};  // gold: holy
+      case 4:
+      case 8:
+      case 9:
+      case 18: return Color{120, 140, 170, 255};  // ash: utility
+      case 12:
+      case 16:
+      case 17: return Color{140, 100, 170, 255};  // violet: curse
+      default: return Color{200, 60, 40, 255};    // iron: damage
+    }
+  };
+  const std::uint8_t kit = net_->ownStats.classId;
+  const std::uint16_t lvl = net_->ownStats.level;
+  const int n = 8, sw = 30;
+  const int x0 = (GetScreenWidth() - n * sw) / 2;
+  const int y0 = GetScreenHeight() - 40;
+  if (page[0] != '\0') DrawText(page, x0 - 44, y0 + 8, 10, Color{140, 140, 140, 255});
+  for (int i = 0; i < n; ++i) {
+    const int x = x0 + i * sw;
+    DrawRectangle(x + 1, y0, 28, 28, Color{12, 10, 10, 220});
+    DrawRectangleLines(x + 1, y0, 28, 28, Color{60, 50, 50, 255});
+    if (ch[i] == 0) continue;
+    // icon plate (placeholder rect; art fills it) + key numeral
+    DrawRectangle(x + 4, y0 + 3, 22, 22, Color{21, 16, 19, 255});
+    DrawRectangleLines(x + 4, y0 + 3, 22, 22, family(ch[i]));
+    DrawText(key[i], x + 4, y0 + 1, 10, Color{230, 210, 190, 255});
+    const std::uint8_t req = content::kitSkillUnlock(kit, ch[i]);
+    if (req == 0 || lvl < req) {
+      DrawRectangle(x + 1, y0, 28, 28, Color{8, 8, 10, 150});  // locked dim
+      if (req > 0) {
+        char rl[8];
+        std::snprintf(rl, sizeof rl, "%u", static_cast<unsigned>(req));
+        DrawText(rl, x + 18, y0 + 16, 10, Color{150, 140, 130, 255});
+      }
     }
   }
 }
@@ -1484,13 +1773,16 @@ void Game::drawInventoryPanel() const {
                     : refineGlowTier(kv.second.refine) == RefineGlow::kGlow  ? " +%u*"
                                                                             : " +%u",
                     static_cast<unsigned>(kv.second.refine));
-    const char* affixName =
-        kv.second.affix > 0 && kv.second.affix <= content::kAffixCount
-            ? content::kAffixNames[kv.second.affix]
-            : "";
-    std::snprintf(buf, sizeof buf, "%s%s %s%s%s%s%s%s",
+    // ADR-0016: up to three affix names ride the row (rarity chrome first,
+    // affix names after — T-159f1.3 order kept).
+    std::string affixNames;
+    for (const std::uint8_t ax : {kv.second.affix, kv.second.affix2, kv.second.affix3})
+      if (ax > 0 && ax <= content::kAffixCount) affixNames += std::string(" ") + content::kAffixNames[ax];
+    const char* affixName = affixNames.c_str();
+    std::snprintf(buf, sizeof buf, "%s%s %s%s %s%s%s%s%s",
                   kv.second.equipped ? "[E] " : "    ",
                   kv.second.qty > 1 ? (std::to_string(kv.second.qty) + "x").c_str() : "",
+                  rarityMarker(kv.second.rarity),
                   d->name, d->slot == 0 ? " (weapon)" : d->slot == 1 ? " (armor)" : "",
                   auraMark, duraMark, refineMark,
                   affixName[0] ? (std::string(" ") + affixName).c_str() : "");
@@ -1501,6 +1793,11 @@ void Game::drawInventoryPanel() const {
     // beats aura/equipped (rarest state reads first). In-world sprite
     // overlays need per-entity gear on the wire (no snapshot carries
     // refine) — deliberately out of scope, non-wire card.
+    // T-159f1.3: rarity chrome joins the chain — Unique beats aura (a named
+    // row is the rarest thing in the bag), aura still beats Rare/Magic
+    // (blessed work reads first), rarity beats equipped (the [E] tag keeps
+    // the equipped read). Colours flagged: Magic blue / Rare yellow (GDD §7
+    // tiers) / Unique ember-orange.
     const RefineGlow glow = refineGlowTier(kv.second.refine);
     if (row == invHover_) DrawRectangleRec(rr, Color{120, 30, 30, 120});
     if (!dormant && glow != RefineGlow::kNone)
@@ -1512,10 +1809,23 @@ void Game::drawInventoryPanel() const {
         : glow != RefineGlow::kNone
             ? (glow == RefineGlow::kMythic ? Color{255, 240, 200, 255}
                                            : Color{255, 225, 150, 255})
+        : kv.second.rarity == 3 ? Color{255, 160, 60, 255}
         : kv.second.aura > 0 ? Color{120, 235, 235, 255}  // widow-blessed teal
+        : kv.second.rarity == 2 ? Color{255, 235, 90, 255}
+        : kv.second.rarity == 1 ? Color{140, 180, 255, 255}
         : kv.second.equipped ? Color{255, 200, 90, 255}
                              : Color{200, 195, 185, 255};
-    DrawText(buf, px + 10, y, 10, rowCol);
+    // T-ART-15 icon slot: rarity plate ahead of the row text. Procedural
+    // placeholder (the 60-icon art set fills this rect when it ships);
+    // rarity always reads here even when glow/aura win the text colour.
+    const Color plateFill =
+        kv.second.rarity == 3   ? Color{200, 98, 42, 255}
+        : kv.second.rarity == 2 ? Color{168, 138, 74, 255}
+        : kv.second.rarity == 1 ? Color{74, 110, 168, 255}
+                                : Color{42, 36, 38, 255};
+    DrawRectangle(px + 8, y + 2, 8, 8, plateFill);
+    DrawRectangleLines(px + 8, y + 2, 8, 8, Color{20, 16, 18, 255});
+    DrawText(buf, px + 20, y, 10, rowCol);
     y += 16;
     ++row;
   }
@@ -1730,6 +2040,16 @@ void Game::drawHud() const {
   }
 }
 
+void Game::drawLightPool(Vector2 tileFrac, int radiusTiles) const {
+  if (radiusTiles <= 0) return;
+  const Vector2 w = iso::tileToWorldF(tileFrac, map_.tileW, map_.tileH);
+  const Vector2 sp = GetWorldToScreen2D(w, rig_.cam);
+  const float radius = static_cast<float>(radiusTiles) * kLightTilePx;
+  const auto peak = static_cast<unsigned char>(kLightGlowAlpha);
+  DrawCircleGradient(static_cast<int>(sp.x), static_cast<int>(sp.y), radius,
+                     Color{255, 190, 110, peak}, Color{255, 190, 110, 0});
+}
+
 void Game::render(double /*interpAlpha*/) {
   rig_.input();
   Vector2 focus;
@@ -1742,11 +2062,13 @@ void Game::render(double /*interpAlpha*/) {
     focus = iso::tileToWorldF(Vector2{walker_.fx(), walker_.fy()}, map_.tileW, map_.tileH);
   }
   rig_.follow(focus);
+  if (debugZoom_ > 0.0f) rig_.cam.zoom = debugZoom_;  // T-ART-12: dev captures
 
   BeginDrawing();
   ClearBackground(Color{8, 8, 12, 255});
   BeginMode2D(rig_.cam);
   drawGround();
+  drawVfxTest();  // T-ART-14 dev visual (no-op unless --vfx-test)
   if (showPath_ && net_ == nullptr) drawPathPreview();
   drawCommandMarker();
   if (net_ != nullptr) drawVestiges();   // T-066 petrify-fade silhouettes
@@ -1764,18 +2086,18 @@ void Game::render(double /*interpAlpha*/) {
     for (const auto& kv : rents_) {
       const std::uint8_t lr = kv.second.snap.light;
       if (lr == 0) continue;
-      const Vector2 w = iso::tileToWorldF(entRenderPos(kv.second), map_.tileW, map_.tileH);
-      const Vector2 sp = GetWorldToScreen2D(w, rig_.cam);
-      const float radius = static_cast<float>(lr) * kLightTilePx;
-      const auto peak = static_cast<unsigned char>(kLightGlowAlpha);
-      DrawCircleGradient(static_cast<int>(sp.x), static_cast<int>(sp.y), radius,
-                         Color{255, 190, 110, peak}, Color{255, 190, 110, 0});
+      drawLightPool(entRenderPos(kv.second), lr);
     }
+  }
+  if (lampRadius_ > 0 && net_ == nullptr) {
+    // T-164 dev matrix: one shipped-style pool at the offline hero.
+    drawLightPool(Vector2{walker_.fx(), walker_.fy()}, lampRadius_);
   }
   drawChat();
   drawHud();
   drawStatPanel();
   drawPartyFrame();
+  drawHotbar();  // T-ART-15 skill slots (online; follows the input page)
   drawSiegePanel();
   drawPledgePanel();
   drawInventoryPanel();
@@ -1842,6 +2164,8 @@ void Game::drawHelpPanel() const {
   line("LMB click    walk / attack", GRAY);
   line("WASD         instant step", GRAY);
   line("1-5          hotbar skills (6 = Resurrect @selected)", GRAY);
+  line("Shift+1..8   deeper rites (Sanctuary..Ward @selected)", GRAY);
+  line("Ctrl+1..5    ravager rites (Sunder..Second Wind)", GRAY);
   line("Q            sip potion", GRAY);
   line("F5/F6/F7     +STR/+VIT/+DEX (stat point)", GRAY);
   line("F8/F9        +INT/+MAG (stat point)", GRAY);

@@ -4,6 +4,8 @@
 
 #include <nlohmann/json.hpp>
 
+#include "assets/atlas_dirs.h"
+
 namespace bh {
 
 bool loadAtlas(const std::string& pngPath, const std::string& animJsonPath, Atlas& out) {
@@ -29,16 +31,19 @@ bool loadAtlas(const std::string& pngPath, const std::string& animJsonPath, Atla
       const int dirs = a.value("dirs", 8);
       const int ox = a.value("offsetX", 0);
       const int oy = a.value("offsetY", 0);
-      if (dirs != 8 || frames <= 0 || fw <= 0 || fh <= 0) return false;
-      if (ox + frames * fw > tex.width || oy + 8 * fh > tex.height) return false;
+      // T-ART-14: VFX strips ship dirs:1 (single row, replicated to 8).
+      if (!atlasDirsSupported(dirs) || frames <= 0 || fw <= 0 || fh <= 0) return false;
+      if (ox + frames * fw > tex.width || oy + atlasRowsNeeded(dirs) * fh > tex.height)
+        return false;
 
       Anim an;
       an.fps = a.value("fps", 8.0f);
       an.anchorY = a.value("anchorY", 42.0f);  // T-ART-10: feet sit on diamonds
       for (int row = 0; row < 8; ++row) {
+        const int srcRow = atlasRowForDir(dirs, row);
         for (int fr = 0; fr < frames; ++fr) {
           an.dirFrames[row].push_back(Rectangle{
-              static_cast<float>(ox + fr * fw), static_cast<float>(oy + row * fh),
+              static_cast<float>(ox + fr * fw), static_cast<float>(oy + srcRow * fh),
               static_cast<float>(fw), static_cast<float>(fh)});
         }
       }

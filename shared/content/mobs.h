@@ -87,9 +87,18 @@ inline constexpr MobDef kMobs[] = {
     {1022, "Wraith",            8, 180, 22,  10,  18,  340,  8,    18, 10,  16,  4005, 30,  80,  140,  0, 0, 0},
     {1023, "Bloodfiend",        9, 220, 24,  12,  16,  420,  8,    18, 10,  16,  4005, 40,  90,  160,  0, 0, 0},
     {1024, "Synod Patrol",      10, 260, 26,  14,  14,  560,  8,    20, 8,   14,  4002, 50,  130, 210,  0, 0, 0,  0, 2},
-    {1025, "Ashen Patrol",      9, 240, 24,  13,  13,  500,  8,    20, 8,   14,  4002, 50,  120, 200,  0, 0, 0,  0, 1},
+    {1025, "Ashen Patrol",       9, 240, 24,  13,  13,  500,  8,    20, 8,   14,  4002, 50,  120, 200,  0, 0, 0,  0, 1},
+    // T-161b.3 Raised Skeleton: NEVER spawned by a spawner (pets only, via
+    // tryRaise). Appended last so every existing wireKind index is untouched.
+    // Row stats are fallback only — live thralls scale off the caster
+    // (hp 30+10L, strikes 2+L, guard petLevel/4). xp/loot/gold all zero AND
+    // killMob early-outs on ownerId, so a thrall's death can never pay.
+    {1026, "Raised Skeleton",    8, 120, 8,   4,   10,  0,    0,    20, 0,   12,  0,    0,   0,   0,    0, 0, 0},
 };
 inline constexpr size_t kMobKindCount = sizeof(kMobs) / sizeof(kMobs[0]);
+
+// T-161b.3: the thrall row (pets only — no spawner references it).
+inline constexpr std::uint32_t kThrallMobId = 1026;
 
 // T-101 named elites (GDD §9: world-announced first-kill): index into the
 // trio for session-scoped first-blood flags. -1 = not a named elite.

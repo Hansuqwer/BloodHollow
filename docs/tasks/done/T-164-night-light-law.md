@@ -1,4 +1,7 @@
-# T-164 — Night light law: decide, implement, screenshot (P1, audit 15/20)
+# T-164 — Night light law: decide, implement, screenshot (CLOSED 2026-09-18)
+
+**Status:** `done` — matrix captured, pools-after-overlay shared path,
+GDD §9 reconciled to the decided law (base 0 keep).
 
 ## Context
 Audit findings **B9.3 / E-lane**. The spec contradicts itself and the tree:
@@ -42,3 +45,32 @@ raylib-free (headless coverage per T-154); screenshot set.
 
 ## Evidence owed at merge
 Screenshot matrix, suite count, fps evidence, GDD diff, devlog, board row.
+
+## Audit note (2026-09-17, R4 — code-free part DONE, visuals BLOCKED)
+
+- Radius law verified in one place: `World::useItem` — torch 6
+  (`world.cpp:896`), lantern 8 on toggle (`world.cpp:912`), Vigil +2 via
+  `vigilBonus` (`world.cpp:501`, `world.h:294`); existing pins green
+  (`test_light.cpp`, suite 388/388 @ epoch 31). Matches GDD §9 + card AC #2.
+- No change made: base radius / additive light-pool layer (D6b) and the
+  before/after screenshot matrix (AC #1) need a graphical env + director
+  sign-off. This sandbox is headless — screenshots/fps evidence impossible.
+- Card stays OPEN with the matrix + D6b layer as owed evidence.
+
+## Verdict (2026-09-18 — visual pass, Xvfb + llvmpipe @1024x768)
+
+- Matrix `docs/research-notes/qa/t164/` (10 shots): Thornwall 00:00/02:00/
+  04:00 × lamp 0/6(torch)/8(lantern)/10(Vigil-lantern) @ zoom 1 + 00:00
+  × lamp 0/6 @ zoom 2. Torch-6 pool reads as designed (warm readable
+  ground near the hero, darkness beyond); lamp-0 stays navigable (hero +
+  path legible) but not grindable — the GDD horror rule holds.
+- D6b layer: already shipped (T-071) and now shared — `drawLightPool` is
+  ONE helper feeding both the online carried-light loop (`snap.light`
+  radii) and the offline `--lamp` dev visual (same call, same radius law,
+  no fork). Pools composite AFTER the night overlay (additive-in-effect,
+  floor-safe: normal blend toward warm can only lighten).
+- Radius law (one place, pins green): torch 6 / lantern 8 / Vigil +2
+  (`world.cpp:896,912,501`); base 0 kept (T-076/B + T-085 verdict — no
+  playable-darkness regression dared).
+- GDD §9 amended to the decided law (+Vigil +2, pools-after-overlay,
+  evidence pointer). No sim/wire/epoch (render + docs only).

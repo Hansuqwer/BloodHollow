@@ -33,6 +33,11 @@ void usage() {
                "                 [--screenshot PREFIX]   scripted demo + captures\n"
                "  dev:\n"
                "                 [--shot FILE]           screenshot just before --max-ticks exit\n"
+               "                 [--hour H]              game-hour at boot (render-only)\n"
+               "                 [--zoom Z]              force camera zoom (render-only)\n"
+               "                 [--flat-ground]         legacy flat diamonds (before shots)\n"
+               "                 [--flat-font]           legacy default font (before shots)\n"
+               "                 [--lamp R]              warm pool at hero, radius R tiles\n"
                "                 [--record FILE]         journal record (events + hashes)\n"
                "                 [--replay FILE]         journal replay + hash verify\n"
                "                 [--max-ticks N]         exit after N sim ticks\n");
@@ -47,6 +52,14 @@ int main(int argc, char** argv) {
   int port = 7777;
   std::int64_t maxTicks = 0;
   bool vsync = true;
+  // T-ART-12/T-164 dev captures (render-only): --hour sets the clock at boot,
+  // --zoom forces camera zoom, --flat-ground forces legacy flat diamonds,
+  // --lamp draws one shipped-style warm pool at the hero (radius tiles).
+  float hourFlag = -1.0f, zoomFlag = -1.0f;
+  int lampFlag = 0;
+  bool flatGround = false, flatFont = false, vfxTest = false;
+  // --create 1M/2F/3M...: T-167 auto-answer for unattended captures.
+  std::uint8_t createClass = 0, createSex = 0;
   for (int i = 1; i < argc; ++i) {
     const char* a = argv[i];
     if (std::strcmp(a, "--map") == 0 && i + 1 < argc) {
@@ -67,6 +80,23 @@ int main(int argc, char** argv) {
       port = std::atoi(argv[++i]);
     } else if (std::strcmp(a, "--shot") == 0 && i + 1 < argc) {
       shotPath = argv[++i];
+    } else if (std::strcmp(a, "--hour") == 0 && i + 1 < argc) {
+      hourFlag = static_cast<float>(std::atof(argv[++i]));
+    } else if (std::strcmp(a, "--zoom") == 0 && i + 1 < argc) {
+      zoomFlag = static_cast<float>(std::atof(argv[++i]));
+    } else if (std::strcmp(a, "--flat-ground") == 0) {
+      flatGround = true;
+    } else if (std::strcmp(a, "--flat-font") == 0) {
+      flatFont = true;
+    } else if (std::strcmp(a, "--vfx-test") == 0) {
+      vfxTest = true;
+    } else if (std::strcmp(a, "--lamp") == 0 && i + 1 < argc) {
+      lampFlag = std::atoi(argv[++i]);
+    } else if (std::strcmp(a, "--create") == 0 && i + 1 < argc) {
+      const char* v = argv[++i];
+      if (v[0] >= '1' && v[0] <= '3') createClass = static_cast<std::uint8_t>(v[0] - '0');
+      if (v[1] == 'M' || v[1] == 'm') createSex = 1;
+      if (v[1] == 'F' || v[1] == 'f') createSex = 2;
     } else if (std::strcmp(a, "--name") == 0 && i + 1 < argc) {
       name = argv[++i];
     } else if (std::strcmp(a, "--pass") == 0 && i + 1 < argc) {
@@ -134,7 +164,15 @@ int main(int argc, char** argv) {
   }
 
   bh::Game game(std::move(*map));
+  game.setLoadedMapId(bh::Game::mapIdForFile(mapPath));  // T-ART-12 zone skin
   game.bakeAudio();  // T-067: one-shot synth (~78KB, ~40ms total)
+  if (hourFlag >= 0.0f) game.debugSetHour(hourFlag);
+  if (zoomFlag > 0.0f) game.debugSetZoom(zoomFlag);
+  if (flatGround) game.debugSetFlatGround(true);
+  if (flatFont) game.debugSetFlatFont(true);
+  if (vfxTest) game.debugSetVfxTest(true);
+  if (lampFlag > 0) game.debugSetLamp(lampFlag);
+  if (createClass != 0 && createSex != 0) game.debugSetCreate(createClass, createSex);
   if (online) game.setOnline(&net);
   bh::TickStepper stepper(bh::sim::kTickSeconds);
 
@@ -182,6 +220,7 @@ int main(int argc, char** argv) {
         didShotDay = true;
         game.render(stepper.alpha());
         TakeScreenshot((shotPrefix + "-day.png").c_str());
+        std::fprintf(stderr, "[shot] day fps=%d\n", GetFPS());
       }
       if (t >= 130 && !didDusk) {
         didDusk = true;
@@ -191,13 +230,17 @@ int main(int argc, char** argv) {
         didShotNight = true;
         game.render(stepper.alpha());
         TakeScreenshot((shotPrefix + "-night.png").c_str());
+        std::fprintf(stderr, "[shot] night fps=%d\n", GetFPS());
       }
     }
     game.render(stepper.alpha());
     const auto t = game.tickCount();
     if (!shotPrefix.empty() && t >= 220) break;
     if (maxTicks > 0 && t >= maxTicks) {
-      if (!shotPath.empty()) TakeScreenshot(shotPath.c_str());
+      if (!shotPath.empty()) {
+        TakeScreenshot(shotPath.c_str());
+        std::fprintf(stderr, "[shot] %s fps=%d\n", shotPath.c_str(), GetFPS());
+      }
       break;
     }
   }

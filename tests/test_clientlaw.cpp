@@ -91,7 +91,6 @@ TEST_CASE("T-142: player sheet dirs resolve for shipped Ravager m/f; fallback on
   // branch only fires on kind==0; this pin ensures the path law is class-only
   CHECK_FALSE(playerSheetPaths(1, 0, png, sizeof png, js, sizeof js));
 }
-
 TEST_CASE("T-ART-10: feet anchors ride the anim (42.0 legacy default)") {
   Atlas a;
   CHECK(animAnchorY(a, "walk") == 42.0f);  // absent anim: legacy default
@@ -100,4 +99,17 @@ TEST_CASE("T-ART-10: feet anchors ride the anim (42.0 legacy default)") {
   a.anims.emplace("walk", an);
   CHECK(animAnchorY(a, "walk") == 32.0f);
   CHECK(animAnchorY(a, "attack") == 42.0f);  // absent anim, present atlas
+}
+
+TEST_CASE("R-TEXT-2: name piles of 4+ degrade to the karma badge") {
+  CHECK_FALSE(namePileDegrades(0));
+  CHECK_FALSE(namePileDegrades(1));
+  CHECK_FALSE(namePileDegrades(2));  // trio still reads
+  CHECK(namePileDegrades(3));        // self + 3 = pile of 4
+  CHECK(namePileDegrades(7));
+  // overlap window: same anchor overlaps; far tags don't
+  CHECK(nameTagsOverlap(100.0f, 200.0f, 100.0f, 200.0f));
+  CHECK(nameTagsOverlap(100.0f, 200.0f, 120.0f, 205.0f));
+  CHECK_FALSE(nameTagsOverlap(100.0f, 200.0f, 200.0f, 200.0f));
+  CHECK_FALSE(nameTagsOverlap(100.0f, 200.0f, 100.0f, 300.0f));
 }

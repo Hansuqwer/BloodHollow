@@ -1,8 +1,8 @@
 {
  "zone": "mine",
  "map": "bonehowl_mine",
- "engine_validated": false,
- "status": "UNVALIDATED in engine (no textured-ground renderer; T-ART-12 / D6)",
+ "engine_validated": true,
+ "status": "VALIDATED in engine 2026-09-18 (T-ART-12 bake + skinned prisms; shots docs/research-notes/qa/tart12/)",
  "tile": [
   64,
   32

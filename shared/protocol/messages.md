@@ -291,6 +291,8 @@ u8 durability
 u8 affix
 u8 refine
 u8 rarity  // T-159: 0 common, 1 magic, 2 rare, 3 unique (bag-row marker + name colour)
+u8 affix2  // ADR-0016: 0 none (Magic 50%, Rare always)
+u8 affix3  // ADR-0016: 0 none (Rare 50%)
 ```
 
 All i32 positions are Q10 fixed-point tile coordinates (sim::kUnitsPerTile=1024).

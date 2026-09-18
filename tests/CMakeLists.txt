@@ -62,6 +62,16 @@ add_executable(bh_tests
   test_gm_authority.cpp
   test_wave2_epoch30.cpp  # wave-2: T-167/T-160/T-161/T-162/T-163/T-166 pins
   test_t153_auth.cpp  # T-153: argon2id PHC, migration, refusals
+  test_sanctuary.cpp  # T-161b.1: Cultist ch11 ground hold
+  test_weaken.cpp  # T-161b.2: Cultist ch12 debility
+  test_rarity_chrome.cpp  # T-159f1.3: tier marker law
+  test_raise.cpp  # T-161b.3: Cultist ch13 thrall
+  test_corpse.cpp  # T-161b.4: Gravecaller ch14 detonation
+  test_control.cpp  # T-161b.5: Gravecaller ch15-18 control set
+  test_ravager.cpp  # T-161b.6: Ravager ch19-23 set
+  test_droplog.cpp  # T-159f1.5: drop-line instrumentation
+  test_multiaffix.cpp  # ADR-0016: multi-affix + 45-row band tables
+  test_terrain_skin.cpp  # T-ART-12: textured-ground law (raylib-free)
 )
 target_link_libraries(bh_tests PRIVATE bh_shared bh_protocol bh_server_world bh_doctest bh_warnings)
 # T-ART-02: snapZoom lives in raylib-including camera_rig.h — link raylib for

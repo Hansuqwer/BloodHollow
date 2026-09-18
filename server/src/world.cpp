@@ -57,6 +57,89 @@ constexpr sim::Tick kHasteCdTicks = 400;
 constexpr std::uint32_t kChorusMpCost = 14;
 constexpr std::uint32_t kMassMendMpCost = 18;
 constexpr std::uint32_t kHasteMpCost = 10;
+// ---- Sanctuary (T-161b.1, GDD §3: ground healing circle, 600t CD) --------
+// Only the CD is GDD text; the rest is flagged derivation: MP 20 sits between
+// Mass Mend (18) and Resurrect (25); radius 3 holds a tight party but not a
+// zerg; 30 s hold × 2 s pulses rewards standing ground without replacing
+// Mass Mend's burst ((30+4L)/2 now vs (12+L)/2 per pulse × up to 15).
+constexpr sim::Tick kSanctCdTicks = 600;
+constexpr std::uint32_t kSanctMpCost = 20;
+constexpr int kSanctRadius = 3;
+constexpr sim::Tick kSanctDurationTicks = 600;
+constexpr sim::Tick kSanctPulseTicks = 40;
+// ---- Curse of Weakness (T-161b.2, GDD §3: -15% target dmg/def) ------------
+// Only the -15% is GDD text; the rest is flagged derivation: unlock 12
+// (Mass-Mend tier), 12 MP (curse-work is cheaper than mending), 8 s hold
+// (one kite loop), 6 s CD (upkeep on one target, not a crowd), Mend range.
+constexpr sim::Tick kWeakDurationTicks = 160;
+constexpr sim::Tick kWeakCdTicks = 120;
+constexpr std::uint32_t kWeakMpCost = 12;
+constexpr int kWeakRange = 6;
+// ---- Raise Skeleton (T-161b.3, GDD §3: 1 pet tank/backup) -----------------
+// Only "1 pet" is GDD text; the rest is flagged derivation: unlock 16
+// (Crypt-tier — a tank at 12 trivializes the Mine), 25 MP (Resurrect-tier),
+// 600t CD (no thrall-cycling as disposable tanks), hp 30+10L, strikes 2+L,
+// guard L/4, heel 2 / warp 18. The thrall is kMob + ownerId: every wire,
+// AoI, strike and retaliation path already handles it — mobs just never
+// ACQUIRE it (playersNear), so it tanks by retaliation, not by taunt.
+constexpr sim::Tick kRaiseCdTicks = 600;
+constexpr std::uint32_t kRaiseMpCost = 25;
+// ---- Corpse Explosion (T-161b.4, GDD §3: detonates a corpse for AoE) ------
+// Only "detonates a corpse: AoE, costs the corpse" is GDD text; the rest is
+// flagged derivation: unlock 14 (needs corpses = group play), 15 MP, 120t
+// CD, meat search radius 4, blast radius 2, fixed 20+3L (slam-mirror: no
+// roll, no crit — the corpse does what the corpse does), 300t meat window.
+constexpr sim::Tick kBlastCdTicks = 120;
+constexpr std::uint32_t kBlastMpCost = 15;
+constexpr int kBlastSearchRadius = 4;
+constexpr int kBlastRadius = 2;
+constexpr sim::Tick kCorpseWindowTicks = 300;
+constexpr std::size_t kCorpseTapeCap = 32;
+// ---- Ravager set (T-161b.6, GDD §3) ---------------------------------------
+// GDD fixes: Sunder "-15% target DEF, 8s", Bull Rush "dash 3 tiles + brief
+// knockdown", War Stomp "PBAoE dmg + 1s stagger", Executioner "+100% dmg vs
+// targets <20% HP, 100t", Second Wind "heal 25% over 5s, breaks on hit,
+// 600t". Flagged readings: Execute is an AIMED channel (not a passive) —
+// a passive would double legacy swings and cost an epoch; the channel keeps
+// old journals byte-identical. Sunder stacks with Weakness (0.85²).
+// Knockdown = prone (no move, no strike); stagger = 20t prone. Stomp = 75%
+// weapon, radius 2 (slam-mirror). Wind = hpMax/4 over 5 pulses, any hit
+// after the cast-mark breaks it.
+constexpr sim::Tick kSunderCdTicks = 60;
+constexpr std::uint32_t kSunderMpCost = 10;
+constexpr int kSunderRange = 1;
+constexpr sim::Tick kSunderDurationTicks = 160;
+constexpr sim::Tick kRushCdTicks = 120;
+constexpr std::uint32_t kRushMpCost = 12;
+constexpr int kRushRange = 4;
+constexpr sim::Tick kKnockTicks = 40;
+constexpr sim::Tick kStompCdTicks = 160;
+constexpr std::uint32_t kStompMpCost = 15;
+constexpr int kStompRadius = 2;
+constexpr sim::Tick kStaggerTicks = 20;
+constexpr sim::Tick kExecCdTicks = 100;
+constexpr std::uint32_t kExecMpCost = 8;
+constexpr sim::Tick kWindCdTicks = 600;
+constexpr std::uint32_t kWindMpCost = 10;
+constexpr sim::Tick kWindDurationTicks = 100;
+constexpr sim::Tick kWindPulseTicks = 20;
+constexpr sim::Tick kFrostCdTicks = 40;
+constexpr std::uint32_t kFrostMpCost = 6;
+constexpr int kFrostRange = 8;
+constexpr sim::Tick kSlowTicks = 60;
+constexpr sim::Tick kWitherCdTicks = 60;
+constexpr std::uint32_t kWitherMpCost = 14;
+constexpr int kWitherRange = 8;
+constexpr sim::Tick kWitherDurationTicks = 240;
+constexpr sim::Tick kWitherPulseTicks = 20;
+constexpr std::uint8_t kWitherMaxStacks = 3;
+constexpr sim::Tick kTerrorCdTicks = 400;
+constexpr std::uint32_t kTerrorMpCost = 12;
+constexpr int kTerrorRange = 6;
+constexpr sim::Tick kFearTicks = 40;
+constexpr sim::Tick kShieldCdTicks = 240;
+constexpr std::uint32_t kShieldMpCost = 10;
+constexpr sim::Tick kShieldDurationTicks = 1200;
 constexpr int kFireboltRange = 8;
 constexpr std::uint32_t kMendMpCost = 8;
 constexpr std::uint32_t kBlessMpCost = 15;
@@ -74,6 +157,22 @@ const std::string& tradeLogPath() { return gTradeLogPath; }
 }  // namespace
 
 void World::setTradeLogPath(const std::string& p) { gTradeLogPath = p; }
+
+// T-159f1.5 drop log (economy evidence): plain-text, one line per award.
+static std::string gDropLogPath = "logs/drops.log";
+void World::setDropLogPath(const std::string& p) { gDropLogPath = p; }
+void World::dropLog(const std::string& line) {
+  {
+    std::error_code ec;
+    const auto parent = std::filesystem::path(gDropLogPath).parent_path();
+    if (!parent.empty()) std::filesystem::create_directories(parent, ec);
+  }
+  if (FILE* f = std::fopen(gDropLogPath.c_str(), "a")) {
+    std::fputs(line.c_str(), f);
+    std::fputs("\n", f);
+    std::fclose(f);
+  }
+}
 
 bool World::load(const std::string& mapPath, std::string* err) {
   auto m = sim::loadBhmap(mapPath, err);
@@ -290,6 +389,16 @@ void World::despawn(std::uint32_t id) {
   for (size_t i = 0; i < entities_.size(); ++i) {
     if (entities_[i].id == id) {
       Entity& e = entities_[i];
+      // T-161b.3: leaving takes the thrall (logout/desync sweep funnels
+      // here — collect first, crumble after the erase, T-106 law).
+      std::uint32_t orphanPet = 0;
+      if (e.kind == EntityKind::kPlayer) {
+        for (const auto& m : entities_)
+          if (m.kind == EntityKind::kMob && m.ownerId == e.id && !m.dead) {
+            orphanPet = m.id;
+            break;
+          }
+      }
       if (e.partyId != 0) {
         // leaving silently: same roster semantics live and under replay
         const std::uint32_t pid = e.partyId;
@@ -307,6 +416,7 @@ void World::despawn(std::uint32_t id) {
       }
       zones_.at(entities_[i].zoneId).spatial.remove(id);
       entities_.erase(entities_.begin() + static_cast<long>(i));
+      if (orphanPet != 0) petCrumble(orphanPet, "");  // silent: nobody listens
       return;
     }
   }
@@ -381,7 +491,8 @@ std::uint32_t World::recomputeHpMax(Entity& e) const {
 bool World::hasAffix(const Entity& e, std::uint8_t affix, std::uint8_t slot) const {
   if (e.kind != EntityKind::kPlayer) return false;
   for (const InvSlot& sl : e.inv) {
-    if (!sl.equipped || sl.affix != affix || sl.durability == 0) continue;
+    // ADR-0016: any of the three mods counts (slot-gating per affix unchanged).
+    if (!sl.equipped || !slotHasAffix(sl, affix) || sl.durability == 0) continue;
     const content::ItemDef* d = content::findItem(sl.itemId);
     if (d != nullptr && (slot == 9 || d->slot == slot)) return true;
   }
@@ -621,11 +732,11 @@ void parseInvBlob(const std::string& blob, std::vector<InvSlot>& out) {
     const std::string rec =
         blob.substr(pos, end == std::string::npos ? end : end - pos);
     pos = end == std::string::npos ? blob.size() : end + 1;
-    // split into at most 8 colon-fields
-    std::string f[8];
+    // split into at most 10 colon-fields (ADR-0016: +affix2/+affix3)
+    std::string f[10];
     int nf = 0;
     size_t p = 0;
-    while (nf < 8) {
+    while (nf < 10) {
       const size_t c = rec.find(':', p);
       if (c == std::string::npos) {
         f[nf++] = rec.substr(p);
@@ -670,6 +781,8 @@ void parseInvBlob(const std::string& blob, std::vector<InvSlot>& out) {
     if (nf > 5) { if (!num(f[5], &v)) continue; sl.affix = static_cast<std::uint8_t>(v); }
     if (nf > 6) { if (!num(f[6], &v)) continue; sl.refine = static_cast<std::uint8_t>(v); }
     if (nf > 7) { if (!num(f[7], &v)) continue; sl.rarity = static_cast<std::uint8_t>(v); }
+    if (nf > 8) { if (!num(f[8], &v)) continue; sl.affix2 = static_cast<std::uint8_t>(v); }
+    if (nf > 9) { if (!num(f[9], &v)) continue; sl.affix3 = static_cast<std::uint8_t>(v); }
     out.push_back(sl);
   }
 }
@@ -680,7 +793,8 @@ std::string canonicalInvBlob(const std::vector<InvSlot>& inv) {
     blob += std::to_string(sl.itemId) + ":" + std::to_string(sl.qty) + ":" +
             (sl.equipped ? "1" : "0") + ":" + std::to_string(sl.aura) + ":" +
             std::to_string(sl.durability) + ":" + std::to_string(sl.affix) +
-            ":" + std::to_string(sl.refine) + ":" + std::to_string(sl.rarity) + ";";
+            ":" + std::to_string(sl.refine) + ":" + std::to_string(sl.rarity) +
+            ":" + std::to_string(sl.affix2) + ":" + std::to_string(sl.affix3) + ";";
   }
   return blob;
 }
@@ -717,14 +831,15 @@ std::uint32_t World::equippedWeaponDmg(const Entity& e) const {
       if (d != nullptr && d->slot == 0) {
         if (sl.durability == 0) return kFistsBaseDmg;  // dormant (T-058)
         std::uint32_t dmg = d->dmg + 2u * sl.refine;  // T-060 refine steps
-        if (sl.affix == 1) dmg = dmg + dmg / 10;      // of Whet (T-059): +10%
-        if (sl.affix == 7) {  // T-126 of Embers: +2, +1 more after dark
+        // ADR-0016: weapon mods stack across all three affix fields.
+        if (slotHasAffix(sl, 1)) dmg = dmg + dmg / 10;  // of Whet (T-059): +10%
+        if (slotHasAffix(sl, 7)) {  // T-126 of Embers: +2, +1 more after dark
           dmg += 2;
           if (isNight()) dmg += 1;
         }
-        if (sl.affix == 11) dmg += 3;  // T-159 of the Hollow: +3 flat
-        if (sl.affix == 17 && isNight()) dmg += 4;  // T-159 of the Dirge: +4 at night
-        if (sl.affix == 20 && e.hpMax > 0 && e.hp * 5 < e.hpMax) dmg += 8u;  // T-159 Last Rites: +8 below 20% hp
+        if (slotHasAffix(sl, 11)) dmg += 3;  // T-159 of the Hollow: +3 flat
+        if (slotHasAffix(sl, 17) && isNight()) dmg += 4;  // T-159 of the Dirge: +4 at night
+        if (slotHasAffix(sl, 20) && e.hpMax > 0 && e.hp * 5 < e.hpMax) dmg += 8u;  // T-159 Last Rites: +8 below 20% hp
         if (sl.aura >= 1) {  // Edge Rite (tier I): flat attack bleed
           if (const content::AuraTier* t = content::findAuraTier(sl.aura))
             dmg += t->atkBonusFlat;
@@ -760,8 +875,8 @@ std::uint32_t World::equippedArmorDef(const Entity& e) const {
       if (d != nullptr && (d->slot == 1 || d->slot == 2)) {
         if (sl.durability == 0) continue;  // dormant (T-058)
         std::uint32_t def = d->def + sl.refine;  // T-060 refine steps
-        if (sl.affix == 2) def += 2u;            // of Warding (T-059)
-        if (sl.affix == 18) def += 2u;           // T-159 of the Husk: +2 flat def
+        if (slotHasAffix(sl, 2)) def += 2u;   // of Warding (T-059)
+        if (slotHasAffix(sl, 18)) def += 2u;  // T-159 of the Husk: +2 flat def
         total += def;
       }
     }
@@ -875,12 +990,15 @@ std::uint32_t World::effEvd(const Entity& e) const {
 
 std::uint32_t World::effDmgBase(const Entity& e) const {  if (e.kind != EntityKind::kPlayer) {
     const content::MobDef* md = content::findMob(e.mobId);
-    return md != nullptr ? md->dmg : 4;
+    std::uint32_t mdmg = md != nullptr ? md->dmg : 4;
+    if (tick_ < e.weakUntil) mdmg = mdmg * 85u / 100u;  // T-161b.2 laid weakness
+    return mdmg;
   }
   std::uint32_t base = equippedWeaponDmg(e) + e.swordSkill / 20;
   if (siegeHolder_ != 0 && e.id == siegeHolder_) base = base * 110u / 100u;  // T-134 holder
   if (e.blessUntil >= 0 && tick_ < e.blessUntil) base = base * 110u / 100u;  
   if (e.chorusUntil >= 0 && tick_ < e.chorusUntil) base = base * 105u / 100u;  // T-054b
+  if (tick_ < e.weakUntil) base = base * 85u / 100u;  // T-161b.2 laid weakness
   return base;
 }
 
@@ -892,12 +1010,32 @@ std::uint32_t World::effDef(const Entity& e) const {
   } else if (const content::MobDef* md = content::findMob(e.mobId)) {
     d = md->def;
   }
+  if (tick_ < e.weakUntil) d = d * 85u / 100u;  // T-161b.2 laid weakness
+  if (tick_ < e.sunderUntil) d = d * 85u / 100u;  // T-161b.6 rend (stacks)
   return d;
 }
 
 void World::trySkill(Entity& e, std::uint8_t skill, std::uint32_t targetId) {
   if (e.kind != EntityKind::kPlayer || e.dead) return;
-  if (skill >= 2 && skill <= 10) {
+  if (skill == 22) {
+    // T-161b.6 Execute-as-aimed-finisher (flagged reading of GDD "+100% vs
+    // <20% HP, 100t"): an aimed channel keeps old journals byte-identical —
+    // a passive would double legacy swings and cost an epoch. MP/CD spent
+    // here; the swing resolves through the shared lane below (which also
+    // sets the shared power clock — no double-dipping).
+    const std::uint8_t execUnlock = content::kitSkillUnlock(e.classId, 22);
+    if (execUnlock == 0 || e.level < execUnlock) return;
+    Entity* xt = find(targetId);
+    if (xt == nullptr || xt->dead || content::wireIsFurniture(xt->wireKind))
+      return;
+    if (xt->zoneId != e.zoneId) return;
+    if (xt->hp * 5 >= xt->hpMax) return;  // only the bleeding (<20%)
+    if (tick_ - e.lastExecTick < kExecCdTicks) return;
+    if (e.mp < kExecMpCost) return;
+    if (chebyshev(e.walker.tile(), xt->walker.tile()) > 1) return;
+    // spend lands in powerSwing past the shared gates (a prone/waiting
+    // executioner pays nothing — the rite fizzles before the purse).
+  } else if (skill >= 2 && skill <= 23) {
     const std::uint8_t unlock = content::kitSkillUnlock(e.classId, skill);
     if (unlock == 0 || e.level < unlock) return;
     switch (skill) {
@@ -910,67 +1048,109 @@ void World::trySkill(Entity& e, std::uint8_t skill, std::uint32_t targetId) {
       case 8: tryHaste(e); return;      // T-054b
       case 9: tryPurify(e, targetId); return;  // T-082 field cleanse
       case 10: tryResurrect(e, targetId); return;  // T-161 rebate
+      case 11: trySanctuary(e); return;  // T-161b.1 ground hold
+      case 12: tryWeaken(e, targetId); return;  // T-161b.2 debility
+      case 13: tryRaise(e); return;  // T-161b.3 thrall
+      case 14: tryCorpseBlast(e); return;  // T-161b.4 detonation
+      case 15: tryFrost(e, targetId); return;  // T-161b.5 lesser nuke
+      case 16: tryWither(e, targetId); return;  // T-161b.5 rot
+      case 17: tryTerror(e, targetId); return;  // T-161b.5 rout
+      case 18: tryManaShield(e); return;  // T-161b.5 ward
+      case 19: trySunder(e, targetId); return;  // T-161b.6 rend
+      case 20: tryBullRush(e, targetId); return;  // T-161b.6 charge
+      case 21: tryWarStomp(e); return;  // T-161b.6 quake
+      case 23: trySecondWind(e); return;  // T-161b.6 rally
+      // case 22 executes through the shared swing lane below (not here)
       default: return;
     }
   }
-  if (skill != 1) return;
+  if (skill != 1 && skill != 22) return;
   if (content::kitSkillUnlock(e.classId, 1) == 0) return;   // kit has no swing
   if (e.level < content::kitSkillUnlock(e.classId, 1)) return;
-  if (tick_ - e.lastPowerTick < kPowerSwingCdTicks) return;
   Entity* target = find(targetId);
   if (target == nullptr || target->dead || content::wireIsFurniture(target->wireKind)) return;
   if (chebyshev(e.walker.tile(), target->walker.tile()) > 1) return;
+  powerSwing(e, *target, skill == 22);
+}
+
+void World::powerSwing(Entity& e, Entity& target, bool execute) {
+  // Shared Power-Swing lane (ch1 plain, ch22 doubled): identical RNG draws
+  // either way, so old journals — which never pass execute=true — replay
+  // byte-identical. Prone and warded reads are neutral the same way
+  // (knockUntil/shieldUntil init -1, unhashed).
+  if (tick_ < e.knockUntil) return;  // T-161b.6 prone
+  if (tick_ - e.lastPowerTick < kPowerSwingCdTicks) return;
   e.lastPowerTick = tick_;
+  if (execute) {
+    // spent past the shared gates (see trySkill case 22): the purse moves
+    // only when steel is actually about to swing.
+    e.lastExecTick = tick_;
+    e.mp -= kExecMpCost;
+  }
 
   const int acc = static_cast<int>(effAcc(e));
-  int evd = static_cast<int>(effEvd(*target));  // T-159 Pall +1 rides effEvd
+  int evd = static_cast<int>(effEvd(target));  // T-159 Pall +1 rides effEvd
   sim::HitCheck hc = sim::rollHit(acc, evd, e.dex, rng_);
   if (hc.hit && !hc.crit && hasAffix(e, 16, 0) && rng_.range(1, 100) <= 5) hc.crit = true;  // T-159 Boneyard +5% crit
   if (!hc.hit) {
     WorldEvent ev;
     ev.attacker = e.id;
-    ev.target = target->id;
+    ev.target = target.id;
     ev.kind = 0;
     events_.push_back(std::move(ev));
     return;
   }
   const std::uint32_t base = effDmgBase(e);
-  const std::uint32_t def = effDef(*target);
+  const std::uint32_t def = effDef(target);
   std::uint32_t dmg = sim::rollDamage(base, e.str, def, hc.crit);
   dmg = dmg * kPowerSwingMultPct / 100u;
-  if (target->kind == EntityKind::kPlayer) dmg = dmg * 65u / 100u;
+  if (target.kind == EntityKind::kPlayer) dmg = dmg * 65u / 100u;
+  if (execute) dmg = dmg * 2u;  // T-161b.6 the finisher doubles down
+  dmg = shieldAbsorb(target, dmg);  // T-161b.6 ward (may zero)
+  if (dmg == 0) {
+    WorldEvent ev;
+    ev.attacker = e.id;
+    ev.target = target.id;
+    ev.kind = 0;  // drunk-miss
+    events_.push_back(std::move(ev));
+    return;
+  }
   dmg = dmg < 1 ? 1 : dmg;  // NOTE Last Rites rides base via equippedWeaponDmg (display == dealt)
-  target->hp = dmg >= target->hp ? 0 : target->hp - dmg;
-  target->lastHurtTick = tick_;
-  if (target->kind == EntityKind::kMob && target->attackTarget == 0) {
-    target->attackTarget = e.id;
+  target.hp = dmg >= target.hp ? 0 : target.hp - dmg;
+  target.lastHurtTick = tick_;
+  if (target.kind == EntityKind::kMob && target.attackTarget == 0) {
+    target.attackTarget = e.id;
   }
   WorldEvent ev;
   ev.attacker = e.id;
-  ev.target = target->id;
+  ev.target = target.id;
   ev.kind = 5;  // skill hit (HB red-caps callout client-side)
   ev.amount = static_cast<std::uint16_t>(dmg > 65535 ? 65535 : dmg);
   events_.push_back(ev);
-  if (target->hp == 0) {
-    const std::string victimName = target->name;
-    const std::uint32_t victimId = target->id;
+  if (target.hp == 0) {
+    const std::string victimName = target.name;
+    const std::uint32_t victimId = target.id;
     WorldEvent kill;
     kill.attacker = e.id;
     kill.target = victimId;
     kill.kind = 3;
     kill.amount = ev.amount;
-    if (target->kind == EntityKind::kMob) {
+    if (target.kind == EntityKind::kMob) {
       // T-106: snapshot before killMob() — its despawn() erases mid-deque and
       // invalidates ALL element references ([deque.modifiers]); the slot behind
       // `e` can hold a shifted neighbour afterwards (wrong name on the line).
       const std::string killerName = e.name;
-      killMob(*target, &e);
+      killMob(target, &e);
       kill.chatCh = 3;
-      kill.chatText = killerName + " has slain a " + victimName + ".";
+      kill.chatText = execute ? killerName + " executes a " + victimName + "."
+                              : killerName + " has slain a " + victimName + ".";
     } else {
       kill.chatCh = 3;
-      kill.chatText = victimName + " was slain by " + e.name + ".";
-      killPlayer(*target, &e);
+      // T-106: snapshot e.name (killPlayer can crumble a pet mid-deque).
+      const std::string execName = e.name;
+      kill.chatText = execute ? victimName + " was executed by " + execName + "."
+                              : victimName + " was slain by " + execName + ".";
+      killPlayer(target, &e);
     }
     events_.push_back(std::move(kill));
   }
@@ -1024,6 +1204,777 @@ void World::tryResurrect(Entity& e, std::uint32_t targetId) {
   events_.push_back(std::move(txt));
 }
 
+void World::trySanctuary(Entity& e) {
+  // T-161b.1: ground healing circle at the caster's tile. Recast moves the
+  // hold (no stacking — one circle per caster). Heals the caster + living
+  // same-zone party members inside radius 3 every 40t until 600t expiry.
+  // Zero RNG: cast + pulses are pure functions of tick + journaled commands.
+  if (tick_ - e.lastSanctTick < kSanctCdTicks) return;
+  if (e.mp < kSanctMpCost) return;  // out of breath (era: quiet fail)
+  e.lastSanctTick = tick_;
+  e.mp -= kSanctMpCost;
+  const sim::TilePos at = e.walker.tile();
+  for (auto& c : sanct_) {
+    if (c.caster == e.id) {
+      c.party = e.partyId;
+      c.zone = e.zoneId;
+      c.x = at.x;
+      c.y = at.y;
+      c.level = e.level;
+      c.expiry = tick_ + kSanctDurationTicks;
+      c.next = tick_ + kSanctPulseTicks;
+      WorldEvent mv;
+      mv.attacker = e.id;
+      mv.target = e.id;
+      mv.kind = 17;  // sanctuary hold (client rings the circle)
+      mv.amount = static_cast<std::uint16_t>(kSanctRadius);
+      mv.aboutId = e.id;
+      mv.statsChanged = true;
+      mv.chatCh = 2;
+      mv.chatText = e.name + " moves the sanctuary.";
+      events_.push_back(std::move(mv));
+      return;
+    }
+  }
+  SanctCircle c;
+  c.caster = e.id;
+  c.party = e.partyId;
+  c.zone = e.zoneId;
+  c.x = at.x;
+  c.y = at.y;
+  c.level = e.level;
+  c.expiry = tick_ + kSanctDurationTicks;
+  c.next = tick_ + kSanctPulseTicks;
+  sanct_.push_back(c);
+  WorldEvent ev;
+  ev.attacker = e.id;
+  ev.target = e.id;
+  ev.kind = 17;  // sanctuary hold (client rings the circle)
+  ev.amount = static_cast<std::uint16_t>(kSanctRadius);
+  ev.aboutId = e.id;
+  ev.statsChanged = true;
+  ev.chatCh = 2;
+  ev.chatText = e.name + " hallows this ground.";
+  events_.push_back(std::move(ev));
+}
+
+void World::tryWeaken(Entity& e, std::uint32_t targetId) {
+  // T-161b.2: -15% target dmg/def for 8 s. Enemies only — mobs, or players
+  // outside the caster's party (no choir-on-choir griefing; self refused).
+  // No karma stain (flagged: the stain lands on the killer per T-056, not
+  // the witherer — PK-law follow-up if abused). Zero RNG.
+  if (tick_ - e.lastWeakTick < kWeakCdTicks) return;
+  if (e.mp < kWeakMpCost) return;  // out of breath (era: quiet fail)
+  Entity* t = find(targetId);
+  if (t == nullptr || t->dead || content::wireIsFurniture(t->wireKind)) return;
+  if (t->zoneId != e.zoneId) return;
+  if (chebyshev(e.walker.tile(), t->walker.tile()) > kWeakRange) return;
+  if (t->kind == EntityKind::kPlayer) {
+    if (t->id == e.id) return;
+    if (e.partyId != 0 && t->partyId == e.partyId) return;
+  }
+  e.lastWeakTick = tick_;
+  e.mp -= kWeakMpCost;
+  t->weakUntil = tick_ + kWeakDurationTicks;
+  WorldEvent ev;
+  ev.attacker = e.id;
+  ev.target = t->id;
+  ev.kind = 18;  // weakness laid on (client: sallow floater)
+  ev.amount = 15;
+  events_.push_back(std::move(ev));
+}
+
+void World::tryRaise(Entity& e) {
+  if (tick_ - e.lastRaiseTick < kRaiseCdTicks) return;
+  if (e.mp < kRaiseMpCost) return;  // out of breath (era: quiet fail)
+  const content::MobDef* skel = content::findMob(content::kThrallMobId);
+  if (skel == nullptr) return;
+  // capture first: the old thrall's crumble may shift the deque (T-106 law).
+  const std::uint32_t caster = e.id;
+  const std::uint8_t clvl = e.level;
+  const sim::TilePos at = e.walker.tile();
+  const std::uint16_t zone = e.zoneId;
+  const std::string cname = e.name;
+  // one-pet law: the old thrall crumbles first (no stacking, and the 600t
+  // CD prices thrall-cycling as disposable tanks).
+  for (const auto& m : entities_) {
+    if (m.kind == EntityKind::kMob && m.ownerId == caster && !m.dead) {
+      petCrumble(m.id, cname + " releases the old thrall.");
+      break;
+    }
+  }
+  Entity* c = find(caster);
+  if (c == nullptr || c->dead) return;
+  Entity& pet = spawnMob(*skel, at, SIZE_MAX, zone);
+  pet.ownerId = caster;
+  pet.petLevel = clvl;
+  pet.hp = pet.hpMax = 30u + 10u * static_cast<std::uint32_t>(clvl);
+  pet.dex = static_cast<std::uint8_t>(8 + clvl / 2);
+  pet.anchor = at;
+  pet.leashRadius = 18;  // thrall range (strays warp home, see petThink)
+  pet.aggroRadius = 0;   // never acquires: tanks by retaliation (flagged)
+  c->lastRaiseTick = tick_;
+  c->mp -= kRaiseMpCost;
+  WorldEvent ev;
+  ev.attacker = caster;
+  ev.target = pet.id;
+  ev.kind = 19;  // thrall rises (client: sallow muster)
+  ev.aboutId = caster;
+  ev.statsChanged = true;
+  ev.chatCh = 2;
+  ev.chatText = cname + " raises a thrall from the mud.";
+  events_.push_back(std::move(ev));
+}
+
+bool World::petThink(Entity& pet) {
+  Entity* owner = find(pet.ownerId);
+  if (owner == nullptr || owner->kind != EntityKind::kPlayer || owner->dead) {
+    // the bond breaks with the master (death/logout) — crumble quietly;
+    // the death notice already told the story (killPlayer) or nobody is
+    // listening (logout).
+    const std::uint32_t id = pet.id;
+    for (auto& x : entities_)
+      if (x.attackTarget == id) x.attackTarget = 0;
+    despawn(id);
+    return false;
+  }
+  if (pet.zoneId != owner->zoneId) {
+    // follow through the gate: the transferToZone spatial dance, minus the
+    // duel/portal/event parts (pets hold no grudges and ring no bells).
+    zoneOf(pet).spatial.remove(pet.id);
+    pet.zoneId = owner->zoneId;
+    pet.walker.place(owner->walker.tile());
+    pet.path.clear();
+    pet.attackTarget = 0;
+    zones_.at(pet.zoneId).spatial.insert(pet.id, owner->walker.tile().x,
+                                         owner->walker.tile().y);
+    pet.anchor = owner->walker.tile();
+    return true;
+  }
+  pet.anchor = owner->walker.tile();
+  // victim: the master's mark, if it still stands and isn't family (party
+  // kin and the master's own thralls are never valid marks).
+  Entity* victim = nullptr;
+  if (owner->attackTarget != 0) {
+    Entity* v = find(owner->attackTarget);
+    if (v != nullptr && !v->dead && v->zoneId == pet.zoneId &&
+        v->id != owner->id && v->id != pet.id) {
+      const bool kin = v->kind == EntityKind::kPlayer && owner->partyId != 0 &&
+                       v->partyId == owner->partyId;
+      const bool ownThrall =
+          v->kind == EntityKind::kMob && v->ownerId == owner->id;
+      if (!kin && !ownThrall) victim = v;
+    }
+  }
+  if (victim != nullptr) {
+    pet.attackTarget = victim->id;
+    return true;
+  }
+  pet.attackTarget = 0;
+  // heel: within 2 is close enough; beyond 18 snap to the master's side
+  // (strays teleport — era pets lag, ours refuse to get stuck in doors).
+  const sim::TilePos op = owner->walker.tile();
+  const int d = chebyshev(pet.walker.tile(), op);
+  if (d > 18) {
+    zoneOf(pet).spatial.remove(pet.id);
+    pet.walker.place(op);
+    pet.path.clear();
+    zoneOf(pet).spatial.insert(pet.id, op.x, op.y);
+  } else if (d > 2 && !pet.walker.moving && pet.path.empty()) {
+    const sim::PathResult res =
+        sim::findPath(zoneOf(pet).grid, pet.walker.tile(), op);
+    if (res.found) pet.path.assign(res.tiles.begin(), res.tiles.end());
+  }
+  return true;
+}
+
+void World::petCrumble(std::uint32_t petId, const std::string& notice) {
+  Entity* pet = find(petId);
+  if (pet == nullptr) return;
+  const std::uint32_t owner = pet->ownerId;
+  for (auto& e : entities_)
+    if (e.attackTarget == petId) e.attackTarget = 0;
+  despawn(petId);
+  if (!notice.empty()) {
+    if (Entity* o = find(owner);
+        o != nullptr && o->kind == EntityKind::kPlayer) {
+      WorldEvent ev;
+      ev.aboutId = o->id;
+      ev.chatCh = 255;
+      ev.chatText = notice;
+      events_.push_back(std::move(ev));
+    }
+  }
+}
+
+void World::noteCorpse(std::uint16_t zone, int x, int y) {
+  DeathMark m;
+  m.zone = zone;
+  m.x = x;
+  m.y = y;
+  m.tick = tick_;
+  tape_.push_back(m);
+  while (tape_.size() > kCorpseTapeCap) tape_.erase(tape_.begin());
+}
+
+void World::tryCorpseBlast(Entity& e) {
+  // T-161b.4: spend the freshest mob corpse within 4 tiles for fixed AoE
+  // (20+3L, radius 2, slam-mirror). Hits mobs + non-party players (Weaken
+  // law — kin and the caster's own thrall are immune); player kills run
+  // the full PK law (a red-choice AoE). No meat: quiet fail, nothing spent.
+  if (tick_ - e.lastBlastTick < kBlastCdTicks) return;
+  if (e.mp < kBlastMpCost) return;  // out of breath (era: quiet fail)
+  const sim::TilePos here = e.walker.tile();
+  int best = -1;
+  for (size_t i = 0; i < tape_.size();) {
+    DeathMark& m = tape_[i];
+    if (m.zone != e.zoneId || tick_ - m.tick > kCorpseWindowTicks) {
+      tape_[i] = tape_.back();
+      tape_.pop_back();
+      continue;
+    }
+    if (chebyshev(sim::TilePos{m.x, m.y}, here) <= kBlastSearchRadius &&
+        (best < 0 || m.tick > tape_[static_cast<size_t>(best)].tick))
+      best = static_cast<int>(i);
+    ++i;
+  }
+  if (best < 0) return;
+  const DeathMark mark = tape_[static_cast<size_t>(best)];
+  tape_[static_cast<size_t>(best)] = tape_.back();
+  tape_.pop_back();
+  e.lastBlastTick = tick_;
+  e.mp -= kBlastMpCost;
+  const std::uint32_t casterId = e.id;  // T-106: captured (kills shift below)
+  const std::string casterName = e.name;
+  const std::uint32_t dmg = 20u + 3u * static_cast<std::uint32_t>(e.level);
+  // ids first (T-047 cleave pattern): kills despawn mid-loop (T-106 law).
+  std::vector<std::uint32_t> caught;
+  for (const auto& m : entities_) {
+    if (m.dead || m.zoneId != e.zoneId || m.id == e.id) continue;
+    if (m.kind == EntityKind::kPlayer) {
+      if (e.partyId != 0 && m.partyId == e.partyId) continue;  // kin immune
+    } else {
+      if (content::wireIsFurniture(m.wireKind)) continue;
+      if (m.ownerId == e.id) continue;  // own thrall immune
+    }
+    if (chebyshev(m.walker.tile(), sim::TilePos{mark.x, mark.y}) > kBlastRadius)
+      continue;
+    caught.push_back(m.id);
+  }
+  for (const std::uint32_t vid : caught) {
+    Entity* v = find(vid);
+    if (v == nullptr || v->dead) continue;
+    // T-106: re-find the caster per kill — killPlayer can crumble a pet and
+    // shift the deque under our reference. A dead/gone caster ends the blast.
+    Entity* caster = find(casterId);
+    if (caster == nullptr || caster->dead) break;
+    const std::uint32_t vdam = shieldAbsorb(*v, dmg);  // T-161b.5 ward
+    v->hp = vdam >= v->hp ? 0 : v->hp - vdam;
+    v->lastHurtTick = tick_;
+    WorldEvent ev;
+    ev.attacker = caster->id;
+    ev.target = vid;
+    ev.kind = vdam == 0 ? 0 : 5;  // drunk-miss, else skill-hit lane
+    ev.amount = static_cast<std::uint16_t>(vdam > 65535 ? 65535 : vdam);
+    events_.push_back(ev);
+    if (v->hp == 0) {
+      const std::string victimName = v->name;
+      const std::string casterName = caster->name;
+      WorldEvent kill;
+      kill.attacker = caster->id;
+      kill.target = vid;
+      kill.kind = 3;
+      kill.amount = ev.amount;
+      if (v->kind == EntityKind::kMob) {
+        killMob(*v, caster);  // the caster's kill: full XP/loot law
+        kill.chatCh = 3;
+        kill.chatText = casterName + " blasts a " + victimName + " apart.";
+      } else {
+        kill.chatCh = 3;
+        kill.chatText = victimName + " was blasted apart by " + casterName + ".";
+        killPlayer(*v, caster);  // full PK law (T-056)
+      }
+      events_.push_back(std::move(kill));
+    } else if (v->kind == EntityKind::kMob && v->attackTarget == 0) {
+      v->attackTarget = caster->id;  // the blast wakes the yard (retaliation law)
+    }
+  }
+  WorldEvent txt;
+  txt.aboutId = casterId;
+  txt.statsChanged = true;
+  txt.chatCh = 2;
+  txt.chatText = casterName + " detonates the fallen (" + std::to_string(caught.size()) +
+                 " caught).";
+  events_.push_back(std::move(txt));
+}
+
+void World::tryFrost(Entity& e, std::uint32_t targetId) {
+  // T-161b.5: the lesser nuke (5+L+INT vs Firebolt's 8+2L+2INT) that leaves
+  // heavy feet (20% slow 3 s). Same range/law as Firebolt, plate-ignored.
+  if (tick_ - e.lastFrostTick < kFrostCdTicks) return;
+  if (e.mp < kFrostMpCost) return;
+  Entity* t = find(targetId);
+  if (t == nullptr || t->dead || content::wireIsFurniture(t->wireKind)) return;
+  if (t->zoneId != e.zoneId ||
+      chebyshev(e.walker.tile(), t->walker.tile()) > kFrostRange)
+    return;
+  e.lastFrostTick = tick_;
+  e.mp -= kFrostMpCost;
+  std::uint32_t dmg = 5u + static_cast<std::uint32_t>(e.level) +
+                      static_cast<std::uint32_t>(e.intg);
+  if (t->kind == EntityKind::kPlayer) dmg = dmg * 65u / 100u;
+  dmg = dmg < 1 ? 1 : dmg;
+  dmg = shieldAbsorb(*t, dmg);
+  t->hp = dmg >= t->hp ? 0 : t->hp - dmg;
+  t->lastHurtTick = tick_;
+  t->slowUntil = tick_ + kSlowTicks;  // the chill stays even if it kills
+  if (t->kind == EntityKind::kMob && t->attackTarget == 0) t->attackTarget = e.id;
+  WorldEvent ev;
+  ev.attacker = e.id;
+  ev.target = t->id;
+  // T-161b.5: a fully-drunk hit reads as a miss (the ward worked).
+  ev.kind = dmg == 0 ? 0 : 5;  // else skill-hit red-caps lane
+  ev.amount = static_cast<std::uint16_t>(dmg > 65535 ? 65535 : dmg);
+  events_.push_back(ev);
+  if (t->hp == 0) {
+    WorldEvent kill;
+    kill.attacker = e.id;
+    kill.target = t->id;
+    kill.kind = 3;
+    kill.amount = ev.amount;
+    const std::string victimName = t->name;
+    if (t->kind == EntityKind::kMob) {
+      killMob(*t, &e);
+      kill.chatCh = 3;
+      kill.chatText = e.name + " frosts a " + victimName + " still.";
+    } else {
+      kill.chatCh = 3;
+      kill.chatText = victimName + " froze before " + e.name + ".";
+      killPlayer(*t, &e);
+    }
+    events_.push_back(std::move(kill));
+  }
+}
+
+void World::tryWither(Entity& e, std::uint32_t targetId) {
+  // T-161b.5: rot that stacks to 3 over 12 s. Enemies only (Weaken law);
+  // re-casts refresh the hold and add a stack. Pulses run in tickWither.
+  if (tick_ - e.lastWitherTick < kWitherCdTicks) return;
+  if (e.mp < kWitherMpCost) return;
+  Entity* t = find(targetId);
+  if (t == nullptr || t->dead || content::wireIsFurniture(t->wireKind)) return;
+  if (t->zoneId != e.zoneId ||
+      chebyshev(e.walker.tile(), t->walker.tile()) > kWitherRange)
+    return;
+  if (t->kind == EntityKind::kPlayer) {
+    if (t->id == e.id) return;
+    if (e.partyId != 0 && t->partyId == e.partyId) return;
+  }
+  e.lastWitherTick = tick_;
+  e.mp -= kWitherMpCost;
+  t->witherStacks = std::min<std::uint8_t>(
+      static_cast<std::uint8_t>(t->witherStacks + 1), kWitherMaxStacks);
+  t->witherUntil = tick_ + kWitherDurationTicks;
+  t->witherNext = tick_ + kWitherPulseTicks;
+  t->witherLevel = e.level;
+  t->witherCaster = e.id;
+  if (t->kind == EntityKind::kMob && t->attackTarget == 0) t->attackTarget = e.id;
+  WorldEvent ev;
+  ev.attacker = e.id;
+  ev.target = t->id;
+  ev.kind = 23;  // rot laid on (client: sallow-green decay)
+  ev.amount = t->witherStacks;
+  events_.push_back(std::move(ev));
+}
+
+void World::tryTerror(Entity& e, std::uint32_t targetId) {
+  // T-161b.5: 2 s rout, single enemy, Mend range. Bosses never rout (the
+  // Mother does not run from anyone). No karma (Weaken law, flagged).
+  if (tick_ - e.lastTerrorTick < kTerrorCdTicks) return;
+  if (e.mp < kTerrorMpCost) return;
+  Entity* t = find(targetId);
+  if (t == nullptr || t->dead || content::wireIsFurniture(t->wireKind)) return;
+  if (t->zoneId != e.zoneId ||
+      chebyshev(e.walker.tile(), t->walker.tile()) > kTerrorRange)
+    return;
+  if (t->kind == EntityKind::kPlayer) {
+    if (t->id == e.id) return;
+    if (e.partyId != 0 && t->partyId == e.partyId) return;
+  } else {
+    const content::MobDef* md = content::findMob(t->mobId);
+    if (md != nullptr && md->boss != 0) return;  // the Mother stands
+  }
+  e.lastTerrorTick = tick_;
+  e.mp -= kTerrorMpCost;
+  t->fearUntil = tick_ + kFearTicks;
+  t->fearX = e.walker.tile().x;
+  t->fearY = e.walker.tile().y;
+  t->attackTarget = 0;  // routing breaks aim (think re-checks below)
+  t->path.clear();
+  WorldEvent ev;
+  ev.attacker = e.id;
+  ev.target = t->id;
+  ev.kind = 21;  // rout (client: white-eyed flight)
+  events_.push_back(std::move(ev));
+}
+
+void World::tryManaShield(Entity& e) {
+  // T-161b.5: 60 s ward — incoming damage drinks MP first (1 per 2). Self
+  // only; recast refreshes. The ward never kills the caster's purse below
+  // zero (absorb floors MP, never borrows).
+  if (tick_ - e.lastShieldTick < kShieldCdTicks) return;
+  if (e.mp < kShieldMpCost) return;
+  e.lastShieldTick = tick_;
+  e.mp -= kShieldMpCost;
+  e.shieldUntil = tick_ + kShieldDurationTicks;
+  WorldEvent ev;
+  ev.attacker = e.id;
+  ev.target = e.id;
+  ev.kind = 22;  // ward raised (client: blue hush)
+  ev.aboutId = e.id;
+  ev.statsChanged = true;
+  events_.push_back(std::move(ev));
+}
+
+std::uint32_t World::shieldAbsorb(Entity& def, std::uint32_t dmg) {
+  if (dmg == 0 || def.mp == 0 || tick_ >= def.shieldUntil) return dmg;
+  const std::uint32_t can = def.mp * 2u;
+  const std::uint32_t absorbed = can < dmg ? can : dmg;
+  def.mp -= (absorbed + 1u) / 2u;
+  return dmg - absorbed;
+}
+
+void World::tickWither() {
+  // ids first (T-047 cleave pattern): rot kills despawn mid-loop (T-106).
+  std::vector<std::uint32_t> rotting;
+  for (const auto& m : entities_)
+    if (m.witherStacks > 0) rotting.push_back(m.id);
+  for (const std::uint32_t id : rotting) {
+    Entity* m = find(id);
+    if (m == nullptr || m->dead) continue;
+    if (tick_ >= m->witherUntil) {
+      m->witherStacks = 0;
+      continue;
+    }
+    if (tick_ < m->witherNext) continue;
+    m->witherNext += kWitherPulseTicks;
+    std::uint32_t pulse =
+        (2u + static_cast<std::uint32_t>(m->witherLevel) / 4u) *
+        static_cast<std::uint32_t>(m->witherStacks);
+    pulse = shieldAbsorb(*m, pulse);  // the ward drinks first
+    if (pulse == 0) continue;
+    m->hp = pulse >= m->hp ? 0 : m->hp - pulse;
+    m->lastHurtTick = tick_;
+    Entity* caster = find(m->witherCaster);
+    if (caster != nullptr && (caster->dead || caster->zoneId != m->zoneId))
+      caster = nullptr;
+    WorldEvent ev;
+    ev.attacker = m->witherCaster;
+    ev.target = m->id;
+    ev.kind = 5;  // skill-hit lane (rot ticks read as hits)
+    ev.amount = static_cast<std::uint16_t>(pulse > 65535 ? 65535 : pulse);
+    events_.push_back(ev);
+    if (m->hp == 0) {
+      const std::string victimName = m->name;
+      WorldEvent kill;
+      kill.attacker = m->witherCaster;
+      kill.target = m->id;
+      kill.kind = 3;
+      kill.amount = ev.amount;
+      if (m->kind == EntityKind::kMob) {
+        // wild kills pay the void safely (killer-guard spans the pay
+        // section); credited kills run the full law.
+        Entity* credit = nullptr;
+        std::string slainLine;
+        if (caster != nullptr && caster->kind == EntityKind::kPlayer) {
+          credit = caster;
+          slainLine = caster->name + " withers a " + victimName + " hollow.";
+        }
+        killMob(*m, credit);
+        if (credit != nullptr) {
+          kill.chatCh = 3;
+          kill.chatText = std::move(slainLine);
+        }
+      } else {
+        kill.chatCh = 3;
+        kill.chatText = victimName + " withered away.";
+        killPlayer(*m, caster);  // null-safe (all killer uses guarded)
+      }
+      events_.push_back(std::move(kill));
+    }
+  }
+}
+
+void World::fearStep(Entity& e) {
+  const sim::TilePos p = e.walker.tile();
+  const int dx = p.x > e.fearX ? 1 : p.x < e.fearX ? -1 : 0;
+  const int dy = p.y > e.fearY ? 1 : p.y < e.fearY ? -1 : 0;
+  const Zone& z = zoneOf(e);
+  const sim::TilePos cands[3] = {
+      sim::TilePos{p.x + (dx != 0 ? dx : 1), p.y + dy},
+      sim::TilePos{p.x + dx, p.y},
+      sim::TilePos{p.x, p.y + (dy != 0 ? dy : 1)}};
+  for (const sim::TilePos c : cands) {
+    if (!z.map.inBounds(c.x, c.y) || z.map.isBlocked(c.x, c.y)) continue;
+    e.walker.moving = false;  // drop the old heading (the rout owns it)
+    if (e.walker.beginStep(z.grid, c)) return;
+  }
+}
+
+void World::trySunder(Entity& e, std::uint32_t targetId) {
+  // T-161b.6: rend the plate (-15% DEF 8 s) at arm's reach. Enemies only
+  // (Weaken law); stacks with Weakness (0.85 x 0.85, flagged).
+  if (tick_ - e.lastSunderTick < kSunderCdTicks) return;
+  if (e.mp < kSunderMpCost) return;
+  Entity* t = find(targetId);
+  if (t == nullptr || t->dead || content::wireIsFurniture(t->wireKind)) return;
+  if (t->zoneId != e.zoneId ||
+      chebyshev(e.walker.tile(), t->walker.tile()) > kSunderRange)
+    return;
+  if (t->kind == EntityKind::kPlayer) {
+    if (t->id == e.id) return;
+    if (e.partyId != 0 && t->partyId == e.partyId) return;
+  }
+  e.lastSunderTick = tick_;
+  e.mp -= kSunderMpCost;
+  t->sunderUntil = tick_ + kSunderDurationTicks;
+  if (t->kind == EntityKind::kMob && t->attackTarget == 0) t->attackTarget = e.id;
+  WorldEvent ev;
+  ev.attacker = e.id;
+  ev.target = t->id;
+  ev.kind = 25;  // rend (client: rust-red sundering)
+  ev.amount = 15;
+  events_.push_back(std::move(ev));
+}
+
+void World::tryBullRush(Entity& e, std::uint32_t targetId) {
+  // T-161b.6: shoulder-charge up to 3 tiles along the path, then lay the
+  // mark prone (40t: no move, no strike). Adjacent marks eat the knock in
+  // place. No karma (Weaken law, flagged).
+  if (tick_ - e.lastRushTick < kRushCdTicks) return;
+  if (e.mp < kRushMpCost) return;
+  Entity* t = find(targetId);
+  if (t == nullptr || t->dead || content::wireIsFurniture(t->wireKind)) return;
+  if (t->zoneId != e.zoneId) return;
+  const sim::TilePos from = e.walker.tile();
+  const sim::TilePos goal = t->walker.tile();
+  const int d = chebyshev(from, goal);
+  if (d == 0 || d > kRushRange) return;
+  if (t->kind == EntityKind::kPlayer) {
+    if (t->id == e.id) return;
+    if (e.partyId != 0 && t->partyId == e.partyId) return;
+  }
+  e.lastRushTick = tick_;
+  e.mp -= kRushMpCost;
+  if (d > 1) {
+    // dash: walk up to 3 tiles of the A* path, then plant the feet.
+    const sim::PathResult res = sim::findPath(zoneOf(e).grid, from, goal);
+    if (res.found && !res.tiles.empty()) {
+      sim::TilePos at = from;
+      int steps = 0;
+      for (const sim::TilePos s : res.tiles) {
+        if (steps >= 3) break;
+        if (chebyshev(s, goal) < 1) break;  // stop at arm's reach
+        at = s;
+        ++steps;
+      }
+      if (!(at == from)) {
+        zoneOf(e).spatial.remove(e.id);
+        e.walker.place(at);
+        e.path.clear();
+        e.attackTarget = t->id;
+        zoneOf(e).spatial.insert(e.id, at.x, at.y);
+      }
+    }
+  }
+  t->knockUntil = tick_ + kKnockTicks;
+  t->path.clear();
+  if (t->kind == EntityKind::kMob && t->attackTarget == 0) t->attackTarget = e.id;
+  WorldEvent ev;
+  ev.attacker = e.id;
+  ev.target = t->id;
+  ev.kind = 24;  // charge (client: dust-brown rush)
+  events_.push_back(std::move(ev));
+}
+
+void World::tryWarStomp(Entity& e) {
+  // T-161b.6: 75% weapon to everything hostile in radius 2 (slam-mirror)
+  // + 20t stagger (short prone). Kills run the full law (red-choice quake).
+  if (tick_ - e.lastStompTick < kStompCdTicks) return;
+  if (e.mp < kStompMpCost) return;
+  e.lastStompTick = tick_;
+  e.mp -= kStompMpCost;
+  const sim::TilePos here = e.walker.tile();
+  const std::uint32_t base = effDmgBase(e) * 75u / 100u;
+  std::vector<std::uint32_t> caught;
+  for (const auto& m : entities_) {
+    if (m.dead || m.zoneId != e.zoneId || m.id == e.id) continue;
+    if (m.kind == EntityKind::kPlayer) {
+      if (e.partyId != 0 && m.partyId == e.partyId) continue;
+    } else {
+      if (content::wireIsFurniture(m.wireKind)) continue;
+      if (m.ownerId == e.id) continue;  // own thrall braces
+    }
+    if (chebyshev(m.walker.tile(), here) > kStompRadius) continue;
+    caught.push_back(m.id);
+  }
+  // T-106: re-find per kill (kills shift the deque); captures up front.
+  const std::uint32_t casterId = e.id;
+  const std::string casterName = e.name;
+  for (const std::uint32_t vid : caught) {
+    Entity* v = find(vid);
+    if (v == nullptr || v->dead) continue;
+    Entity* caster = find(casterId);
+    if (caster == nullptr || caster->dead) break;
+    std::uint32_t dmg = base;
+    if (v->kind == EntityKind::kPlayer) dmg = dmg * 65u / 100u;
+    dmg = shieldAbsorb(*v, dmg);
+    if (dmg == 0) {
+      WorldEvent wiff;
+      wiff.attacker = casterId;
+      wiff.target = vid;
+      wiff.kind = 0;
+      events_.push_back(wiff);
+      continue;
+    }
+    dmg = dmg < 1 ? 1 : dmg;
+    v->hp = dmg >= v->hp ? 0 : v->hp - dmg;
+    v->lastHurtTick = tick_;
+    v->knockUntil = tick_ + kStaggerTicks;  // the ground bucks
+    v->path.clear();
+    WorldEvent ev;
+    ev.attacker = casterId;
+    ev.target = vid;
+    ev.kind = 5;  // skill-hit lane
+    ev.amount = static_cast<std::uint16_t>(dmg > 65535 ? 65535 : dmg);
+    events_.push_back(ev);
+    if (v->hp == 0) {
+      const std::string victimName = v->name;
+      WorldEvent kill;
+      kill.attacker = casterId;
+      kill.target = vid;
+      kill.kind = 3;
+      kill.amount = ev.amount;
+      if (v->kind == EntityKind::kMob) {
+        killMob(*v, caster);
+        kill.chatCh = 3;
+        kill.chatText = casterName + " stomps a " + victimName + " flat.";
+      } else {
+        kill.chatCh = 3;
+        kill.chatText = victimName + " was stomped flat by " + casterName + ".";
+        killPlayer(*v, caster);
+      }
+      events_.push_back(std::move(kill));
+    } else if (v->kind == EntityKind::kMob && v->attackTarget == 0) {
+      v->attackTarget = casterId;
+    }
+  }
+  WorldEvent txt;
+  txt.aboutId = casterId;
+  txt.statsChanged = true;
+  txt.chatCh = 2;
+  txt.chatText = casterName + " stomps the yard (" +
+                 std::to_string(caught.size()) + " caught).";
+  events_.push_back(std::move(txt));
+}
+
+void World::trySecondWind(Entity& e) {
+  // T-161b.6: rally 25% of max over 5 s (5 pulses). Any hit taken after the
+  // cast-mark breaks it (the wind hates interruption). Self only.
+  if (tick_ - e.lastWindTick < kWindCdTicks) return;
+  if (e.mp < kWindMpCost) return;
+  e.lastWindTick = tick_;
+  e.mp -= kWindMpCost;
+  e.windPool = static_cast<std::uint32_t>(e.hpMax) / 4u;
+  e.windUntil = tick_ + kWindDurationTicks;
+  e.windNext = tick_ + kWindPulseTicks;
+  e.windMark = e.lastHurtTick;
+  WorldEvent ev;
+  ev.attacker = e.id;
+  ev.target = e.id;
+  ev.kind = 8;  // mend lane (green rally)
+  ev.aboutId = e.id;
+  ev.statsChanged = true;
+  events_.push_back(std::move(ev));
+}
+
+void World::tickWind() {
+  for (auto& m : entities_) {
+    if (m.kind != EntityKind::kPlayer || m.windPool == 0) continue;
+    if (m.dead || tick_ >= m.windUntil) {
+      m.windPool = 0;
+      continue;
+    }
+    // broken by blows: any hurt tick after the cast-mark ends the rally.
+    if (m.lastHurtTick != m.windMark) {
+      m.windPool = 0;
+      continue;
+    }
+    if (tick_ < m.windNext) continue;
+    m.windNext += kWindPulseTicks;
+    std::uint32_t sip = static_cast<std::uint32_t>(m.hpMax) / 20u;
+    if (sip > m.windPool) sip = m.windPool;
+    if (m.hp >= m.hpMax) continue;  // full: hold the pool, skip the event
+    std::uint32_t mend = std::min<std::uint32_t>(
+        static_cast<std::uint32_t>(m.hpMax - m.hp), sip);
+    if (mend == 0) continue;
+    m.hp += mend;
+    m.windPool -= mend;
+    WorldEvent ev;
+    ev.attacker = m.id;
+    ev.target = m.id;
+    ev.kind = 8;  // mend lane
+    ev.amount = static_cast<std::uint16_t>(std::min<std::uint32_t>(mend, 65535));
+    events_.push_back(ev);
+  }
+}
+
+void World::tickSanctuary() {
+  for (size_t i = 0; i < sanct_.size();) {
+    SanctCircle& c = sanct_[i];
+    if (tick_ >= c.expiry) {
+      sanct_[i] = sanct_.back();
+      sanct_.pop_back();
+      continue;
+    }
+    if (tick_ >= c.next) {
+      c.next += kSanctPulseTicks;
+      const std::uint32_t pulse =
+          (12u + static_cast<std::uint32_t>(c.level)) / 2u;
+      std::uint32_t held = 0;
+      for (auto& m : entities_) {
+        if (m.kind != EntityKind::kPlayer || m.dead) continue;
+        if (m.zoneId != c.zone) continue;
+        const bool self = m.id == c.caster;
+        if (!self && (c.party == 0 || m.partyId != c.party)) continue;
+        if (chebyshev(m.walker.tile(), sim::TilePos{c.x, c.y}) > kSanctRadius)
+          continue;
+        if (m.hp >= m.hpMax) continue;
+        // T-070: thin blood takes the pulse at 75% (Mend-mirror order).
+        std::uint32_t mend = std::min<std::uint32_t>(
+            static_cast<std::uint32_t>(m.hpMax - m.hp), pulse);
+        if (tick_ < m.curseUntil) mend = mend * 75u / 100u;
+        if (mend == 0) continue;
+        m.hp += mend;
+        ++held;
+        WorldEvent sev;
+        sev.attacker = c.caster;
+        sev.target = m.id;
+        sev.kind = 8;  // mend lane (green)
+        sev.amount = static_cast<std::uint16_t>(std::min<std::uint32_t>(mend, 65535));
+        events_.push_back(sev);
+      }
+      if (held > 0) {
+        WorldEvent txt;
+        txt.chatCh = 2;
+        txt.chatText = "the sanctuary knits " + std::to_string(held) + " bod(ies).";
+        events_.push_back(std::move(txt));
+      }
+    }
+    ++i;
+  }
+}
+
 void World::tryMend(Entity& e, std::uint32_t targetId) {  if (tick_ - e.lastMendTick < kMendCdTicks) return;
   if (e.mp < kMendMpCost) return;  // out of breath (era: quiet fail)
   Entity* t = choirTarget(*this, e, targetId);
@@ -1066,10 +2017,12 @@ void World::tryPurify(Entity& e, std::uint32_t targetId) {
   Entity* t = choirTarget(*this, e, targetId);
   if (t == nullptr) return;
   if (chebyshev(e.walker.tile(), t->walker.tile()) > kMendRange) return;
-  if (tick_ >= t->curseUntil) return;  // clean blood: nothing to purge
+  // T-161b.2 one law both ways: Purify lifts the laid weakness too.
+  if (tick_ >= t->curseUntil && tick_ >= t->weakUntil) return;  // clean blood: nothing to purge
   e.lastPurifyTick = tick_;
   e.mp -= kMendMpCost;
   t->curseUntil = -1;
+  t->weakUntil = -1;
   WorldEvent ev;
   ev.aboutId = t->id;
   ev.statsChanged = true;
@@ -1230,13 +2183,14 @@ void World::tryFirebolt(Entity& e, std::uint32_t targetId) {
   std::uint32_t dmg = 8u + 2u * e.level + 2u * e.intg;
   if (t->kind == EntityKind::kPlayer) dmg = dmg * 65u / 100u;
   dmg = dmg < 1 ? 1 : dmg;
+  dmg = shieldAbsorb(*t, dmg);  // T-161b.5: the ward drinks first (may zero)
   t->hp = dmg >= t->hp ? 0 : t->hp - dmg;
   t->lastHurtTick = tick_;
   if (t->kind == EntityKind::kMob && t->attackTarget == 0) t->attackTarget = e.id;
   WorldEvent ev;
   ev.attacker = e.id;
   ev.target = t->id;
-  ev.kind = 5;  // skill hit callout (shares Power-Swing red-caps lane)
+  ev.kind = dmg == 0 ? 0 : 5;  // T-161b.5 drunk-miss, else red-caps lane
   ev.amount = static_cast<std::uint16_t>(dmg > 65535 ? 65535 : dmg);
   events_.push_back(ev);
   if (t->hp == 0) {
@@ -1636,6 +2590,62 @@ bool World::siegeBattleActive() const {
 bool World::siegeRegister(std::uint32_t captainId) {
   Entity* c = find(captainId);
   if (c == nullptr || c->kind != EntityKind::kPlayer || c->dead) return false;
+  bool callerKnown = false;
+  for (const std::uint32_t id : siegeAttackers_)
+    if (id == captainId) {
+      callerKnown = true;
+      break;
+    }
+  // T-157-F2: party merge (T-139's pledge-muster extended to unaffiliated
+  // parties). When any LIVING member of the caller's party already rides the
+  // war camp — the caller (re-reg mustering late mates) or an enlisted mate
+  // (a straggler joining the party's band) — enlist the missing living
+  // members into the EXISTING band: no new slot, cap not consulted. Pure
+  // dups (nothing to muster) stay quiet-false, preserving the T-131/T-139
+  // pins. Hash-neutral by construction (siege rosters ride outside
+  // worldHash, like pledge state): no epoch bump, no journal change.
+  if (c->pledgeId == 0 && c->partyId != 0) {
+    if (const Party* p = partyOf(c->id)) {
+      bool kinEnlisted = callerKnown;
+      if (!kinEnlisted) {
+        for (const std::uint32_t mid : p->members) {
+          if (mid == captainId) continue;
+          Entity* m = find(mid);
+          if (m == nullptr || m->kind != EntityKind::kPlayer || m->dead)
+            continue;
+          for (const std::uint32_t id : siegeAttackers_)
+            if (id == mid) {
+              kinEnlisted = true;
+              break;
+            }
+          if (kinEnlisted) break;
+        }
+      }
+      if (kinEnlisted) {
+        std::size_t added = 0;
+        for (const std::uint32_t mid : p->members) {
+          if (mid == captainId && callerKnown) continue;
+          Entity* m = find(mid);
+          if (m == nullptr || m->kind != EntityKind::kPlayer || m->dead)
+            continue;
+          bool known = false;
+          for (const std::uint32_t id : siegeAttackers_)
+            if (id == mid) {
+              known = true;
+              break;
+            }
+          if (!known) {
+            siegeAttackers_.push_back(mid);
+            ++added;
+          }
+        }
+        if (added > 0)
+          std::printf("[siege] party band mustered +%u late members\n",
+                      static_cast<unsigned>(added));
+        return added > 0;
+      }
+    }
+  }
   for (const std::uint32_t id : siegeAttackers_)
     if (id == captainId) return false;  // already in the war camp, quiet
   // T-139: a sworn caller whose pledge already enlisted musters missing
@@ -2676,6 +3686,7 @@ void World::trySwing(Entity& att, Entity& def) {
       att.hasteUntil >= 0 && tick_ < att.hasteUntil)
     cd = kPlayerAtkCdTicks * 75u / 100u;  // T-054b Haste: -25% cadence
   if (tick_ - att.lastSwingTick < cd) return;
+  if (tick_ < att.knockUntil) return;  // T-161b.6 prone (neutral: init -1)
   att.lastSwingTick = tick_;
 
   // ACC/EVD: GDD ACC=2*DEX(+gear), EVD=DEX(+gear). Gear lands in T-021.
@@ -2690,6 +3701,13 @@ void World::trySwing(Entity& att, Entity& def) {
     acc = 2 * att.dex;
     adex = att.dex;
     base = md != nullptr ? md->dmg : 4;
+    // T-161b.3: thralls strike with borrowed strength (2 + caster level —
+    // the row dmg is fallback only). Owner lookup is journal-deterministic.
+    if (att.ownerId != 0) {
+      if (Entity* o = find(att.ownerId);
+          o != nullptr && o->kind == EntityKind::kPlayer)
+        base = 2u + static_cast<std::uint32_t>(o->level);
+    }
   }
   if (def.kind == EntityKind::kPlayer) {
     evd = static_cast<int>(effEvd(def));  // T-159 Pall +1 rides effEvd
@@ -2698,6 +3716,8 @@ void World::trySwing(Entity& att, Entity& def) {
     const content::MobDef* md = content::findMob(def.mobId);
     evd = def.dex;
     ddef = md != nullptr ? md->def : 0;
+    // T-161b.3: thralls guard with borrowed plate (caster level / 4).
+    if (def.ownerId != 0) ddef = def.petLevel / 4u;
   }
 
   sim::HitCheck hc = sim::rollHit(acc, evd, adex, rng_);
@@ -2748,15 +3768,26 @@ void World::trySwing(Entity& att, Entity& def) {
   if (def.kind == EntityKind::kPlayer && hasAffix(def, 5, 1) && !att.dead) {
     att.hp = att.hp > 2 ? att.hp - 2 : 1;
   }
+  // T-161b.5: the ward drinks first — a fully-drunk swing reads as a miss
+  // (no lands, no leech, no procs; the purse paid for it).
+  dmg = shieldAbsorb(def, dmg);
+  if (dmg == 0) {
+    ev.kind = 0;
+    events_.push_back(ev);
+    return;
+  }
   if (att.kind == EntityKind::kPlayer) {
     ++att.swingLands;
     // T-059 of Leech: equipped weapon drinks 5% of damage dealt
     // T-159 of the Marrow: equipped weapon drinks 3% of damage dealt
+    // ADR-0016: both leeches stack when they share one blade.
     for (const InvSlot& sl : att.inv) {
       const content::ItemDef* dd = content::findItem(sl.itemId);
       if (sl.equipped && dd != nullptr && dd->slot == 0 && sl.durability > 0 &&
-          (sl.affix == 3 || sl.affix == 14)) {
-        const std::uint32_t pct = sl.affix == 3 ? 5u : 3u;
+          (slotHasAffix(sl, 3) || slotHasAffix(sl, 14))) {
+        std::uint32_t pct = 0;
+        if (slotHasAffix(sl, 3)) pct += 5u;
+        if (slotHasAffix(sl, 14)) pct += 3u;
         const std::uint32_t sip = std::max<std::uint32_t>(1, dmg * pct / 100);
         att.hp = std::min<std::int32_t>(
             att.hp + static_cast<std::int32_t>(sip), att.hpMax);
@@ -2896,10 +3927,25 @@ void World::trySwing(Entity& att, Entity& def) {
     kill.kind = 3;
     kill.amount = ev.amount;
     if (def.kind == EntityKind::kMob) {
-      killMob(def, attIsPlayer ? &att : nullptr);
+      // T-161b.3: a thrall's kills credit its living master (XP/loot flow
+      // the bond — the chat line says whose). Slain line is composed BEFORE
+      // killMob (T-106: the deque shift eats references).
+      Entity* credit = nullptr;
+      std::string slainLine;
       if (attIsPlayer) {
+        credit = &att;
+        slainLine = killerName + " has slain a " + victimName + ".";
+      } else if (att.ownerId != 0) {
+        if (Entity* o = find(att.ownerId);
+            o != nullptr && o->kind == EntityKind::kPlayer && !o->dead) {
+          credit = o;
+          slainLine = o->name + "'s thrall has slain a " + victimName + ".";
+        }
+      }
+      killMob(def, credit);
+      if (credit != nullptr) {
         kill.chatCh = 3;
-        kill.chatText = killerName + " has slain a " + victimName + ".";
+        kill.chatText = std::move(slainLine);
       }
     } else {
       kill.chatCh = 3;
@@ -3428,6 +4474,29 @@ bool World::grantUniqueDrop(Entity& killer, const content::UniqueDropDef& u) {
 
 void World::killMob(Entity& mob, Entity* killer) {
   const sim::TilePos mobPos = mob.walker.tile();  // before despawn below
+  if (mob.ownerId != 0) {
+    // T-161b.3: thralls die like mobs but pay like nothing — no XP, loot,
+    // gold, bounty, tax, whitening or first-blood. (Anti-funnel law: a
+    // thrall's death is never profitable, so farming your own bond buys
+    // nothing.) The master gets a directed notice if listening.
+    const std::uint32_t mobId = mob.id;
+    const std::uint32_t owner = mob.ownerId;
+    for (auto& e : entities_)
+      if (e.attackTarget == mobId) e.attackTarget = 0;
+    despawn(mobId);
+    if (Entity* o = find(owner);
+        o != nullptr && o->kind == EntityKind::kPlayer && !o->dead) {
+      WorldEvent ev;
+      ev.aboutId = o->id;
+      ev.chatCh = 255;
+      ev.chatText = "Your thrall crumbles into the mud.";
+      events_.push_back(std::move(ev));
+    }
+    return;
+  }
+  // T-161b.4: every wild mob death lays a corpse on the tape (pets crumble,
+  // players are sacrosanct — neither tapes). Blasts spend them.
+  noteCorpse(mob.zoneId, mobPos.x, mobPos.y);
   if (killer != nullptr && killer->kind == EntityKind::kPlayer) {
     // T-051: party XP share — alive members in the same zone within
     // kPartyXpRadius of the kill split evenly, +kPartyXpBonusPct per extra
@@ -3528,8 +4597,13 @@ void World::killMob(Entity& mob, Entity* killer) {
     if (md != nullptr) {
       // T-059/T-159 affixes: named-gear side-drop with rarity roll + affix mod.
       // Rarity: Common 78%, Magic 17%, Rare 4.6%, Unique 0.4% (GDD §7).
-      // Affixes per tier: Common=0, Magic=1, Rare=2, Uniques are boss-only.
-      if (const content::GearDropDef* gd = content::findGearDrop(md->mobId)) {
+      // Affixes per tier (ADR-0016): Common=0, Magic=1-2, Rare=2-3,
+      // Uniques are boss-only (single fixed affix).
+      // T-159f1.2: EVERY matching table row rolls independently (T-127
+      // per-row precedent) — the 45-row band table is live, not decorative.
+      for (const content::GearDropDef& gdRow : content::kGearDrops) {
+        if (gdRow.mobId != md->mobId) continue;
+        const content::GearDropDef* gd = &gdRow;
         const std::int64_t gearPct =  // T-062 nightcreep rides drops too
             isNight() ? static_cast<std::int64_t>(gd->chancePct) * 125 / 100
                       : static_cast<std::int64_t>(gd->chancePct);
@@ -3548,10 +4622,28 @@ void World::killMob(Entity& mob, Entity* killer) {
             else if (rarityRoll <= 99) rarity = content::kRarityRare;
             else rarity = content::kRarityUnique;
             sl.rarity = rarity;
+            // ADR-0016 multi-affix: Magic = 1 + 50% 2nd, Rare = 2 + 50% 3rd.
+            // Distinct by mod-shift (no extra RNG draws — stream stays
+            // auditable). Uniques keep their single fixed boss affix.
+            auto rollAffix = [this]() {
+              return static_cast<std::uint8_t>(
+                  rng_.range(1, content::kAffixCount));
+            };
+            auto distinct = [](std::uint8_t v, std::uint8_t a) {
+              return v == a ? static_cast<std::uint8_t>(v % content::kAffixCount + 1) : v;
+            };
             if (rarity == content::kRarityMagic) {
-              sl.affix = static_cast<std::uint8_t>(rng_.range(1, content::kAffixCount));
+              sl.affix = rollAffix();
+              if (rng_.range(1, 100) <= 50)
+                sl.affix2 = distinct(rollAffix(), sl.affix);
             } else if (rarity == content::kRarityRare) {
-              sl.affix = static_cast<std::uint8_t>(rng_.range(1, content::kAffixCount));
+              sl.affix = rollAffix();
+              sl.affix2 = distinct(rollAffix(), sl.affix);
+              if (rng_.range(1, 100) <= 50) {
+                sl.affix3 = distinct(rollAffix(), sl.affix);
+                if (sl.affix3 == sl.affix2)
+                  sl.affix3 = static_cast<std::uint8_t>(sl.affix3 % content::kAffixCount + 1);
+              }
             }
             // Common: affix stays 0 (no mod). Unique handled by boss path.
             killer->inv.push_back(sl);
@@ -3560,12 +4652,18 @@ void World::killMob(Entity& mob, Entity* killer) {
             gev.invChanged = true;
             gev.chatCh = 255;
             const content::ItemDef* id = content::findItem(gd->itemId);
+            std::string affixText;
+            for (const std::uint8_t ax : {sl.affix, sl.affix2, sl.affix3})
+              if (ax > 0) affixText += std::string(" ") + content::kAffixNames[ax];
             gev.chatText = std::string("looted ") + (id != nullptr ? id->name : "?") +
-                           (sl.affix > 0
-                                ? std::string(" ") + content::kAffixNames[sl.affix]
-                                : "") +
-                           ".";
+                           affixText + ".";
             events_.push_back(std::move(gev));
+            dropLog("drop tick=" + std::to_string(tick_) + " mob=" +
+                    std::to_string(md->mobId) + " killer=" + killer->name +
+                    " what=gear item=" + std::to_string(gd->itemId) +
+                    " rarity=" + std::to_string(sl.rarity) + " affix=" +
+                    std::to_string(sl.affix) + "+" + std::to_string(sl.affix2) +
+                    "+" + std::to_string(sl.affix3));
           }
         }
       }
@@ -3577,7 +4675,11 @@ void World::killMob(Entity& mob, Entity* killer) {
         const std::int64_t uniqPct =
             isNight() ? static_cast<std::int64_t>(u.chancePct) * 125 / 100
                       : static_cast<std::int64_t>(u.chancePct);
-        if (rng_.range(1, 100) <= uniqPct) grantUniqueDrop(*killer, u);
+        if (rng_.range(1, 100) <= uniqPct && grantUniqueDrop(*killer, u))
+          dropLog("drop tick=" + std::to_string(tick_) + " mob=" +
+                  std::to_string(md->mobId) + " killer=" + killer->name +
+                  " what=unique item=" + std::to_string(u.itemId) + " affix=" +
+                  std::to_string(u.affix) + " title=" + u.title);
       }
       // loot roll (junk tier for now; gear tables land with affixes in P3)
       const std::int64_t nightLootPct =  // T-062: +25% relative under dark
@@ -3593,6 +4695,9 @@ void World::killMob(Entity& mob, Entity* killer) {
           ev.chatCh = 255;
           ev.chatText = std::string("looted 1x ") + item->name + ".";
           events_.push_back(std::move(ev));
+          dropLog("drop tick=" + std::to_string(tick_) + " mob=" +
+                  std::to_string(md->mobId) + " killer=" + killer->name +
+                  " what=junk item=" + std::to_string(md->lootItemId));
         }
       }
       if (md->goldHi >= md->goldLo) {
@@ -3629,6 +4734,9 @@ void World::killMob(Entity& mob, Entity* killer) {
           }
         }
         killer->gold += award;  // bad moral: richer drops (folded above)
+        dropLog("drop tick=" + std::to_string(tick_) + " mob=" +
+                std::to_string(md->mobId) + " killer=" + killer->name +
+                " what=gold amount=" + std::to_string(award));
         WorldEvent ev2;
         ev2.aboutId = killer->id;
         ev2.statsChanged = true;
@@ -3813,6 +4921,15 @@ void World::killPlayer(Entity& victim, Entity* killer) {
   victim.path.clear();
   victim.hp = 0;
   victim.respawnAt = tick_ + kPlayerRespawnTicks;
+  // T-161b.3: the bond breaks at death — the thrall crumbles with its
+  // master (no orphaned pets holding aggro tables while the choir walks
+  // home from the bindstone).
+  for (const auto& m : entities_) {
+    if (m.kind == EntityKind::kMob && m.ownerId == victim.id && !m.dead) {
+      petCrumble(m.id, victim.name + "'s thrall crumbles with its master.");
+      break;
+    }
+  }
   for (auto& e : entities_) {
     if (e.attackTarget == victim.id) {
       e.attackTarget = 0;
@@ -4042,6 +5159,7 @@ void World::slamStrike(Entity& mob) {
         sim::rollDamage(bd->dmg, 0, effDef(*v) / 2u, false);
     if (isNight()) sdmg = sdmg * 125u / 100u;  // same dark bite as the bolt
     sdmg = sdmg < 1 ? 1 : sdmg;
+    sdmg = shieldAbsorb(*v, sdmg);  // T-161b.5: the ward drinks (curse still lands)
     v->hp = sdmg >= static_cast<std::uint32_t>(v->hp)
                 ? 0
                 : v->hp - static_cast<std::int32_t>(sdmg);
@@ -4067,6 +5185,18 @@ void World::slamStrike(Entity& mob) {
 
 void World::mobThink(Entity& mob) {
   if (mob.dead || content::wireIsFurniture(mob.wireKind)) return;  // vendors stand eternally  // leash: too far from anchor -> drop target and path home, no re-aggro
+  // T-161b.3: thralls think with the bond, not the den — petThink sets the
+  // mark (master's mark) or heels, then the shared chase/strike below does
+  // the walking and hitting. A crumbled thrall ends the think (T-106: the
+  // reference is gone with the deque slot).
+  if (mob.ownerId != 0) {
+    if (!petThink(mob)) return;
+  }
+  // T-161b.5: routing mobs neither acquire nor strike — the feet already
+  // moved above; the rest of think would re-aim what Terror broke.
+  if (tick_ < mob.fearUntil) return;
+  // T-161b.6: prone mobs hold the mud (no chase, no strike).
+  if (tick_ < mob.knockUntil) return;
   // T-091: a wind-up with no mark is a dud — leash breaks, logouts, deaths,
   // and anything else that clears attackTarget must not leave an armed fuse
   // behind to strike a stale tile.
@@ -4169,6 +5299,7 @@ void World::mobThink(Entity& mob) {
           target->kind == EntityKind::kPlayer ? effDef(*target) / 2u : 0u, false);
       if (isNight()) bdmg = bdmg * 125u / 100u;  // Blood Bolt bites +25% after dark
       bdmg = bdmg < 1 ? 1 : bdmg;
+      bdmg = shieldAbsorb(*target, bdmg);  // T-161b.5: the ward drinks (curse still lands)
       target->hp = bdmg >= static_cast<std::uint32_t>(target->hp)
                        ? 0 : target->hp - static_cast<std::int32_t>(bdmg);
       // T-070 Blood Curse: the bolt leaves thin blood — heals land at 75%
@@ -4301,9 +5432,28 @@ void World::tick() {
   ++tick_;
   events_.clear();
 
+  tickSanctuary();  // T-161b.1: circle pulses before movement (fixed order)
+  tickWither();  // T-161b.5: rot pulses with the circles (fixed order)
+  tickWind();  // T-161b.6: rally pulses last (fixed order)
+
   for (auto& e : entities_) {
     const sim::TilePos before = e.walker.tile();
-    if (!e.dead) e.walker.step();
+    if (!e.dead && tick_ >= e.knockUntil) {  // T-161b.6: prone feet plant
+      if (tick_ < e.fearUntil) {
+        // T-161b.5: routing breaks aim and owns the feet (mobs skip the
+        // rest of think below; manual swings may still flail).
+        e.attackTarget = 0;
+        e.path.clear();
+        fearStep(e);
+      }
+      // T-161b.5: Frost-slowed feet move 4 ticks in 5 (routing steps pay
+      // the same tithe — dread is heavy). Entity-id stagger keeps crowds
+      // from stepping in lockstep.
+      if (tick_ < e.slowUntil && (tick_ + e.id) % 5 == 4) {
+      } else {
+        e.walker.step();
+      }
+    }
     const sim::TilePos after = e.walker.tile();
     if (after != before) {
       zones_.at(e.zoneId).spatial.move(e.id, after.x, after.y);
@@ -4338,6 +5488,7 @@ void World::tick() {
 
   for (auto& e : entities_) {
     if (e.walker.moving || e.path.empty() || e.dead) continue;
+    if (tick_ < e.knockUntil) continue;  // T-161b.6 prone (no new headings)
     const sim::TilePos cur = e.walker.tile();
     while (!e.path.empty()) {
       const sim::TilePos t = e.path.front();

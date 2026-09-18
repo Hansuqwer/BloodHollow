@@ -14,7 +14,7 @@ must not assume it.
 | 4 | Atlas JSON schema v1 `{"anims":{name:{frameW,frameH,frames,dirs,fps,offsetX,offsetY}}}` | `atlas.cpp loadAtlas` — `dirs` must be 8, bounds `ox+frames*fw ≤ tex.w`, `oy+8*fh ≤ tex.h`; **one PNG, per-anim offset blocks** | **Verified**; `bhpix.pack_atlas` emits exactly this |
 | 5 | Point filtering | `SetTextureFilter(POINT)` only in `placeholder.cpp`; `loadAtlas` does **not** set it | **Amended**: loader must call `SetTextureFilter(tex, TEXTURE_FILTER_POINT)` — 1-line engine card (T-ART-01) |
 | 6 | Integer zoom 1×/1.5×/2× only | `engine/render/camera_rig.h`: Z toggles 1↔2, wheel steps **0.25 to max 2.5** | **Amended**: art is validated at 1/1.5/2; wheel zoom needs snapping to {1,1.5,2} (T-ART-02) or accept shimmer |
-| 7 | Night = multiply + additive light mask, alpha ≤ ~65 % | `daynight.cpp`: normal-blend fullscreen rect, keys peak **(18,22,70,150)** = 59 % at 04:00; drawn after `EndMode2D` and *before* `drawChat/drawHud` (`game.cpp:1298–1303`) — HUD stays clean, but **world-space floaters/callouts are under the tint**; **no light mask exists** | **Amended**: cap already satisfied; light pools are *painted ground decals* until an engine light mask ships (T-ART-03); callouts need the R-TEXT night plate because they are tinted. QA uses the real overlay |
+| 7 | Night = multiply + additive light mask, alpha ≤ ~65 % | `daynight.cpp`: normal-blend fullscreen rect, keys peak **(18,22,70,150)** = 59 % at 04:00; drawn after `EndMode2D` and *before* `drawChat/drawHud` (`game.cpp`) — HUD stays clean. **SHIPPED (T-071 + T-164):** carried pools composite after the overlay via one shared helper (`drawLightPool` — online `snap.light` radii + offline `--lamp` dev visual, same call); radius law torch 6 / lantern 8 / Vigil +2 with unit pins; matrix `docs/research-notes/qa/t164/` (00/02/04h × lamp states). World-space floaters/callouts sit under the tint by design (bitmap outline keeps them legible — T-ART-13). | **Verified** |
 | 8 | Player anim set idle1/walk6/attack3/cast4/hurt2/die4/gib3 | engine only plays `"walk"` and `"idle"` (`animFrame(... moving ? "walk":"idle")`) | **Missing**: attack/cast/hurt/die/gib need a client anim-state hook (T-ART-04). Sheets ship the frames anyway |
 | 9 | Mob roster 1001–1010 | `mobs.h kMobs` 10 rows exactly as bible table (names, levels) | **Verified** |
 | 10 | Mob sprite selection by wireKind | `world.cpp`: `wireKind = 1-based index into kMobs`; client draws **every** entity with `heroAtlas_` | **Missing**: per-kind atlas table on client (T-ART-05). Delivery naming `mobs/<id>_<slug>/` is the intended lookup key |
@@ -40,4 +40,8 @@ T-ART-01 point filter in loadAtlas · 02 snap wheel zoom · 03 light-pool decals
 light mask · 04 anim-state hook (attack/cast/hurt/die/gib) · 05 per-wireKind
 atlas table · 06 NPC furniture kinds 67+ · 07 party overhead tint · 08 client
 map cases 4/5 · 09 ground decal layer (blood, telegraphs, Sanctuary) · 10
-`anchorY` in atlas JSON · 11 +5 glow composite.
+`anchorY` in atlas JSON · 11 +5 glow composite · 12 textured ground (SHIPPED:
+bake + skinned prisms, `docs/research-notes/qa/tart12/`) · 13 bitmap font +
+R-TEXT-2 (SHIPPED: `assets/aigen/ui/font/`, pile shots) · 14 dirs:1 strips
+(SHIPPED loader, fixture-proven; events → T-ART-14b) · 15 icons/hotbar
+(STRUCTURE shipped: hotbar + plates; 60-icon art owed, needs pipeline key).

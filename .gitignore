@@ -9,6 +9,7 @@ logs/*.dump
 logs/*.bwj
 logs/diag_*
 logs/trades.log
+logs/drops.log
 __pycache__/
 .env
 .env.*
