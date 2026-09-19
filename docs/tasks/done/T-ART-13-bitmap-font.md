@@ -31,8 +31,10 @@ Font redesign (art lane owns glyphs).
   overlap) + pins in `tests/test_clientlaw.cpp`; client degrades piles of
   4+ to the karma-badge diamond (own name exempt; furniture included —
   the town-square NPC cluster is the worst piler).
-- Shots: `tart13_font_pile2/3.png` (online, 69–71 ents) — bitmap names +
-  badges in the pile. HUD/body text stays default font (63-chrome rule;
+- Shots: `tart15_vendor_icons.png` + `vfx_arc2.png` (online, 60+ ents) —
+  bitmap names + karma-badge diamonds in the town-square pile (the earlier
+  `tart13_font_pile2/3.png` were superseded and removed 2026-09-19).
+  HUD/body text stays default font (63-chrome rule;
   re-skinning all panels is a follow-up, not this card).
 - Renderer-only: no sim/wire/epoch. Dev affordance: `--create 1M`
   (unattended T-167 answer for captures), `--flat-font` (before shots).

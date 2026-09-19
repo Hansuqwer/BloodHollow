@@ -1,29 +1,36 @@
-# prompt.md — Item icons (32×32 + 24×24, 1× and 2×)
-
-**Status:** DRAFT prompt package (B0.5 A1). No plate generated. Final prompts are appended verbatim under *Runs* when generation happens; the model/version goes to `assets/LICENSES.md` (write "undisclosed" if the provider hides it — never omit).
+# prompt.md — Item icons (top-10 batch, B7.5)
 
 ## Prompt
 
 ```
-PREFIX   = "1999-era isometric MMORPG sprite, hand-drawn 2D pixel-art look, dark horror dark-fantasy, muddy desaturated earth palette (mud brown, rust red, bone off-white, soot grey, stagnant green), hard 1px dark outline, visible dither shading, no anti-aliasing, no gradients, matte dark blood, candle-light warmth only as accent, plain flat #00FF00 background, orthographic 2:1 isometric view"
-SUBJECT  = "see BRIEF.md / spec"
-PALETTE  = "backing: iron/red #8e101c→#d8302a · ash-blue #6e7a8a · bone-white #e6e0d4 · choir-gold #d9b04a · era-violet #6b4a8a/#a884c4"
-NEGATIVE = "anime, chibi, cute, bright, saturated, neon on terrain, smooth gradient, 3D render, painterly character, bloom, lens flare, modern UI, text, watermark, extra limbs, asymmetry errors in gear, elf ears, sparkle, design-tool purple"
+PREFIX   = "1999-era isometric MMORPG inventory icon, hand-drawn 2D pixel-art look, muddy desaturated earth tones, hard 1px dark outline, visible dither shading, no anti-aliasing, no gradients, single centered item"
+SUBJECT  = "see Runs (one line per icon)"
+PALETTE  = "per-item family (iron-red / ash-blue / bone-white / gold)"
+NEGATIVE = "solid flat pure-green chroma-key RGB 0,255,0 backdrop, no ground, absolutely no shadow, no text, no watermark, 16-bit pixel sprite"
 ```
 
-Full prompt = PREFIX + ", " + SUBJECT + ", palette: " + PALETTE + " --neg " + NEGATIVE
+Full prompt = PREFIX + ", " + SUBJECT + ", " + PALETTE + ", " + NEGATIVE.
+Model: black-forest-labs/flux.1-schnell (Pollinations gateway, repo key),
+256x256, one generation per icon (no regens).
 
 ## Expansion
-- generate at 8× (256×256) per icon, fit_to_cell NEAREST to 32 and 24; the 8 shipped skill icons get a hand redraw at 2×
-- backing plate #151013 + 2 px bevel in the family colour is composited by the pipeline, not generated
+- border-median chroma key + 1px fringe erode, NEAREST fit to 28px on a
+  32 cell, MEDIANCUT ≤32, pipeline `#151013` plate + 2px family bevel,
+  NEAREST 24px, palette strip, greyscale silhouette check.
 
-## Hand-fix list (check in this order after quantize)
-- one silhouette per icon family (greyscale check at 24 px)
-- no text in icons
-- refine states +5/+9/+10 are paint edits of the +0 icon, never regenerations
+## Runs (2026-09-19, 10/10 fresh-cap batch on the repo key)
 
-## Cell / sheet
-see BRIEF.md
-
-## Runs
-_(none yet — one line per generation: date · model or "undisclosed" · seed if known · which dirs · accepted y/n)_
+Deviations (all accepted, read as icon bases at 32px): extra props on
+2002 (brick), 2003 (ore pile + coin), 2501 (stone pedestal), gold (grassy
+mound + stone base); 2001 subject renders thin (10px wide); 2102 pauldron
+micro-glyphs vanish at 32px. No regens (cap reached).
+- 2026-09-19 · black-forest-labs/flux.1-schnell · seed 19990201 · 2001_rusty_shank (pitted short iron blade with rag grip, iron-red) · accepted y
+- 2026-09-19 · black-forest-labs/flux.1-schnell · seed 19990202 · 2002_pit_blade (heavy notched cleaver with teeth on spine, iron-red) · accepted y
+- 2026-09-19 · black-forest-labs/flux.1-schnell · seed 19990203 · 2003_mine_pick (worn miner pickaxe with wooden haft, ash-blue grey) · accepted y
+- 2026-09-19 · black-forest-labs/flux.1-schnell · seed 19990204 · 2101_hide_armor (stitched hide vest, grey-pink leather) · accepted y
+- 2026-09-19 · black-forest-labs/flux.1-schnell · seed 19990205 · 2102_bone_plate (rib-and-scapula bone plate with wax seals, bone-white) · accepted y
+- 2026-09-19 · black-forest-labs/flux.1-schnell · seed 19990206 · 2501_scrap_helm (dented scrap-metal helmet, ash-blue grey) · accepted y
+- 2026-09-19 · black-forest-labs/flux.1-schnell · seed 19990207 · 3001_blood_vial (small glass vial of dark red blood, bone-white and arterial) · accepted y
+- 2026-09-19 · black-forest-labs/flux.1-schnell · seed 19990208 · 3003_torch (burning wooden torch with ember flame, gold and ember) · accepted y
+- 2026-09-19 · black-forest-labs/flux.1-schnell · seed 19990209 · 3004_lantern (brass lantern with candle glow, gold) · accepted y
+- 2026-09-19 · black-forest-labs/flux.1-schnell · seed 19990210 · gold_coin (black-iron coin with skull stamp, gold) · accepted y

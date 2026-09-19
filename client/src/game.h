@@ -87,6 +87,12 @@ class Game {
   void debugSetFlatFont(bool f) {  // --flat-font: legacy DrawText (before shots)
     if (f) fontsTried_ = true;
   }
+  // T-ART-14b captures: --cam TX,TY pins the camera target (render-only).
+  void debugSetCam(float tx, float ty) {
+    debugCam_ = true;
+    debugCamTx_ = tx;
+    debugCamTy_ = ty;
+  }
   // T-ART-14 dev visual: --vfx-test loads the dirs:1 fixture strip and plays
   // it looping at the hero (proves load+play; real strips wire to events).
   void debugSetVfxTest(bool v) { vfxTest_ = v; }
@@ -129,6 +135,18 @@ class Game {
   void drawVestiges();   // T-066: petrify-fade silhouettes under the world
   void noteDecals();     // T-ART-09: harvest kill pulses into blood decals
   void drawDecals();     // T-ART-09: decal surface, under entities, y-sorted
+  // T-ART-14b: event-fed VFX (tier-0 procedural strips; art lane redraws).
+  struct VfxPlay {
+    std::string strip;  // dir under assets/aigen/vfx/
+    float x = 0, y = 0;  // tile-space float
+    double at = 0;       // GetTime() the play started
+    float dur = 0.5f;
+  };
+  std::unordered_map<std::string, Atlas> vfxAtlases_;  // lazy, cached
+  std::deque<VfxPlay> vfxPlays_;  // capped 16, oldest dropped
+  const Atlas* vfxStrip(const std::string& name);
+  void noteVfx();      // CombatPulse -> strip plays (render-only)
+  void drawVfxPlays();  // world-space, over entities, under floaters
   void addTelegraph(float x, float y, int stage);  // T-ART-09: boss API (1-3)
   void addCircle(float x, float y);                // T-ART-09: spell-circle API
   void drawStatPanel() const;
@@ -183,6 +201,19 @@ class Game {
   Atlas testVfx_{};      // T-ART-14 fixture strip (dev visual only)
   bool vfxTest_ = false;
   void drawVfxTest();  // T-ART-14: looping fixture playback at the hero
+  // T-ART-15 skill icons (aigen sheet; placeholder plates until loaded).
+  mutable Texture2D skillIcons_{};
+  mutable std::unordered_map<std::uint8_t, Rectangle> skillIconRects_{};
+  mutable bool skillIconsTried_ = false;
+  void ensureSkillIcons() const;
+  // T-ART-15 item icons (aigen sheet keyed by itemId; rarity plate fallback).
+  mutable Texture2D itemIcons_{};
+  mutable std::unordered_map<std::uint32_t, Rectangle> itemIconRects_{};
+  mutable bool itemIconsTried_ = false;
+  void ensureItemIcons() const;
+  // Draws the icon square at (x,y) (opaque plate baked in); false = caller
+  // keeps the rarity-plate/text fallback.
+  bool drawItemIcon(std::uint32_t itemId, int x, int y, int size) const;
 
   // offline sim
   sim::Walker walker_{};
@@ -198,6 +229,8 @@ class Game {
   float debugHourOffset_ = 0.0f;
   float debugZoom_ = -1.0f;   // >0 forces camera zoom (dev captures)
   int lampRadius_ = 0;        // >0 draws one warm pool at the hero (dev)
+  bool debugCam_ = false;     // --cam: pin camera target (dev captures)
+  float debugCamTx_ = 0, debugCamTy_ = 0;
 
   // chat + UX state
   bool chatFocus_ = false;

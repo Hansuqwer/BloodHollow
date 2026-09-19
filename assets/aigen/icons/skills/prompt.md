@@ -27,3 +27,15 @@ see BRIEF.md
 
 ## Runs
 _(none yet — one line per generation: date · model or "undisclosed" · seed if known · which dirs · accepted y/n)_
+
+## Runs (2026-09-18, B7 skill batch — 9/10 session cap, 1 held in reserve)
+
+- 2026-09-18 · black-forest-labs/flux.1-schnell (Pollinations gateway, repo key) · seed 19990101 · ch1 Power Swing cleaver · accepted y (drop shadow kept out by key fringe erode in post)
+- 2026-09-18 · black-forest-labs/flux.1-schnell · seed 19990102 · ch2 Mend palm + 2 motes · accepted y (ground disc reads as icon base at 32px)
+- 2026-09-18 · black-forest-labs/flux.1-schnell · seed 19990103 · ch3 Bless hymnal + halo + tooth · accepted y (micro "48" text artifact bottom-left, vanishes at 32px)
+- 2026-09-18 · black-forest-labs/flux.1-schnell · seed 19990104 · ch4 Ironskin breastplate · accepted y (dark mottled bg — adaptive border-median key in post)
+- 2026-09-18 · black-forest-labs/flux.1-schnell · seed 19990105 · ch5 Firebolt comet · accepted y (cleanest plate of the batch)
+- 2026-09-18 · black-forest-labs/flux.1-schnell · seed 19990106 · ch6 Chorus 3 mouths · accepted y
+- 2026-09-18 · black-forest-labs/flux.1-schnell · seed 19990107 · ch7 Mass Mend palm + ring · accepted y (white bg — adaptive key in post)
+- 2026-09-18 · black-forest-labs/flux.1-schnell · seed 19990108 · ch8 Haste boot · accepted y
+- 2026-09-18 · black-forest-labs/flux.1-schnell · seed 19990110 · ch10 Resurrect skeletal hand + halo · accepted y

@@ -1,0 +1,14 @@
+{
+ "anims": {
+  "play": {
+   "frameW": 32,
+   "frameH": 32,
+   "frames": 3,
+   "dirs": 1,
+   "fps": 15,
+   "offsetX": 0,
+   "offsetY": 0,
+   "anchorY": 0
+  }
+ }
+}

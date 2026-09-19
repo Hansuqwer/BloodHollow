@@ -3,6 +3,9 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <fstream>
+
+#include <nlohmann/json.hpp>
 
 #include "assets/placeholder.h"
 #include "content/items.h"
@@ -667,6 +670,7 @@ void Game::applyNetState() {
     }
   }
   noteDecals();  // T-ART-09: kills bleed onto the decal surface (render-only)
+  noteVfx();     // T-ART-14b: combat pulses play VFX strips (render-only)
   for (const ChatLine& c : net_->chatIn) {
     chatLog_.push_back(c);
     while (chatLog_.size() > 12) chatLog_.pop_front();
@@ -1266,6 +1270,75 @@ void Game::drawNameTag(Vector2 w, const std::string& name, Color nc, int yOff,
   }
 }
 
+const Atlas* Game::vfxStrip(const std::string& name) {
+  auto it = vfxAtlases_.find(name);
+  if (it != vfxAtlases_.end()) return it->second.ok ? &it->second : nullptr;
+  Atlas a;
+  const std::string base = "assets/aigen/vfx/" + name + "/";
+  if (loadAtlas(base + "strip.png", base + "strip.json", a) && a.ok) {
+    auto em = vfxAtlases_.emplace(name, std::move(a));
+    return &em.first->second;
+  }
+  vfxAtlases_.emplace(name, Atlas{});  // missing: negative cache, no retry spam
+  return nullptr;
+}
+
+void Game::noteVfx() {
+  if (net_ == nullptr) return;
+  const double now = GetTime();
+  for (const CombatPulse& cp : net_->combatIn) {
+    // Tier-0 mapping (kinds follow the floater table above): melee 1/2 and
+    // Power Swing 5 -> swing arc at the victim; Blood Bolt 9 -> impact at
+    // the victim; mend 8 -> motes at the recipient; bless-group casts
+    // 10/13/14 -> ground ring under the caster. Slain is already a decal.
+    const char* strip = nullptr;
+    bool atCaster = false;
+    if (cp.kind == 1 || cp.kind == 2 || cp.kind == 5)
+      strip = "swing_arc";
+    else if (cp.kind == 9)
+      strip = "firebolt_impact";
+    else if (cp.kind == 8)
+      strip = "mend_motes";
+    else if (cp.kind == 10 || cp.kind == 13 || cp.kind == 14) {
+      strip = "cast_ring";
+      atCaster = true;
+    }
+    if (strip == nullptr) continue;
+    const Atlas* at = vfxStrip(strip);
+    if (at == nullptr) continue;
+    auto it = at->anims.find("play");
+    if (it == at->anims.end() || it->second.dirFrames[0].empty() || it->second.fps <= 0)
+      continue;
+    const auto& e = atCaster ? rents_.find(cp.attacker) : rents_.find(cp.target);
+    if (e == rents_.end()) continue;
+    const Vector2 p = entRenderPos(e->second);
+    VfxPlay v;
+    v.strip = strip;
+    v.x = p.x;
+    v.y = p.y;
+    v.at = now;
+    v.dur = static_cast<float>(it->second.dirFrames[0].size()) / it->second.fps;
+    vfxPlays_.push_back(std::move(v));
+    while (vfxPlays_.size() > 16) vfxPlays_.pop_front();
+  }
+}
+
+void Game::drawVfxPlays() {
+  if (vfxPlays_.empty()) return;
+  const double now = GetTime();
+  while (!vfxPlays_.empty() && now - vfxPlays_.front().at > vfxPlays_.front().dur)
+    vfxPlays_.pop_front();
+  for (const VfxPlay& v : vfxPlays_) {
+    const Atlas* at = vfxStrip(v.strip);
+    if (at == nullptr) continue;
+    const Rectangle src = animFrame(*at, "play", 0, now - v.at);
+    if (src.width <= 0.0f) continue;
+    const Vector2 w = iso::tileToWorldF(Vector2{v.x, v.y}, map_.tileW, map_.tileH);
+    DrawTexturePro(at->tex, src, Rectangle{w.x, w.y - 8.0f, src.width, src.height},
+                   Vector2{src.width * 0.5f, src.height * 0.5f}, 0.0f, WHITE);
+  }
+}
+
 void Game::drawVfxTest() {
   if (!vfxTest_) return;
   if (!testVfx_.ok) {
@@ -1276,18 +1349,32 @@ void Game::drawVfxTest() {
       return;
     testVfx_ = std::move(a);
   }
-  const Rectangle src = animFrame(testVfx_, "play", 0, animT_);
-  if (src.width <= 0.0f) return;
-  Vector2 w;
+  Vector2 hero;
   if (net_ != nullptr) {
     const auto own = rents_.find(net_->ownId);
-    w = own != rents_.end()
-            ? iso::tileToWorldF(entRenderPos(own->second), map_.tileW, map_.tileH)
-            : iso::tileToWorld(map_.w / 2, map_.h / 3, map_.tileW, map_.tileH);
+    hero = own != rents_.end()
+               ? iso::tileToWorldF(entRenderPos(own->second), map_.tileW, map_.tileH)
+               : iso::tileToWorld(map_.w / 2, map_.h / 3, map_.tileW, map_.tileH);
   } else {
-    w = iso::tileToWorldF(Vector2{walker_.fx(), walker_.fy()}, map_.tileW, map_.tileH);
+    hero = iso::tileToWorldF(Vector2{walker_.fx(), walker_.fy()}, map_.tileW, map_.tileH);
   }
-  DrawTexturePro(testVfx_.tex, src, Rectangle{w.x, w.y, src.width, src.height},
+  // T-ART-14b: the tier-0 event strips play fanned around the hero (same
+  // vfxStrip loader + animFrame playback the event feed uses).
+  static const Vector2 kOffsets[] = {{-56, 0}, {56, 0}, {0, -44}, {0, 40}};
+  static const char* kStrips[] = {"swing_arc", "firebolt_impact", "mend_motes",
+                                  "cast_ring"};
+  for (int i = 0; i < 4; ++i) {
+    const Atlas* at = vfxStrip(kStrips[i]);
+    if (at == nullptr) continue;
+    const Rectangle src = animFrame(*at, "play", 0, animT_);
+    if (src.width <= 0.0f) continue;
+    const Vector2 c{hero.x + kOffsets[i].x, hero.y + kOffsets[i].y};
+    DrawTexturePro(at->tex, src, Rectangle{c.x, c.y, src.width, src.height},
+                   Vector2{src.width * 0.5f, src.height * 0.5f}, 0.0f, WHITE);
+  }
+  const Rectangle src = animFrame(testVfx_, "play", 0, animT_);
+  if (src.width <= 0.0f) return;
+  DrawTexturePro(testVfx_.tex, src, Rectangle{hero.x, hero.y, src.width, src.height},
                  Vector2{src.width * 0.5f, src.height * 0.5f}, 0.0f, WHITE);
 }
 
@@ -1425,15 +1512,88 @@ void Game::drawDecals() {
   }
 }
 
+void Game::ensureSkillIcons() const {  if (skillIconsTried_) return;
+  skillIconsTried_ = true;
+  // Missing files -> placeholder plates below (never holes).
+  try {
+    const char* png = "assets/aigen/icons/skills/skill_icons.png";
+    const char* js = "assets/aigen/icons/skills/skill_icons.json";
+    if (!FileExists(png) || !FileExists(js)) return;
+    Texture2D tex = LoadTexture(png);
+    if (tex.id == 0) return;
+    SetTextureFilter(tex, TEXTURE_FILTER_POINT);
+    std::ifstream f(js);
+    nlohmann::json j;
+    f >> j;
+    for (auto it = j.at("icons").begin(); it != j.at("icons").end(); ++it) {
+      const auto& c = it.value();
+      const int channel = c.at("channel").get<int>();
+      if (channel < 1 || channel > 23) continue;
+      skillIconRects_.emplace(static_cast<std::uint8_t>(channel),
+                              Rectangle{static_cast<float>(c.at("x").get<int>()),
+                                        static_cast<float>(c.at("y").get<int>()),
+                                        static_cast<float>(c.at("w").get<int>()),
+                                        static_cast<float>(c.at("h").get<int>())});
+    }
+    skillIcons_ = tex;
+  } catch (...) {
+    if (skillIcons_.id != 0) UnloadTexture(skillIcons_);
+    skillIcons_ = Texture2D{};
+    skillIconRects_.clear();
+  }
+}
+
+void Game::ensureItemIcons() const {
+  if (itemIconsTried_) return;
+  itemIconsTried_ = true;
+  // Missing files -> rarity-plate fallback below (never holes).
+  try {
+    const char* png = "assets/aigen/icons/items/item_icons.png";
+    const char* js = "assets/aigen/icons/items/item_icons.json";
+    if (!FileExists(png) || !FileExists(js)) return;
+    Texture2D tex = LoadTexture(png);
+    if (tex.id == 0) return;
+    SetTextureFilter(tex, TEXTURE_FILTER_POINT);
+    std::ifstream f(js);
+    nlohmann::json j;
+    f >> j;
+    for (auto it = j.at("icons").begin(); it != j.at("icons").end(); ++it) {
+      const auto& c = it.value();
+      const std::uint32_t id = static_cast<std::uint32_t>(c.at("itemId").get<int>());
+      itemIconRects_.emplace(id, Rectangle{static_cast<float>(c.at("x").get<int>()),
+                                           static_cast<float>(c.at("y").get<int>()),
+                                           static_cast<float>(c.at("w").get<int>()),
+                                           static_cast<float>(c.at("h").get<int>())});
+    }
+    itemIcons_ = tex;
+  } catch (...) {
+    if (itemIcons_.id != 0) UnloadTexture(itemIcons_);
+    itemIcons_ = Texture2D{};
+    itemIconRects_.clear();
+  }
+}
+
+bool Game::drawItemIcon(std::uint32_t itemId, int x, int y, int size) const {
+  ensureItemIcons();
+  if (itemIcons_.id == 0) return false;
+  auto it = itemIconRects_.find(itemId);
+  if (it == itemIconRects_.end()) return false;
+  DrawTexturePro(itemIcons_, it->second,
+                 Rectangle{static_cast<float>(x), static_cast<float>(y),
+                           static_cast<float>(size), static_cast<float>(size)},
+                 Vector2{0, 0}, 0.0f, WHITE);
+  return true;
+}
+
 void Game::drawHotbar() const {
   // T-ART-15 skill bar: one row always visible online, following the live
   // input page (plain 1-6 / Shift+1-8 / Ctrl+1-5 — the T-161b layout in
   // handleInputOnline). Slots show lock state from kits.h unlocks at the
   // hero's kit+level (server re-validates casts; this never decides).
-  // Plates are procedural placeholders in the §11 backing colours; the
-  // 60-icon art set fills them when it ships. No cooldown sweep yet (no
-  // wire carries cooldowns — owed with the art).
+  // Icons ride the aigen sheet when it ships (placeholder plates before);
+  // cooldown sweep needs cooldowns on the wire (not carried — owed).
   if (net_ == nullptr || !net_->welcomed) return;
+  ensureSkillIcons();
   const bool shiftPage = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
   const bool ctrlPage = IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL);
   std::uint8_t ch[8] = {0, 0, 0, 0, 0, 0, 0, 0};
@@ -1495,9 +1655,19 @@ void Game::drawHotbar() const {
     DrawRectangle(x + 1, y0, 28, 28, Color{12, 10, 10, 220});
     DrawRectangleLines(x + 1, y0, 28, 28, Color{60, 50, 50, 255});
     if (ch[i] == 0) continue;
-    // icon plate (placeholder rect; art fills it) + key numeral
-    DrawRectangle(x + 4, y0 + 3, 22, 22, Color{21, 16, 19, 255});
-    DrawRectangleLines(x + 4, y0 + 3, 22, 22, family(ch[i]));
+    // icon art when the sheet covers the channel, else the §11 plate.
+    auto ic = skillIconRects_.find(ch[i]);
+    if (skillIcons_.id != 0 && ic != skillIconRects_.end()) {
+      DrawTexturePro(skillIcons_, ic->second,
+                     Rectangle{static_cast<float>(x + 4), static_cast<float>(y0 + 3),
+                               22, 22},
+                     Vector2{0, 0}, 0.0f, WHITE);
+    } else {
+      DrawRectangle(x + 4, y0 + 3, 22, 22, Color{21, 16, 19, 255});
+      DrawRectangleLines(x + 4, y0 + 3, 22, 22, family(ch[i]));
+    }
+    // key numeral stays legible over icon art (1px outline, same as fonts)
+    DrawText(key[i], x + 5, y0 + 2, 10, Color{0, 0, 0, 255});
     DrawText(key[i], x + 4, y0 + 1, 10, Color{230, 210, 190, 255});
     const std::uint8_t req = content::kitSkillUnlock(kit, ch[i]);
     if (req == 0 || lvl < req) {
@@ -1815,17 +1985,21 @@ void Game::drawInventoryPanel() const {
         : kv.second.rarity == 1 ? Color{140, 180, 255, 255}
         : kv.second.equipped ? Color{255, 200, 90, 255}
                              : Color{200, 195, 185, 255};
-    // T-ART-15 icon slot: rarity plate ahead of the row text. Procedural
-    // placeholder (the 60-icon art set fills this rect when it ships);
-    // rarity always reads here even when glow/aura win the text colour.
+    // T-ART-15 icon slot: real item art when the sheet covers the id,
+    // else the rarity plate (rarity always reads even when glow/aura win).
     const Color plateFill =
         kv.second.rarity == 3   ? Color{200, 98, 42, 255}
         : kv.second.rarity == 2 ? Color{168, 138, 74, 255}
         : kv.second.rarity == 1 ? Color{74, 110, 168, 255}
                                 : Color{42, 36, 38, 255};
-    DrawRectangle(px + 8, y + 2, 8, 8, plateFill);
-    DrawRectangleLines(px + 8, y + 2, 8, 8, Color{20, 16, 18, 255});
-    DrawText(buf, px + 20, y, 10, rowCol);
+    int textX = px + 20;
+    if (drawItemIcon(kv.second.itemId, px + 6, y + 1, 14)) {
+      textX = px + 24;
+    } else {
+      DrawRectangle(px + 8, y + 2, 8, 8, plateFill);
+      DrawRectangleLines(px + 8, y + 2, 8, 8, Color{20, 16, 18, 255});
+    }
+    DrawText(buf, textX, y, 10, rowCol);
     y += 16;
     ++row;
   }
@@ -1919,7 +2093,11 @@ void Game::drawVendorPanel() const {
     if (d == nullptr) continue;
     char buf[96];
     std::snprintf(buf, sizeof buf, "F%d  %-14s %ug", i + 1, d->name, d->value);
-    DrawText(buf, px + 10, y, 10, Color{220, 205, 185, 255});
+    // T-ART-15: item art when the sheet covers the id (else plain text).
+    if (drawItemIcon(id, px + 8, y + 1, 14))
+      DrawText(buf, px + 26, y, 10, Color{220, 205, 185, 255});
+    else
+      DrawText(buf, px + 10, y, 10, Color{220, 205, 185, 255});
     y += 16;
     ++i;
   }
@@ -1934,7 +2112,10 @@ void Game::drawVendorPanel() const {
       if (d == nullptr) continue;
       const std::uint32_t price = d->value * content::kFenceMarkupPct / 100;
       std::snprintf(buf, sizeof buf, "F%d  %-14s %ug", j + 8, d->name, price);
-      DrawText(buf, px + 10, y, 10, Color{220, 170, 160, 255});
+      if (drawItemIcon(id, px + 8, y + 1, 14))
+        DrawText(buf, px + 26, y, 10, Color{220, 170, 160, 255});
+      else
+        DrawText(buf, px + 10, y, 10, Color{220, 170, 160, 255});
       y += 16;
       ++j;
     }
@@ -2063,12 +2244,16 @@ void Game::render(double /*interpAlpha*/) {
   }
   rig_.follow(focus);
   if (debugZoom_ > 0.0f) rig_.cam.zoom = debugZoom_;  // T-ART-12: dev captures
+  if (debugCam_)  // T-ART-14b: pin the frame on the grind (dev captures)
+    rig_.cam.target = iso::tileToWorldF(Vector2{debugCamTx_, debugCamTy_}, map_.tileW,
+                                        map_.tileH);
 
   BeginDrawing();
   ClearBackground(Color{8, 8, 12, 255});
   BeginMode2D(rig_.cam);
   drawGround();
   drawVfxTest();  // T-ART-14 dev visual (no-op unless --vfx-test)
+  drawVfxPlays();  // T-ART-14b event VFX (no-op offline / empty)
   if (showPath_ && net_ == nullptr) drawPathPreview();
   drawCommandMarker();
   if (net_ != nullptr) drawVestiges();   // T-066 petrify-fade silhouettes

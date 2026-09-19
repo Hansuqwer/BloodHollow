@@ -56,6 +56,8 @@ int main(int argc, char** argv) {
   // --zoom forces camera zoom, --flat-ground forces legacy flat diamonds,
   // --lamp draws one shipped-style warm pool at the hero (radius tiles).
   float hourFlag = -1.0f, zoomFlag = -1.0f;
+  float camTx = 0, camTy = 0;
+  bool camFlag = false;
   int lampFlag = 0;
   bool flatGround = false, flatFont = false, vfxTest = false;
   // --create 1M/2F/3M...: T-167 auto-answer for unattended captures.
@@ -90,6 +92,10 @@ int main(int argc, char** argv) {
       flatFont = true;
     } else if (std::strcmp(a, "--vfx-test") == 0) {
       vfxTest = true;
+    } else if (std::strcmp(a, "--cam") == 0 && i + 2 < argc) {
+      camTx = static_cast<float>(std::atof(argv[++i]));
+      camTy = static_cast<float>(std::atof(argv[++i]));
+      camFlag = true;
     } else if (std::strcmp(a, "--lamp") == 0 && i + 1 < argc) {
       lampFlag = std::atoi(argv[++i]);
     } else if (std::strcmp(a, "--create") == 0 && i + 1 < argc) {
@@ -171,6 +177,7 @@ int main(int argc, char** argv) {
   if (flatGround) game.debugSetFlatGround(true);
   if (flatFont) game.debugSetFlatFont(true);
   if (vfxTest) game.debugSetVfxTest(true);
+  if (camFlag) game.debugSetCam(camTx, camTy);
   if (lampFlag > 0) game.debugSetLamp(lampFlag);
   if (createClass != 0 && createSex != 0) game.debugSetCreate(createClass, createSex);
   if (online) game.setOnline(&net);

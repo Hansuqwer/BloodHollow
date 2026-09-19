@@ -1207,3 +1207,25 @@ Retired: "L8→L9 step-up, no waypoint" (T-084 opened the (60,41) camp; T-090/T-
   corrected the epoch-31 "241→242" claims to **244→245** (ADR-0016 +
   Correction section, `main.cpp` comment, `done/T-159f1.md`, pass-5 row).
   True chain: 242 (T-159) → 244 (wave-2) → 245 (ADR-0016).
+
+## Done — 2026-09-18 (B7 skill icons, key found)
+
+- **T-ART-15 skill half SHIPPED (card stays open for item icons):**
+  `POLINATION_API_KEY` (single-L spelling) validated + used via header auth;
+  9/10 session gens (flux.1-schnell: ch1–ch8 + ch10) + brief-compliant post
+  (adaptive key, NEAREST 32/24, 31-colour sheet, plate + bevel, palette,
+  greyscale check) + hotbar wiring (`ensureSkillIcons`, outlined numerals).
+  Shots `qa/tart15_hotbar_icons.png`. LICENSES rows (model disclosed).
+  Devlog 0126. Owed: item/UI batch, vendor plates, 2x redraws, cooldown wire.
+
+## Done — 2026-09-19 (B7.5 items + tier-0 VFX, new-key session)
+
+- **T-ART-15 item top-10 SHIPPED + wired (card open for batch 2):** 10/10
+  fresh-cap gens (2001/2002/2003/2101/2102/2501/3001/3003/3004/gold) + post
+  (adaptive key, NEAREST, 32-colour sheet, plates) + `drawItemIcon` in bag /
+  vendor / fence rows (rarity-plate fallback). Shot `tart15_vendor_icons.png`.
+- **T-ART-14b tier-0 SHIPPED (card done, redraws owed):** 4 procedural strips
+  + `noteVfx` kind mapping + `drawVfxPlays` (verified live + deterministic
+  `--vfx-test` shot `vfx_tier0_all_z2.png`); new dev flag `--cam`. Art lane
+  redraws 4 + ~21. Devlog 0127.
+- Key note: director key `sk_…9L` reachable, auth unproven, stored nowhere.
